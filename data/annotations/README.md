@@ -4,4 +4,5 @@
 
 - **누적 형식**: 초기 진단 검토 후 JSONL
 - **정답 승격**: 사람 판정 필수
-- **사용자 확정 표현**: `user-confirmed-phrases.jsonl` · 원문과 권장 표현을 글자 그대로 보존
+- **사용자 확정 표현**: `user-confirmed-phrases.jsonl` · 원문과 권장 표현을 글자 그대로 보존 · 문서 종류와 문맥 조건 함께 기록
+- **사용자 문체 선호**: `user-style-preferences.jsonl` · 여러 수정 예시에서 확인한 일반화 축과 오용 방지 조건
