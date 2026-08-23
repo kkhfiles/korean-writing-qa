@@ -10,3 +10,4 @@
 
 - **Git 제외**: 원문 복사본
 - **커밋 대상**: 재현에 필요한 목록과 판정 데이터
+- **Claude Code 규칙**: 전체 출처 목록은 `catalog/claude-rule-sources.jsonl` · 사람이 정리한 규칙은 `annotations/claude-korean-expression-rules.jsonl`
