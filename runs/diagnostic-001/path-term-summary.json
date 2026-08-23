@@ -1,0 +1,12 @@
+{
+  "source_root": "P:/github/claude-workflow/reports",
+  "documents_with_term": 241,
+  "occurrences": 771,
+  "classifications": {
+    "abstract_candidate": 8,
+    "literal_candidate": 132,
+    "review": 631
+  },
+  "rule_status": "candidate_only",
+  "positive_seed": "제품화 경로"
+}
