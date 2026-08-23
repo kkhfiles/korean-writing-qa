@@ -9,8 +9,10 @@ import re
 from collections import Counter
 from pathlib import Path
 
-
-TEXT_EXTENSIONS = {".md", ".html", ".txt"}
+try:
+    from scripts.source_text import TEXT_EXTENSIONS, extract_source_text
+except ModuleNotFoundError:  # Direct execution: python scripts/scan_path_metaphor.py
+    from source_text import TEXT_EXTENSIONS, extract_source_text
 TERM = re.compile("경로")
 ABSTRACT_PREFIXES = (
     "제품화",
@@ -33,10 +35,21 @@ ABSTRACT_PREFIXES = (
     "운영",
 )
 ABSTRACT = re.compile(rf"({'|'.join(ABSTRACT_PREFIXES)})\s*경로")
+AGENT_PATH_METAPHOR = re.compile(
+    r"에이전트.{0,16}경로(?:를)?\s*(?:이탈|벗어나)"
+)
 LITERAL = re.compile(
-    r"(?:파일|폴더|디렉터리|절대|상대|UNC|네임스페이스|메뉴|화면|URL|URI)\s*경로"
-    r"|경로\s*(?:문자열|구분자|표기|입력|인자|변수)"
-    r"|(?:[A-Za-z]:[\\/]|\\\\|(?:^|\s)/[A-Za-z0-9_.-])"
+    r"(?:파일|폴더|디렉터리|디렉토리|절대|상대|UNC|네임스페이스|메뉴|화면|"
+    r"URL|URI|Windows|윈도우|import|임포트|권한|원격|소스|설정|스캔|"
+    r"보고서|프로젝트|네트워크 공유(?:의\s+특정)?|하위호환|우회|Write|두)\s*경로"
+    r"|경로(?:의|가|는|를|에|로)?\s*(?:문자열|구분자|표기|입력|인자|변수|"
+    r"처리|패턴|포맷|불일치|잔재|전체|단축|조정|확인|포함|삭제|재인덱싱|"
+    r"비어|활성화|허용|한정)"
+    r"|(?:아래|해당|특정|네트워크 공유의\s+특정)\s*경로(?:에|로|를)?\s*(?:생성|저장|등록|지정|"
+    r"복사|이동|삭제|접근|확인)"
+    r"|\|\s*경로\s*\|"
+    r"|(?:[A-Za-z]:[\\/]|\\\\|(?:^|\s)/[A-Za-z0-9_.-]|"
+    r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+)"
 )
 
 
@@ -47,6 +60,9 @@ def classify(line: str, start: int, end: int) -> tuple[str, str | None, str]:
     abstract = ABSTRACT.search(context)
     if abstract:
         return "abstract_candidate", abstract.group(0), context
+    agent_metaphor = AGENT_PATH_METAPHOR.search(context)
+    if agent_metaphor:
+        return "abstract_candidate", agent_metaphor.group(0), context
     literal = LITERAL.search(context)
     if literal:
         return "literal_candidate", literal.group(0), context
@@ -56,10 +72,10 @@ def classify(line: str, start: int, end: int) -> tuple[str, str | None, str]:
 def scan(source_root: Path) -> list[dict[str, object]]:
     findings: list[dict[str, object]] = []
     for path in sorted(source_root.rglob("*")):
-        if not path.is_file() or path.suffix.lower() not in TEXT_EXTENSIONS:
+        if not path.is_file() or path.suffix.casefold() not in TEXT_EXTENSIONS:
             continue
-        text = path.read_text(encoding="utf-8", errors="replace")
-        for line_number, line in enumerate(text.splitlines(), start=1):
+        for extracted in extract_source_text(path):
+            line = str(extracted["text"])
             for occurrence, match in enumerate(TERM.finditer(line), start=1):
                 classification, evidence, context = classify(
                     line, match.start(), match.end()
@@ -67,7 +83,11 @@ def scan(source_root: Path) -> list[dict[str, object]]:
                 findings.append(
                     {
                         "relative_path": path.relative_to(source_root).as_posix(),
-                        "line_number": line_number,
+                        "line_number": extracted["line_number"],
+                        "logical_path": extracted["logical_path"],
+                        "unit_id": extracted["unit_id"],
+                        "unit_kind": extracted["kind"],
+                        "source_format": extracted["source_format"],
                         "occurrence": occurrence,
                         "term": match.group(0),
                         "classification": classification,
@@ -75,6 +95,14 @@ def scan(source_root: Path) -> list[dict[str, object]]:
                         "context": context,
                     }
                 )
+    findings.sort(
+        key=lambda item: (
+            str(item["relative_path"]),
+            -1 if item["line_number"] is None else int(item["line_number"]),
+            str(item["logical_path"]),
+            int(item["occurrence"]),
+        )
+    )
     return findings
 
 

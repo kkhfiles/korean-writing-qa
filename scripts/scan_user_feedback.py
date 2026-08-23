@@ -8,17 +8,10 @@ import json
 from pathlib import Path
 from typing import Iterable
 
-
-TEXT_EXTENSIONS = {
-    ".html",
-    ".json",
-    ".jsonl",
-    ".md",
-    ".properties",
-    ".txt",
-    ".yaml",
-    ".yml",
-}
+try:
+    from scripts.source_text import TEXT_EXTENSIONS, extract_source_text
+except ModuleNotFoundError:  # Direct execution: python scripts/scan_user_feedback.py
+    from source_text import TEXT_EXTENSIONS, extract_source_text
 
 
 def load_feedback(path: Path) -> list[dict[str, object]]:
@@ -108,15 +101,25 @@ def scan_path(
     for path in paths:
         if path.suffix.casefold() not in TEXT_EXTENSIONS:
             continue
-        for finding in scan_text(
-            path.read_text(encoding="utf-8", errors="replace"), feedback
-        ):
-            finding["relative_path"] = path.relative_to(source_root).as_posix()
-            findings.append(finding)
+        for extracted in extract_source_text(path):
+            unit_findings = scan_text(str(extracted["text"]), feedback)
+            for finding in unit_findings:
+                source_line = extracted["line_number"]
+                if isinstance(source_line, int):
+                    finding["line_number"] = source_line + int(finding["line_number"]) - 1
+                else:
+                    finding["line_number"] = None
+                finding["relative_path"] = path.relative_to(source_root).as_posix()
+                finding["logical_path"] = extracted["logical_path"]
+                finding["unit_id"] = extracted["unit_id"]
+                finding["unit_kind"] = extracted["kind"]
+                finding["source_format"] = extracted["source_format"]
+                findings.append(finding)
     findings.sort(
         key=lambda item: (
             str(item["relative_path"]),
-            int(item["line_number"]),
+            -1 if item["line_number"] is None else int(item["line_number"]),
+            str(item["logical_path"]),
             int(item["start_column"]),
             str(item["annotation_id"]),
         )

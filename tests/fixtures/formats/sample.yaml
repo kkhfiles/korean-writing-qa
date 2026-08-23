@@ -1,0 +1,4 @@
+title: 검사 계획
+items:
+  - message: 테스트를 수행합니다.
+  - count: 2

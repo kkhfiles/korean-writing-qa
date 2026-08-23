@@ -57,4 +57,6 @@ python scripts/scan_user_feedback.py `
 
 **지원 원본**: Markdown · HTML · 일반 텍스트 · JSON · JSONL · YAML · YML · properties
 
-**출력 원칙**: 자동 수정 없음 · 파일·행·열·규칙·수정 제안·문맥 확인 필요 여부 기록
+**출력 위치**: 원본 행 번호를 알 수 있으면 `line_number` · 구조화 문서는 `logical_path`
+
+**출력 원칙**: 자동 수정 없음 · 파일·원본 위치·규칙·수정 제안·문맥 확인 필요 여부 기록
