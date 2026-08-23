@@ -1,0 +1,52 @@
+{
+  "run_id": "diagnostic-002",
+  "revision_date": "2026-08-24",
+  "documents": [
+    {
+      "document_id": "doc-002",
+      "original_chars": 2296,
+      "revised_chars": 2282,
+      "levenshtein_distance": 122,
+      "change_rate": 0.05313588850174216,
+      "protected_removed": [],
+      "protected_added": [],
+      "doc_style_before": {"errors": 0, "warnings": 1},
+      "doc_style_after": {"errors": 0, "warnings": 0},
+      "humanize_risk_before": "low",
+      "humanize_risk_after": "low"
+    },
+    {
+      "document_id": "doc-004",
+      "original_chars": 2820,
+      "revised_chars": 2781,
+      "levenshtein_distance": 55,
+      "change_rate": 0.01950354609929078,
+      "protected_removed": [],
+      "protected_added": [],
+      "doc_style_before": {"errors": 0, "warnings": 8},
+      "doc_style_after": {"errors": 0, "warnings": 0},
+      "humanize_risk_before": "low",
+      "humanize_risk_after": "low"
+    },
+    {
+      "document_id": "doc-013",
+      "original_chars": 2699,
+      "revised_chars": 2668,
+      "levenshtein_distance": 153,
+      "change_rate": 0.05668766209707299,
+      "protected_removed": [],
+      "protected_added": [],
+      "doc_style_before": {"errors": 1, "warnings": 3},
+      "doc_style_after": {"errors": 0, "warnings": 1},
+      "humanize_risk_before": "low",
+      "humanize_risk_after": "low"
+    }
+  ],
+  "aggregate": {
+    "documents": 3,
+    "annotations": 14,
+    "doc_style_before": {"errors": 1, "warnings": 12},
+    "doc_style_after": {"errors": 0, "warnings": 1},
+    "humanize_risk_changes": 0
+  }
+}
