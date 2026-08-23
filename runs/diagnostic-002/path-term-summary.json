@@ -1,0 +1,11 @@
+{
+  "source_root": "P:/github/korean-writing-qa/data/raw/diagnostic-002",
+  "documents_with_term": 11,
+  "occurrences": 33,
+  "classifications": {
+    "literal_candidate": 14,
+    "review": 19
+  },
+  "rule_status": "candidate_only",
+  "positive_seed": "제품화 경로"
+}
