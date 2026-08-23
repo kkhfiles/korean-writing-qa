@@ -1,0 +1,37 @@
+{
+  "created_utc": "2026-08-23T15:51:13.661413+00:00",
+  "doc_style": {
+    "blind": 0,
+    "documents_with_errors": 13,
+    "documents_with_warnings": 14,
+    "errors": 315,
+    "scanned_documents": 23,
+    "unsupported_documents": 7,
+    "warnings": 175
+  },
+  "humanize": {
+    "documents_with_v1_baseline_warning": 30,
+    "documents_with_v2_placeholder_warning": 30,
+    "risk_bands": {
+      "low": 23,
+      "medium": 7
+    },
+    "scanned_documents": 30
+  },
+  "interpretation": "raw tool output only; no human ground-truth labels yet",
+  "run_id": "diagnostic-001",
+  "sample_documents": 30,
+  "tools": {
+    "doc_style_check": {
+      "path": "P:/github/claude-workflow/assets/doc-style-check.py",
+      "sha256": "f353864d4016c11fa4ac26e7beb976a2130171bd0eb040a52bfbdd8e228603f2"
+    },
+    "humanize_metrics_v2": {
+      "baseline_sha256": "156f08fcc5384dae8f45a8948a4088a9f5d3b0dd7c65c2cb261aeddddcff9d73",
+      "baseline_v2_sha256": "4269ff39d23ab8cc5fbc231e625e907fbba146ec25b48cf614707a71162d92e1",
+      "genre": "qa",
+      "path": "C:/Users/<사용자>/.claude/plugins/cache/im-not-ai/humanize-korean/1.5.0/.claude/skills/humanize-korean/references/metrics_v2.py",
+      "sha256": "055452b6091784822abceb754f87798753ea43c43dac59cdf606840dca68b35a"
+    }
+  }
+}
