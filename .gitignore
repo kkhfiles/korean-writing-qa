@@ -1,0 +1,15 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+
+# 원문 복사본은 로컬 실험 데이터다.
+data/raw/**
+!data/raw/README.md
+
+# 실행 중 만들어지는 임시 출력은 로컬에만 둔다.
+runs/**/working/
+runs/**/raw/
+
+*.tmp
+*.bak
