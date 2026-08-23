@@ -1,0 +1,2 @@
+{"annotation_id":"user-phrase-001","rule_id":"KOR-METAPHOR-PATH-001","category":"UNNATURAL_METAPHOR","original":"제품화 경로","revised":"제품화 단계","human_label":"revise","status":"user_confirmed","scope":"general_it_business"}
+{"annotation_id":"user-phrase-002","rule_id":"KOR-VAGUE-REBUILD-001","category":"VAGUE_METAPHOR","secondary_category":"VAGUE_NOUN","original":"CT를 다시 세우는 부분","revised":"CT 재개발이 필요한 항목","human_label":"revise","status":"user_confirmed","scope":"ct_project_context"}
