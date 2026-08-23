@@ -1,0 +1,62 @@
+{
+  "run_id": "claude-korean-rules-002",
+  "created_utc": "2026-08-23T23:20:28.022431+00:00",
+  "claude_root": "C:/Users/<사용자>/.claude",
+  "workspace_roots": [
+    "<프로젝트 1>",
+    "<프로젝트 2>",
+    "<프로젝트 3>",
+    "<프로젝트 4>",
+    "P:/github"
+  ],
+  "scope": {
+    "included": [
+      "global CLAUDE.md",
+      "commands and references",
+      "skills",
+      "global and project memory Markdown/text",
+      "installed plugin Markdown/text",
+      "workspace CLAUDE.md"
+    ],
+    "excluded": [
+      "session transcripts",
+      "tool results",
+      "debug logs",
+      "generated caches"
+    ]
+  },
+  "source_files": 1681,
+  "unique_source_files": 869,
+  "duplicate_source_files": 812,
+  "source_type_counts": {
+    "command": 13,
+    "global_memory": 1,
+    "global_rule": 1,
+    "plugin_rule": 994,
+    "project_memory": 280,
+    "project_rule": 10,
+    "reference": 10,
+    "skill": 372
+  },
+  "candidate_passages": 486,
+  "high_confidence_passages_score_ge_8": 40,
+  "category_counts": {
+    "ai_tells": 182,
+    "brevity_and_clarity": 19,
+    "content_fidelity": 21,
+    "document_structure": 78,
+    "natural_korean": 201,
+    "presentation_language": 45,
+    "reader_framing": 2,
+    "reference_and_ambiguity": 21,
+    "register_and_terms": 77
+  },
+  "catalog_path": "data/catalog/claude-rule-sources.jsonl",
+  "raw_passages_path": "data/raw/claude-korean-rules-002/candidate-passages.jsonl",
+  "raw_passages_git_ignored": true,
+  "limitations": [
+    "Keyword retrieval is exhaustive for the declared patterns, not semantic proof that no other writing rule exists.",
+    "Workspace CLAUDE.md discovery is limited to the supplied workspace roots.",
+    "Automatic candidates require human review before becoming checker rules."
+  ]
+}
