@@ -1,0 +1,36 @@
+{
+  "run_id": "skill-build-001",
+  "date": "2026-08-24",
+  "objective": "Claude Code와 Codex가 생성하거나 수정한 한글 문서 산출물을 자연스럽게 최종화하는 단일 스킬 설치",
+  "canonical_skill": "C:/Users/<사용자>/.claude/skills/finalize-korean-document",
+  "repository_backup": "P:/github/claude-workflow/skills/finalize-korean-document",
+  "codex_projection": "C:/Users/<사용자>/.agents/skills/finalize-korean-document",
+  "commits": [
+    "6c967f5c",
+    "283cc4b3",
+    "604a9e86"
+  ],
+  "validation": {
+    "skill_schema": "passed",
+    "skill_regression_cases": 72,
+    "hook_unit_cases": 14,
+    "codex_sync_integration": "passed",
+    "positive_hook_fixture": "passed",
+    "literal_path_negative_fixture": "passed",
+    "repeat_edit_recheck": "passed",
+    "clean_context_forward_documents": 2
+  },
+  "supported_sources": [
+    "md",
+    "html",
+    "txt",
+    "json",
+    "jsonl",
+    "yaml",
+    "yml",
+    "properties"
+  ],
+  "working_directory": "P:/github/korean-writing-qa/runs/skill-build-001/working",
+  "automatic_rewrite": false,
+  "paid_api": false
+}
