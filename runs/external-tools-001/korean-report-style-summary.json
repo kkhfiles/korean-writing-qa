@@ -1,0 +1,52 @@
+{
+  "run_id": "external-tools-001",
+  "created_date": "2026-08-24",
+  "input_manifest": "runs/diagnostic-003/sample-manifest.json",
+  "input_units": 149,
+  "tool": {
+    "source_id": "EXT-SRC-001",
+    "commit_sha": "d35f47e1c7f03546a68fde6eaad15c8c7eaf98eb",
+    "entrypoint": "plugins/korean-report/skills/korean-report-style/assets/lint.py",
+    "options": [
+      "--format",
+      "json",
+      "--heuristic"
+    ],
+    "loaded_rules": {
+      "base": 120,
+      "heuristic": 7
+    }
+  },
+  "coverage": {
+    "scanned_markdown": 30,
+    "not_scanned_by_upstream": 119,
+    "reason": "upstream CLI directly supports Markdown and HTML; the remaining diagnostic units are JSONL and text"
+  },
+  "findings": {
+    "total": 25,
+    "by_tier": {
+      "검토": 3,
+      "고침": 16,
+      "형태": 6
+    },
+    "by_group": {
+      "formal_ending_substitution": 16,
+      "endpoint_to_english": 3,
+      "broad_verb_stem": 2,
+      "sentence_style_mixture": 4,
+      "software_collocation_heuristic": 0,
+      "heading": 0
+    }
+  },
+  "manual_disposition": {
+    "not_adopted_as_quality_violation": 21,
+    "genre_and_slot_review_required": 4,
+    "notes": [
+      "어미 치환 16건은 격식 정도만 바꾸며 어색한 한국어라는 근거가 되지 않는다.",
+      "엔드포인트 3건은 모두 정확한 API 식별자가 아닌 일반 명사 문맥이었다.",
+      "넓은 뜻의 동사 2건은 문맥상 자연스러운 지우다·생기다 용례였다.",
+      "문체 혼용 4건은 문서 종류와 값이 놓인 칸을 함께 검토해야 한다."
+    ]
+  },
+  "interpretation": "비교 검사기와 규칙 출처로 사용하되 자동 치환을 현행 오류 규칙으로 가져오지 않는다."
+}

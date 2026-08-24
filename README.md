@@ -46,3 +46,4 @@
 - [Claude Code 한글 표현 규칙 수집](docs/claude-korean-expression-inventory.md)
 - [사용자 문체 피드백 반영](docs/user-feedback-workflow.md)
 - [다중 형식 AI 원본 진단](docs/diagnostic-003.md)
+- [외부 한국어 작성 도구 검토](docs/external-korean-tools-review.md)
