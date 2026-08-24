@@ -44,6 +44,18 @@ class PathMetaphorTests(unittest.TestCase):
             self.classify_term("호출 경로를 확인한다."), "literal_candidate"
         )
 
+    def test_execution_path_is_literal_in_it_context(self) -> None:
+        self.assertEqual(
+            self.classify_term("실행 경로가 두 단계로 나뉜다."),
+            "literal_candidate",
+        )
+
+    def test_two_paths_is_not_automatically_literal(self) -> None:
+        self.assertEqual(
+            self.classify_term("제품화에 이르는 두 경로를 검토한다."),
+            "review",
+        )
+
     def test_metaphorical_deviation_is_an_abstract_candidate(self) -> None:
         self.assertEqual(
             self.classify_term("에이전트가 도중에 경로를 이탈했다."),
@@ -52,12 +64,17 @@ class PathMetaphorTests(unittest.TestCase):
 
     def test_structured_values_use_the_common_extractor(self) -> None:
         findings = scan(self.formats)
+        structured = [
+            finding
+            for finding in findings
+            if finding["relative_path"] == "feedback.json"
+        ]
 
-        self.assertEqual(len(findings), 1)
-        self.assertEqual(findings[0]["classification"], "abstract_candidate")
-        self.assertEqual(findings[0]["logical_path"], "/message")
-        self.assertEqual(findings[0]["source_format"], ".json")
-        self.assertIsNone(findings[0]["line_number"])
+        self.assertEqual(len(structured), 1)
+        self.assertEqual(structured[0]["classification"], "abstract_candidate")
+        self.assertEqual(structured[0]["logical_path"], "/message")
+        self.assertEqual(structured[0]["source_format"], ".json")
+        self.assertIsNone(structured[0]["line_number"])
 
 
 if __name__ == "__main__":

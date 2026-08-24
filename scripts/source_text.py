@@ -25,6 +25,7 @@ ANSI_CSI_RE = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
 ANSI_OSC_RE = re.compile(r"\x1b\][^\x07]*(?:\x07|\x1b\\)")
 UNICODE_ESCAPE_RE = re.compile(r"\\u([0-9A-Fa-f]{4})")
 MARKDOWN_FENCE_RE = re.compile(r"^\s*(`{3,}|~{3,})")
+MARKDOWN_INLINE_CODE_RE = re.compile(r"(?P<ticks>`+).*?(?P=ticks)")
 
 
 def clean_terminal_text(text: str) -> str:
@@ -36,9 +37,14 @@ def unit(
     logical_path: str,
     line_number: int | None,
     kind: str,
+    collapse_whitespace: bool = True,
 ) -> dict[str, object] | None:
-    normalized = re.sub(r"\s+", " ", text).strip()
-    if not normalized:
+    normalized = (
+        re.sub(r"\s+", " ", text).strip()
+        if collapse_whitespace
+        else text.rstrip()
+    )
+    if not normalized.strip():
         return None
     return {
         "logical_path": logical_path,
@@ -52,7 +58,13 @@ def extract_lines(text: str, kind: str = "text") -> list[dict[str, object]]:
     text = clean_terminal_text(text)
     units: list[dict[str, object]] = []
     for line_number, line in enumerate(text.splitlines(), start=1):
-        extracted = unit(line, f"/line/{line_number}", line_number, kind)
+        extracted = unit(
+            line,
+            f"/line/{line_number}",
+            line_number,
+            kind,
+            collapse_whitespace=False,
+        )
         if extracted:
             units.append(extracted)
     return units
@@ -82,7 +94,16 @@ def extract_markdown(text: str) -> list[dict[str, object]]:
             continue
         if fence is not None:
             continue
-        extracted = unit(line, f"/line/{line_number}", line_number, "markdown")
+        masked = MARKDOWN_INLINE_CODE_RE.sub(
+            lambda match: " " * len(match.group(0)), line
+        )
+        extracted = unit(
+            masked,
+            f"/line/{line_number}",
+            line_number,
+            "markdown",
+            collapse_whitespace=False,
+        )
         if extracted:
             units.append(extracted)
     return units
@@ -93,9 +114,11 @@ class VisibleHtmlParser(HTMLParser):
         "blockquote",
         "button",
         "caption",
+        "div",
         "dd",
         "dt",
         "figcaption",
+        "footer",
         "h1",
         "h2",
         "h3",
@@ -105,14 +128,24 @@ class VisibleHtmlParser(HTMLParser):
         "label",
         "legend",
         "li",
+        "main",
+        "nav",
         "option",
         "p",
-        "pre",
+        "section",
         "td",
         "th",
         "title",
     }
-    SKIP_TAGS = {"script", "style", "noscript", "template", "svg"}
+    SKIP_TAGS = {
+        "code",
+        "pre",
+        "script",
+        "style",
+        "noscript",
+        "template",
+        "svg",
+    }
 
     def __init__(self) -> None:
         super().__init__(convert_charrefs=True)

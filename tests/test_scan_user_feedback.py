@@ -22,7 +22,9 @@ class UserFeedbackScannerTests(unittest.TestCase):
         cls.formats = project_root / "tests" / "fixtures" / "formats"
 
     def test_exact_replacement_is_suggested(self) -> None:
-        findings = scan_text("제품화 경로를 정합니다.", self.feedback)
+        findings = scan_text(
+            "제품화 경로를 정합니다.", self.feedback, "general_it_business"
+        )
 
         self.assertEqual(len(findings), 1)
         self.assertEqual(findings[0]["action"], "suggest_exact")
@@ -30,7 +32,7 @@ class UserFeedbackScannerTests(unittest.TestCase):
 
     def test_presenter_example_requires_context_review(self) -> None:
         findings = scan_text(
-            "뒤의 것은 커버리지를 더 올립니다", self.feedback
+            "뒤의 것은 커버리지를 더 올립니다", self.feedback, "presenter_notes"
         )
 
         self.assertEqual(len(findings), 1)
@@ -38,15 +40,39 @@ class UserFeedbackScannerTests(unittest.TestCase):
         self.assertTrue(findings[0]["requires_context"])
 
     def test_clean_text_has_no_findings(self) -> None:
-        self.assertEqual(scan_text("요구사항 기반 테스트를 설계합니다.", self.feedback), [])
+        self.assertEqual(
+            scan_text(
+                "요구사항 기반 테스트를 설계합니다.",
+                self.feedback,
+                "general_it_business",
+            ),
+            [],
+        )
 
     def test_before_after_example_on_same_line_is_ignored(self) -> None:
         self.assertEqual(
-            scan_text("제품화 경로 → 제품화 단계", self.feedback), []
+            scan_text(
+                "제품화 경로 → 제품화 단계",
+                self.feedback,
+                "general_it_business",
+            ),
+            [],
         )
 
+    def test_original_is_not_hidden_by_revised_text_elsewhere_on_line(self) -> None:
+        findings = scan_text(
+            "권장 표현은 제품화 단계입니다. 기존 제품화 경로는 수정합니다.",
+            self.feedback,
+            "general_it_business",
+        )
+
+        self.assertEqual(len(findings), 1)
+        self.assertEqual(findings[0]["original"], "제품화 경로")
+
     def test_structured_value_is_scanned_with_logical_path(self) -> None:
-        findings = scan_path(self.formats / "feedback.json", self.feedback)
+        findings = scan_path(
+            self.formats / "feedback.json", self.feedback, "general_it_business"
+        )
 
         self.assertEqual(len(findings), 1)
         self.assertEqual(findings[0]["logical_path"], "/message")
@@ -55,7 +81,22 @@ class UserFeedbackScannerTests(unittest.TestCase):
 
     def test_markdown_code_fence_is_not_scanned(self) -> None:
         self.assertEqual(
-            scan_path(self.formats / "feedback-code.md", self.feedback), []
+            scan_path(
+                self.formats / "feedback-code.md",
+                self.feedback,
+                "general_it_business",
+            ),
+            [],
+        )
+
+    def test_presenter_rule_is_not_applied_to_general_report(self) -> None:
+        self.assertEqual(
+            scan_text(
+                "뒤의 것은 커버리지를 더 올립니다",
+                self.feedback,
+                "general_it_business",
+            ),
+            [],
         )
 
     def test_command_can_run_as_a_script(self) -> None:

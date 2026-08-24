@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import re
 from collections import Counter
@@ -34,16 +35,26 @@ ABSTRACT_PREFIXES = (
     "배포",
     "운영",
 )
+
+
+def hash_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
 ABSTRACT = re.compile(rf"({'|'.join(ABSTRACT_PREFIXES)})\s*경로")
 AGENT_PATH_METAPHOR = re.compile(
-    r"에이전트.{0,16}경로(?:를)?\s*(?:이탈|벗어나)"
+    r"에이전트.{0,16}경로(?:를|에서)?\s*(?:이탈|벗어(?:나|났))"
 )
 LITERAL = re.compile(
     r"(?:파일|폴더|디렉터리|디렉토리|절대|상대|UNC|네임스페이스|메뉴|화면|"
-    r"URL|URI|Windows|윈도우|import|임포트|권한|원격|소스|설정|스캔|"
-    r"보고서|프로젝트|네트워크 공유(?:의\s+특정)?|하위호환|우회|Write|두)\s*경로"
+    r"URL|URI|Windows|윈도우|import|임포트|권한|원격|소스|설정|스캔|호출|실행|"
+    r"보고서|프로젝트|네트워크 공유(?:의\s+특정)?|하위호환|우회|Write)\s*경로"
     r"|경로(?:의|가|는|를|에|로)?\s*(?:문자열|구분자|표기|입력|인자|변수|"
-    r"처리|패턴|포맷|불일치|잔재|전체|단축|조정|확인|포함|삭제|재인덱싱|"
+    r"처리|패턴|포맷|불일치|잔재|전체|단축|조정|포함|삭제|재인덱싱|"
     r"비어|활성화|허용|한정)"
     r"|(?:아래|해당|특정|네트워크 공유의\s+특정)\s*경로(?:에|로|를)?\s*(?:생성|저장|등록|지정|"
     r"복사|이동|삭제|접근|확인)"
@@ -135,6 +146,10 @@ def main() -> int:
         "classifications": dict(sorted(counts.items())),
         "rule_status": "candidate_only",
         "positive_seed": "제품화 경로",
+        "implementation": {
+            "scanner_sha256": hash_file(Path(__file__)),
+            "source_text_sha256": hash_file(Path(__file__).with_name("source_text.py")),
+        },
     }
     args.summary.parent.mkdir(parents=True, exist_ok=True)
     temporary = args.summary.with_suffix(args.summary.suffix + ".tmp")

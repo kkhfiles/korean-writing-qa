@@ -1,0 +1,36 @@
+{
+  "detector_cases": {
+    "path": "data/regression/detector-cases.jsonl",
+    "expected_count": 68
+  },
+  "real_document_path_allow_cases": {
+    "path": "runs/diagnostic-002/path-term-candidates.jsonl",
+    "expected_count": 33,
+    "expected": "not_abstract_candidate",
+    "label_basis": "docs/manual-review-001.md#경로-판정"
+  },
+  "human_rewrite_pairs": [
+    {
+      "path": "data/annotations/user-confirmed-phrases.jsonl",
+      "expected_count": 8,
+      "label_basis": "direct_user_feedback"
+    },
+    {
+      "path": "data/annotations/diagnostic-002-review.jsonl",
+      "expected_count": 14,
+      "label_basis": "manual_review"
+    }
+  ],
+  "source_format_cases": {
+    "path": "tests/fixtures/formats",
+    "formats": [
+      "html",
+      "json",
+      "jsonl",
+      "markdown",
+      "properties",
+      "text",
+      "yaml"
+    ]
+  }
+}

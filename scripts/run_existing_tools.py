@@ -28,6 +28,16 @@ def hash_file(path: Path) -> str:
     return digest.hexdigest()
 
 
+def verify_input_hash(path: Path, declared_sha256: str) -> str:
+    actual_sha256 = hash_file(path)
+    if actual_sha256 != declared_sha256:
+        raise ValueError(
+            f"Input hash mismatch for {path}: "
+            f"manifest={declared_sha256} actual={actual_sha256}"
+        )
+    return actual_sha256
+
+
 def parse_doc_style(output: str) -> dict[str, int]:
     match = DOC_STYLE_TOTAL.search(output)
     if not match:
@@ -84,11 +94,12 @@ def run(
         document_id = str(document["document_id"])
         input_path = project_root / str(document["copy_path"])
         extension = input_path.suffix.lower()
+        input_sha256 = verify_input_hash(input_path, str(document["sha256"]))
         result: dict[str, object] = {
             "document_id": document_id,
             "source_relative_path": document["relative_path"],
             "extension": extension,
-            "sha256": document["sha256"],
+            "sha256": input_sha256,
         }
 
         if extension in {".md", ".html"}:

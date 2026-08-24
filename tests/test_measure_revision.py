@@ -18,6 +18,12 @@ class RevisionMeasureTests(unittest.TestCase):
         self.assertEqual(result["protected_removed"], ["100%", "5"])
         self.assertEqual(result["protected_added"], [])
 
+    def test_korean_quotation_marks_are_protected(self) -> None:
+        result = measure("「원문 인용」\n", "「바뀐 인용」\n")
+
+        self.assertEqual(result["protected_removed"], ["「원문 인용」"])
+        self.assertEqual(result["protected_added"], ["「바뀐 인용」"])
+
 
 if __name__ == "__main__":
     unittest.main()

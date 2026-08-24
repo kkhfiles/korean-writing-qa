@@ -4,8 +4,13 @@
   "occurrences": 68,
   "classifications": {
     "abstract_candidate": 1,
-    "literal_candidate": 67
+    "literal_candidate": 59,
+    "review": 8
   },
   "rule_status": "candidate_only",
-  "positive_seed": "제품화 경로"
+  "positive_seed": "제품화 경로",
+  "implementation": {
+    "scanner_sha256": "775bce4b9d0143c66c290be8dc6bb8309a829113dce621ea4199209df286ea3f",
+    "source_text_sha256": "c46c2a2cc205d92963b17f04f483c74e738c4396c3afa9ff2860d2600b3a575a"
+  }
 }

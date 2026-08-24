@@ -25,6 +25,13 @@ class SourceTextExtractionTests(unittest.TestCase):
         self.assertFalse(any("model:" in text for text in texts))
         self.assertFalse(any("print" in text for text in texts))
 
+    def test_markdown_masks_inline_code_and_preserves_source_columns(self) -> None:
+        units = extract_source_text(self.root / "inline-code.md")
+        texts = [str(item["text"]) for item in units]
+
+        self.assertFalse(any("제품화 경로" in text for text in texts))
+        self.assertIn("  실제 문장은 제품화 단계입니다.", texts)
+
     def test_html_extracts_visible_blocks_and_joins_inline_text(self) -> None:
         texts = self.texts("sample.html")
 
@@ -32,6 +39,13 @@ class SourceTextExtractionTests(unittest.TestCase):
         self.assertIn("제품화 단계를 검토합니다.", texts)
         self.assertFalse(any("display:none" in text for text in texts))
         self.assertFalse(any("숨긴 문장" in text for text in texts))
+
+    def test_html_joins_div_inline_text_and_skips_code_examples(self) -> None:
+        texts = self.texts("inline-blocks.html")
+
+        self.assertIn("제품화 경로를 검토합니다.", texts)
+        self.assertFalse(any("코드 안 제품화 경로" in text for text in texts))
+        self.assertFalse(any("CT를 다시 세우는 부분" in text for text in texts))
 
     def test_json_extracts_string_values_with_logical_paths(self) -> None:
         units = extract_source_text(self.root / "sample.json")

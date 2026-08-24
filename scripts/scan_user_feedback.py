@@ -14,6 +14,23 @@ except ModuleNotFoundError:  # Direct execution: python scripts/scan_user_feedba
     from source_text import TEXT_EXTENSIONS, extract_source_text
 
 
+COMPARISON_MARKERS = ("→", "=>", "->", "❌", "✅")
+
+
+def is_comparison_example(line: str, original: str, revised: str) -> bool:
+    original_at = line.find(original)
+    revised_at = line.find(revised)
+    if original_at < 0 or revised_at < 0:
+        return False
+    if line.lstrip().startswith("|") and line.count("|") >= 3:
+        return True
+    if original_at < revised_at:
+        between = line[original_at + len(original) : revised_at]
+    else:
+        between = line[revised_at + len(revised) : original_at]
+    return any(marker in between for marker in COMPARISON_MARKERS)
+
+
 def load_feedback(path: Path) -> list[dict[str, object]]:
     records: list[dict[str, object]] = []
     seen_ids: set[str] = set()
@@ -39,15 +56,28 @@ def load_feedback(path: Path) -> list[dict[str, object]]:
     return records
 
 
+def applies_to_scope(record: dict[str, object], input_scope: str) -> bool:
+    rule_scope = str(record["scope"])
+    return (
+        input_scope == "all"
+        or rule_scope == "general_it_business"
+        or rule_scope == input_scope
+    )
+
+
 def scan_text(
-    text: str, feedback: Iterable[dict[str, object]]
+    text: str,
+    feedback: Iterable[dict[str, object]],
+    input_scope: str,
 ) -> list[dict[str, object]]:
     findings: list[dict[str, object]] = []
     for line_number, line in enumerate(text.splitlines(), start=1):
         for record in feedback:
+            if not applies_to_scope(record, input_scope):
+                continue
             original = str(record["original"])
             revised = str(record["revised"])
-            if original in line and revised in line:
+            if is_comparison_example(line, original, revised):
                 continue
             start = 0
             while True:
@@ -72,6 +102,7 @@ def scan_text(
                         "rule_id": record["rule_id"],
                         "category": record["category"],
                         "scope": record["scope"],
+                        "input_scope": input_scope,
                         "original": original,
                         "suggestion": revised,
                         "replacement_mode": replacement_mode,
@@ -85,7 +116,9 @@ def scan_text(
 
 
 def scan_path(
-    source: Path, feedback: Iterable[dict[str, object]]
+    source: Path,
+    feedback: Iterable[dict[str, object]],
+    input_scope: str,
 ) -> list[dict[str, object]]:
     if source.is_file():
         paths = [source]
@@ -102,7 +135,9 @@ def scan_path(
         if path.suffix.casefold() not in TEXT_EXTENSIONS:
             continue
         for extracted in extract_source_text(path):
-            unit_findings = scan_text(str(extracted["text"]), feedback)
+            unit_findings = scan_text(
+                str(extracted["text"]), feedback, input_scope
+            )
             for finding in unit_findings:
                 source_line = extracted["line_number"]
                 if isinstance(source_line, int):
@@ -143,10 +178,15 @@ def main() -> int:
     parser.add_argument("--source", required=True, type=Path)
     parser.add_argument("--feedback", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
+    parser.add_argument(
+        "--scope",
+        required=True,
+        help="Input document scope, or 'all' for an intentional cross-scope scan.",
+    )
     args = parser.parse_args()
 
     feedback = load_feedback(args.feedback)
-    findings = scan_path(args.source.resolve(), feedback)
+    findings = scan_path(args.source.resolve(), feedback, args.scope)
     write_jsonl(args.output, findings)
     counts = {
         action: sum(item["action"] == action for item in findings)
