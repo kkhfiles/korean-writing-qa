@@ -15,6 +15,15 @@ except ModuleNotFoundError:  # Direct execution: python scripts/scan_user_feedba
 
 
 COMPARISON_MARKERS = ("→", "=>", "->", "❌", "✅")
+PROFILE_SCOPES = {
+    "general": "general_it_business",
+    "technical-report": "general_it_business",
+    "executive-report": "general_it_business",
+    "presentation": "general_it_business",
+    "presenter-notes": "presenter_notes",
+    "short-message": "general_it_business",
+    "ct-project": "ct_project_context",
+}
 
 
 def is_comparison_example(line: str, original: str, revised: str) -> bool:
@@ -56,11 +65,19 @@ def load_feedback(path: Path) -> list[dict[str, object]]:
     return records
 
 
-def applies_to_scope(record: dict[str, object], input_scope: str) -> bool:
+def applies_to_scope(
+    record: dict[str, object],
+    input_scope: str,
+    input_profile: str | None = None,
+) -> bool:
+    if input_scope == "all":
+        return True
+    profiles = record.get("profiles")
+    if isinstance(profiles, list) and profiles and input_profile not in profiles:
+        return False
     rule_scope = str(record["scope"])
     return (
-        input_scope == "all"
-        or rule_scope == "general_it_business"
+        rule_scope == "general_it_business"
         or rule_scope == input_scope
     )
 
@@ -69,11 +86,12 @@ def scan_text(
     text: str,
     feedback: Iterable[dict[str, object]],
     input_scope: str,
+    input_profile: str | None = None,
 ) -> list[dict[str, object]]:
     findings: list[dict[str, object]] = []
     for line_number, line in enumerate(text.splitlines(), start=1):
         for record in feedback:
-            if not applies_to_scope(record, input_scope):
+            if not applies_to_scope(record, input_scope, input_profile):
                 continue
             original = str(record["original"])
             revised = str(record["revised"])
@@ -119,6 +137,7 @@ def scan_path(
     source: Path,
     feedback: Iterable[dict[str, object]],
     input_scope: str,
+    input_profile: str | None = None,
 ) -> list[dict[str, object]]:
     if source.is_file():
         paths = [source]
@@ -136,7 +155,7 @@ def scan_path(
             continue
         for extracted in extract_source_text(path):
             unit_findings = scan_text(
-                str(extracted["text"]), feedback, input_scope
+                str(extracted["text"]), feedback, input_scope, input_profile
             )
             for finding in unit_findings:
                 source_line = extracted["line_number"]
@@ -178,15 +197,19 @@ def main() -> int:
     parser.add_argument("--source", required=True, type=Path)
     parser.add_argument("--feedback", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
-    parser.add_argument(
+    scope_group = parser.add_mutually_exclusive_group(required=True)
+    scope_group.add_argument(
         "--scope",
-        required=True,
         help="Input document scope, or 'all' for an intentional cross-scope scan.",
     )
+    scope_group.add_argument("--profile", choices=sorted(PROFILE_SCOPES))
     args = parser.parse_args()
 
     feedback = load_feedback(args.feedback)
-    findings = scan_path(args.source.resolve(), feedback, args.scope)
+    input_scope = PROFILE_SCOPES[args.profile] if args.profile else args.scope
+    findings = scan_path(
+        args.source.resolve(), feedback, input_scope, args.profile
+    )
     write_jsonl(args.output, findings)
     counts = {
         action: sum(item["action"] == action for item in findings)

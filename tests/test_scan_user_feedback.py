@@ -99,6 +99,40 @@ class UserFeedbackScannerTests(unittest.TestCase):
             [],
         )
 
+    def test_profile_specific_rule_is_not_applied_to_other_profile(self) -> None:
+        feedback = [
+            {
+                "annotation_id": "profile-test",
+                "rule_id": "PROFILE_TEST",
+                "category": "USER_CONFIRMED_EXPRESSION",
+                "scope": "general_it_business",
+                "profiles": ["technical-report"],
+                "original": "시험 전 표현",
+                "revised": "시험 후 표현",
+            }
+        ]
+
+        self.assertEqual(
+            len(
+                scan_text(
+                    "시험 전 표현",
+                    feedback,
+                    "general_it_business",
+                    "technical-report",
+                )
+            ),
+            1,
+        )
+        self.assertEqual(
+            scan_text(
+                "시험 전 표현",
+                feedback,
+                "general_it_business",
+                "short-message",
+            ),
+            [],
+        )
+
     def test_command_can_run_as_a_script(self) -> None:
         result = subprocess.run(
             [sys.executable, "scripts/scan_user_feedback.py", "--help"],

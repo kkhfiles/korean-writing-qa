@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://local.invalid/korean-writing-qa/feedback-candidate.schema.json",
+  "title": "Korean writing feedback candidate",
+  "type": "object",
+  "required": [
+    "candidate_id",
+    "record_kind",
+    "rule_id",
+    "original",
+    "revised",
+    "scope",
+    "category",
+    "context_level",
+    "decision_source",
+    "user_verdict",
+    "status",
+    "replacement_mode",
+    "requires_context"
+  ],
+  "properties": {
+    "candidate_id": {"type": "string", "minLength": 1},
+    "record_kind": {"const": "language_rule"},
+    "rule_id": {"type": "string", "minLength": 1},
+    "original": {"type": "string", "minLength": 1},
+    "revised": {"type": "string"},
+    "scope": {"type": "string", "minLength": 1},
+    "profile": {
+      "enum": [
+        "general",
+        "technical-report",
+        "executive-report",
+        "presentation",
+        "presenter-notes",
+        "short-message",
+        "ct-project"
+      ]
+    },
+    "category": {"type": "string", "minLength": 1},
+    "context_level": {
+      "enum": ["sentence", "window", "block", "document"]
+    },
+    "decision_source": {
+      "enum": ["user_direct", "user_accept", "human_review", "model_candidate"]
+    },
+    "user_verdict": {
+      "enum": ["observed", "corrected", "accepted", "false_positive"]
+    },
+    "status": {"enum": ["observed", "confirmed", "active", "retired"]},
+    "replacement_mode": {"enum": ["exact_suggestion", "contextual_rewrite"]},
+    "requires_context": {"type": "boolean"},
+    "context_before": {"type": "string"},
+    "context_after": {"type": "string"},
+    "context_excerpt": {"type": "string"},
+    "section_title": {"type": "string"},
+    "logical_path": {"type": "string"},
+    "source_ref": {"type": "string"},
+    "source_hash": {"type": "string"},
+    "note": {"type": "string"}
+  },
+  "additionalProperties": false
+}

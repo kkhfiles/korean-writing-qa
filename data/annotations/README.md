@@ -7,3 +7,7 @@
 - **사용자 확정 표현**: `user-confirmed-phrases.jsonl` · 원문과 권장 표현을 글자 그대로 보존 · 문서 종류와 문맥 조건 함께 기록
 - **사용자 문체 선호**: `user-style-preferences.jsonl` · 여러 수정 예시에서 확인한 일반화 축과 오용 방지 조건
 - **외부 규칙 후보**: `external-rule-candidates.jsonl` · 출처별 채택·보류·미채택 판단과 현행 규칙의 관계
+
+**후보 저장**: `../feedback/candidates.jsonl` · 사용자 수정·모델 관찰·거짓양성 기록
+
+**활성 조건**: 사용자 직접 수정·사용자 수락·사람 검토 중 하나 확인 · 회귀시험 통과

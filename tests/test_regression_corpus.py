@@ -7,7 +7,7 @@ from pathlib import Path
 
 from scripts.measure_revision import measure
 from scripts.scan_path_metaphor import TERM, classify
-from scripts.scan_user_feedback import load_feedback, scan_text
+from scripts.scan_user_feedback import PROFILE_SCOPES, load_feedback, scan_text
 
 
 class RegressionCorpusTests(unittest.TestCase):
@@ -63,7 +63,12 @@ class RegressionCorpusTests(unittest.TestCase):
                     self.feedback_by_rule[str(case["rule_id"])]["scope"],
                 )
             )
-            findings = scan_text(str(case["text"]), self.feedback, input_scope)
+            findings = scan_text(
+                str(case["text"]),
+                self.feedback,
+                input_scope,
+                str(case["input_profile"]) if case.get("input_profile") else None,
+            )
             matching = [
                 finding
                 for finding in findings
@@ -91,6 +96,27 @@ class RegressionCorpusTests(unittest.TestCase):
         }
 
         self.assertEqual(covered_rule_ids, scoped_rule_ids)
+
+    def test_profiled_rules_have_cross_profile_negative_cases(self) -> None:
+        profiled_rules = {
+            str(record["rule_id"]): set(record["profiles"])
+            for record in self.feedback
+            if isinstance(record.get("profiles"), list) and record["profiles"]
+        }
+        for rule_id, allowed_profiles in profiled_rules.items():
+            covered_profiles = {
+                str(case["input_profile"])
+                for case in self.cases
+                if case["detector"] == "user_feedback"
+                and case["rule_id"] == rule_id
+                and case["variant"] == "cross_profile"
+                and case["expected"] == "no_finding"
+            }
+            with self.subTest(rule_id=rule_id):
+                self.assertEqual(
+                    covered_profiles,
+                    set(PROFILE_SCOPES) - allowed_profiles,
+                )
 
     def test_path_cases_cover_abstract_literal_and_review(self) -> None:
         path_cases = [case for case in self.cases if case["detector"] == "path_metaphor"]

@@ -1,0 +1,47 @@
+{
+  "run_id": "skill-build-002",
+  "date": "2026-08-24",
+  "objective": "사용자 교정을 후보로 수집하고 사람 판단과 회귀시험을 통과한 표현만 문서 종류별 검사 규칙으로 반영",
+  "canonical_skill": "C:/Users/<사용자>/.claude/skills/finalize-korean-document",
+  "repository_backup": "P:/github/claude-workflow/skills/finalize-korean-document",
+  "codex_projection": "C:/Users/<사용자>/.agents/skills/finalize-korean-document",
+  "validation": {
+    "skill_schema": "passed",
+    "detector_assertions": 68,
+    "naturalness_reference_pairs": 13,
+    "automated_naturalness_assertions": 0,
+    "meaning_preservation_assertions": 17,
+    "feedback_workflow_assertions": 12,
+    "language_assertions": 85,
+    "qa_repository_tests": {
+      "total": 64,
+      "passed": 63,
+      "skipped": 1,
+      "skip_reason": "후보 목록은 첫 실제 수집 때 생성"
+    },
+    "hook_unit_cases": 14,
+    "doc_style_errors": 0,
+    "doc_style_warnings": 0,
+    "canonical_backup_projection_files": 13,
+    "canonical_backup_projection_comparisons": 26,
+    "canonical_backup_projection_mismatches": 0,
+    "codex_sync": "passed",
+    "promotion_success_cycle": "passed",
+    "promotion_rollback_cycle": "passed",
+    "profile_isolation": {
+      "allowed_profile": "technical-report",
+      "allowed_findings": 1,
+      "other_profile": "short-message",
+      "other_profile_findings": 0,
+      "cross_profile_negative_cases": 6
+    },
+    "clean_context_forward_test": "passed"
+  },
+  "working_directories": [
+    "P:/github/korean-writing-qa/runs/skill-build-002/working/profile-isolation-004",
+    "P:/github/korean-writing-qa/runs/skill-build-002/working/forward-clean-004",
+    "P:/github/korean-writing-qa/runs/skill-build-002/working/full-suite-temp-001"
+  ],
+  "automatic_rule_activation_from_model_candidates": false,
+  "paid_api": false
+}
