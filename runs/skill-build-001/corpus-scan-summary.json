@@ -1,0 +1,38 @@
+{
+  "run_id": "skill-build-001-corpus-scan-001",
+  "date": "2026-08-24",
+  "profile": "general",
+  "inputs": [
+    {
+      "directory": "data/raw/diagnostic-001",
+      "files": 30,
+      "text_units": 3806,
+      "findings": 0
+    },
+    {
+      "directory": "data/raw/diagnostic-002",
+      "files": 20,
+      "text_units": 2162,
+      "findings": 0
+    },
+    {
+      "directory": "data/raw/diagnostic-003",
+      "files": 149,
+      "text_units": 4552,
+      "findings": 1
+    }
+  ],
+  "totals": {
+    "files": 199,
+    "text_units": 10520,
+    "findings": 1
+  },
+  "finding": {
+    "file": "data/raw/diagnostic-003/unit-026.md",
+    "line": 34,
+    "expression": "에이전트가 도중에 경로를 이탈하더라도",
+    "classification": "abstract_candidate",
+    "human_review": "confirmed_nonliteral_path"
+  },
+  "interpretation": "결정 규칙의 잘못된 지적은 확인되지 않았으나 문맥 윤문을 대신할 정도의 탐지 범위는 아님"
+}

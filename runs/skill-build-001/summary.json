@@ -8,17 +8,23 @@
   "commits": [
     "6c967f5c",
     "283cc4b3",
-    "604a9e86"
+    "604a9e86",
+    "4a50ffc6",
+    "a724b871"
   ],
   "validation": {
     "skill_schema": "passed",
-    "skill_regression_cases": 72,
+    "skill_regression_cases": 85,
+    "context_revision_pairs": 13,
     "hook_unit_cases": 14,
     "codex_sync_integration": "passed",
     "positive_hook_fixture": "passed",
     "literal_path_negative_fixture": "passed",
     "repeat_edit_recheck": "passed",
-    "clean_context_forward_documents": 2
+    "clean_context_forward_documents": 2,
+    "broad_corpus_files": 199,
+    "broad_corpus_text_units": 10520,
+    "broad_corpus_findings": 1
   },
   "supported_sources": [
     "md",
