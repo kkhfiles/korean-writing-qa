@@ -18,6 +18,7 @@
 | `data/catalog/` | 원문 위치·해시·크기 목록 |
 | `data/raw/` | 진단용 원문 복사본 · Git 제외 |
 | `data/annotations/` | 사람의 판정과 수정 전후 문장 쌍 |
+| `data/regression/` | 회귀시험용 양성·정상·경계 시료 |
 | `runs/` | 검사 실행별 입력 목록·결과·요약 |
 
 ## 운영 원칙
@@ -47,3 +48,4 @@
 - [사용자 문체 피드백 반영](docs/user-feedback-workflow.md)
 - [다중 형식 AI 원본 진단](docs/diagnostic-003.md)
 - [외부 한국어 작성 도구 검토](docs/external-korean-tools-review.md)
+- [규칙·검사기·회귀시험 재검토](docs/review-001.md)

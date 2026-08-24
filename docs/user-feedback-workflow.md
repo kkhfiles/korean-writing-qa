@@ -52,8 +52,11 @@
 python scripts/scan_user_feedback.py `
   --source <파일-또는-디렉터리> `
   --feedback data/annotations/user-confirmed-phrases.jsonl `
+  --scope <문서-종류> `
   --output runs/<실행-이름>/user-feedback-findings.jsonl
 ```
+
+**문서 종류**: `general_it_business` 또는 규칙의 `scope` 값 사용 · 전체 규칙을 의도적으로 대조할 때만 `all` 사용
 
 **지원 원본**: Markdown · HTML · 일반 텍스트 · JSON · JSONL · YAML · YML · properties
 

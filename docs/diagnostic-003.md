@@ -38,7 +38,8 @@
 
 - **등장 문서**: 28개
 - **등장 횟수**: 68건
-- **실제 path 후보**: 67건
+- **실제 path 후보**: 59건
+- **사람 검토**: 8건 · 실제 path로 단정할 근거가 부족한 문맥
 - **추상 비유 후보**: 1건 · `에이전트가 … 경로를 이탈`
 - **초기 사람 검토 대상**: 44건
 - **규칙 보완 후 사람 검토 대상**: 0건
@@ -63,6 +64,7 @@ python scripts/build_multiformat_ai_sample.py `
 python scripts/scan_user_feedback.py `
   --source data\raw\diagnostic-003 `
   --feedback data\annotations\user-confirmed-phrases.jsonl `
+  --scope all `
   --output runs\diagnostic-003\user-feedback-findings.jsonl
 
 python scripts/scan_path_metaphor.py `
