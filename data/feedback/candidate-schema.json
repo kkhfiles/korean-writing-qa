@@ -22,6 +22,18 @@
     "candidate_id": {"type": "string", "minLength": 1},
     "record_kind": {"const": "language_rule"},
     "rule_id": {"type": "string", "minLength": 1},
+    "detector": {"enum": ["literal", "regex"]},
+    "pattern": {"type": "string", "minLength": 1},
+    "allow": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1},
+      "description": "이 형태로 나오면 지적하지 않는다. 오탐을 규칙에 되먹이는 통로다."
+    },
+    "allow_examples": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1},
+      "description": "허용 형태의 실제 예문. 회귀 시료가 된다. allow 와 같은 순서."
+    },
     "original": {"type": "string", "minLength": 1},
     "revised": {"type": "string"},
     "scope": {"type": "string", "minLength": 1},
@@ -58,5 +70,11 @@
     "source_hash": {"type": "string"},
     "note": {"type": "string"}
   },
-  "additionalProperties": false
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {"properties": {"detector": {"const": "regex"}}, "required": ["detector"]},
+      "then": {"required": ["pattern"]}
+    }
+  ]
 }
