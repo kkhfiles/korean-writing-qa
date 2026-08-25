@@ -1,0 +1,470 @@
+{
+  "profile": "general",
+  "skill_root": "C:\\Users\\<사용자>\\.claude\\skills\\finalize-korean-document",
+  "llm_findings_supplied": false,
+  "hybrid": {
+    "by_layer": {
+      "아무도": 9,
+      "1층": 2,
+      "판정 불가": 2
+    },
+    "covered": 2,
+    "combined_recall_floor": 0.154,
+    "note": "2층 결과를 안 넘겼다 — 1층만 잰 값이다"
+  },
+  "positives": {
+    "total": 13,
+    "caught": 2,
+    "undecidable": 2,
+    "recall_floor": 0.154,
+    "recall_ceiling": 0.308,
+    "by_layer": {
+      "아무도": 9,
+      "전역": 2,
+      "판정 불가": 2
+    },
+    "missed": [
+      {
+        "annotation_id": "d002-002-01",
+        "document_id": "doc-002",
+        "line_number": 23,
+        "category": "TRANSLATIONESE",
+        "original": "HTTPS URL을 통해 직접 플러그인 아카이브 패키지를 설치 및 관리하는 스펙 지원.",
+        "recorded_detector": [
+          "manual_quick_rules"
+        ],
+        "skill": [],
+        "global": [],
+        "undecidable_finding": [],
+        "same_line_other_finding": [],
+        "caught_by": "아무도",
+        "llm": [],
+        "covered_by": "아무도"
+      },
+      {
+        "annotation_id": "d002-002-03",
+        "document_id": "doc-002",
+        "line_number": 49,
+        "category": "VISUAL_DECORATION",
+        "original": "🟢",
+        "recorded_detector": [
+          "manual_quick_rules"
+        ],
+        "skill": [],
+        "global": [],
+        "undecidable_finding": [],
+        "same_line_other_finding": [],
+        "caught_by": "아무도",
+        "llm": [],
+        "covered_by": "아무도"
+      },
+      {
+        "annotation_id": "d002-002-06",
+        "document_id": "doc-002",
+        "line_number": 52,
+        "category": "VISUAL_DECORATION",
+        "original": "🟡",
+        "recorded_detector": [
+          "manual_quick_rules"
+        ],
+        "skill": [],
+        "global": [],
+        "undecidable_finding": [],
+        "same_line_other_finding": [],
+        "caught_by": "아무도",
+        "llm": [],
+        "covered_by": "아무도"
+      },
+      {
+        "annotation_id": "d002-002-04",
+        "document_id": "doc-002",
+        "line_number": 19,
+        "category": "NOMINALIZATION",
+        "original": "Adaptive Thinking(가변 추론) 기능 도입으로 작업 난이도에 따른 동적 추론 깊이 조절 가능.",
+        "recorded_detector": [
+          "manual_quick_rules"
+        ],
+        "skill": [],
+        "global": [],
+        "undecidable_finding": [],
+        "same_line_other_finding": [],
+        "caught_by": "아무도",
+        "llm": [],
+        "covered_by": "아무도"
+      },
+      {
+        "annotation_id": "d002-004-03",
+        "document_id": "doc-004",
+        "line_number": 26,
+        "category": "NOMINALIZATION",
+        "original": "사용자 인터페이스 고도화",
+        "recorded_detector": [
+          "manual_quick_rules"
+        ],
+        "skill": [],
+        "global": [],
+        "undecidable_finding": [],
+        "same_line_other_finding": [],
+        "caught_by": "아무도",
+        "llm": [],
+        "covered_by": "아무도"
+      },
+      {
+        "annotation_id": "d002-004-04",
+        "document_id": "doc-004",
+        "line_number": 46,
+        "category": "ENGLISH_OVERUSE",
+        "original": "프러리리스 배포 시작",
+        "recorded_detector": [
+          "manual_quick_rules"
+        ],
+        "skill": [],
+        "global": [],
+        "undecidable_finding": [],
+        "same_line_other_finding": [],
+        "caught_by": "아무도",
+        "llm": [],
+        "covered_by": "아무도"
+      },
+      {
+        "annotation_id": "d002-013-02",
+        "document_id": "doc-013",
+        "line_number": 20,
+        "category": "ENGLISH_OVERUSE",
+        "original": "AI 생성 코드(Copilot/LLM 산출물) 검증을 명시 타깃.",
+        "recorded_detector": [
+          "manual_quick_rules"
+        ],
+        "skill": [],
+        "global": [],
+        "undecidable_finding": [],
+        "same_line_other_finding": [],
+        "caught_by": "아무도",
+        "llm": [],
+        "covered_by": "아무도"
+      },
+      {
+        "annotation_id": "d002-013-03",
+        "document_id": "doc-013",
+        "line_number": 54,
+        "category": "ABSTRACT_SUBJECT",
+        "original": "\"LLM 산출물의 검증 책임\"을 도구가 맡는 방향으로 시장이 명확하게 정렬.",
+        "recorded_detector": [
+          "manual_quick_rules"
+        ],
+        "skill": [],
+        "global": [],
+        "undecidable_finding": [],
+        "same_line_other_finding": [],
+        "caught_by": "아무도",
+        "llm": [],
+        "covered_by": "아무도"
+      },
+      {
+        "annotation_id": "d002-013-04",
+        "document_id": "doc-013",
+        "line_number": 54,
+        "category": "ENGLISH_OVERUSE",
+        "original": "**\"AI가 생성한 코드를 정적분석으로 검증\" 포지셔닝 확산**",
+        "recorded_detector": [
+          "manual_quick_rules"
+        ],
+        "skill": [],
+        "global": [],
+        "undecidable_finding": [],
+        "same_line_other_finding": [],
+        "caught_by": "아무도",
+        "llm": [],
+        "covered_by": "아무도"
+      }
+    ],
+    "undecided": [
+      {
+        "annotation_id": "d002-004-01",
+        "document_id": "doc-004",
+        "line_number": 16,
+        "category": "EMPHASIS_NOISE",
+        "original": "**VectorCAST 2026 SP3 정식 출시 (2026-07)**",
+        "recorded_detector": [
+          "doc_style_check",
+          "manual_quick_rules"
+        ],
+        "skill": [],
+        "global": [],
+        "undecidable_finding": [
+          "주의/값 안 굵게"
+        ],
+        "same_line_other_finding": [],
+        "caught_by": "판정 불가",
+        "llm": [],
+        "covered_by": "판정 불가"
+      },
+      {
+        "annotation_id": "d002-004-02",
+        "document_id": "doc-004",
+        "line_number": 25,
+        "category": "EVALUATIVE_MODIFIER",
+        "original": "AI 워크플로우와의 유기적 연동을 위한 **Open JSON Interfaces** 전면 도입",
+        "recorded_detector": [
+          "manual_review"
+        ],
+        "skill": [],
+        "global": [],
+        "undecidable_finding": [
+          "주의/값 안 굵게"
+        ],
+        "same_line_other_finding": [],
+        "caught_by": "판정 불가",
+        "llm": [],
+        "covered_by": "판정 불가"
+      }
+    ],
+    "items": [
+      {
+        "annotation_id": "d002-002-01",
+        "document_id": "doc-002",
+        "line_number": 23,
+        "category": "TRANSLATIONESE",
+        "original": "HTTPS URL을 통해 직접 플러그인 아카이브 패키지를 설치 및 관리하는 스펙 지원.",
+        "recorded_detector": [
+          "manual_quick_rules"
+        ],
+        "skill": [],
+        "global": [],
+        "undecidable_finding": [],
+        "same_line_other_finding": [],
+        "caught_by": "아무도",
+        "llm": [],
+        "covered_by": "아무도"
+      },
+      {
+        "annotation_id": "d002-002-02",
+        "document_id": "doc-002",
+        "line_number": 35,
+        "category": "EVALUATIVE_MODIFIER",
+        "original": "강력한 `.claudeignore` 활용",
+        "recorded_detector": [
+          "doc_style_check",
+          "manual_review"
+        ],
+        "skill": [],
+        "global": [
+          "주의/평가 수식어"
+        ],
+        "undecidable_finding": [],
+        "same_line_other_finding": [],
+        "caught_by": "전역",
+        "llm": [],
+        "covered_by": "1층"
+      },
+      {
+        "annotation_id": "d002-002-03",
+        "document_id": "doc-002",
+        "line_number": 49,
+        "category": "VISUAL_DECORATION",
+        "original": "🟢",
+        "recorded_detector": [
+          "manual_quick_rules"
+        ],
+        "skill": [],
+        "global": [],
+        "undecidable_finding": [],
+        "same_line_other_finding": [],
+        "caught_by": "아무도",
+        "llm": [],
+        "covered_by": "아무도"
+      },
+      {
+        "annotation_id": "d002-002-06",
+        "document_id": "doc-002",
+        "line_number": 52,
+        "category": "VISUAL_DECORATION",
+        "original": "🟡",
+        "recorded_detector": [
+          "manual_quick_rules"
+        ],
+        "skill": [],
+        "global": [],
+        "undecidable_finding": [],
+        "same_line_other_finding": [],
+        "caught_by": "아무도",
+        "llm": [],
+        "covered_by": "아무도"
+      },
+      {
+        "annotation_id": "d002-002-04",
+        "document_id": "doc-002",
+        "line_number": 19,
+        "category": "NOMINALIZATION",
+        "original": "Adaptive Thinking(가변 추론) 기능 도입으로 작업 난이도에 따른 동적 추론 깊이 조절 가능.",
+        "recorded_detector": [
+          "manual_quick_rules"
+        ],
+        "skill": [],
+        "global": [],
+        "undecidable_finding": [],
+        "same_line_other_finding": [],
+        "caught_by": "아무도",
+        "llm": [],
+        "covered_by": "아무도"
+      },
+      {
+        "annotation_id": "d002-004-01",
+        "document_id": "doc-004",
+        "line_number": 16,
+        "category": "EMPHASIS_NOISE",
+        "original": "**VectorCAST 2026 SP3 정식 출시 (2026-07)**",
+        "recorded_detector": [
+          "doc_style_check",
+          "manual_quick_rules"
+        ],
+        "skill": [],
+        "global": [],
+        "undecidable_finding": [
+          "주의/값 안 굵게"
+        ],
+        "same_line_other_finding": [],
+        "caught_by": "판정 불가",
+        "llm": [],
+        "covered_by": "판정 불가"
+      },
+      {
+        "annotation_id": "d002-004-02",
+        "document_id": "doc-004",
+        "line_number": 25,
+        "category": "EVALUATIVE_MODIFIER",
+        "original": "AI 워크플로우와의 유기적 연동을 위한 **Open JSON Interfaces** 전면 도입",
+        "recorded_detector": [
+          "manual_review"
+        ],
+        "skill": [],
+        "global": [],
+        "undecidable_finding": [
+          "주의/값 안 굵게"
+        ],
+        "same_line_other_finding": [],
+        "caught_by": "판정 불가",
+        "llm": [],
+        "covered_by": "판정 불가"
+      },
+      {
+        "annotation_id": "d002-004-03",
+        "document_id": "doc-004",
+        "line_number": 26,
+        "category": "NOMINALIZATION",
+        "original": "사용자 인터페이스 고도화",
+        "recorded_detector": [
+          "manual_quick_rules"
+        ],
+        "skill": [],
+        "global": [],
+        "undecidable_finding": [],
+        "same_line_other_finding": [],
+        "caught_by": "아무도",
+        "llm": [],
+        "covered_by": "아무도"
+      },
+      {
+        "annotation_id": "d002-004-04",
+        "document_id": "doc-004",
+        "line_number": 46,
+        "category": "ENGLISH_OVERUSE",
+        "original": "프러리리스 배포 시작",
+        "recorded_detector": [
+          "manual_quick_rules"
+        ],
+        "skill": [],
+        "global": [],
+        "undecidable_finding": [],
+        "same_line_other_finding": [],
+        "caught_by": "아무도",
+        "llm": [],
+        "covered_by": "아무도"
+      },
+      {
+        "annotation_id": "d002-013-01",
+        "document_id": "doc-013",
+        "line_number": 39,
+        "category": "VAGUE_LABEL",
+        "original": "비고",
+        "recorded_detector": [
+          "doc_style_check",
+          "manual_review"
+        ],
+        "skill": [],
+        "global": [
+          "오류/스캔 가치 없는 라벨"
+        ],
+        "undecidable_finding": [],
+        "same_line_other_finding": [],
+        "caught_by": "전역",
+        "llm": [],
+        "covered_by": "1층"
+      },
+      {
+        "annotation_id": "d002-013-02",
+        "document_id": "doc-013",
+        "line_number": 20,
+        "category": "ENGLISH_OVERUSE",
+        "original": "AI 생성 코드(Copilot/LLM 산출물) 검증을 명시 타깃.",
+        "recorded_detector": [
+          "manual_quick_rules"
+        ],
+        "skill": [],
+        "global": [],
+        "undecidable_finding": [],
+        "same_line_other_finding": [],
+        "caught_by": "아무도",
+        "llm": [],
+        "covered_by": "아무도"
+      },
+      {
+        "annotation_id": "d002-013-03",
+        "document_id": "doc-013",
+        "line_number": 54,
+        "category": "ABSTRACT_SUBJECT",
+        "original": "\"LLM 산출물의 검증 책임\"을 도구가 맡는 방향으로 시장이 명확하게 정렬.",
+        "recorded_detector": [
+          "manual_quick_rules"
+        ],
+        "skill": [],
+        "global": [],
+        "undecidable_finding": [],
+        "same_line_other_finding": [],
+        "caught_by": "아무도",
+        "llm": [],
+        "covered_by": "아무도"
+      },
+      {
+        "annotation_id": "d002-013-04",
+        "document_id": "doc-013",
+        "line_number": 54,
+        "category": "ENGLISH_OVERUSE",
+        "original": "**\"AI가 생성한 코드를 정적분석으로 검증\" 포지셔닝 확산**",
+        "recorded_detector": [
+          "manual_quick_rules"
+        ],
+        "skill": [],
+        "global": [],
+        "undecidable_finding": [],
+        "same_line_other_finding": [],
+        "caught_by": "아무도",
+        "llm": [],
+        "covered_by": "아무도"
+      }
+    ]
+  },
+  "labeled_negatives": {
+    "total": 1,
+    "wrongly_flagged": []
+  },
+  "path_allow_negatives": {
+    "total": 33,
+    "wrongly_abstract": 0
+  },
+  "unlabeled_findings": {
+    "count": 11,
+    "note": "그 줄에 사람 판정이 없다 — 오탐인지 정탐인지 판정 불가"
+  },
+  "unresolved_labels": []
+}

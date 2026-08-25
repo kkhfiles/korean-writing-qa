@@ -1,0 +1,54 @@
+{
+  "run_id": "eval-002",
+  "date": "2026-08-25",
+  "objective": "규칙 후보를 실측해 채택 여부를 정하고, 계기판이 2층까지 재도록 넓힘",
+  "outcome": "후보 12개 전부 미채택 · 계기판을 하이브리드 전체 측정으로 확장",
+  "why_no_rule_was_adopted": {
+    "principle": "정확도 우선 — 정상 문장을 지적하면 사용자가 검사기를 끈다",
+    "corpora": {
+      "reports": {"path": "P:/github/claude-workflow/reports", "korean_documents": 695, "chars": 5010180},
+      "ai_written": {"path": "data/raw/diagnostic-002", "korean_documents": 20, "chars": 144065}
+    },
+    "measurements": [
+      {"candidate": "색 상태 기호", "origin": "KR-P003", "reports_hits": 958, "reports_document_share": 0.271,
+       "ai_hits": 65, "ai_labeled_as_problem": 2, "precision": 0.03,
+       "verdict": "미채택", "reason": "🔴🟡🟢 가 우선순위를 뜻하는 일관된 표기 · 라벨된 사례와 구조가 동일해 문법으로 못 가름"},
+      {"candidate": "명사 나열 및", "origin": "KR-P001", "reports_hits": 501, "reports_document_share": 0.227,
+       "ai_hits": 47, "ai_labeled_as_problem": 1, "precision": 0.02,
+       "verdict": "미채택", "reason": "「및」은 정상 한국어 · 라벨 비율이 극히 낮음"},
+      {"candidate": "~에 대한", "origin": "KR-P001", "reports_hits": 380, "reports_document_share": 0.147,
+       "verdict": "미채택", "reason": "글로벌 실측에서 사용자 대비 0.1배 · 오히려 덜 씀"},
+      {"candidate": "~을/를 통해", "origin": "KR-P001", "reports_hits": 86, "verdict": "미채택",
+       "reason": "표본이 정상 문장 · 문맥 없이 못 가름"},
+      {"candidate": "가지고 있다", "origin": "KR-P001", "reports_hits": 34, "verdict": "미채택", "reason": "정상 문장"},
+      {"candidate": "~에 있어", "origin": "KR-P001", "reports_hits": 14, "verdict": "미채택", "reason": "근거 부족"},
+      {"candidate": "~적 명사 연쇄", "origin": "KR-P006", "reports_hits": 5, "verdict": "미채택", "reason": "근거 부족"},
+      {"candidate": "~인 것이다", "origin": "KR-P009", "reports_hits": 1, "verdict": "미채택", "reason": "거의 안 나옴"},
+      {"candidate": "이중 피동 ~되어지", "origin": "KR-P001", "reports_hits": 0, "verdict": "미채택", "reason": "대상에 없음"},
+      {"candidate": "결론적으로", "origin": "KR-P004", "reports_hits": 0, "verdict": "미채택", "reason": "대상에 없음"},
+      {"candidate": "시사하는 바", "origin": "KR-P004", "reports_hits": 0, "verdict": "미채택", "reason": "대상에 없음"},
+      {"candidate": "문두 접속사 또한", "origin": "KR-P008", "reports_hits": 0, "verdict": "미채택", "reason": "대상에 없음"}
+    ],
+    "conclusion": "특징적인 패턴은 대상에 없고 나오는 패턴은 정상 한국어다. 남은 회수율은 규칙 부족이 아니라 구조적으로 2층 LLM 검토의 몫이다."
+  },
+  "gauge_extension": {
+    "added": "--llm-findings 로 2층 지적을 받아 1층과 합산 회수율을 낸다",
+    "guard": "문서가 맞고 표현이 실제로 겹칠 때만 센다 · 문서마다 아무 지적이나 내면 점수가 오르는 것을 막음",
+    "verified": "진짜 2건은 세고 문서 틀림·없는 표현·너무 짧은 조각 3건은 세지 않음"
+  },
+  "baseline_unchanged": {
+    "positives_total": 13,
+    "confirmed_hits": 2,
+    "undecidable": 2,
+    "recall_floor": 0.154,
+    "recall_ceiling": 0.308,
+    "false_positives": 0,
+    "note": "규칙을 늘리지 않았으므로 1층 수치는 eval-001 과 같다"
+  },
+  "validation": {
+    "qa_repository_tests": {"total": 84, "passed": 83, "skipped": 1},
+    "skill_self_test": "passed",
+    "external_paid_api_calls": 0
+  },
+  "next": "2층 회수율을 깨끗한 맥락에서 측정 · 그 수치가 이 시스템의 실제 성적"
+}

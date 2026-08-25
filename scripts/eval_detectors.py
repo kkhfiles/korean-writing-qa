@@ -131,13 +131,50 @@ def global_findings(global_checker, path: Path) -> tuple[dict[int, list[tuple[st
     return by_line, bool(slots)
 
 
-def evaluate(skill_root: Path, global_checker_path: Path, profile: str) -> dict[str, object]:
+def llm_covers(labeled: str, reported: str) -> bool:
+    """2층 지적이 그 라벨을 가리키는지 본다.
+
+    문서만 맞으면 세는 방식으로 하면 **문서마다 아무 지적이나 하나 내면 회수율이
+    오르는 계기판**이 된다. 표현이 실제로 겹쳐야 센다.
+    """
+    if not labeled or not reported:
+        return False
+    return shares_run(labeled, reported, size=6) or shares_run(reported, labeled, size=6)
+
+
+def load_llm_findings(path: Path | None) -> dict[str, list[dict[str, object]]]:
+    """2층(LLM 검토)이 낸 지적을 문서별로 모은다.
+
+    1층만 재면 이 시스템의 절반만 보는 것이다. 실측으로 규칙 후보 12개 가운데 정밀도가
+    쓸 만한 것이 하나도 없었으므로, 남은 회수율은 대부분 2층이 메워야 한다. 그 몫이
+    실제로 메워지는지 재려면 2층 결과도 같은 라벨에 대고 세야 한다.
+
+    한 줄에 한 지적. `document_id` 와 `original`(지적한 표현)이 필요하다.
+    """
+    findings: dict[str, list[dict[str, object]]] = {}
+    if path is None:
+        return findings
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        row = json.loads(line)
+        findings.setdefault(str(row["document_id"]), []).append(row)
+    return findings
+
+
+def evaluate(
+    skill_root: Path,
+    global_checker_path: Path,
+    profile: str,
+    llm_findings_path: Path | None = None,
+) -> dict[str, object]:
     sys.path.insert(0, str(skill_root / "scripts"))
     skill_check = load_module("skill_check", skill_root / "scripts" / "check.py")
     global_checker = load_module("global_checker", global_checker_path)
     rules = skill_check.load_rules(skill_root / "references" / "confirmed-rules.jsonl")
 
     labels = read_jsonl(REVIEW_LABELS)
+    llm_findings = load_llm_findings(llm_findings_path)
     documents = sorted({str(row["document_id"]) for row in labels})
     scanned: dict[str, dict[str, object]] = {}
     for document_id in documents:
@@ -191,6 +228,14 @@ def evaluate(skill_root: Path, global_checker_path: Path, profile: str) -> dict[
         skill_hit, skill_unknown, skill_other = split(skill_line)
         global_hit, global_unknown, global_other = split(global_line)
         undecidable = skill_unknown + global_unknown
+        script_hit = bool(skill_hit or global_hit)
+        # 2층 지적은 라벨과 표현이 실제로 겹칠 때만 센다. 같은 문서라는 이유로 세면
+        # 문서마다 아무 지적이나 하나 내면 회수율이 오르는 계기판이 된다.
+        llm_hit = [
+            str(row.get("category") or row.get("note") or "LLM")
+            for row in llm_findings.get(document_id, [])
+            if llm_covers(labeled, str(row.get("original") or ""))
+        ]
         caught_by = (
             "둘 다" if skill_hit and global_hit
             else "스킬" if skill_hit
@@ -210,6 +255,14 @@ def evaluate(skill_root: Path, global_checker_path: Path, profile: str) -> dict[
             "undecidable_finding": undecidable,
             "same_line_other_finding": skill_other + global_other,
             "caught_by": caught_by,
+            "llm": llm_hit,
+            "covered_by": (
+                "1층" if script_hit and not llm_hit
+                else "1층과 2층" if script_hit and llm_hit
+                else "2층" if llm_hit
+                else "판정 불가" if undecidable
+                else "아무도"
+            ),
         }
         (positives if row.get("human_label") == "revise" else negatives).append(record)
 
@@ -250,9 +303,24 @@ def evaluate(skill_root: Path, global_checker_path: Path, profile: str) -> dict[
         by_layer[str(item["caught_by"])] = by_layer.get(str(item["caught_by"]), 0) + 1
 
     total = len(positives)
+    covered = [p for p in positives if p["covered_by"] in ("1층", "2층", "1층과 2층")]
+    by_cover: dict[str, int] = {}
+    for item in positives:
+        by_cover[str(item["covered_by"])] = by_cover.get(str(item["covered_by"]), 0) + 1
     return {
         "profile": profile,
         "skill_root": str(skill_root),
+        "llm_findings_supplied": llm_findings_path is not None,
+        "hybrid": {
+            "by_layer": by_cover,
+            "covered": len(covered),
+            "combined_recall_floor": round(len(covered) / total, 3) if total else None,
+            "note": (
+                "2층 결과를 안 넘겼다 — 1층만 잰 값이다"
+                if llm_findings_path is None
+                else "1층과 2층을 함께 잰 값이다"
+            ),
+        },
         "positives": {
             "total": total,
             "caught": len(caught),
@@ -285,6 +353,14 @@ def evaluate(skill_root: Path, global_checker_path: Path, profile: str) -> dict[
 def print_report(result: dict[str, object]) -> None:
     positives = result["positives"]          # type: ignore[index]
     print(f"프로필 {result['profile']} · 배포 스킬 {result['skill_root']}")
+    print()
+    hybrid = result["hybrid"]                                    # type: ignore[index]
+    print("── 하이브리드 전체 (1층 스크립트 + 2층 LLM 검토)")
+    print(f"   메운 것 {hybrid['covered']}/{positives['total']} "
+          f"· 합산 회수율 하한 {hybrid['combined_recall_floor']}")
+    for layer, count in sorted(hybrid["by_layer"].items()):       # type: ignore[union-attr]
+        print(f"      {layer:10} {count}건")
+    print(f"   {hybrid['note']}")
     print()
     print("── 양성 (사람이 「고쳐야 한다」고 판정한 실문서 지점)")
     print(f"   전체 {positives['total']}건 · 확정 정탐 {positives['caught']}건 "
@@ -328,6 +404,11 @@ def main() -> int:
     parser.add_argument("--skill-root", type=Path, default=DEFAULT_SKILL_ROOT)
     parser.add_argument("--global-checker", type=Path, default=DEFAULT_GLOBAL_CHECKER)
     parser.add_argument("--profile", default="general")
+    parser.add_argument(
+        "--llm-findings",
+        type=Path,
+        help="2층(LLM 검토)이 낸 지적 JSONL. 한 줄에 document_id 와 original 이 필요하다.",
+    )
     parser.add_argument("--format", choices=("text", "json"), default="text")
     parser.add_argument("--out", type=Path)
     args = parser.parse_args()
@@ -339,7 +420,9 @@ def main() -> int:
         print(f"eval_failed: 전역 검사기를 찾지 못함 {args.global_checker}", file=sys.stderr)
         return 2
 
-    result = evaluate(args.skill_root, args.global_checker, args.profile)
+    result = evaluate(
+        args.skill_root, args.global_checker, args.profile, args.llm_findings
+    )
     if args.format == "json":
         print(json.dumps(result, ensure_ascii=False, indent=2, default=str))
     else:

@@ -8,8 +8,15 @@
 from __future__ import annotations
 
 import unittest
+from pathlib import Path
 
-from scripts.eval_detectors import concerns_label, locate_line, shares_run
+from scripts.eval_detectors import (
+    concerns_label,
+    llm_covers,
+    load_llm_findings,
+    locate_line,
+    shares_run,
+)
 
 
 class ConcernsLabelTests(unittest.TestCase):
@@ -74,10 +81,63 @@ class SharesRunTests(unittest.TestCase):
         self.assertFalse(shares_run("짧다", "짧다"))
 
 
+class LlmLayerScoringTests(unittest.TestCase):
+    """2층 점수가 조작되지 않는지 본다.
+
+    규칙 후보 12개를 실측한 결과 정밀도가 쓸 만한 것이 하나도 없었다. 남은 회수율은
+    2층이 메워야 하므로 2층 점수가 곧 이 시스템의 성적이 된다. 그래서 **아무 지적이나
+    내면 점수가 오르는 일**이 없어야 한다.
+    """
+
+    LABEL = "HTTPS URL을 통해 직접 플러그인 아카이브 패키지를 설치 및 관리하는 스펙 지원."
+
+    def test_a_finding_that_quotes_the_labelled_text_counts(self) -> None:
+        self.assertTrue(llm_covers(self.LABEL, self.LABEL))
+
+    def test_a_partial_but_substantial_quote_counts(self) -> None:
+        self.assertTrue(llm_covers(self.LABEL, "HTTPS URL을 통해 직접 플러그인"))
+
+    def test_text_that_is_not_in_the_label_does_not_count(self) -> None:
+        self.assertFalse(llm_covers(self.LABEL, "문서에 없는 아무 문장이나 지적해 본다"))
+
+    def test_a_scrap_too_short_to_identify_anything_does_not_count(self) -> None:
+        self.assertFalse(llm_covers(self.LABEL, "또"))
+        self.assertFalse(llm_covers(self.LABEL, "URL"))
+
+    def test_an_empty_report_does_not_count(self) -> None:
+        self.assertFalse(llm_covers(self.LABEL, ""))
+        self.assertFalse(llm_covers("", "무엇이든"))
+
+    def test_findings_load_grouped_by_document(self) -> None:
+        import json
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "llm.jsonl"
+            path.write_text(
+                "\n".join(
+                    json.dumps(row, ensure_ascii=False)
+                    for row in [
+                        {"document_id": "doc-002", "original": "가"},
+                        {"document_id": "doc-002", "original": "나"},
+                        {"document_id": "doc-004", "original": "다"},
+                    ]
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            grouped = load_llm_findings(path)
+
+        self.assertEqual(sorted(grouped), ["doc-002", "doc-004"])
+        self.assertEqual(len(grouped["doc-002"]), 2)
+
+    def test_no_findings_file_means_no_llm_credit(self) -> None:
+        self.assertEqual(load_llm_findings(None), {})
+
+
 class LocateLineTests(unittest.TestCase):
     def test_missing_text_returns_none_rather_than_a_wrong_line(self) -> None:
         import tempfile
-        from pathlib import Path
 
         with tempfile.TemporaryDirectory() as directory:
             source = Path(directory) / "doc.md"
