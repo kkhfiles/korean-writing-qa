@@ -46,7 +46,13 @@
       "labeled_allow": 0,
       "real_file_paths": 0
     },
-    "unlabeled_findings": 11
+    "unlabeled_findings": 11,
+    "unlabeled_findings_correction": {
+      "corrected_to": 9,
+      "when": "2026-08-25 재검토",
+      "cause": "라벨과 기록을 순서로 짝지어 14쌍 중 9쌍이 어긋남 · 회수율 수치는 영향 없음",
+      "fixed_in": "scripts/eval_detectors.py labeled_line_keys"
+    }
   },
   "findings": [
     "스킬 검사기의 실문서 기여는 0건 · 확정 정탐 2건은 모두 전역 검사기",

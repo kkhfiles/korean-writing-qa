@@ -463,7 +463,7 @@
     "wrongly_abstract": 0
   },
   "unlabeled_findings": {
-    "count": 11,
+    "count": 9,
     "note": "그 줄에 사람 판정이 없다 — 오탐인지 정탐인지 판정 불가"
   },
   "unresolved_labels": []
