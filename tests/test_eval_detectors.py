@@ -12,6 +12,7 @@ from pathlib import Path
 
 from scripts.eval_detectors import (
     concerns_label,
+    labeled_line_keys,
     llm_covers,
     load_llm_findings,
     locate_line,
@@ -79,6 +80,39 @@ class SharesRunTests(unittest.TestCase):
 
     def test_string_shorter_than_the_window_never_matches(self) -> None:
         self.assertFalse(shares_run("짧다", "짧다"))
+
+
+class LabeledLineKeyTests(unittest.TestCase):
+    """사람 판정이 붙은 줄을 셀 때 순서에 기대지 않는지 본다.
+
+    양성·음성으로 나눈 목록을 원래 순서의 라벨과 zip 했다가 14쌍 중 9쌍이 어긋났다.
+    그 값은 「라벨 없는 지적」 건수를 틀리게 만든다 — 판정 불가로 넘길 것을 못 넘긴다.
+    """
+
+    POSITIVES = [
+        {"document_id": "doc-002", "line_number": 10},
+        {"document_id": "doc-004", "line_number": 20},
+    ]
+    NEGATIVES = [{"document_id": "doc-002", "line_number": 30}]
+
+    def test_every_labelled_line_is_collected(self) -> None:
+        self.assertEqual(
+            labeled_line_keys(self.POSITIVES, self.NEGATIVES),
+            {("doc-002", 10), ("doc-004", 20), ("doc-002", 30)},
+        )
+
+    def test_the_result_does_not_depend_on_group_order(self) -> None:
+        self.assertEqual(
+            labeled_line_keys(self.POSITIVES, self.NEGATIVES),
+            labeled_line_keys(self.NEGATIVES, self.POSITIVES),
+        )
+
+    def test_a_line_is_never_paired_with_another_record_document(self) -> None:
+        """어긋난 짝이 만들어지면 없는 조합이 생긴다."""
+        keys = labeled_line_keys(self.POSITIVES, self.NEGATIVES)
+
+        self.assertNotIn(("doc-004", 10), keys)
+        self.assertNotIn(("doc-002", 20), keys)
 
 
 class LlmLayerScoringTests(unittest.TestCase):

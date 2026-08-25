@@ -131,6 +131,22 @@ def global_findings(global_checker, path: Path) -> tuple[dict[int, list[tuple[st
     return by_line, bool(slots)
 
 
+def labeled_line_keys(
+    *groups: list[dict[str, object]]
+) -> set[tuple[str, object]]:
+    """사람 판정이 붙어 있는 (문서, 행)을 모은다.
+
+    기록마다 자기 문서와 행을 들고 있으므로 라벨 목록과 다시 짝지을 이유가 없다.
+    양성·음성으로 갈라 놓은 목록을 원래 순서의 라벨과 zip 했다가 14쌍 중 9쌍이
+    어긋난 적이 있다 — 한 목록을 둘로 나누면 순서가 달라진다.
+    """
+    return {
+        (str(record["document_id"]), record["line_number"])
+        for group in groups
+        for record in group
+    }
+
+
 def llm_covers(labeled: str, reported: str) -> bool:
     """2층 지적이 그 라벨을 가리키는지 본다.
 
@@ -266,15 +282,7 @@ def evaluate(
         }
         (positives if row.get("human_label") == "revise" else negatives).append(record)
 
-    labeled_lines = {
-        (str(row["document_id"]), record["line_number"])
-        for row, record in zip(
-            [r for r in labels if r["annotation_id"] in
-             {p["annotation_id"] for p in positives} |
-             {n["annotation_id"] for n in negatives}],
-            positives + negatives,
-        )
-    }
+    labeled_lines = labeled_line_keys(positives, negatives)
     unlabeled = 0
     for document_id, state in scanned.items():
         if not state.get("available"):
