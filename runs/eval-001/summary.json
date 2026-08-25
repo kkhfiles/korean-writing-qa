@@ -1,0 +1,87 @@
+{
+  "run_id": "eval-001",
+  "date": "2026-08-25",
+  "objective": "스크립트 층이 라벨된 실문서 문제를 얼마나 잡는지 기준선으로 기록",
+  "why": "회귀시험은 통과와 실패만 낸다. 규칙을 더했을 때 실제로 더 잡게 됐는지 답할 수단이 없어 점진 개선을 검증할 수 없었다",
+  "tool": "scripts/eval_detectors.py",
+  "measured_layers": {
+    "skill_checker": "C:/Users/<사용자>/.claude/skills/finalize-korean-document/scripts/check.py",
+    "global_checker": "C:/Users/<사용자>/.claude/assets/doc-style-check.py",
+    "note": "저장소 사본이 아니라 배포되어 실제로 도는 코드를 측정"
+  },
+  "label_sources": {
+    "positives": {
+      "path": "data/annotations/diagnostic-002-review.jsonl",
+      "filter": "human_label=revise",
+      "count": 13,
+      "source_documents": "data/raw/diagnostic-002/ · 라벨 원문 14건 전부 원본에서 문자열 확인"
+    },
+    "labeled_negatives": {
+      "path": "data/annotations/diagnostic-002-review.jsonl",
+      "filter": "human_label=allow",
+      "count": 1
+    },
+    "path_allow_negatives": {
+      "path": "runs/diagnostic-002/path-term-candidates.jsonl",
+      "count": 33,
+      "expected": "not_abstract_candidate"
+    }
+  },
+  "baseline": {
+    "profile": "general",
+    "positives_total": 13,
+    "confirmed_hits": 2,
+    "undecidable": 2,
+    "missed": 9,
+    "recall_floor": 0.154,
+    "recall_ceiling": 0.308,
+    "by_layer": {
+      "skill_checker": 0,
+      "global_checker": 2,
+      "both": 0,
+      "undecidable": 2,
+      "none": 9
+    },
+    "false_positives": {
+      "labeled_allow": 0,
+      "real_file_paths": 0
+    },
+    "unlabeled_findings": 11
+  },
+  "findings": [
+    "스킬 검사기의 실문서 기여는 0건 · 확정 정탐 2건은 모두 전역 검사기",
+    "오탐은 음성 34건에서 0건 · 정확도 우선 설계는 지켜지고 있음",
+    "놓친 9건의 분류는 번역투 3 · 명사화 2 · 영어 과다 3 · 시각 장식 2 · 추상 주어 1 (중복 포함)",
+    "판정 불가 2건은 지적문에 대상이 실리지 않아 글로는 못 가름 · 사람 판정 필요"
+  ],
+  "measurement_corrections": [
+    {
+      "issue": "같은 줄의 다른 지적을 정탐으로 계상",
+      "effect": "회수율 0.308로 두 배 과대",
+      "fix": "지적 대상이 라벨 표현인지 대조하는 세 값 판정 도입"
+    },
+    {
+      "issue": "대상이 안 실린 지적을 미탐으로 계상",
+      "effect": "회수율 0.154로 과소",
+      "fix": "판정 불가를 별도 상태로 두고 회수율을 하한과 상한으로 표기"
+    }
+  ],
+  "cross_validation": {
+    "method": "라벨의 detected_by 기록과 계기판 측정을 13건 대조",
+    "agreed": 11,
+    "undecidable": 2,
+    "note": "어긋난 2건이 정확히 판정 불가로 분류됨"
+  },
+  "validation": {
+    "qa_repository_tests": {
+      "total": 74,
+      "passed": 73,
+      "skipped": 1,
+      "skip_reason": "후보 목록은 첫 실제 수집 때 생성"
+    },
+    "new_gauge_tests": 10,
+    "skill_self_test": "passed",
+    "external_paid_api_calls": 0
+  },
+  "next": "2단계 코드 한 벌로 · 3단계 의미 보존 게이트"
+}
