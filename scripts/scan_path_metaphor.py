@@ -12,29 +12,19 @@ from pathlib import Path
 
 try:
     from scripts.source_text import TEXT_EXTENSIONS, extract_source_text
+    from scripts import skill_bridge
 except ModuleNotFoundError:  # Direct execution: python scripts/scan_path_metaphor.py
     from source_text import TEXT_EXTENSIONS, extract_source_text
-TERM = re.compile("경로")
-ABSTRACT_PREFIXES = (
-    "제품화",
-    "도입",
-    "성장",
-    "개선",
-    "상용화",
-    "발전",
-    "전환",
-    "확장",
-    "진입",
-    "학습",
-    "실현",
-    "달성",
-    "해결",
-    "복구",
-    "성공",
-    "수익화",
-    "배포",
-    "운영",
-)
+    import skill_bridge
+
+# 탐지 논리는 배포된 스킬이 정본이다. 여기서 다시 적으면 한쪽만 고쳐진다.
+_check = skill_bridge.load("check")
+TERM = _check.TERM
+ABSTRACT_PREFIXES = _check.ABSTRACT_PREFIXES
+ABSTRACT = _check.ABSTRACT
+AGENT_PATH_METAPHOR = _check.AGENT_PATH_METAPHOR
+LITERAL = _check.LITERAL
+classify = _check.classify_path
 
 
 def hash_file(path: Path) -> str:
@@ -43,41 +33,6 @@ def hash_file(path: Path) -> str:
         for chunk in iter(lambda: stream.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
-
-
-ABSTRACT = re.compile(rf"({'|'.join(ABSTRACT_PREFIXES)})\s*경로")
-AGENT_PATH_METAPHOR = re.compile(
-    r"에이전트.{0,16}경로(?:를|에서)?\s*(?:이탈|벗어(?:나|났))"
-)
-LITERAL = re.compile(
-    r"(?:파일|폴더|디렉터리|디렉토리|절대|상대|UNC|네임스페이스|메뉴|화면|"
-    r"URL|URI|Windows|윈도우|import|임포트|권한|원격|소스|설정|스캔|호출|실행|"
-    r"보고서|프로젝트|네트워크 공유(?:의\s+특정)?|하위호환|우회|Write)\s*경로"
-    r"|경로(?:의|가|는|를|에|로)?\s*(?:문자열|구분자|표기|입력|인자|변수|"
-    r"처리|패턴|포맷|불일치|잔재|전체|단축|조정|포함|삭제|재인덱싱|"
-    r"비어|활성화|허용|한정)"
-    r"|(?:아래|해당|특정|네트워크 공유의\s+특정)\s*경로(?:에|로|를)?\s*(?:생성|저장|등록|지정|"
-    r"복사|이동|삭제|접근|확인)"
-    r"|\|\s*경로\s*\|"
-    r"|(?:[A-Za-z]:[\\/]|\\\\|(?:^|\s)/[A-Za-z0-9_.-]|"
-    r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+)"
-)
-
-
-def classify(line: str, start: int, end: int) -> tuple[str, str | None, str]:
-    left = max(0, start - 40)
-    right = min(len(line), end + 40)
-    context = line[left:right].strip()
-    abstract = ABSTRACT.search(context)
-    if abstract:
-        return "abstract_candidate", abstract.group(0), context
-    agent_metaphor = AGENT_PATH_METAPHOR.search(context)
-    if agent_metaphor:
-        return "abstract_candidate", agent_metaphor.group(0), context
-    literal = LITERAL.search(context)
-    if literal:
-        return "literal_candidate", literal.group(0), context
-    return "review", None, context
 
 
 def scan(source_root: Path) -> list[dict[str, object]]:

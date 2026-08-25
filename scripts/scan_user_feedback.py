@@ -10,76 +10,18 @@ from typing import Iterable
 
 try:
     from scripts.source_text import TEXT_EXTENSIONS, extract_source_text
+    from scripts import skill_bridge
 except ModuleNotFoundError:  # Direct execution: python scripts/scan_user_feedback.py
     from source_text import TEXT_EXTENSIONS, extract_source_text
+    import skill_bridge
 
-
-COMPARISON_MARKERS = ("→", "=>", "->", "❌", "✅")
-PROFILE_SCOPES = {
-    "general": "general_it_business",
-    "technical-report": "general_it_business",
-    "executive-report": "general_it_business",
-    "presentation": "general_it_business",
-    "presenter-notes": "presenter_notes",
-    "short-message": "general_it_business",
-    "ct-project": "ct_project_context",
-}
-
-
-def is_comparison_example(line: str, original: str, revised: str) -> bool:
-    original_at = line.find(original)
-    revised_at = line.find(revised)
-    if original_at < 0 or revised_at < 0:
-        return False
-    if line.lstrip().startswith("|") and line.count("|") >= 3:
-        return True
-    if original_at < revised_at:
-        between = line[original_at + len(original) : revised_at]
-    else:
-        between = line[revised_at + len(revised) : original_at]
-    return any(marker in between for marker in COMPARISON_MARKERS)
-
-
-def load_feedback(path: Path) -> list[dict[str, object]]:
-    records: list[dict[str, object]] = []
-    seen_ids: set[str] = set()
-    seen_originals: set[str] = set()
-    for line_number, line in enumerate(
-        path.read_text(encoding="utf-8").splitlines(), start=1
-    ):
-        if not line.strip():
-            continue
-        record = json.loads(line)
-        annotation_id = str(record["annotation_id"])
-        original = str(record["original"])
-        revised = str(record["revised"])
-        if annotation_id in seen_ids:
-            raise ValueError(f"Duplicate annotation_id at line {line_number}: {annotation_id}")
-        if original in seen_originals:
-            raise ValueError(f"Duplicate original at line {line_number}: {original}")
-        if not original or not revised:
-            raise ValueError(f"Empty original/revised at line {line_number}")
-        seen_ids.add(annotation_id)
-        seen_originals.add(original)
-        records.append(record)
-    return records
-
-
-def applies_to_scope(
-    record: dict[str, object],
-    input_scope: str,
-    input_profile: str | None = None,
-) -> bool:
-    if input_scope == "all":
-        return True
-    profiles = record.get("profiles")
-    if isinstance(profiles, list) and profiles and input_profile not in profiles:
-        return False
-    rule_scope = str(record["scope"])
-    return (
-        rule_scope == "general_it_business"
-        or rule_scope == input_scope
-    )
+# 탐지 논리는 배포된 스킬이 정본이다. 여기서 다시 적으면 한쪽만 고쳐진다.
+_check = skill_bridge.load("check")
+COMPARISON_MARKERS = _check.COMPARISON_MARKERS
+PROFILE_SCOPES = _check.PROFILE_SCOPES
+is_comparison_example = _check.is_comparison_example
+applies_to_scope = _check.applies_to_scope
+load_feedback = _check.load_rules
 
 
 def scan_text(

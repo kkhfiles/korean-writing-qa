@@ -118,6 +118,30 @@ class RegressionCorpusTests(unittest.TestCase):
                     set(PROFILE_SCOPES) - allowed_profiles,
                 )
 
+    def test_negative_cases_actually_contain_the_rule_text(self) -> None:
+        """음성 시료가 규칙 원문을 담고 있어야 범위 필터를 지킨다.
+
+        손으로 옮겨 적다 한 글자가 바뀐 시료가 둘 있었다. 원문이 안 들어 있으니
+        범위 필터를 통째로 없애도 통과했다 — 지키는 것이 없는 시료다. 필터가
+        일하는지 재는 척하면서 아무것도 안 재는 상태라 오히려 해롭다.
+        """
+        checked = 0
+        for case in self.cases:
+            if case["detector"] != "user_feedback":
+                continue
+            if case["variant"] not in ("cross_scope", "cross_profile"):
+                continue
+            original = str(self.feedback_by_rule[str(case["rule_id"])]["original"])
+            with self.subTest(case_id=case["case_id"]):
+                self.assertIn(
+                    original,
+                    str(case["text"]),
+                    f"{case['case_id']}: 규칙 원문이 없어 필터와 무관하게 통과한다",
+                )
+            checked += 1
+
+        self.assertGreater(checked, 0, "교차 음성 시료가 하나도 없다")
+
     def test_path_cases_cover_abstract_literal_and_review(self) -> None:
         path_cases = [case for case in self.cases if case["detector"] == "path_metaphor"]
         counts = Counter(str(case["expected"]) for case in path_cases)
