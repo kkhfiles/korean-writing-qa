@@ -5,7 +5,11 @@
   "tool": "scripts/eval_detectors.py --llm-findings",
   "layer2_pass": {
     "procedure": "SKILL.md 8단계 · references/core-rules.md 열 개 원칙을 문서 세 건의 모든 산문 줄에 적용",
-    "documents": ["doc-002", "doc-004", "doc-013"],
+    "documents": [
+      "doc-002",
+      "doc-004",
+      "doc-013"
+    ],
     "findings": 32,
     "quote_verification": "32건 전부 지목한 줄에 그 문자열이 실제로 있는지 대조 · 불일치 0"
   },
@@ -13,7 +17,11 @@
     "layer1_recall_floor": 0.154,
     "layer1_recall_ceiling": 0.308,
     "combined_recall_floor": 0.846,
-    "by_layer": {"2층": 9, "1층과 2층": 2, "아무도": 2},
+    "by_layer": {
+      "2층": 9,
+      "1층과 2층": 2,
+      "아무도": 2
+    },
     "labeled_false_positives": 0
   },
   "why_the_combined_number_must_not_be_reported_as_a_score": {
@@ -48,5 +56,11 @@
   "validation": {
     "gauge_tests": 28,
     "external_paid_api_calls": 0
+  },
+  "review_sheet": {
+    "path": "runs/eval-003/review-sheet.md",
+    "rows": 20,
+    "purpose": "새 지적 20건의 정오를 사람이 판정 · 그 값이 2층 정밀도",
+    "quote_verification": "표의 「지금 문구」 20건 전부 원본 해당 행과 문자열 대조 · 불일치 0"
   }
 }
