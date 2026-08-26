@@ -56,3 +56,4 @@
 - [외부 한국어 작성 도구 검토](docs/external-korean-tools-review.md)
 - [규칙·검사기·회귀시험 재검토](docs/review-001.md)
 - [한글 문서 최종화 스킬 구현 결과](docs/skill-implementation-001.md)
+- [사용자 교정 수집·승격 구현 결과](docs/skill-implementation-002.md)
