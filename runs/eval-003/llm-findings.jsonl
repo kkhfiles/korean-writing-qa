@@ -1,0 +1,32 @@
+{"document_id":"doc-002","line_number":14,"original":"비약적으로 상승한 플래그십 모델","category":"EVALUATIVE_MODIFIER","principle":"장식보다 정보 우선하기","revised":"에이전틱 작업·시스템 설계·리팩터링 능력을 개선한 최상위 모델","why":"상승 폭을 재지 않았는데 비약적이라고 단정 · 플래그십은 자평"}
+{"document_id":"doc-002","line_number":14,"original":"에이전틱","category":"ENGLISH_OVERUSE","principle":"불필요한 영어 줄이기","revised":"자율 수행","why":"제품 이름이 아니라 일반 설명"}
+{"document_id":"doc-002","line_number":15,"original":"장기 실행(long-running) 에이전트","category":"ENGLISH_OVERUSE","principle":"불필요한 영어 줄이기","revised":"장기 실행 에이전트","why":"한국어로 이미 뜻이 통하는데 영어를 덧붙임"}
+{"document_id":"doc-002","line_number":18,"original":"최대 출력 토큰(max output tokens)","category":"ENGLISH_OVERUSE","principle":"불필요한 영어 줄이기","revised":"최대 출력 토큰","why":"병기가 정보를 더하지 않음"}
+{"document_id":"doc-002","line_number":23,"original":"HTTPS URL을 통해 직접 플러그인 아카이브 패키지를 설치 및 관리하는 스펙 지원","category":"TRANSLATIONESE","principle":"번역투 줄이기","revised":"HTTPS 주소로 플러그인 아카이브를 바로 내려받아 설치·관리하는 명세 지원","why":"~을 통해 + 명사 나열 및 + 스펙"}
+{"document_id":"doc-002","line_number":34,"original":"메메틱 구조","category":"ENGLISH_OVERUSE","principle":"불필요한 영어 줄이기","revised":"기억 구조","why":"업무 문서에서 뜻이 안 통하는 외래어"}
+{"document_id":"doc-002","line_number":35,"original":"강력한 `.claudeignore` 활용","category":"EVALUATIVE_MODIFIER","principle":"장식보다 정보 우선하기","revised":"`.claudeignore` 적용 범위 넓히기","why":"강력한은 측정값으로 바꿀 수 없는 자평"}
+{"document_id":"doc-002","line_number":35,"original":"적극 제외하여","category":"REDUNDANT_MODIFIER","principle":"군더더기 지우기","revised":"제외해","why":"지워도 뜻이 그대로"}
+{"document_id":"doc-002","line_number":36,"original":"컨텍스트 압축 및 세션 리셋 주기적 수행","category":"NOMINALIZATION","principle":"번역투 줄이기","revised":"주기적으로 컨텍스트를 압축하고 세션을 초기화","why":"명사만 다섯 개를 이어 붙여 행위가 사라짐"}
+{"document_id":"doc-002","line_number":39,"original":"scratch 공간에 명세 및 실행 계획을 수립하고 verification gate(테스트/빌드 스크립트)를 사전에 정의","category":"ENGLISH_OVERUSE","principle":"불필요한 영어 줄이기","revised":"임시 공간에 명세와 실행 계획을 적고 검증 관문(테스트·빌드 스크립트)을 미리 정의","why":"영문 낱말을 한글 문장에 그대로 끼움"}
+{"document_id":"doc-002","line_number":42,"original":"에이전트가 자체적으로 돌 수 있도록","category":"VAGUE_VERB","principle":"실무 행위 밝히기","revised":"에이전트가 스스로 실행할 수 있도록","why":"돌다는 범위가 넓은 비유 동사"}
+{"document_id":"doc-002","line_number":49,"original":"🟢","category":"VISUAL_DECORATION","principle":"장식보다 정보 우선하기","revised":"삭제","why":"색 기호가 뜻을 더하지 않음 · 바로 뒤 비용 표기와 중복"}
+{"document_id":"doc-002","line_number":52,"original":"🟡","category":"VISUAL_DECORATION","principle":"장식보다 정보 우선하기","revised":"삭제","why":"색 기호가 뜻을 더하지 않음"}
+{"document_id":"doc-002","line_number":52,"original":"레거시 문서","category":"ENGLISH_OVERUSE","principle":"불필요한 영어 줄이기","revised":"오래된 문서","why":"제품 이름이 아닌 일반 설명"}
+{"document_id":"doc-002","line_number":59,"original":"이전 보고서 항목 없음 — 최초 실행 보고서로 재평가 대상 항목 없음","category":"REDUNDANT_REPEAT","principle":"군더더기 지우기","revised":"최초 실행 보고서 · 재평가 대상 없음","why":"항목 없음을 한 줄에서 두 번"}
+{"document_id":"doc-004","line_number":16,"original":"**VectorCAST 2026 SP3 정식 출시 (2026-07)**","category":"EMPHASIS_NOISE","principle":"장식보다 정보 우선하기","revised":"VectorCAST 2026 SP3 정식 출시 (2026-07)","why":"라벨이 굵은데 값도 굵음 · 같은 형태가 문서에 7번"}
+{"document_id":"doc-004","line_number":17,"original":"메모리 초과 클래시","category":"ENGLISH_OVERUSE","principle":"불필요한 영어 줄이기","revised":"메모리 초과로 인한 비정상 종료","why":"crash 음차가 틀렸고 한국어로 쓸 수 있음"}
+{"document_id":"doc-004","line_number":25,"original":"유기적 연동","category":"EVALUATIVE_MODIFIER","principle":"장식보다 정보 우선하기","revised":"연동","why":"유기적이 가리키는 구체적 동작이 없음"}
+{"document_id":"doc-004","line_number":26,"original":"사용자 인터페이스 고도화","category":"NOMINALIZATION","principle":"압축한 명사구 풀기","revised":"사용자 화면 개선","why":"고도화가 무엇을 했는지 숨김"}
+{"document_id":"doc-004","line_number":27,"original":"통합 테스팅 사용성 향상","category":"ENGLISH_OVERUSE","principle":"불필요한 영어 줄이기","revised":"통합 테스트 사용성 향상","why":"테스팅은 굳지 않은 음차"}
+{"document_id":"doc-004","line_number":33,"original":"차세대 임베디드 테스팅 파이프라인 대응","category":"EVALUATIVE_MODIFIER","principle":"장식보다 정보 우선하기","revised":"임베디드 테스트 연계 지원","why":"차세대는 자평 · 파이프라인 대응이 무엇인지 불명"}
+{"document_id":"doc-004","line_number":46,"original":"MathWorks R2026b 프러리리스 배포 시작","category":"TYPO","principle":"소리 내어 읽기","revised":"MathWorks R2026b 사전 배포판 공개 시작","why":"프러리리스는 오기 · 같은 항목 앞줄은 Prerelease로 적음"}
+{"document_id":"doc-004","line_number":53,"original":"safety-critical 시스템 단위/통합 테스팅","category":"ENGLISH_OVERUSE","principle":"불필요한 영어 줄이기","revised":"안전 필수 시스템의 단위·통합 테스트","why":"영문 낱말을 한글 문장에 그대로 끼움 · 같은 문서 뒷부분은 안전 필수로 적음"}
+{"document_id":"doc-004","line_number":59,"original":"인터뷰를 통해","category":"TRANSLATIONESE","principle":"번역투 줄이기","revised":"인터뷰에서","why":"~를 통해 번역투"}
+{"document_id":"doc-004","line_number":59,"original":"플랫폼 기능 고도화 발표","category":"NOMINALIZATION","principle":"압축한 명사구 풀기","revised":"플랫폼 기능을 확장한다고 발표","why":"명사만 이어 붙여 무엇을 했는지 사라짐"}
+{"document_id":"doc-013","line_number":19,"original":"라인으로 포지셔닝","category":"ENGLISH_OVERUSE","principle":"불필요한 영어 줄이기","revised":"제품군으로 자리매김","why":"포지셔닝은 일반 설명"}
+{"document_id":"doc-013","line_number":20,"original":"검증을 명시 타깃","category":"ENGLISH_OVERUSE","principle":"불필요한 영어 줄이기","revised":"검증을 겨냥한다고 명시","why":"타깃은 일반 설명 · 조사에서 끊겨 서술어가 없음"}
+{"document_id":"doc-013","line_number":39,"original":"비고","category":"VAGUE_LABEL","principle":"장식보다 정보 우선하기","revised":"신규 발표 여부","why":"스캔 가치가 없는 라벨"}
+{"document_id":"doc-013","line_number":53,"original":"**상위 4개 벤더가 모두 AI 기반 보조 기능을 정규 라인업에 올린 상태**","category":"EMPHASIS_NOISE","principle":"장식보다 정보 우선하기","revised":"상위 4개 벤더가 모두 AI 보조 기능을 정규 제품군에 올린 상태","why":"굵은 결론 머리가 이미 앞에 있는데 값 안에서 또 굵게"}
+{"document_id":"doc-013","line_number":53,"original":"메인 라인업","category":"ENGLISH_OVERUSE","principle":"불필요한 영어 줄이기","revised":"주력 제품군","why":"같은 줄에서 정규 라인업과 뒤섞여 같은 것을 다르게 부름"}
+{"document_id":"doc-013","line_number":54,"original":"시장이 명확하게 정렬","category":"ABSTRACT_SUBJECT","principle":"압축한 명사구 풀기","revised":"주요 도구가 그 방향으로 모임","why":"시장은 행위 주체가 아님 · 명확하게는 지워도 뜻이 그대로"}
+{"document_id":"doc-013","line_number":54,"original":"산출물을 타깃","category":"ENGLISH_OVERUSE","principle":"불필요한 영어 줄이기","revised":"산출물을 검증 대상으로 지정","why":"타깃은 일반 설명 · 조사에서 끊겨 서술어가 없음"}

@@ -14,6 +14,7 @@ from scripts.eval_detectors import (
     concerns_label,
     labeled_line_keys,
     llm_covers,
+    llm_line_matches,
     load_llm_findings,
     locate_line,
     shares_run,
@@ -142,6 +143,25 @@ class LlmLayerScoringTests(unittest.TestCase):
         self.assertFalse(llm_covers(self.LABEL, ""))
         self.assertFalse(llm_covers("", "무엇이든"))
 
+    def test_a_label_shorter_than_the_overlap_can_still_be_matched(self) -> None:
+        """짧은 라벨은 전체를 담으면 센다.
+
+        여섯 글자를 일률로 요구하던 때 「비고」와 색 기호 두 건이 정확히 지적됐는데도
+        미탐으로 잡혔다. 계기판이 못 재는 것이지 2층이 놓친 것이 아니었다.
+        """
+        self.assertTrue(llm_covers("비고", "표 머리의 「비고」 칸"))
+        self.assertTrue(llm_covers("🟢", "🟢"))
+
+    def test_a_short_label_still_needs_the_whole_label(self) -> None:
+        self.assertFalse(llm_covers("비고", "표 머리 칸"))
+        self.assertFalse(llm_covers("🟢", "🟡"))
+
+    def test_a_scrap_of_a_long_label_still_does_not_count(self) -> None:
+        """짧은 라벨을 허용해도 긴 라벨의 조각은 여전히 안 센다."""
+        self.assertFalse(llm_covers(self.LABEL, "지원"))
+        self.assertFalse(llm_covers(self.LABEL, "설치"))
+
+
     def test_findings_load_grouped_by_document(self) -> None:
         import json
         import tempfile
@@ -168,6 +188,31 @@ class LlmLayerScoringTests(unittest.TestCase):
     def test_no_findings_file_means_no_llm_credit(self) -> None:
         self.assertEqual(load_llm_findings(None), {})
 
+
+class LlmLineMatchingTests(unittest.TestCase):
+    """2층 지적이 라벨과 같은 줄을 가리키는지 본다.
+
+    줄을 안 보면 문서 어딘가와 여섯 글자만 겹쳐도 정탐이 된다. 문서 하나에 같은
+    낱말이 여러 번 나오는 것이 보통이므로 이 확인이 없으면 점수가 부풀려진다.
+    """
+
+    LINES = ["첫 줄에 포지셔닝", "둘째 줄", "셋째 줄에 포지셔닝"]
+
+    def test_the_same_line_counts(self) -> None:
+        self.assertTrue(llm_line_matches({"line_number": 1}, 1, "포지셔닝", self.LINES))
+
+    def test_another_line_without_the_labelled_text_does_not_count(self) -> None:
+        self.assertFalse(llm_line_matches({"line_number": 2}, 1, "포지셔닝", self.LINES))
+
+    def test_another_line_that_carries_the_same_text_counts(self) -> None:
+        """같은 문구가 여러 줄에 있으면 라벨 줄은 첫 줄로 잡힌다."""
+        self.assertTrue(llm_line_matches({"line_number": 3}, 1, "포지셔닝", self.LINES))
+
+    def test_a_line_number_outside_the_document_does_not_count(self) -> None:
+        self.assertFalse(llm_line_matches({"line_number": 99}, 1, "포지셔닝", self.LINES))
+
+    def test_a_finding_without_a_line_number_falls_back_to_the_document(self) -> None:
+        self.assertTrue(llm_line_matches({}, 1, "포지셔닝", self.LINES))
 
 class LocateLineTests(unittest.TestCase):
     def test_missing_text_returns_none_rather_than_a_wrong_line(self) -> None:

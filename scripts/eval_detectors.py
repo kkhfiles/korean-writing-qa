@@ -38,6 +38,7 @@ SOURCE_DIR = REPO_ROOT / "data" / "raw" / "diagnostic-002"
 LINE_PREFIX = re.compile(r"^(\d+)행")
 QUOTED_TERM = re.compile(r"[「『]([^」』]+)[」』]")
 OVERLAP_CHARS = 12
+LLM_OVERLAP_CHARS = 6
 
 
 def shares_run(left: str, right: str, size: int = OVERLAP_CHARS) -> bool:
@@ -152,10 +153,34 @@ def llm_covers(labeled: str, reported: str) -> bool:
 
     문서만 맞으면 세는 방식으로 하면 **문서마다 아무 지적이나 하나 내면 회수율이
     오르는 계기판**이 된다. 표현이 실제로 겹쳐야 센다.
+
+    **요구 겹침 길이는 라벨 길이를 넘지 않는다.** 여섯 글자를 일률로 요구하면
+    「비고」·색 기호처럼 짧은 라벨은 정확히 그것만 지적해도 영영 못 맞힌다
+    (실측 3건이 그렇게 미탐으로 잡혔다). 라벨이 그보다 짧으면 라벨 전체를
+    담아야 세므로 아무 짧은 조각이나 통과하지는 않는다.
     """
     if not labeled or not reported:
         return False
-    return shares_run(labeled, reported, size=6) or shares_run(reported, labeled, size=6)
+    size = min(LLM_OVERLAP_CHARS, len(labeled))
+    return shares_run(labeled, reported, size=size) or shares_run(reported, labeled, size=size)
+
+
+def llm_line_matches(row: dict[str, object], line_number: int, labeled: str,
+                     lines: list[str]) -> bool:
+    """2층 지적이 그 라벨의 줄을 가리키는지 본다.
+
+    줄을 안 보면 문서 어딘가와 여섯 글자만 겹쳐도 정탐이 된다. 줄 번호를 안 적은
+    기록은 그 줄인지 가릴 수 없으므로 예전대로 문서 단위로만 본다.
+    """
+    reported = row.get("line_number")
+    if reported is None:
+        return True
+    index = int(reported)  # type: ignore[arg-type]
+    if index == line_number:
+        return True
+    # 같은 문구가 여러 줄에 있으면 라벨 줄은 첫 줄로 잡힌다. 그 문구가 실제로
+    # 실린 다른 줄을 가리킨 것도 같은 표현을 지적한 것이다.
+    return 1 <= index <= len(lines) and labeled in lines[index - 1]
 
 
 def load_llm_findings(path: Path | None) -> dict[str, list[dict[str, object]]]:
@@ -250,7 +275,8 @@ def evaluate(
         llm_hit = [
             str(row.get("category") or row.get("note") or "LLM")
             for row in llm_findings.get(document_id, [])
-            if llm_covers(labeled, str(row.get("original") or ""))
+            if llm_line_matches(row, line_number, labeled, state["lines"])   # type: ignore[arg-type]
+            and llm_covers(labeled, str(row.get("original") or ""))
         ]
         caught_by = (
             "둘 다" if skill_hit and global_hit

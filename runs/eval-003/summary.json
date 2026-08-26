@@ -1,0 +1,52 @@
+{
+  "run_id": "eval-003",
+  "date": "2026-08-26",
+  "objective": "하이브리드 2층(LLM 검토)이 1층이 놓친 것을 실제로 메우는지 재고, 그 수치를 믿을 수 있는지 가른다",
+  "tool": "scripts/eval_detectors.py --llm-findings",
+  "layer2_pass": {
+    "procedure": "SKILL.md 8단계 · references/core-rules.md 열 개 원칙을 문서 세 건의 모든 산문 줄에 적용",
+    "documents": ["doc-002", "doc-004", "doc-013"],
+    "findings": 32,
+    "quote_verification": "32건 전부 지목한 줄에 그 문자열이 실제로 있는지 대조 · 불일치 0"
+  },
+  "measured": {
+    "layer1_recall_floor": 0.154,
+    "layer1_recall_ceiling": 0.308,
+    "combined_recall_floor": 0.846,
+    "by_layer": {"2층": 9, "1층과 2층": 2, "아무도": 2},
+    "labeled_false_positives": 0
+  },
+  "why_the_combined_number_must_not_be_reported_as_a_score": {
+    "circularity": "양성 라벨 13건 전부가 사람·모델의 읽기 통과에서 나왔다(manual_quick_rules 10 · manual_review 3). 스크립트 단독 출처는 0건이다. 같은 종류의 읽기 통과로 그 라벨을 다시 찾는 것은 거의 항등식이라 높은 값이 나와도 뜻이 없다",
+    "contamination": "이 측정을 수행한 세션은 앞선 작업에서 라벨의 분류 구성(번역투 3 · 명사화 2 · 영어 과다 3 · 시각 장식 2 · 추상 주어 1)을 이미 봤다. 무엇을 찾을지 알고 찾은 값이다",
+    "asymmetry": "그래서 이 수치는 성공 방향으로는 증거가 아니고 실패 방향으로만 증거가 된다"
+  },
+  "what_is_actually_evidence": [
+    "2층은 유리한 조건 두 개(라벨과 같은 종류의 통과 · 분류 구성을 아는 상태)를 다 갖고도 13건 중 2건을 놓쳤다 — 읽기 통과는 같은 문서를 두 번 봐도 같은 결과가 안 나온다",
+    "놓친 2건: d002-002-04(명사화 · 19행 Adaptive Thinking 줄) · d002-013-04(영어 과다 · 54행 굵은 머리의 포지셔닝 확산)",
+    "2층 지적 32건 중 20건은 기존 라벨에 없다. 맞는지 틀리는지 아직 모르며 사람 판정 대상이다 — 이 20건의 판정이 2층 정밀도이고, 그 값은 순환이 아니다"
+  ],
+  "gauge_defects_found_and_fixed": [
+    {
+      "issue": "라벨 길이와 무관하게 여섯 글자 겹침을 요구",
+      "effect": "「비고」(2자)·색 기호(1자) 세 건이 정확히 지적됐는데도 미탐으로 계상 · 전체 회수율 0.692로 과소",
+      "fix": "요구 겹침 길이를 min(6, 라벨 길이)로 · 짧은 라벨은 전체를 담아야 인정",
+      "guard": "tests/test_eval_detectors.py LlmLayerScoringTests 3건 추가 · 돌연변이로 실패 확인"
+    },
+    {
+      "issue": "2층 지적의 줄 번호를 안 봄 · 문서만 맞으면 여섯 글자 겹침으로 정탐",
+      "effect": "문서 어딘가의 다른 줄을 지적해도 점수가 오를 수 있었음",
+      "fix": "라벨 줄과 대조하되 같은 문구가 실린 다른 줄도 인정 · 줄 번호 없는 기록은 예전대로 문서 단위",
+      "guard": "tests/test_eval_detectors.py LlmLineMatchingTests 5건 추가 · 돌연변이로 실패 확인"
+    }
+  ],
+  "open": [
+    "새 후보 20건 사용자 판정 → 2층 정밀도 산출 · 라벨 집합을 사람 판정 출처로 넓힘",
+    "라벨 집합이 「누가 알아챈 것」의 기록이라 회수율의 분모가 실제 문제 수가 아님 · 줄 단위 전수 판정이라야 분모가 참이 됨",
+    "6단계 백서 모드(form·profile·domain 3축 분리)"
+  ],
+  "validation": {
+    "gauge_tests": 28,
+    "external_paid_api_calls": 0
+  }
+}
