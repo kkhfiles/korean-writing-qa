@@ -32,31 +32,84 @@
       "item": 4,
       "claim": "발표 대본 종류에 규칙 6개와 회귀 시료가 묶여 있다",
       "verdict": "사실 아님",
-      "measured": {"context_cases": 13, "profile_distribution": {"technical-report": 13}, "presenter_notes_cases": 0},
+      "measured": {
+        "context_cases": 13,
+        "profile_distribution": {
+          "technical-report": 13
+        },
+        "presenter_notes_cases": 0
+      },
       "revised": "묶인 것은 규칙 6개뿐이고 그마저 발화 0회 · 어느 쪽이든 영향 없음 · 3번과 함께 보류"
     },
     {
       "item": 3,
       "claim": "확정 규칙 8개가 실문서에서 발화 0회",
       "verdict": "재확인",
-      "measured": {"documents_scanned": 567, "rules": 8, "rules_that_fired": 0}
+      "measured": {
+        "documents_scanned": 567,
+        "rules": 8,
+        "rules_that_fired": 0
+      }
     },
     {
       "item": 5,
       "claim": "전수 판정 대상이 130줄 안팎",
       "verdict": "재확인",
-      "measured": {"doc-002": 39, "doc-004": 53, "doc-013": 41, "total": 133}
+      "measured": {
+        "doc-002": 39,
+        "doc-004": 53,
+        "doc-013": 41,
+        "total": 133
+      }
     },
     {
       "item": 6,
       "claim": "산문에서도 「우리」 지적을 유지",
       "verdict": "재확인",
-      "measured": {"prose_per_doc": 0.15, "structured_per_doc": 0.08, "ratio": 1.9, "sample_check": "표본 2건 모두 실제로 모호"}
+      "measured": {
+        "prose_per_doc": 0.15,
+        "structured_per_doc": 0.08,
+        "ratio": 1.9,
+        "sample_check": "표본 2건 모두 실제로 모호"
+      }
     }
   ],
   "side_check": {
-    "prose_ask_rate": {"repository_docs": "17건 중 1건", "reports_corpus": "378건 중 7건", "verdict": "문턱 0.30 유지 · 걸린 문서는 경계값 0.30 정확히"},
+    "prose_ask_rate": {
+      "repository_docs": "17건 중 1건",
+      "reports_corpus": "378건 중 7건",
+      "verdict": "문턱 0.30 유지 · 걸린 문서는 경계값 0.30 정확히"
+    },
     "action": "걸린 문서에 `form: structured` 를 선언해 설계대로 답함"
   },
-  "external_paid_api_calls": 0
+  "external_paid_api_calls": 0,
+  "retraction": {
+    "what": "「확정 규칙 8개 발화 0회 → 재배치 효과 없음」 철회",
+    "why_the_measurement_was_wrong": [
+      "집단 오류 — 발표 대본용 규칙 6개를 보고서 뭉치(claude-workflow/reports)에 대고 쟀다",
+      "추론 오류 — 발화 횟수는 확정 교정의 가치를 재지 못한다. 막아서 안 나는 것과 쓸모없어서 안 나는 것이 같아 보인다"
+    ],
+    "remeasured": {
+      "right_population": "발표 자료 · main.md 1214행 · mycelium-5weeks.md 3532행 · doc-022.md 1214행",
+      "firings": 0,
+      "but": "doc-022.md 는 main.md 와 해시가 같고(54dcdcafcc) 규칙을 뽑아낸 원본이며 이미 교정됨",
+      "verdict": "판정 불가 — 「대상에 없음」이 아님 · 같은 종류의 발표 대본이 더 있어야 잴 수 있음"
+    },
+    "real_defect_found_instead": {
+      "what": "기록이 문맥 규칙이라고 스스로 밝히는데 글자 그대로 대조하고 있음",
+      "record_fields": {
+        "replacement_mode": "contextual_rewrite",
+        "requires_context": true
+      },
+      "matcher": "detector 미지정 → literal · line.find(original)",
+      "original_length": "10~47자 · 통째로 한 발화",
+      "human_table_already_distilled": {
+        "갈래는 둘": "5자 (기계 쪽 46자)",
+        "검증은 반복해서 도는 일": "13자 (기계 쪽 26자)"
+      },
+      "conclusion": "규칙이 무의미한 것이 아니라 쓸 수 없는 층·형태로 저장돼 있음"
+    },
+    "action": "6건을 --pattern 으로 다시 승격 · 승격 전 계기판으로 정밀도 측정",
+    "also": "규칙 기록에 register·axes·replacement_mode·requires_context 축이 이미 있음 · scope 가 혼자 지는 것은 적용 문서 하나뿐"
+  }
 }
