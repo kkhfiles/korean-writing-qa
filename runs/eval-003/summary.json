@@ -49,9 +49,9 @@
     }
   ],
   "open": [
-    "새 후보 20건 사용자 판정 → 2층 정밀도 산출 · 라벨 집합을 사람 판정 출처로 넓힘",
+    "「불필요한 영어 줄이기」에 정착 외래어 예외와 대체어 동등성 조건 추가 — 언어 정책 변경이라 사용자 확인 대상",
     "라벨 집합이 「누가 알아챈 것」의 기록이라 회수율의 분모가 실제 문제 수가 아님 · 줄 단위 전수 판정이라야 분모가 참이 됨",
-    "6단계 백서 모드(form·profile·domain 3축 분리)"
+    "6단계 백서 모드(form·profile·domain 3축 분리) · e003-16이 실측 근거"
   ],
   "validation": {
     "gauge_tests": 28,
@@ -62,5 +62,65 @@
     "rows": 20,
     "purpose": "새 지적 20건의 정오를 사람이 판정 · 그 값이 2층 정밀도",
     "quote_verification": "표의 「지금 문구」 20건 전부 원본 해당 행과 문자열 대조 · 불일치 0"
+  },
+  "layer2_precision": {
+    "judged_by": "사용자 직접 판정 · 2026-08-27",
+    "labels": "data/annotations/eval-003-layer2-review.jsonl",
+    "total": 20,
+    "confirmed": 16,
+    "false_positive": 3,
+    "hold": 1,
+    "precision_floor": 0.8,
+    "precision_ceiling": 0.85,
+    "why_this_number_is_usable": "라벨 출처가 사용자 판정이라 순환하지 않는다. 같은 실행의 회수율 0.846과 달리 성적으로 쓸 수 있는 값이다",
+    "by_category": {
+      "ENGLISH_OVERUSE": {
+        "total": 11,
+        "confirmed": 9
+      },
+      "NOMINALIZATION": {
+        "total": 2,
+        "confirmed": 1
+      },
+      "EVALUATIVE_MODIFIER": {
+        "total": 2,
+        "confirmed": 2
+      },
+      "OTHERS": {
+        "total": 5,
+        "confirmed": 4
+      }
+    },
+    "rejections": [
+      {
+        "id": "e003-17",
+        "original": "라인으로 포지셔닝",
+        "kind": "탐지 자체가 틀림",
+        "reason": "IT 업계에 굳은 외래어",
+        "acts_on": "「불필요한 영어 줄이기」에 정착 외래어 예외가 없음"
+      },
+      {
+        "id": "e003-02",
+        "original": "에이전틱",
+        "kind": "탐지는 성립 · 대체어가 틀림",
+        "reason": "「자율 수행」이 원어와 뜻이 같지 않음",
+        "acts_on": "정확한 대체어가 없으면 지적하지 않아야 함"
+      },
+      {
+        "id": "e003-16",
+        "original": "플랫폼 기능 고도화 발표",
+        "kind": "문서 형식에 따라 갈림",
+        "reason": "발표 자료·목록에서는 적절 · 산문에서만 고칠 것",
+        "acts_on": "6단계 form 축(구조형·산문형) 분리의 실측 근거"
+      },
+      {
+        "id": "e003-10",
+        "original": "이전 보고서 항목 없음 — 최초 실행 보고서로 재평가 대상 항목 없음",
+        "kind": "탐지는 성립 · 대체어가 뜻을 잃음",
+        "reason": "첫 보고서라서 대상이 없다는 인과가 압축에서 사라짐",
+        "acts_on": "중복 제거가 인과를 지우면 안 됨"
+      }
+    ],
+    "pattern": "네 건 중 셋은 탐지가 아니라 제안한 대체어의 실패다. 2층을 고칠 곳은 「무엇을 찾나」가 아니라 「무엇으로 바꾸나」다"
   }
 }
