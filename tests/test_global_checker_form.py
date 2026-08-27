@@ -261,6 +261,13 @@ class SkillWiringTests(unittest.TestCase):
     def test_the_document_types_page_shows_the_command(self) -> None:
         self.assertIn("--form prose", self.types)
 
+    def test_prose_documents_without_a_profile_are_routed(self) -> None:
+        """백서·설명문에는 전용 값이 없다. 어디로 갈지 안 적으면 찾다가 못 찾는다."""
+        for word in ("백서", "설명문"):
+            with self.subTest(word=word):
+                self.assertIn(word, self.types)
+        self.assertIn("form: prose", self.types)
+
 
 if __name__ == "__main__":
     unittest.main()
