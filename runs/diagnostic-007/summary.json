@@ -1,0 +1,31 @@
+{
+  "run_id": "diagnostic-007",
+  "date": "2026-08-27",
+  "objective": "규칙에 따른 수정이 다음 문제를 만드는지, 뜻이 변질되는 것을 잡을 수 있는지 잰다",
+  "why": "사용자 질문 둘 — A를 고치면 B가 생기지 않나 · 고친 뒤 원문 의도가 변질된 것을 검증할 수 있나",
+  "cascade": {
+    "tool": "scripts/check_fix_cascade.py",
+    "pairs": 51,
+    "sources": ["확정 규칙 8", "문맥 시료 13", "2층 지적 30"],
+    "measured_on_whole_line": 32,
+    "cascaded": 0,
+    "first_attempt": {
+      "cascaded": 1,
+      "cause": "문구만 떼어 재서 문장이 아니라는 이유로 절단형이 잡힘",
+      "fix": "줄 번호를 아는 지적은 원문 줄에 넣어 잼"
+    },
+    "no_op_guard": "심어 넣은 연쇄 3건을 잡고 대조군에서 침묵하는지 시험으로 고정",
+    "limit": "검사기가 보는 것은 원칙 10개 중 3개 · 문장 안에서 닫히는 결함만"
+  },
+  "meaning_markers": {
+    "gap_confirmed": "사용자가 맥락 소실로 판정한 수정이 낱말 대조 게이트에서 preserved 로 통과",
+    "markers": ["인과·조건", "계획·진행", "완료·단정", "부정·범위", "추정·유보", "행위 주체"],
+    "synthetic": {"injected_shifts": 6, "caught": 6, "controls": 5, "false_positives": 0},
+    "real_pairs": {"total": 51, "flagged": 4, "of_which_user_noted_context_needed": 3},
+    "design": "상태를 바꾸지 않고 보고만 한다",
+    "why_advisory_only": "상태를 바꾸게 하니 정당한 문맥 시료가 곧바로 실패 · 좋은 수정에서도 8%가 걸림",
+    "guard": "돌연변이 둘로 확인 — 보고를 비우기 · 상태를 바꾸게 하기"
+  },
+  "side_finding": "저장소 시험이 스킬 자체 시험을 안 돌리고 있었음 · pytest 안으로 들이고 단언 수 하한을 검사",
+  "external_paid_api_calls": 0
+}
