@@ -84,6 +84,24 @@ class CoreRulesMarkerTests(unittest.TestCase):
                     f"{name}: core-rules.md 의 담당 표시가 실제 검사기와 다릅니다",
                 )
 
+    def test_the_english_rule_keeps_its_two_exemptions(self) -> None:
+        """오탐 판정에서 나온 예외가 지워지면 같은 오탐이 되돌아온다.
+
+        사용자 판정으로 「포지셔닝」은 업계에 굳은 말이라 대상이 아니고, 「에이전틱」은
+        뜻이 같은 대체어가 없어 지적 자체가 성립하지 않는다고 갈렸다. 검사기가 보는
+        규칙이 아니라 사람이 읽는 지침이므로 **지워지는 것만** 여기서 막는다 — 이
+        시험은 지침이 실제로 지켜지는지는 재지 못한다.
+        """
+        for phrase in ("업계에 굳은 외래어", "뜻이 같은 대체어가 없는 말"):
+            with self.subTest(phrase=phrase):
+                self.assertIn(phrase, self.core_rules)
+
+    def test_the_exemptions_name_the_cases_they_came_from(self) -> None:
+        """근거가 된 실제 표현이 없으면 다음 사람이 예외의 범위를 못 가른다."""
+        for term in ("포지셔닝", "에이전틱"):
+            with self.subTest(term=term):
+                self.assertIn(term, self.core_rules)
+
     def test_core_rules_states_who_checks_each_principle(self) -> None:
         """표시 자체가 사라지면 8단계가 근거를 잃는다."""
         for marker in ("`[사람]`", "`[스킬: 경로]`", "`[전역: 자리]`"):
