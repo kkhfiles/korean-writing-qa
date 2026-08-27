@@ -1,0 +1,62 @@
+{
+  "run_id": "diagnostic-005",
+  "date": "2026-08-27",
+  "objective": "판단 대기 6건의 근거를 하나씩 다시 재고, 틀린 것을 찾는다",
+  "why": "추천을 근거 없이 적으면 사용자가 그 추천을 근거로 판단한다. 여섯 건 중 셋이 실제로 틀렸거나 크게 어긋났다",
+  "findings": [
+    {
+      "item": 1,
+      "claim": "훅과 검사기의 산문 정의 두 벌이 어긋난다",
+      "verdict": "축소해 적었음",
+      "measured": {
+        "corpus": "P:/github/claude-workflow/reports · 문서 378건",
+        "hook_fold_triggers": 44,
+        "fold_share": 0.116,
+        "folded_but_not_prose": 40,
+        "hidden_outline_findings_on_structured_docs": 1043,
+        "hidden_form_neutral_findings": 237,
+        "largest_hidden_kind": "값 안 굵게 182건"
+      },
+      "when": "발행 직전 점검에서만 발생 · 쓰는 순간에는 훅이 원래 매체 무관 규칙만 냄",
+      "tempering": "훅은 12줄만 표시하므로 1,280건이 화면에서 사라지는 것이 아니라 표시 후보에서 그 부류가 통째로 빠짐",
+      "evidence_limit": "0.15~0.30 구간 지적이 정당하다는 판단은 문서 6건 표본 · 전수 확인 안 함"
+    },
+    {
+      "item": 2,
+      "claim": "`whitepaper` 프로필을 추가해야 한다",
+      "verdict": "추천 뒤집음",
+      "reason": "새 프로필은 기존 general 과 같은 규칙 묶음(general_it_business)을 가리키고 백서 전용 규칙이 0건이라 동작이 바뀌지 않음",
+      "revised": "머리말 `form: prose` 로 충분 · 백서 전용 규칙이 실제로 확정되면 그때 프로필 생성"
+    },
+    {
+      "item": 4,
+      "claim": "발표 대본 종류에 규칙 6개와 회귀 시료가 묶여 있다",
+      "verdict": "사실 아님",
+      "measured": {"context_cases": 13, "profile_distribution": {"technical-report": 13}, "presenter_notes_cases": 0},
+      "revised": "묶인 것은 규칙 6개뿐이고 그마저 발화 0회 · 어느 쪽이든 영향 없음 · 3번과 함께 보류"
+    },
+    {
+      "item": 3,
+      "claim": "확정 규칙 8개가 실문서에서 발화 0회",
+      "verdict": "재확인",
+      "measured": {"documents_scanned": 567, "rules": 8, "rules_that_fired": 0}
+    },
+    {
+      "item": 5,
+      "claim": "전수 판정 대상이 130줄 안팎",
+      "verdict": "재확인",
+      "measured": {"doc-002": 39, "doc-004": 53, "doc-013": 41, "total": 133}
+    },
+    {
+      "item": 6,
+      "claim": "산문에서도 「우리」 지적을 유지",
+      "verdict": "재확인",
+      "measured": {"prose_per_doc": 0.15, "structured_per_doc": 0.08, "ratio": 1.9, "sample_check": "표본 2건 모두 실제로 모호"}
+    }
+  ],
+  "side_check": {
+    "prose_ask_rate": {"repository_docs": "17건 중 1건", "reports_corpus": "378건 중 7건", "verdict": "문턱 0.30 유지 · 걸린 문서는 경계값 0.30 정확히"},
+    "action": "걸린 문서에 `form: structured` 를 선언해 설계대로 답함"
+  },
+  "external_paid_api_calls": 0
+}
