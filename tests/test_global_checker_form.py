@@ -130,6 +130,70 @@ class GlobalCheckerFormTests(unittest.TestCase):
                 self.assertIn("형식 미표기", warnings)
 
 
+    def test_a_quoted_frontmatter_value_still_counts(self) -> None:
+        """YAML 도구가 따옴표를 붙인다. 안 받아 주면 선언한 사람은 왜 계속 묻는지 모른다."""
+        for quote in ('"', "'"):
+            with self.subTest(quote=quote):
+                declared = f"---\nform: {quote}prose{quote}\n---\n" + PROSE
+                errors, warnings = self.scan(declared)
+
+                self.assertNotIn("서술형 종결", errors)
+                self.assertNotIn("형식 미표기", warnings)
+
+
+class CommandLineFormTests(unittest.TestCase):
+    """`--form` 이 뒤에 오는 파일 이름을 삼키지 않는지 본다.
+
+    값을 이름으로 걸러 내면 `--form prose` 뒤의 `prose.md` 같은 이름이 조용히
+    검사 목록에서 빠진다. 빠진 파일은 통과로 보이므로 눈에 안 띈다.
+    """
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        if not CHECKER.is_file():
+            raise unittest.SkipTest(f"전역 검사기가 없습니다: {CHECKER}")
+
+    def run_cli(self, *argv: str, cwd: str | None = None) -> str:
+        import subprocess
+        import sys
+
+        done = subprocess.run(
+            [sys.executable, "-X", "utf8", str(CHECKER), *argv],
+            capture_output=True, text=True, encoding="utf-8", cwd=cwd,
+        )
+        return done.stdout
+
+    def test_the_file_after_the_flag_is_still_scanned(self) -> None:
+        """이름이 플래그 값과 같아도 검사한다. 빠진 파일은 통과처럼 보인다."""
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "structured.md"
+            path.write_text(PROSE, encoding="utf-8")
+
+            out = self.run_cli("--form", "structured", str(path))
+
+        self.assertIn("structured.md", out)
+        # 실제로 본문까지 봤다는 증거 — 이름만 찍고 넘어간 것이 아니다
+        self.assertIn("서술형 종결", out)
+
+    def test_a_target_named_exactly_like_the_value_is_still_scanned(self) -> None:
+        """값을 이름으로 걸러 내면 같은 이름의 대상이 통째로 빠진다.
+
+        플래그 값을 지우는 방법은 두 가지다 — 그 자리를 빼거나, 그 글자를 빼거나.
+        뒤쪽은 `--form prose` 로 `prose` 디렉터리를 검사할 때 대상이 사라진다.
+        """
+        with tempfile.TemporaryDirectory() as directory:
+            target = Path(directory) / "prose"
+            target.mkdir()
+            (target / "doc.md").write_text(PROSE, encoding="utf-8")
+
+            out = self.run_cli("--form", "prose", "prose", cwd=directory)
+
+        self.assertIn("doc.md", out)
+
+    def test_an_unknown_flag_value_is_refused(self) -> None:
+        self.assertIn("--form 은", self.run_cli("--form", "narrative", "x.md"))
+
+
 class UndeclaredFormTests(unittest.TestCase):
     """형식을 안 적었을 때 짐작하지 않고 물어보는지 본다."""
 
@@ -159,6 +223,43 @@ class UndeclaredFormTests(unittest.TestCase):
         errors, warnings = self.scan(PROSE)
         self.assertIn("형식 미표기", warnings)
         self.assertNotIn("형식 미표기", errors)
+
+
+class SkillWiringTests(unittest.TestCase):
+    """형식 축을 쓰라는 지시가 스킬에 실제로 닿는지 본다.
+
+    검사기에 플래그를 만들어 놓고 스킬이 안 부르면 규칙은 존재만 하고 효력이 0이다.
+    실제로 이 세션이 그렇게 만들었다가 재검토에서 잡았다.
+    """
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        from scripts import skill_bridge
+
+        cls.home = skill_bridge.skill_home()
+        cls.check = skill_bridge.load("check")
+        cls.types = (cls.home / "references" / "document-types.md").read_text(encoding="utf-8")
+        cls.skill = (cls.home / "SKILL.md").read_text(encoding="utf-8")
+
+    def test_every_profile_declares_a_form(self) -> None:
+        """새 문서 종류가 형식 없이 들어오면 어느 쪽으로 검사할지 아무도 모른다."""
+        for profile in self.check.PROFILE_SCOPES:
+            with self.subTest(profile=profile):
+                row = next(
+                    (l for l in self.types.splitlines() if l.startswith(f"| `{profile}`")),
+                    None,
+                )
+                self.assertIsNotNone(row, f"{profile} 가 document-types.md 표에 없습니다")
+                self.assertTrue(
+                    "구조형" in row or "산문형" in row,
+                    f"{profile} 행에 형식이 없습니다: {row}",
+                )
+
+    def test_the_skill_tells_you_to_pass_the_form(self) -> None:
+        self.assertIn("--form prose", self.skill)
+
+    def test_the_document_types_page_shows_the_command(self) -> None:
+        self.assertIn("--form prose", self.types)
 
 
 if __name__ == "__main__":
