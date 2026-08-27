@@ -48,6 +48,7 @@
 
 ## 설계 문서
 
+- [판단이 필요한 것](docs/decisions-pending.md)
 - [인수인계 설계](docs/design-handoff.md)
 - [기존 검사기 조사](docs/existing-tools.md)
 - [Claude Code 한글 표현 규칙 수집](docs/claude-korean-expression-inventory.md)
