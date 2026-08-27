@@ -16,6 +16,7 @@ import unittest
 from pathlib import Path
 
 from scripts import skill_bridge
+from scripts.eval_detectors import shares_run
 
 GLOBAL_CHECKER = Path.home() / ".claude" / "assets" / "doc-style-check.py"
 # 진입점·제목이 없으면 검사기가 뼈대를 지적해 본문 판정을 가린다. 본문은 늘 7행이다.
@@ -101,6 +102,46 @@ class CoreRulesMarkerTests(unittest.TestCase):
         for term in ("포지셔닝", "에이전틱"):
             with self.subTest(term=term):
                 self.assertIn(term, self.core_rules)
+
+    def test_every_contextual_rule_reaches_the_layer_that_can_apply_it(self) -> None:
+        """문맥 교정은 이 표가 유일한 통로다. 빠지면 확정하고도 아무 데서도 안 쓰인다.
+
+        `replacement_mode` 가 `contextual_rewrite` 인 규칙은 정의상 글자 대조로 못
+        고친다. 실측으로도 그렇다 — 원문 그대로는 65,576줄에서 0건이고, 동사로
+        넓히면 124건이 도는데 전부 정상 한국어였다(`runs/diagnostic-006`). 그러니
+        탐지기 층에 두면 값이 0이고, 판단 층이 읽는 이 표에 있어야 쓰인다.
+
+        실제로 여섯 중 넷이 빠져 있었다.
+        """
+        import json
+
+        rules = [
+            json.loads(line)
+            for line in (
+                skill_bridge.skill_home() / "references" / "confirmed-rules.jsonl"
+            ).read_text(encoding="utf-8").splitlines()
+            if line.strip()
+        ]
+        contextual = [
+            r for r in rules if r.get("replacement_mode") == "contextual_rewrite"
+        ]
+        self.assertTrue(contextual, "문맥 교정 규칙이 하나도 없습니다 — 시료가 비었습니다")
+
+        table = [
+            line.split("|")[1].strip()
+            for line in self.core_rules.splitlines()
+            if line.startswith("| ") and line.count("|") >= 4
+        ]
+        # 표는 원문을 그대로 자르지 않고 줄여 적는다 — 「검증은 코드가 바뀔 때마다
+        # 반복해서 도는 일이라」가 표에서는 「검증은 반복해서 도는 일」이다. 부분문자열이
+        # 아니라 이어지는 공통 부분으로 본다.
+        for rule in contextual:
+            with self.subTest(rule=rule["rule_id"]):
+                self.assertTrue(
+                    any(cell and shares_run(cell, rule["original"], size=5)
+                        for cell in table),
+                    f"{rule['rule_id']} 의 교정이 「사용자가 확정한 대표 수정」 표에 없습니다",
+                )
 
     def test_core_rules_states_who_checks_each_principle(self) -> None:
         """표시 자체가 사라지면 8단계가 근거를 잃는다."""
