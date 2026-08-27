@@ -1,0 +1,36 @@
+{
+  "run_id": "diagnostic-008",
+  "date": "2026-08-27",
+  "objective": "훅의 산문 추측을 없애고 검사기 선언으로 통일한 뒤 효과를 잰다",
+  "why": "훅과 검사기가 같은 문제를 다른 정의로 다루고 있었고 두 목록이 어긋났다",
+  "before": {
+    "mechanism": "훅이 서술형 지적 수를 셈 · 8건 초과이고 전체의 40% 이상이면 개조식 부류를 접음",
+    "folded_documents": 44,
+    "of_378": 0.116,
+    "folded_but_not_prose": 40,
+    "hidden_findings": {"개조식 부류": 1043, "형식 무관 부류": 237}
+  },
+  "after": {
+    "mechanism": "검사기가 「형식 미표기」로 물어볼 때만 훅이 --form prose 로 한 번 더 물어봄 · 무엇을 뺄지는 검사기가 정함",
+    "folded_documents": 7,
+    "of_378": 0.019,
+    "recovered_findings": 1277
+  },
+  "spot_checks": [
+    {"document": "산문 백서 · 형식 미표기", "result": "개조식 지적 접힘 + 형식을 적으라는 안내 · 정당한 지적 1건 남음"},
+    {"document": "사용자 안내 메일 · 형식 미표기", "result": "오류 0 · 정당한 주의 1건 + 안내"},
+    {"document": "action-items-triage-2026-08-03.md (산문 0.29)", "result": "예전에는 접혔음 · 이제 12줄 표시"}
+  ],
+  "guards": {
+    "tests": "tests/test_doc_style_gate.py 6건",
+    "protected_directions": [
+      "산문에서 쏟아지지 않을 것",
+      "구조 문서가 조용해지지 않을 것 — 안 보이므로 더 위험",
+      "선언이 접기를 이길 것",
+      "쓰는 순간의 소음 억제는 형식 축과 별개로 유지될 것"
+    ],
+    "mutations": ["세는 방식 되살림 → 3건 실패", "산문 재질의 제거 → 1건 실패"]
+  },
+  "cost": "형식 미표기 문서에서만 검사기를 한 번 더 실행 · 실측 1.9%",
+  "external_paid_api_calls": 0
+}
