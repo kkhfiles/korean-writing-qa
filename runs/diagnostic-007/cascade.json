@@ -1,0 +1,457 @@
+{
+ "pairs": 51,
+ "cascaded": 0,
+ "introduced": {},
+ "rows": [
+  {
+   "source": "확정 규칙",
+   "id": "KOR-METAPHOR-PATH-001",
+   "before": "제품화 경로",
+   "after": "제품화 단계",
+   "new": {},
+   "fixed": {
+    "스킬/KOR-METAPHOR-PATH-001": 1
+   }
+  },
+  {
+   "source": "확정 규칙",
+   "id": "KOR-VAGUE-REBUILD-001",
+   "before": "CT를 다시 세우는 부분",
+   "after": "CT 재개발이 필요한 항목",
+   "new": {},
+   "fixed": {}
+  },
+  {
+   "source": "확정 규칙",
+   "id": "KOR-PRESENTER-PROCESS-001",
+   "before": "검증에서 사람이 가장 많이 붙는 곳이 테스트를 만드는 구간이고, 여기를 AI로 풉니다",
+   "after": "단위 통합 검증에서 공수가 많이 필요한 과정이 테스트를 설계하는 것입니다",
+   "new": {},
+   "fixed": {}
+  },
+  {
+   "source": "확정 규칙",
+   "id": "KOR-PRESENTER-CLASSIFY-001",
+   "before": "갈래는 둘, 요구사항에서 도출하는 것과 코드 구조를 훑어 커버리지를 채우는 것입니다",
+   "after": "크게 두 가지로 나뉘는데, 요구사항 기반 테스트와 구조 기반 테스트입니다",
+   "new": {},
+   "fixed": {}
+  },
+  {
+   "source": "확정 규칙",
+   "id": "KOR-PRESENTER-RESULT-001",
+   "before": "막대가 상반기 실측입니다",
+   "after": "현재 보여드리는 내용이 상반기 결과이며",
+   "new": {},
+   "fixed": {
+    "서술형 종결": 1
+   }
+  },
+  {
+   "source": "확정 규칙",
+   "id": "KOR-PRESENTER-PLAN-001",
+   "before": "뒤의 것은 커버리지를 더 올립니다",
+   "after": "더 높은 커버리지를 달성할 수 있도록 개발하고 있습니다",
+   "new": {},
+   "fixed": {}
+  },
+  {
+   "source": "확정 규칙",
+   "id": "KOR-PRESENTER-REASON-001",
+   "before": "가치가 둘 나옵니다",
+   "after": "중요한데, 두 가지 이유 때문입니다",
+   "new": {},
+   "fixed": {}
+  },
+  {
+   "source": "확정 규칙",
+   "id": "KOR-PRESENTER-ACTION-001",
+   "before": "검증은 코드가 바뀔 때마다 반복해서 도는 일이라",
+   "after": "반복해서 수행하는 작업이라",
+   "new": {},
+   "fixed": {}
+  },
+  {
+   "source": "문맥 시료",
+   "id": "CTX-D002-002-01",
+   "before": "HTTPS URL을 통해 직접 플러그인 아카이브 패키지를 설치 및 관리하는 스펙 지원.",
+   "after": "HTTPS URL로 플러그인 아카이브 패키지를 직접 설치하고 관리하는 스펙 지원.",
+   "new": {},
+   "fixed": {}
+  },
+  {
+   "source": "문맥 시료",
+   "id": "CTX-D002-002-02",
+   "before": "강력한 `.claudeignore` 활용",
+   "after": "`.claudeignore` 활용",
+   "new": {},
+   "fixed": {
+    "평가 수식어": 1
+   }
+  },
+  {
+   "source": "문맥 시료",
+   "id": "CTX-D002-002-04",
+   "before": "Adaptive Thinking(가변 추론) 기능 도입으로 작업 난이도에 따른 동적 추론 깊이 조절 가능.",
+   "after": "Adaptive Thinking(가변 추론) 기능을 도입해 작업 난이도에 따라 추론 깊이를 조절.",
+   "new": {},
+   "fixed": {}
+  },
+  {
+   "source": "문맥 시료",
+   "id": "CTX-D002-004-01",
+   "before": "**VectorCAST 2026 SP3 정식 출시 (2026-07)**",
+   "after": "VectorCAST 2026 SP3 정식 출시 (2026-07)",
+   "new": {},
+   "fixed": {}
+  },
+  {
+   "source": "문맥 시료",
+   "id": "CTX-D002-004-02",
+   "before": "AI 워크플로우와의 유기적 연동을 위한 **Open JSON Interfaces** 전면 도입",
+   "after": "AI 워크플로우와 연동하도록 Open JSON Interfaces 전면 도입",
+   "new": {},
+   "fixed": {
+    "값 안 굵게": 1
+   }
+  },
+  {
+   "source": "문맥 시료",
+   "id": "CTX-D002-004-03",
+   "before": "사용자 인터페이스 고도화",
+   "after": "사용자 인터페이스 개선",
+   "new": {},
+   "fixed": {}
+  },
+  {
+   "source": "문맥 시료",
+   "id": "CTX-D002-004-04",
+   "before": "프러리리스 배포 시작",
+   "after": "사전 공개판 배포 시작",
+   "new": {},
+   "fixed": {}
+  },
+  {
+   "source": "문맥 시료",
+   "id": "CTX-D002-013-01",
+   "before": "비고",
+   "after": "최근 동향",
+   "new": {},
+   "fixed": {}
+  },
+  {
+   "source": "문맥 시료",
+   "id": "CTX-D002-013-02",
+   "before": "AI 생성 코드(Copilot/LLM 산출물) 검증을 명시 타깃.",
+   "after": "AI 생성 코드(Copilot/LLM 산출물)를 검증 대상으로 명시.",
+   "new": {},
+   "fixed": {}
+  },
+  {
+   "source": "문맥 시료",
+   "id": "CTX-D002-013-03",
+   "before": "\"LLM 산출물의 검증 책임\"을 도구가 맡는 방향으로 시장이 명확하게 정렬.",
+   "after": "도구가 \"LLM 산출물의 검증 책임\"을 맡는 방향으로 뚜렷하게 모임.",
+   "new": {},
+   "fixed": {}
+  },
+  {
+   "source": "문맥 시료",
+   "id": "CTX-D002-013-04",
+   "before": "**\"AI가 생성한 코드를 정적분석으로 검증\" 포지셔닝 확산**",
+   "after": "**\"AI가 생성한 코드를 정적분석으로 검증\" 제품 설명 확산**",
+   "new": {},
+   "fixed": {}
+  },
+  {
+   "source": "2층 지적",
+   "id": "doc-002:14",
+   "before": "   - 에이전틱 작업, 복잡한 시스템 아키텍처 설계, 코드베이스 리팩토링 능력이 비약적으로 상승한 플래그십 모델.",
+   "after": "   - 에이전틱 작업, 복잡한 시스템 아키텍처 설계, 코드베이스 리팩토링 능력이 에이전틱 작업·시스템 설계·리팩터링 능력을 개선한 최상위 모델.",
+   "whole_line": true,
+   "new": {},
+   "fixed": {}
+  },
+  {
+   "source": "2층 지적",
+   "id": "doc-002:14",
+   "before": "   - 에이전틱 작업, 복잡한 시스템 아키텍처 설계, 코드베이스 리팩토링 능력이 비약적으로 상승한 플래그십 모델.",
+   "after": "   - 자율 수행 작업, 복잡한 시스템 아키텍처 설계, 코드베이스 리팩토링 능력이 비약적으로 상승한 플래그십 모델.",
+   "whole_line": true,
+   "new": {},
+   "fixed": {}
+  },
+  {
+   "source": "2층 지적",
+   "id": "doc-002:15",
+   "before": "   - 장기 실행(long-running) 에이전트의 안정성과 논리 추론 일관성 개선.",
+   "after": "   - 장기 실행 에이전트의 안정성과 논리 추론 일관성 개선.",
+   "whole_line": true,
+   "new": {},
+   "fixed": {}
+  },
+  {
+   "source": "2층 지적",
+   "id": "doc-002:18",
+   "before": "   - 100만(1M) 토큰 컨텍스트 윈도우 지원 및 128k 최대 출력 토큰(max output tokens) 제공.",
+   "after": "   - 100만(1M) 토큰 컨텍스트 윈도우 지원 및 128k 최대 출력 토큰 제공.",
+   "whole_line": true,
+   "new": {},
+   "fixed": {}
+  },
+  {
+   "source": "2층 지적",
+   "id": "doc-002:23",
+   "before": "   - **아카이브 플러그인 소스 (HTTPS)**: HTTPS URL을 통해 직접 플러그인 아카이브 패키지를 설치 및 관리하는 스펙 지원.",
+   "after": "   - **아카이브 플러그인 소스 (HTTPS)**: HTTPS 주소로 플러그인 아카이브를 바로 내려받아 설치·관리하는 명세 지원.",
+   "whole_line": true,
+   "new": {},
+   "fixed": {}
+  },
+  {
+   "source": "2층 지적",
+   "id": "doc-002:34",
+   "before": "   - **`CLAUDE.md` 중심의 메메틱 구조**: 프로젝트 메모리 및 핵심 엔지니어링 원칙을 명시하여 모델의 컨텍스트 오염 방지.",
+   "after": "   - **`CLAUDE.md` 중심의 기억 구조**: 프로젝트 메모리 및 핵심 엔지니어링 원칙을 명시하여 모델의 컨텍스트 오염 방지.",
+   "whole_line": true,
+   "new": {},
+   "fixed": {}
+  },
+  {
+   "source": "2층 지적",
+   "id": "doc-002:35",
+   "before": "   - **강력한 `.claudeignore` 활용**: 대용량 데이터, 로그, 빌드 아티팩트를 적극 제외하여 컨텍스트 낭비를 50~70% 절감.",
+   "after": "   - **`.claudeignore` 적용 범위 넓히기**: 대용량 데이터, 로그, 빌드 아티팩트를 적극 제외하여 컨텍스트 낭비를 50~70% 절감.",
+   "whole_line": true,
+   "new": {},
+   "fixed": {
+    "평가 수식어": 1
+   }
+  },
+  {
+   "source": "2층 지적",
+   "id": "doc-002:35",
+   "before": "   - **강력한 `.claudeignore` 활용**: 대용량 데이터, 로그, 빌드 아티팩트를 적극 제외하여 컨텍스트 낭비를 50~70% 절감.",
+   "after": "   - **강력한 `.claudeignore` 활용**: 대용량 데이터, 로그, 빌드 아티팩트를 제외해 컨텍스트 낭비를 50~70% 절감.",
+   "whole_line": true,
+   "new": {},
+   "fixed": {}
+  },
+  {
+   "source": "2층 지적",
+   "id": "doc-002:36",
+   "before": "   - **주기적 `/compact` 및 `/clear` 활용**: 컨텍스트 윈도우가 비대해질수록 성능이 하락하는 현상을 방지하기 위해 컨텍스트 압축 및 세션 리셋 주기적 수행.",
+   "after": "   - **주기적 `/compact` 및 `/clear` 활용**: 컨텍스트 윈도우가 비대해질수록 성능이 하락하는 현상을 방지하기 위해 주기적으로 컨텍스트를 압축하고 세션을 초기화.",
+   "whole_line": true,
+   "new": {},
+   "fixed": {}
+  },
+  {
+   "source": "2층 지적",
+   "id": "doc-002:39",
+   "before": "   - 복잡한 코드 작성 전 `spec.md` 또는 scratch 공간에 명세 및 실행 계획을 수립하고 verification gate(테스트/빌드 스크립트)를 사전에 정의.",
+   "after": "   - 복잡한 코드 작성 전 `spec.md` 또는 임시 공간에 명세와 실행 계획을 적고 검증 관문(테스트·빌드 스크립트)을 미리 정의.",
+   "whole_line": true,
+   "new": {},
+   "fixed": {}
+  },
+  {
+   "source": "2층 지적",
+   "id": "doc-002:42",
+   "before": "   - 테스트 코드 작성 -> 구현 -> 검증 단계를 에이전트가 자체적으로 돌 수 있도록 검증 수단(Verification Gate)을 명확히 제공.",
+   "after": "   - 테스트 코드 작성 -> 구현 -> 검증 단계를 에이전트가 스스로 실행할 수 있도록 검증 수단(Verification Gate)을 명확히 제공.",
+   "whole_line": true,
+   "new": {},
+   "fixed": {}
+  },
+  {
+   "source": "2층 지적",
+   "id": "doc-002:49",
+   "before": "- [ ] 🟢 `.claudeignore` 템플릿 최적화 검토 — `mycelium/data/`, `*.db-wal`, 대용량 로그 디렉터리 등의 컨텍스트 유입을 적극 차단하여 50% 이상의 토큰 절약 달성 | 비용: XS (10분)",
+   "after": "- [ ] 삭제 `.claudeignore` 템플릿 최적화 검토 — `mycelium/data/`, `*.db-wal`, 대용량 로그 디렉터리 등의 컨텍스트 유입을 적극 차단하여 50% 이상의 토큰 절약 달성 | 비용: XS (10분)",
+   "whole_line": true,
+   "new": {},
+   "fixed": {}
+  },
+  {
+   "source": "2층 지적",
+   "id": "doc-002:52",
+   "before": "- [ ] 🟡 레거시 문서 및 아카이브 스캔 경로 정리 — `reports/scheduled-reports/` 내 중복 보고서 정리 및 아카이브 자동화 스케줄 유지 | 비용: XS (15분)",
+   "after": "- [ ] 삭제 레거시 문서 및 아카이브 스캔 경로 정리 — `reports/scheduled-reports/` 내 중복 보고서 정리 및 아카이브 자동화 스케줄 유지 | 비용: XS (15분)",
+   "whole_line": true,
+   "new": {},
+   "fixed": {}
+  },
+  {
+   "source": "2층 지적",
+   "id": "doc-002:52",
+   "before": "- [ ] 🟡 레거시 문서 및 아카이브 스캔 경로 정리 — `reports/scheduled-reports/` 내 중복 보고서 정리 및 아카이브 자동화 스케줄 유지 | 비용: XS (15분)",
+   "after": "- [ ] 🟡 오래된 문서 및 아카이브 스캔 경로 정리 — `reports/scheduled-reports/` 내 중복 보고서 정리 및 아카이브 자동화 스케줄 유지 | 비용: XS (15분)",
+   "whole_line": true,
+   "new": {},
+   "fixed": {}
+  },
+  {
+   "source": "2층 지적",
+   "id": "doc-002:59",
+   "before": "- 이전 보고서 항목 없음 — 최초 실행 보고서로 재평가 대상 항목 없음.",
+   "after": "- 최초 실행 보고서 · 재평가 대상 없음.",
+   "whole_line": true,
+   "new": {},
+   "fixed": {}
+  },
+  {
+   "source": "2층 지적",
+   "id": "doc-004:16",
+   "before": "- **이번 변경**: **VectorCAST 2026 SP3 정식 출시 (2026-07)**",
+   "after": "- **이번 변경**: VectorCAST 2026 SP3 정식 출시 (2026-07)",
+   "whole_line": true,
+   "new": {},
+   "fixed": {}
+  },
+  {
+   "source": "2층 지적",
+   "id": "doc-004:17",
+   "before": "  - 테스트 케이스 트리의 대용량 반복 카운트(repeat counts) 편집 시 발생하던 메모리 초과 클래시 수정 (최대 1,000,000으로 제약)",
+   "after": "  - 테스트 케이스 트리의 대용량 반복 카운트(repeat counts) 편집 시 발생하던 메모리 초과로 인한 비정상 종료 수정 (최대 1,000,000으로 제약)",
+   "whole_line": true,
+   "new": {},
+   "fixed": {}
+  },
+  {
+   "source": "2층 지적",
+   "id": "doc-004:25",
+   "before": "  - CI/CD 파이프라인, 외부 스크립트, AI 워크플로우와의 유기적 연동을 위한 **Open JSON Interfaces** 전면 도입",
+   "after": "  - CI/CD 파이프라인, 외부 스크립트, AI 워크플로우와의 연동을 위한 **Open JSON Interfaces** 전면 도입",
+   "whole_line": true,
+   "new": {},
+   "fixed": {}
+  },
+  {
+   "source": "2층 지적",
+   "id": "doc-004:26",
+   "before": "  - CLI(명령줄) 연동 및 Visual Studio Code Extension 사용자 인터페이스 고도화",
+   "after": "  - CLI(명령줄) 연동 및 Visual Studio Code Extension 사용자 화면 개선",
+   "whole_line": true,
+   "new": {},
+   "fixed": {}
+  },
+  {
+   "source": "2층 지적",
+   "id": "doc-004:27",
+   "before": "  - Eclipse 개발 환경 내 통합 테스팅 사용성 향상",
+   "after": "  - Eclipse 개발 환경 내 통합 테스트 사용성 향상",
+   "whole_line": true,
+   "new": {},
+   "fixed": {}
+  },
+  {
+   "source": "2층 지적",
+   "id": "doc-004:33",
+   "before": "  - TESSY v5.x 시리즈(Test Cockpit, Code Access, Fault Injection 등)를 계승하고 차세대 임베디드 테스팅 파이프라인 대응 및 파트너 채널 배포 시작",
+   "after": "  - TESSY v5.x 시리즈(Test Cockpit, Code Access, Fault Injection 등)를 계승하고 임베디드 테스트 연계 지원 및 파트너 채널 배포 시작",
+   "whole_line": true,
+   "new": {},
+   "fixed": {}
+  },
+  {
+   "source": "2층 지적",
+   "id": "doc-004:46",
+   "before": "  - Polyspace Platform 및 버그 파인더/테스트 제품군을 포함한 MathWorks R2026b 프러리리스 배포 시작",
+   "after": "  - Polyspace Platform 및 버그 파인더/테스트 제품군을 포함한 MathWorks R2026b 사전 배포판 공개 시작",
+   "whole_line": true,
+   "new": {},
+   "fixed": {}
+  },
+  {
+   "source": "2층 지적",
+   "id": "doc-004:53",
+   "before": "  - HIL(Hardware-in-the-Loop) 및 Virtual HIL 환경에서 safety-critical 시스템 단위/통합 테스팅을 자동화하는 신제품 `BTC TestAgent` 최초 버전을 일부 파트너 고객사에 인도",
+   "after": "  - HIL(Hardware-in-the-Loop) 및 Virtual HIL 환경에서 안전 필수 시스템의 단위·통합 테스트을 자동화하는 신제품 `BTC TestAgent` 최초 버전을 일부 파트너 고객사에 인도",
+   "whole_line": true,
+   "new": {},
+   "fixed": {}
+  },
+  {
+   "source": "2층 지적",
+   "id": "doc-004:59",
+   "before": "  - Ketryx CEO Erez Kaminski 인터뷰를 통해 의료기기 및 안전 필수 AI 시스템의 지속적 검증(Agentic Continuous Compliance) 플랫폼 기능 고도화 발표",
+   "after": "  - Ketryx CEO Erez Kaminski 인터뷰에서 의료기기 및 안전 필수 AI 시스템의 지속적 검증(Agentic Continuous Compliance) 플랫폼 기능 고도화 발표",
+   "whole_line": true,
+   "new": {},
+   "fixed": {}
+  },
+  {
+   "source": "2층 지적",
+   "id": "doc-004:59",
+   "before": "  - Ketryx CEO Erez Kaminski 인터뷰를 통해 의료기기 및 안전 필수 AI 시스템의 지속적 검증(Agentic Continuous Compliance) 플랫폼 기능 고도화 발표",
+   "after": "  - Ketryx CEO Erez Kaminski 인터뷰를 통해 의료기기 및 안전 필수 AI 시스템의 지속적 검증(Agentic Continuous Compliance) 플랫폼 기능을 확장한다고 발표",
+   "whole_line": true,
+   "new": {},
+   "fixed": {}
+  },
+  {
+   "source": "2층 지적",
+   "id": "doc-013:19",
+   "before": "  - **Polyspace Copilot** — 정적분석 결과 위에 LLM 기반 가이드(원인·수정안 제시). MathWorks의 \"Trusted AI\" 라인으로 포지셔닝.",
+   "after": "  - **Polyspace Copilot** — 정적분석 결과 위에 LLM 기반 가이드(원인·수정안 제시). MathWorks의 \"Trusted AI\" 제품군으로 자리매김.",
+   "whole_line": true,
+   "new": {},
+   "fixed": {}
+  },
+  {
+   "source": "2층 지적",
+   "id": "doc-013:20",
+   "before": "  - **Polyspace as You Code** — IDE 내부에서 코딩 중 실시간 정적분석. AI 생성 코드(Copilot/LLM 산출물) 검증을 명시 타깃.",
+   "after": "  - **Polyspace as You Code** — IDE 내부에서 코딩 중 실시간 정적분석. AI 생성 코드(Copilot/LLM 산출물) 검증을 겨냥한다고 명시.",
+   "whole_line": true,
+   "new": {},
+   "fixed": {}
+  },
+  {
+   "source": "2층 지적",
+   "id": "doc-013:39",
+   "before": "| 도구 | 직전 확인 상태 | 비고 |",
+   "after": "| 도구 | 직전 확인 상태 | 신규 발표 여부 |",
+   "whole_line": true,
+   "new": {},
+   "fixed": {}
+  },
+  {
+   "source": "2층 지적",
+   "id": "doc-013:53",
+   "before": "- **MathWorks가 Polyspace Copilot으로 AI 정적분석/테스트 가이드 시장에 합류** — 직전 분기에 VectorCAST(Reqs2x), Cantata(Claude Code), Parasoft(MCP)가 모두 AI 보조 기능을 메인 라인업에 올린 데 이어, MathWorks도 같은 흐름에 정식 합류. **상위 4개 벤더가 모두 AI 기반 보조 기능을 정규 라인업에 올린 상태**가 됨.",
+   "after": "- **MathWorks가 Polyspace Copilot으로 AI 정적분석/테스트 가이드 시장에 합류** — 직전 분기에 VectorCAST(Reqs2x), Cantata(Claude Code), Parasoft(MCP)가 모두 AI 보조 기능을 메인 라인업에 올린 데 이어, MathWorks도 같은 흐름에 정식 합류. 상위 4개 벤더가 모두 AI 보조 기능을 정규 제품군에 올린 상태가 됨.",
+   "whole_line": true,
+   "new": {},
+   "fixed": {}
+  },
+  {
+   "source": "2층 지적",
+   "id": "doc-013:53",
+   "before": "- **MathWorks가 Polyspace Copilot으로 AI 정적분석/테스트 가이드 시장에 합류** — 직전 분기에 VectorCAST(Reqs2x), Cantata(Claude Code), Parasoft(MCP)가 모두 AI 보조 기능을 메인 라인업에 올린 데 이어, MathWorks도 같은 흐름에 정식 합류. **상위 4개 벤더가 모두 AI 기반 보조 기능을 정규 라인업에 올린 상태**가 됨.",
+   "after": "- **MathWorks가 Polyspace Copilot으로 AI 정적분석/테스트 가이드 시장에 합류** — 직전 분기에 VectorCAST(Reqs2x), Cantata(Claude Code), Parasoft(MCP)가 모두 AI 보조 기능을 주력 제품군에 올린 데 이어, MathWorks도 같은 흐름에 정식 합류. **상위 4개 벤더가 모두 AI 기반 보조 기능을 정규 라인업에 올린 상태**가 됨.",
+   "whole_line": true,
+   "new": {},
+   "fixed": {}
+  },
+  {
+   "source": "2층 지적",
+   "id": "doc-013:54",
+   "before": "- **\"AI가 생성한 코드를 정적분석으로 검증\" 포지셔닝 확산** — Polyspace as You Code가 명시적으로 GitHub Copilot/LLM 산출물을 타깃. 안전 인증 도메인에서 \"LLM 산출물의 검증 책임\"을 도구가 맡는 방향으로 시장이 명확하게 정렬.",
+   "after": "- **\"AI가 생성한 코드를 정적분석으로 검증\" 포지셔닝 확산** — Polyspace as You Code가 명시적으로 GitHub Copilot/LLM 산출물을 타깃. 안전 인증 도메인에서 \"LLM 산출물의 검증 책임\"을 도구가 맡는 방향으로 주요 도구가 그 방향으로 모임.",
+   "whole_line": true,
+   "new": {},
+   "fixed": {}
+  },
+  {
+   "source": "2층 지적",
+   "id": "doc-013:54",
+   "before": "- **\"AI가 생성한 코드를 정적분석으로 검증\" 포지셔닝 확산** — Polyspace as You Code가 명시적으로 GitHub Copilot/LLM 산출물을 타깃. 안전 인증 도메인에서 \"LLM 산출물의 검증 책임\"을 도구가 맡는 방향으로 시장이 명확하게 정렬.",
+   "after": "- **\"AI가 생성한 코드를 정적분석으로 검증\" 포지셔닝 확산** — Polyspace as You Code가 명시적으로 GitHub Copilot/LLM 산출물을 검증 대상으로 지정. 안전 인증 도메인에서 \"LLM 산출물의 검증 책임\"을 도구가 맡는 방향으로 시장이 명확하게 정렬.",
+   "whole_line": true,
+   "new": {},
+   "fixed": {}
+  }
+ ]
+}
