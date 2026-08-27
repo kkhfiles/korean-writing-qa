@@ -1,0 +1,42 @@
+{
+  "run_id": "diagnostic-006",
+  "date": "2026-08-27",
+  "objective": "통문장으로 저장된 확정 규칙 6건을 짧은 형태로 다시 올릴 수 있는지 실측으로 가른다",
+  "why": "「발화 0회라 무의미」는 철회했다. 규칙에 값이 있다면 쓸 수 있는 형태가 있어야 하므로 그 형태를 찾아본다",
+  "tool": "scripts/probe_rule_patterns.py",
+  "corpora": {"보고서": 414, "발표자료": 26, "AI원문": 91, "훑은 줄": 65576},
+  "spoken_register_available": {
+    "method": "경어체 종결(습니다·입니다·합니다)로 센 줄",
+    "보고서": 376,
+    "AI원문": 162,
+    "note": "집단이 비어 있지 않음 · 앞선 「판정 불가」와 달리 여기서는 잴 수 있음"
+  },
+  "narrow_candidates": {
+    "method": "사람이 읽는 표가 뽑아 둔 5~13자 형태와 한 겹 넓힌 형태",
+    "tested": ["AI로 풉니다", "사람이 가장 많이 붙는", "갈래는 둘", "막대가 상반기 실측", "뒤의 것은", "가치가 둘", "반복해서 도는 일"],
+    "hits": 0,
+    "verdict": "그 발화가 다시 나오지 않음 · 탐지기로 쓸 수 없음"
+  },
+  "broad_candidates": {
+    "method": "core-rules 「실무 행위 밝히기」가 이름을 대는 동사로 일반화",
+    "results": [
+      {"pattern": "돌다 계열", "hits": 34, "inspected": 34, "real_defects": 0, "note": "「검사기를 돌린다」·「훅이 sync.sh를 돌립니다」 — 표준 한국어"},
+      {"pattern": "진행하다", "hits": 79, "note": "「진행 중 작업」 등 정당한 쓰임"},
+      {"pattern": "붙다", "hits": 7, "note": "「자식이 어디에 붙는지」 등 정당한 쓰임"},
+      {"pattern": "풀다", "hits": 4, "note": "「문제를 푸는 중」 등 정당한 쓰임"},
+      {"pattern": "돕다", "hits": 0},
+      {"pattern": "구간(막연)", "hits": 0}
+    ],
+    "verdict": "발화는 하지만 잡히는 문장이 정상 한국어 · 정밀도가 사실상 0"
+  },
+  "conclusion": {
+    "finding": "두 granularity 사이에 쓸 수 있는 중간이 없다 — 좁히면 다시 안 나오고, 넓히면 정상 문장을 잡는다",
+    "why": "기록이 이미 requires_context=true · replacement_mode=contextual_rewrite 로 그렇게 적어 두었다",
+    "so": "이 6건의 자리는 탐지기 층이 아니라 판단 층이다",
+    "gap": "판단 층이 실제로 읽는 core-rules.md 「사용자가 확정한 대표 수정」 표에는 6건 중 2건만 있다 (갈래는 둘 · 검증은 반복해서 도는 일)",
+    "missing": ["KOR-PRESENTER-PROCESS-001", "KOR-PRESENTER-RESULT-001", "KOR-PRESENTER-PLAN-001", "KOR-PRESENTER-REASON-001"]
+  },
+  "recommended_action": "빠진 4건을 대표 수정 표에 넣어 판단 층이 읽게 함 · 언어 정책 변경이라 사용자 확인 대상",
+  "rejected_action": "--pattern 으로 재승격 — 위 실측으로 근거 없음",
+  "external_paid_api_calls": 0
+}
