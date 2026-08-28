@@ -125,5 +125,59 @@ class DocStyleGateFormTests(unittest.TestCase):
         self.assertNotIn("서술형 종결", out)
 
 
+class CondenseTests(unittest.TestCase):
+    """반복되는 지적을 접는지 본다.
+
+    **왜.** 화면에 뜨는 것은 열두 줄뿐이다. 조언 문구가 매번 같은 지적이 안
+    접히면 그 한 종류가 열두 칸을 다 먹는다 — 실측으로 발행 직전 화면의 46%가
+    「값 안 굵게」 하나였고 문서 9%는 화면이 그것만으로 채워졌다.
+
+    **접으면 안 되는 것도 있다** — 문장이 실리는 지적은 매번 다른 문장을
+    가리키므로 접으면 어느 문장인지 사라진다.
+    """
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        if not HOOK.is_file():
+            raise unittest.SkipTest(f"훅이 없습니다: {HOOK}")
+        cls.hook = load_hook()
+
+    def test_identical_advice_collapses_into_one_line(self) -> None:
+        lines = [
+            f"   ⚠️  [값 안 굵게] {n}행  굵게 1개 더 — 라벨이 굵으면 값에서 또 굵게 하지 않는다"
+            for n in (21, 38, 44)
+        ]
+        out = self.hook.condense(lines)
+
+        self.assertEqual(len(out), 1)
+        self.assertIn("3곳", out[0])
+
+    def test_different_sentences_stay_separate(self) -> None:
+        """접으면 어느 문장이 문제인지 사라진다."""
+        lines = [
+            "   ❌ [서술형 종결] 39행  둘의 성격이 다르다",
+            "   ❌ [서술형 종결] 48행  린터를 만들지 않는다.",
+        ]
+        out = self.hook.condense(lines)
+
+        self.assertEqual(len(out), 2)
+
+    def test_the_same_quoted_term_still_collapses(self) -> None:
+        """예전부터 되던 것이 깨지지 않았는지 본다."""
+        lines = [
+            f"   ❌ [모호한 지칭] {n}행  「우리」 — 서로 다른 앞뒤 문장 {n}"
+            for n in (11, 20, 33)
+        ]
+        out = self.hook.condense(lines)
+
+        self.assertEqual(len(out), 1)
+        self.assertIn("3곳", out[0])
+
+    def test_a_line_that_does_not_parse_is_kept(self) -> None:
+        """접기 규칙에 안 맞는 줄을 버리면 안내문이 사라진다."""
+        note = "(형식을 안 적어 산문으로 보고 개조식 지적을 뺐다)"
+        self.assertEqual(self.hook.condense([note]), [note])
+
+
 if __name__ == "__main__":
     unittest.main()
