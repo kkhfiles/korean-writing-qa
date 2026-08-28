@@ -1,0 +1,28 @@
+{
+  "run_id": "eval-004",
+  "date": "2026-08-28",
+  "objective": "회수율의 분모를 참으로 만들기 위한 줄 단위 판정 시트를 만든다",
+  "why": "지금 라벨 13건이 전부 읽기 통과에서 나와 분모가 「누가 알아챈 것」이다. 아무도 못 본 문제는 미탐으로 세어지지 않는다",
+  "tool": "scripts/build_line_review_sheet.py",
+  "sheets": [
+    {"path": "runs/eval-004/line-review-doc-002.md", "rows": 26},
+    {"path": "runs/eval-004/line-review-doc-004.md", "rows": 23},
+    {"path": "runs/eval-004/line-review-doc-013.md", "rows": 23}
+  ],
+  "row_selection": {
+    "excluded": "머리말 · 빈 줄 · 표 구분선 · 주소만 있는 줄 · 한글 어절 4개 미만",
+    "why_four_words": "제목·제품명·날짜·출처 링크에는 판정할 한국어 문장이 없음",
+    "counts": {"한글 2자 기준": 107, "어절 4개 기준": 72}
+  },
+  "visual_marks_hidden": {
+    "kinds": ["값 안 굵게", "강조 과다", "VISUAL_DECORATION", "EMPHASIS_NOISE"],
+    "why": "이 시스템이 보는 것은 한국어 표현 · 사용자 결정으로 시각 서식은 대상 아님"
+  },
+  "guards": {
+    "tests": "tests/test_line_review_sheet.py 4건 · 인용 72건 전수 대조",
+    "found_while_building": "빈 인용이 통과했음 — 빈 문자열은 무엇으로도 시작한다 · 최소 길이 검사 추가",
+    "mutation": "세로줄 이스케이프 제거 → 10건 실패"
+  },
+  "status": "사용자 판정 대기",
+  "external_paid_api_calls": 0
+}

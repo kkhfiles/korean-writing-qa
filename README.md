@@ -59,3 +59,7 @@
 - [규칙·검사기·회귀시험 재검토](docs/review-001.md)
 - [한글 문서 최종화 스킬 구현 결과](docs/skill-implementation-001.md)
 - [사용자 교정 수집·승격 구현 결과](docs/skill-implementation-002.md)
+- [원본 진단 001](docs/diagnostic-001.md)
+- [원본 진단 002](docs/diagnostic-002.md)
+- [사람 검토 001](docs/manual-review-001.md)
+- [규칙 후보 목록](docs/rule-candidates.md)
