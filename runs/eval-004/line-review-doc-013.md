@@ -19,7 +19,7 @@ form: structured
 |---|---|---|---|
 | 12 | 조사 기간: 2026-04-19 ~ 2026-05-02 (직전 조사 2026-04-18 이후). |  | |
 | 14 | ## 새로 발견된 변경 (1건) |  | |
-| 17 | - **이전 확인**: R2026a — Bug Finder/Code Prover/Requirements Toolbox가 Polyspace Platform으로 통합, Pyt… | 주의: 묶음 과대 | |
+| 17 | - **이전 확인**: R2026a — Bug Finder/Code Prover/Requirements Toolbox가 Polyspace Platform으로 통합, Pyt… |  | |
 | 18 | - **이번 변경**: 2026-04-21 R2026a 출시 블로그, 2026-04-27 공식 프레스릴리즈로 다음 신규 기능이 추가 공개됨. |  | |
 | 19 | - **Polyspace Copilot** — 정적분석 결과 위에 LLM 기반 가이드(원인·수정안 제시). MathWorks의 "Trusted AI" 라인으로 포지셔닝. | 2층: ENGLISH_OVERUSE | |
 | 20 | - **Polyspace as You Code** — IDE 내부에서 코딩 중 실시간 정적분석. AI 생성 코드(Copilot/LLM 산출물) 검증을 명시 타깃. | 라벨(지적): ENGLISH_OVERUSE · 2층: ENGLISH_OVERUSE | |
@@ -29,7 +29,7 @@ form: structured
 | 31 | 해당 사항 없음. 시드 목록 외 신규 진입 도구는 이번 조사 기간(2주)에 발견되지 않음. (BTC EmbeddedTester는 직전 조사에서 시드 후보로 메모됐으나 해당… |  | |
 | 35 | 해당 사항 없음. 이번 조사 기간에 새로 감지된 단종·인수합병·리브랜딩은 없음. |  | |
 | 37 | ## 변경 없음 — 직전 상태 유지 (참고) |  | |
-| 39 | \| 도구 \| 직전 확인 상태 \| 비고 \| | 오류: 스캔 가치 없는 라벨 · 라벨(지적): VAGUE_LABEL · 2층: VAGUE_LABEL | |
+| 39 | \| 도구 \| 직전 확인 상태 \| 비고 \| | 주의: 스캔 가치 없는 라벨 · 라벨(지적): VAGUE_LABEL · 2층: VAGUE_LABEL | |
 | 41 | \| VectorCAST 2026 \| 2026-03-19 출시, Reqs2x \| 신규 발표 없음 \| |  | |
 | 42 | \| Parasoft C/C++test 2026.1 \| embedded world 2026 (인증 GoogleTest, MCP) \| 신규 발표 없음 \| |  | |
 | 43 | \| Cantata 26.01 \| 2026-02 Claude Code 통합 \| 2026-04-08 웹세미나(범위 외), 신규 릴리즈 없음 \| |  | |

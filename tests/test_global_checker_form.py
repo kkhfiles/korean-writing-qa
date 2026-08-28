@@ -97,10 +97,16 @@ class GlobalCheckerFormTests(unittest.TestCase):
         plain, plain_warn = self.scan(FORM_NEUTRAL)
         prose, prose_warn = self.scan(FORM_NEUTRAL, "prose")
 
-        for kind in ("절단형 종결", "모호한 지칭", "스캔 가치 없는 라벨"):
+        for kind in ("절단형 종결", "모호한 지칭"):
             with self.subTest(kind=kind):
                 self.assertIn(kind, plain, f"시료가 {kind} 를 안 냅니다")
                 self.assertIn(kind, prose, f"{kind} 는 형식과 무관한데 사라졌습니다")
+
+        # 「스캔 가치 없는 라벨」은 주의로 낮췄다 — 등급은 달라도 형식과 무관한 것은 같다
+        with self.subTest(kind="스캔 가치 없는 라벨"):
+            self.assertIn("스캔 가치 없는 라벨", plain_warn, "시료가 그 지적을 안 냅니다")
+            self.assertIn("스캔 가치 없는 라벨", prose_warn, "형식과 무관한데 사라졌습니다")
+            self.assertNotIn("스캔 가치 없는 라벨", plain, "발행을 막는 오류로 되돌아갔습니다")
 
     def test_the_default_is_unchanged(self) -> None:
         """기본값이 바뀌면 이 검사기를 쓰는 모든 문서의 판정이 조용히 달라진다."""
