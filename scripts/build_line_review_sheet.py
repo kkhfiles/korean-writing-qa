@@ -33,6 +33,13 @@ LAYER2 = REPO_ROOT / "runs" / "eval-003" / "llm-findings.jsonl"
 LINE_PREFIX = re.compile(r"^(\d+)행")
 TABLE_RULE = re.compile(r"^\|[\s\-|:]+\|$")
 URL_ONLY = re.compile(r"^[-\s]*\[?https?://\S+\]?\(?\S*\)?$")
+# 한글이 든 어절 — 「검증을」은 세고 「R2026b」는 안 센다
+HANGUL_WORD = re.compile(r"\S*[가-힣]\S*")
+MIN_KOREAN_WORDS = 4
+
+# 시각 형식 지적 — 이 시스템이 보는 것은 한국어가 바로 쓰였는지다. 굵게·이모지·
+# 강조 개수는 전역 문서 검사기의 서식 규칙이라 여기서는 안 보여 준다.
+VISUAL_MARKS = ("값 안 굵게", "강조 과다", "굵게", "VISUAL_DECORATION", "EMPHASIS_NOISE")
 
 
 def load_global():
@@ -42,8 +49,13 @@ def load_global():
     return module
 
 
-def judgeable(lines: list[str]) -> list[int]:
-    """한글 작성 규칙이 걸릴 수 있는 줄만 남긴다."""
+def judgeable(lines: list[str], min_words: int = MIN_KOREAN_WORDS) -> list[int]:
+    """한국어 문장으로 판정할 것이 있는 줄만 남긴다.
+
+    한글 어절이 서너 개도 안 되는 줄은 제목·제품명·날짜·출처 링크다. 판정할
+    문장이 없는데 목록에 넣으면 사람이 끝까지 안 본다 — 실측으로 한글 두 자
+    기준이면 107행, 어절 넷이면 72행이다.
+    """
     out, front = [], False
     for number, line in enumerate(lines, 1):
         stripped = line.strip()
@@ -56,7 +68,7 @@ def judgeable(lines: list[str]) -> list[int]:
             continue
         if not stripped or TABLE_RULE.match(stripped) or URL_ONLY.match(stripped):
             continue
-        if len(re.findall(r"[가-힣]", stripped)) < 2:
+        if len(HANGUL_WORD.findall(stripped)) < min_words:
             continue
         out.append(number)
     return out
@@ -103,45 +115,54 @@ def existing(document_id: str, lines: list[str]) -> dict[int, list[str]]:
     return found
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--out", type=Path, required=True)
-    parser.add_argument("--documents", nargs="*", default=["doc-002", "doc-004", "doc-013"])
-    args = parser.parse_args()
+def visible(marks: list[str]) -> list[str]:
+    """시각 형식 지적을 뺀다 — 이 시스템이 보는 것은 한국어 표현이다."""
+    return [m for m in marks if not any(v in m for v in VISUAL_MARKS)]
+
+
+def build(document_id: str, out: Path) -> int:
+    source = SOURCE_DIR / f"{document_id}.md"
+    lines = source.read_text(encoding="utf-8").splitlines()
+    found = existing(document_id, lines)
+    numbers = judgeable(lines)
 
     parts = [
         "---\nform: structured\n---\n",
-        "# 줄 단위 전수 판정 — diagnostic-002\n",
-        "**모든 줄을 「깨끗함」이나 「고칠 것」으로 판정 요청** — "
+        f"# 줄 단위 판정 — {document_id}\n",
+        f"**{len(numbers)}행을 「깨끗함」이나 「고칠 것」으로 판정 요청** — "
         "붙어 있는 지적을 확인하고 **빠진 것만** 적으면 됨 · "
-        "이 판정이 끝나야 회수율의 분모가 참이 됨\n",
+        "판정이 끝나야 회수율의 분모가 참이 됨\n",
         "## 읽는 법\n",
-        "- **이미 나온 지적**: 검사기와 2층이 그 줄에서 낸 것 · 비어 있으면 아무도 안 잡은 줄\n"
-        "- **판정**: 붙은 지적이 맞으면 `O` · 틀리면 `X` · **아무도 안 잡았는데 문제가 있으면 그것을 적음**\n"
-        "- 손댈 곳이 없으면 비워 두면 됨 — 빈 칸은 「깨끗함」으로 읽음\n",
+        "- **판정**: 붙은 지적이 맞으면 `O` · 틀리면 `X` · "
+        "**아무도 안 잡았는데 한국어가 어색하면 그것을 적음**\n"
+        "- 손댈 곳이 없으면 비워 두면 됨 — 빈 칸은 「깨끗함」으로 읽음\n"
+        "- **굵게·이모지·강조 개수는 대상 아님** — 이 시스템이 보는 것은 한국어 표현\n"
+        f"- **뺀 줄**: 제목·제품명·날짜·출처 링크 등 한글 어절 {MIN_KOREAN_WORDS}개 미만\n",
+        f"## 판정 대상 {len(numbers)}행\n",
+        "| 행 | 원문 | 이미 나온 지적 | 판정 |\n|---|---|---|---|",
     ]
-    total = 0
+    for number in numbers:
+        text = lines[number - 1].strip().replace("|", "\\|")
+        if len(text) > 96:
+            text = text[:95] + "…"
+        marks = " · ".join(visible(found.get(number, []))) or ""
+        parts.append(f"| {number} | {text} | {marks} | |")
+    out.write_text("\n".join(parts) + "\n", encoding="utf-8")
+    return len(numbers)
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--out-dir", type=Path, required=True)
+    parser.add_argument("--documents", nargs="*", default=["doc-002", "doc-004", "doc-013"])
+    args = parser.parse_args()
+
+    args.out_dir.mkdir(parents=True, exist_ok=True)
     for document_id in args.documents:
-        source = SOURCE_DIR / f"{document_id}.md"
-        if not source.is_file():
+        if not (SOURCE_DIR / f"{document_id}.md").is_file():
             continue
-        lines = source.read_text(encoding="utf-8").splitlines()
-        found = existing(document_id, lines)
-        numbers = judgeable(lines)
-        total += len(numbers)
-        parts.append(f"## {document_id} — 판정 대상 {len(numbers)}행\n")
-        parts.append("| 행 | 원문 | 이미 나온 지적 | 판정 |\n|---|---|---|---|")
-        for number in numbers:
-            text = lines[number - 1].strip().replace("|", "\\|")
-            if len(text) > 96:
-                text = text[:95] + "…"
-            marks = " · ".join(found.get(number, [])) or ""
-            parts.append(f"| {number} | {text} | {marks} | |")
-        parts.append("")
-    parts.append(f"## 합계\n\n**판정 대상 {total}행** — "
-                 "머리말·빈 줄·표 구분선·주소만 있는 줄은 뺐음\n")
-    args.out.write_text("\n".join(parts) + "\n", encoding="utf-8")
-    print(f"{args.out} · {total}행")
+        out = args.out_dir / f"line-review-{document_id}.md"
+        print(f"{out} · {build(document_id, out)}행")
 
 
 if __name__ == "__main__":

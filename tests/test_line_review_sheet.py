@@ -19,9 +19,10 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[1]
 BUILDER = REPO_ROOT / "scripts" / "build_line_review_sheet.py"
 SOURCE_DIR = REPO_ROOT / "data" / "raw" / "diagnostic-002"
-SHEET = REPO_ROOT / "runs" / "eval-004" / "line-review-sheet.md"
+SHEET_DIR = REPO_ROOT / "runs" / "eval-004"
+SHEETS = sorted(SHEET_DIR.glob("line-review-doc-*.md"))
 
-DOCUMENT = re.compile(r"^## (doc-\d+)")
+DOCUMENT = re.compile(r"^# 줄 단위 판정 — (doc-\d+)")
 # 이스케이프한 세로줄은 칸 구분이 아니다
 CELL_SPLIT = re.compile(r"(?<!\\)\|")
 
@@ -44,10 +45,9 @@ def rows(text: str):
 class LineReviewSheetTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
-        if not SHEET.is_file():
-            raise unittest.SkipTest(f"시트가 없습니다: {SHEET}")
-        cls.text = SHEET.read_text(encoding="utf-8")
-        cls.rows = list(rows(cls.text))
+        if not SHEETS:
+            raise unittest.SkipTest(f"시트가 없습니다: {SHEET_DIR}")
+        cls.rows = [r for s in SHEETS for r in rows(s.read_text(encoding="utf-8"))]
 
     def test_every_quoted_line_matches_the_source(self) -> None:
         """빈 인용도 함께 막는다.
@@ -74,7 +74,7 @@ class LineReviewSheetTests(unittest.TestCase):
 
     def test_the_sheet_is_not_empty(self) -> None:
         """행을 하나도 못 읽으면 위 시험이 조용히 통과한다."""
-        self.assertGreaterEqual(len(self.rows), 80)
+        self.assertGreaterEqual(len(self.rows), 60)
 
     def test_lines_that_cannot_carry_a_writing_problem_are_left_out(self) -> None:
         """머리말·빈 줄·표 구분선까지 판정하게 하면 사람이 안 한다."""
@@ -87,13 +87,14 @@ class LineReviewSheetTests(unittest.TestCase):
     def test_the_builder_reproduces_the_sheet(self) -> None:
         """시트를 손으로 고치면 다음 생성 때 조용히 되돌아간다."""
         with tempfile.TemporaryDirectory() as directory:
-            out = Path(directory) / "sheet.md"
+            out = Path(directory)
             done = subprocess.run(
-                [sys.executable, "-X", "utf8", str(BUILDER), "--out", str(out)],
+                [sys.executable, "-X", "utf8", str(BUILDER), "--out-dir", str(out)],
                 capture_output=True, text=True, encoding="utf-8", cwd=str(REPO_ROOT),
             )
             self.assertEqual(done.returncode, 0, done.stderr[:400])
-            rebuilt = list(rows(out.read_text(encoding="utf-8")))
+            rebuilt = [r for s in sorted(out.glob("line-review-doc-*.md"))
+                       for r in rows(s.read_text(encoding="utf-8"))]
 
         # 판정 칸은 사람이 채우므로 뺀다 — 원문과 지적만 대조한다
         self.assertEqual(
