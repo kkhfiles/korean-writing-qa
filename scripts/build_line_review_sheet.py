@@ -11,6 +11,10 @@
 
 1. **지적 확인** — 나온 지적이 맞는지. 문제 구절·고칠 말·이유를 함께 보여 준다.
 2. **빠진 것 찾기** — 아무도 안 잡은 줄에 어색한 데가 있는지. 이쪽이 본 일이다.
+3. **이미 판정된 것** — 앞서 「문제 아님」으로 정해진 것. 뒤집을 때만 적는다.
+
+③을 ①에 섞으면 **빈 칸이 정반대 두 뜻을 갖는다** — ①에서는 「이 지적이 맞다」,
+③에서는 「문제가 아닌 게 맞다」. 섞어 두었더니 회수율이 한 건을 반대로 셌다(실측).
 
 **판정 대상에서 빼는 줄** — 머리말·빈 줄·표 구분선·주소만 있는 줄·한글이 거의
 없는 줄. 한글 작성 규칙이 걸릴 수 없는 줄이다.
@@ -40,6 +44,9 @@ URL_ONLY = re.compile(r"^[-\s]*\[?https?://\S+\]?\(?\S*\)?$")
 # 한글이 든 어절 — 「검증을」은 세고 「R2026b」는 안 센다
 HANGUL_WORD = re.compile(r"\S*[가-힣]\S*")
 MIN_KOREAN_WORDS = 4
+CLEAN_COLUMNS = 3        # 행 · 원문 · 판정
+# 「누가」 칸에 이 값이 있으면 이미 「문제 아님」으로 판정된 지적이다
+ALLOWED = "사람이 괜찮다 함"
 
 # 시각 형식 지적 — 이 시스템이 보는 것은 한국어가 바로 쓰였는지다. 굵게·이모지·
 # 강조 개수는 전역 문서 검사기의 서식 규칙이라 여기서는 안 보여 준다.
@@ -159,7 +166,7 @@ def existing(document_id: str, lines: list[str]) -> list[dict]:
         head = row["original"].splitlines()[0]
         for number, line in enumerate(lines, 1):
             if head in line:
-                verdict = "사람이 고치라 함" if row.get("human_label") == "revise" else "사람이 괜찮다 함"
+                verdict = "사람이 고치라 함" if row.get("human_label") == "revise" else ALLOWED
                 add(number, verdict, row["category"], row["original"], row.get("revised", ""), "")
                 break
 
@@ -222,8 +229,12 @@ def build(document_id: str, out: Path) -> tuple[int, int]:
     source = SOURCE_DIR / f"{document_id}.md"
     lines = source.read_text(encoding="utf-8").splitlines()
     numbers = judgeable(lines)
-    findings = [f for f in existing(document_id, lines) if f["line"] in set(numbers)]
-    flagged = {f["line"] for f in findings}
+    all_findings = [f for f in existing(document_id, lines) if f["line"] in set(numbers)]
+    # 이미 「문제 아님」으로 판정된 것은 따로 뺀다 — 한 표에 두면 빈 칸이 「이
+    # 지적이 맞다」와 「문제가 아닌 게 맞다」 두 뜻을 갖는다(실측으로 계산이 틀렸다)
+    findings = [f for f in all_findings if ALLOWED not in f["sources"]]
+    allowed = [f for f in all_findings if ALLOWED in f["sources"]]
+    flagged = {f["line"] for f in all_findings}
     clean = [n for n in numbers if n not in flagged]
 
     parts = [
@@ -239,7 +250,8 @@ def build(document_id: str, out: Path) -> tuple[int, int]:
         "## 쓰는 법\n",
         "| 어느 표 | 묻는 것 | 판정 칸에 적을 것 |\n|---|---|---|\n"
         "| ① 지적 확인 | 이 지적이 맞나 | 맞으면 `O` · 아니면 `X` · 헷갈리면 `?` |\n"
-        f"| ② 빠진 것 찾기 | 어색한 데가 있나 | 어색한 **구절을 그대로** 적음 · 없으면 빈 칸 |\n",
+        f"| ② 빠진 것 찾기 | 어색한 데가 있나 | 어색한 **구절을 그대로** 적음 · 없으면 빈 칸 |\n"
+        "| ③ 이미 판정된 것 | 그 판정이 맞나 | 뒤집을 것만 적음 · 그대로면 빈 칸 |\n",
         "**②의 보기** — 「멀티 에이전트 환경에서 세션 간 비동기 메시지 전달」 같은 줄이 걸린다면 "
         "판정 칸에 `비동기 메시지 전달` 이라고만 적으면 됨 · 고칠 말까지는 안 적어도 됨\n",
         "**대상 아닌 것** — 굵게·이모지·강조 개수는 이 검사가 보는 축이 아님 · "
@@ -265,14 +277,43 @@ def build(document_id: str, out: Path) -> tuple[int, int]:
     for number in clean:
         parts.append(f"| {number} | {quoted_cell(lines[number - 1])} | |")
 
+    if allowed:
+        parts += [
+            f"\n## ③ 이미 「문제 아님」으로 판정된 것 — {len(allowed)}건\n",
+            "**뒤집을 것만 적음** — 그대로 두려면 빈 칸\n",
+            "| 행 | 갈래 | 구절 | 판정 |\n|---|---|---|---|",
+        ]
+        for f in allowed:
+            parts.append(f"| {f['line']} | {cell(category_ko(f['category']))} | "
+                         f"{quoted_cell(f['original'])} | |")
+
     out.write_text("\n".join(parts) + "\n", encoding="utf-8")
-    return len(findings), len(clean)
+    return len(findings), len(clean), len(allowed)
+
+
+def answered(path: Path) -> bool:
+    """판정 칸이 하나라도 채워져 있나.
+
+    사람이 채운 시트를 덮어쓰면 그 판정은 되찾을 수 없다 — 실제로 한 번
+    날렸다(다른 곳에 옮겨 적어 둔 덕에 되살렸다). 그래서 기본은 건너뛰기다.
+    """
+    if not path.is_file():
+        return False
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if not line.startswith("| "):
+            continue
+        cells = [c.strip() for c in re.split(r"(?<!\\)\|", line)][1:-1]
+        if len(cells) >= CLEAN_COLUMNS and cells[0].isdigit() and cells[-1]:
+            return True
+    return False
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--out-dir", type=Path, required=True)
     parser.add_argument("--documents", nargs="*", default=["doc-002", "doc-004", "doc-013"])
+    parser.add_argument("--force", action="store_true",
+                        help="판정이 들어 있는 시트도 다시 만든다 — 그 판정은 사라진다")
     args = parser.parse_args()
 
     args.out_dir.mkdir(parents=True, exist_ok=True)
@@ -280,8 +321,12 @@ def main() -> None:
         if not (SOURCE_DIR / f"{document_id}.md").is_file():
             continue
         out = args.out_dir / f"line-review-{document_id}.md"
-        marked, clean = build(document_id, out)
-        print(f"{out} · 지적 확인 {marked}건 · 빠진 것 찾기 {clean}행")
+        if answered(out) and not args.force:
+            print(f"{out} · 판정이 들어 있어 건너뜀 (--force 로 덮어씀)")
+            continue
+        marked, clean, allowed = build(document_id, out)
+        note = f" · 이미 판정 {allowed}건" if allowed else ""
+        print(f"{out} · 지적 확인 {marked}건 · 빠진 것 찾기 {clean}행{note}")
 
 
 if __name__ == "__main__":
