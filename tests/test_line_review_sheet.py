@@ -1,7 +1,12 @@
-"""줄 단위 판정 시트가 원문과 어긋나지 않는지 확인한다.
+"""줄 단위 판정 시트가 읽을 수 있고 원문과 어긋나지 않는지 확인한다.
 
-옮겨 적는 사이 어긋나면 **없는 문장을 판정하게 된다.** 그 판정은 라벨이 되어
-회수율의 분모로 들어가므로, 어긋난 채로 지나가면 수치가 조용히 거짓이 된다.
+**두 가지가 걸려 있다.**
+
+1. **어긋나면 없는 문장을 판정하게 된다.** 그 판정이 라벨이 되어 회수율의
+   분모로 들어가므로, 어긋난 채 지나가면 수치가 조용히 거짓이 된다.
+2. **읽을 수 없으면 판정이 안 온다.** 예전 시트는 지적을 `ENGLISH_OVERUSE`
+   같은 코드로만 적고 지적 없는 줄과 섞어 놓아, 받은 사람이 「지적이 없는데
+   뭘 판정하라는 건지」 알 수 없었다. 그래서 갈래 이름과 표 구성도 고정한다.
 
 표 안에 표를 넣는 줄(`| 도구 | 비고 |`)은 세로줄을 이스케이프해야 칸이 안
 밀린다. 이스케이프를 안 하면 시트가 깨지고, 대조도 함께 어긋난다.
@@ -9,6 +14,7 @@
 
 from __future__ import annotations
 
+import importlib.util
 import re
 import subprocess
 import sys
@@ -23,23 +29,53 @@ SHEET_DIR = REPO_ROOT / "runs" / "eval-004"
 SHEETS = sorted(SHEET_DIR.glob("line-review-doc-*.md"))
 
 DOCUMENT = re.compile(r"^# 줄 단위 판정 — (doc-\d+)")
+SECTION = re.compile(r"^## (①|②)")
 # 이스케이프한 세로줄은 칸 구분이 아니다
 CELL_SPLIT = re.compile(r"(?<!\\)\|")
+CODE_LOOKING = re.compile(r"^[A-Z][A-Z_0-9-]{3,}$")
+
+FINDING_COLUMNS = 7      # 행 · 갈래 · 구절 · 고칠 말 · 왜 · 누가 · 판정
+CLEAN_COLUMNS = 3        # 행 · 원문 · 판정
 
 
-def rows(text: str):
-    document = None
+def load_builder():
+    spec = importlib.util.spec_from_file_location("build_line_review_sheet", BUILDER)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def unquote(cell: str) -> str:
+    return cell.strip().strip("「」").replace("\\|", "|")
+
+
+def parse(text: str):
+    """(문서, 지적 행 목록, 인용 행 목록)을 낸다."""
+    document, section, findings, clean = None, None, [], []
     for line in text.splitlines():
-        match = DOCUMENT.match(line)
-        if match:
-            document = match.group(1)
+        head = DOCUMENT.match(line)
+        if head:
+            document = head.group(1)
+            continue
+        mark = SECTION.match(line)
+        if mark:
+            section = mark.group(1)
             continue
         if not line.startswith("| ") or document is None:
             continue
-        cells = [c.strip() for c in CELL_SPLIT.split(line)]
-        if len(cells) < 5 or not cells[1].isdigit():
+        cells = [c.strip() for c in CELL_SPLIT.split(line)][1:-1]
+        if not cells or not cells[0].isdigit():
             continue
-        yield document, int(cells[1]), cells[2], cells[3], cells[4]
+        if section == "①" and len(cells) == FINDING_COLUMNS:
+            findings.append(cells)
+        elif section == "②" and len(cells) == CLEAN_COLUMNS:
+            clean.append(cells)
+    return document, findings, clean
+
+
+def sheets():
+    for path in SHEETS:
+        yield (path,) + parse(path.read_text(encoding="utf-8"))
 
 
 class LineReviewSheetTests(unittest.TestCase):
@@ -47,42 +83,89 @@ class LineReviewSheetTests(unittest.TestCase):
     def setUpClass(cls) -> None:
         if not SHEETS:
             raise unittest.SkipTest(f"시트가 없습니다: {SHEET_DIR}")
-        cls.rows = [r for s in SHEETS for r in rows(s.read_text(encoding="utf-8"))]
+        cls.sheets = list(sheets())
 
-    def test_every_quoted_line_matches_the_source(self) -> None:
-        """빈 인용도 함께 막는다.
+    def source(self, document: str) -> list[str]:
+        return (SOURCE_DIR / f"{document}.md").read_text(encoding="utf-8").splitlines()
 
-        세로줄을 이스케이프 안 하면 원문의 표 행에서 칸이 밀려 인용 칸이 빈다.
-        빈 문자열은 무엇으로도 시작하므로 대조만으로는 통과한다 — 실제로 그
-        돌연변이가 안 잡혔다.
+    def test_both_tables_are_populated(self) -> None:
+        """한쪽이 비면 아래 시험들이 조용히 통과한다."""
+        total_findings = sum(len(f) for _, _, f, _ in self.sheets)
+        total_clean = sum(len(c) for _, _, _, c in self.sheets)
+
+        self.assertGreaterEqual(total_findings, 20, "① 지적 확인 표를 못 읽었습니다")
+        self.assertGreaterEqual(total_clean, 30, "② 빠진 것 찾기 표를 못 읽었습니다")
+
+    def test_every_judgeable_line_appears_exactly_once(self) -> None:
+        """분모가 참이 되려면 판정 대상 줄이 하나도 빠지면 안 된다.
+
+        두 표에 같은 줄이 함께 들어가도 안 된다 — 사람이 같은 줄을 두 번
+        판정하게 되고, 한 번은 「지적 확인」 다른 한 번은 「빠진 것 찾기」라
+        답이 서로 다른 뜻이 된다.
         """
-        for document, number, shown, _marks, _verdict in self.rows:
-            with self.subTest(document=document, line=number):
-                source = (SOURCE_DIR / f"{document}.md").read_text(encoding="utf-8")
-                actual = source.splitlines()[number - 1].strip()
-                quoted = shown.replace("\\|", "|").rstrip("…")
+        judgeable = load_builder().judgeable
+        for path, document, findings, clean in self.sheets:
+            with self.subTest(document=document):
+                expected = set(judgeable(self.source(document)))
+                flagged = {int(r[0]) for r in findings}
+                quiet = {int(r[0]) for r in clean}
 
-                self.assertTrue(quoted, f"{number}행 인용이 비었습니다 — 칸이 밀렸습니다")
-                self.assertGreaterEqual(
-                    len(quoted), min(len(actual), 20),
-                    f"{number}행 인용이 잘렸습니다: {quoted[:40]}",
-                )
-                self.assertTrue(
-                    actual.startswith(quoted[:40]),
-                    f"시트: {quoted[:60]}\n원문: {actual[:60]}",
-                )
+                self.assertEqual(flagged & quiet, set(), "같은 줄이 두 표에 다 있습니다")
+                self.assertEqual(flagged | quiet, expected,
+                                 f"빠지거나 더 붙은 줄이 있습니다: {path.name}")
 
-    def test_the_sheet_is_not_empty(self) -> None:
-        """행을 하나도 못 읽으면 위 시험이 조용히 통과한다."""
-        self.assertGreaterEqual(len(self.rows), 60)
+    def test_every_quoted_line_matches_the_source_exactly(self) -> None:
+        """② 는 자르지 않는다 — 잘린 줄은 판정할 수 없다."""
+        for _path, document, _findings, clean in self.sheets:
+            lines = self.source(document)
+            for number, shown, _verdict in clean:
+                with self.subTest(document=document, line=number):
+                    quoted = unquote(shown)
+
+                    self.assertTrue(quoted, f"{number}행 인용이 비었습니다 — 칸이 밀렸습니다")
+                    self.assertNotIn("…", quoted, f"{number}행 인용이 잘렸습니다")
+                    self.assertEqual(quoted, lines[int(number) - 1].strip())
+
+    def test_every_flagged_phrase_is_in_its_line(self) -> None:
+        """엉뚱한 줄에 붙은 지적을 판정하면 그 판정이 그대로 라벨이 된다."""
+        for _path, document, findings, _clean in self.sheets:
+            lines = self.source(document)
+            for row in findings:
+                number, phrase = int(row[0]), unquote(row[2])
+                if phrase == "—":
+                    continue
+                with self.subTest(document=document, line=number):
+                    self.assertIn(phrase, lines[number - 1])
+
+    def test_the_category_is_written_in_korean(self) -> None:
+        """코드를 그대로 두면 받은 사람이 해독부터 해야 한다."""
+        for _path, document, findings, _clean in self.sheets:
+            for row in findings:
+                with self.subTest(document=document, line=row[0]):
+                    self.assertFalse(CODE_LOOKING.match(row[1]),
+                                     f"갈래가 코드로 남았습니다: {row[1]}")
+
+    def test_the_same_finding_is_not_listed_twice(self) -> None:
+        """층마다 부르는 이름이 달라 같은 지적이 두 줄로 남은 적이 있다."""
+        for _path, document, findings, _clean in self.sheets:
+            seen = [(r[0], r[1], unquote(r[2])) for r in findings]
+            with self.subTest(document=document):
+                self.assertEqual(len(seen), len(set(seen)), f"겹치는 지적: {document}")
+
+    def test_the_verdict_column_is_left_empty(self) -> None:
+        """사람이 채울 칸이다 — 미리 채워 두면 판정이 아니라 확인이 된다."""
+        for _path, document, findings, clean in self.sheets:
+            with self.subTest(document=document):
+                self.assertEqual({r[-1] for r in findings} | {r[-1] for r in clean}, {""})
 
     def test_lines_that_cannot_carry_a_writing_problem_are_left_out(self) -> None:
         """머리말·빈 줄·표 구분선까지 판정하게 하면 사람이 안 한다."""
-        numbers = {(d, n) for d, n, *_ in self.rows}
-        source = (SOURCE_DIR / "doc-002.md").read_text(encoding="utf-8").splitlines()
-        for number, line in enumerate(source, 1):
-            if line.strip() in ("", "---") and ("doc-002", number) in numbers:
-                self.fail(f"판정 대상에 빈 줄이나 머리말이 들어갔습니다: {number}행")
+        for _path, document, findings, clean in self.sheets:
+            numbers = {int(r[0]) for r in findings} | {int(r[0]) for r in clean}
+            for number, line in enumerate(self.source(document), 1):
+                if line.strip() in ("", "---"):
+                    with self.subTest(document=document, line=number):
+                        self.assertNotIn(number, numbers)
 
     def test_the_builder_reproduces_the_sheet(self) -> None:
         """시트를 손으로 고치면 다음 생성 때 조용히 되돌아간다."""
@@ -93,14 +176,10 @@ class LineReviewSheetTests(unittest.TestCase):
                 capture_output=True, text=True, encoding="utf-8", cwd=str(REPO_ROOT),
             )
             self.assertEqual(done.returncode, 0, done.stderr[:400])
-            rebuilt = [r for s in sorted(out.glob("line-review-doc-*.md"))
-                       for r in rows(s.read_text(encoding="utf-8"))]
+            rebuilt = [parse(p.read_text(encoding="utf-8"))
+                       for p in sorted(out.glob("line-review-doc-*.md"))]
 
-        # 판정 칸은 사람이 채우므로 뺀다 — 원문과 지적만 대조한다
-        self.assertEqual(
-            [(d, n, s, m) for d, n, s, m, _ in rebuilt],
-            [(d, n, s, m) for d, n, s, m, _ in self.rows],
-        )
+        self.assertEqual(rebuilt, [(d, f, c) for _p, d, f, c in self.sheets])
 
 
 if __name__ == "__main__":
