@@ -60,6 +60,21 @@ class KeepCaseTests(unittest.TestCase):
             with self.subTest(case=case["case_id"]):
                 self.assertEqual(case["original"], case["revised"])
 
+    def test_skill_md_states_the_real_number_of_fixtures(self) -> None:
+        """손으로 적은 개수는 시료를 더할 때 같이 안 고쳐진다 — 두 번 낡은 채 발견됐다.
+
+        `SKILL.md` 는 「기준문 N쌍의 구조와 의미 보존을 확인한다」고 알린다. 시료를
+        하나 더했는데 N 이 그대로면 읽는 쪽은 덜 확인된 줄 알거나, 빠진 시료가 있는
+        줄 안다. 이번에 KEEP 시료를 넣으면서 13 이 14 가 됐는데 문장은 13 이었다.
+
+        같은 낡음이 `core-rules.md` 의 원칙 개수에서도 났다. 글로 지키는 것으로는
+        안 되는 종류라 양쪽 다 시험으로 옮긴다.
+        """
+        text = (SKILL / "SKILL.md").read_text(encoding="utf-8")
+
+        self.assertIn(f"기준문 {len(self.cases)}쌍", text,
+                      f"시료가 {len(self.cases)}건인데 SKILL.md 의 개수가 다릅니다")
+
 
 class SelfTestAcceptsKeepTests(unittest.TestCase):
     """자체 검사가 KEEP 을 받는지 — 막고 있던 것이 되돌아오면 시료가 다시 못 들어간다."""
