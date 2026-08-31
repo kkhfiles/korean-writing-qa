@@ -13,3 +13,4 @@ runs/**/raw/
 
 *.tmp
 *.bak
+.hook-sandbox/
