@@ -5,8 +5,12 @@
 참으로 만들려면 **모든 줄이 판정돼야** 한다 — 지적이 없는 줄도 「깨끗함」으로
 판정된 것이라야 한다.
 
-**사람의 품을 줄이는 방법.** 이미 나온 지적을 줄마다 붙여 둔다. 사람은 붙어
-있는 것을 확인하고, **붙지 않은 줄에 문제가 있는지만** 본다.
+**시트를 두 부분으로 가른다.** 예전에는 한 표에 지적 붙은 줄과 안 붙은 줄을
+섞고, 지적은 `ENGLISH_OVERUSE` 같은 영어 코드로만 적었다. 읽는 사람이
+「지적이 없는데 뭘 판정하라는 건지」 알 수 없었다. 두 부분은 묻는 것이 다르다.
+
+1. **지적 확인** — 나온 지적이 맞는지. 문제 구절·고칠 말·이유를 함께 보여 준다.
+2. **빠진 것 찾기** — 아무도 안 잡은 줄에 어색한 데가 있는지. 이쪽이 본 일이다.
 
 **판정 대상에서 빼는 줄** — 머리말·빈 줄·표 구분선·주소만 있는 줄·한글이 거의
 없는 줄. 한글 작성 규칙이 걸릴 수 없는 줄이다.
@@ -39,7 +43,29 @@ MIN_KOREAN_WORDS = 4
 
 # 시각 형식 지적 — 이 시스템이 보는 것은 한국어가 바로 쓰였는지다. 굵게·이모지·
 # 강조 개수는 전역 문서 검사기의 서식 규칙이라 여기서는 안 보여 준다.
-VISUAL_MARKS = ("값 안 굵게", "강조 과다", "굵게", "VISUAL_DECORATION", "EMPHASIS_NOISE")
+VISUAL_CATEGORIES = {"VISUAL_DECORATION", "EMPHASIS_NOISE"}
+VISUAL_KINDS = ("값 안 굵게", "강조 과다", "묶음 과대")
+
+# 갈래 이름을 한국어로 — 읽는 사람이 코드를 해독하게 두지 않는다.
+# 새 갈래가 들어오면 시험이 잡는다(tests/test_line_review_sheet.py).
+CATEGORY_KO = {
+    "ENGLISH_OVERUSE": "불필요한 영어",
+    "EVALUATIVE_MODIFIER": "평가 수식어",
+    "REDUNDANT_MODIFIER": "겹치는 수식",
+    "REDUNDANT_REPEAT": "같은 말 반복",
+    "NOMINALIZATION": "명사로 굳힌 서술",
+    "TRANSLATIONESE": "번역투",
+    "VAGUE_VERB": "뜻 흐린 동사",
+    "VAGUE_LABEL": "뭉뚱그린 라벨",
+    "ABSTRACT_SUBJECT": "추상 주어",
+    "UNNATURAL_METAPHOR": "어색한 비유",
+    "LITERAL_PATH": "「경로」를 그대로 씀",
+    "TYPO": "오탈자",
+    "VISUAL_DECORATION": "시각 장식",
+    "EMPHASIS_NOISE": "강조 남용",
+    # 문서 검사기는 같은 것을 제 이름으로 부른다 — 한 이름으로 모아야 한 건이 된다
+    "스캔 가치 없는 라벨": "뭉뚱그린 라벨",
+}
 
 
 def load_global():
@@ -80,75 +106,167 @@ def read_jsonl(path: Path) -> list[dict]:
     return [json.loads(l) for l in path.read_text(encoding="utf-8").splitlines() if l.strip()]
 
 
-def existing(document_id: str, lines: list[str]) -> dict[int, list[str]]:
-    """이미 나온 지적을 줄 번호별로 모은다 — 1층·2층·기존 라벨."""
-    found: dict[int, list[str]] = {}
-    check = skill_bridge.load("check")
-    rules = check.load_rules()
-    source = SOURCE_DIR / f"{document_id}.md"
+def category_ko(code: str) -> str:
+    """갈래 코드를 한국어 이름으로. 모르는 코드는 코드째 남긴다(조용히 감추지 않는다)."""
+    return CATEGORY_KO.get(code, code)
 
-    result = check.scan_files([source], rules, "general_it_business", False, "general")
+
+def existing(document_id: str, lines: list[str]) -> list[dict]:
+    """이미 나온 지적을 모은다 — 1층 규칙·전역 검사기·사람 라벨·2층 읽기.
+
+    같은 구절을 여러 층이 잡으면 한 건으로 합치고 「누가」에 층을 나열한다.
+    """
+    found: dict[tuple, dict] = {}
+
+    def add(number, source, category, original="", revised="", why=""):
+        key = (number, original or category)
+        row = found.setdefault(key, {
+            "line": number, "sources": [], "category": category,
+            "original": original, "revised": revised, "why": why,
+        })
+        if source not in row["sources"]:
+            row["sources"].append(source)
+        for field, value in (("revised", revised), ("why", why), ("original", original)):
+            if value and not row[field]:
+                row[field] = value
+
+    source_path = SOURCE_DIR / f"{document_id}.md"
+    check = skill_bridge.load("check")
+    result = check.scan_files([source_path], check.load_rules(),
+                              "general_it_business", False, "general")
     for finding in result["findings"]:
         number = finding.get("line_number")
         if number:
-            found.setdefault(int(number), []).append(f"스킬: {finding.get('rule_id')}")
+            add(int(number), "1층 규칙", finding.get("category") or finding.get("rule_id"),
+                finding.get("original", ""), finding.get("revised", ""), "")
 
-    errors, warnings, _ = load_global().scan_md(str(source))
-    for tier, items in (("오류", errors), ("주의", warnings)):
+    errors, warnings, _ = load_global().scan_md(str(source_path))
+    for items in (errors, warnings):
         for kind, message in items:
             match = LINE_PREFIX.match(message)
-            if match:
-                found.setdefault(int(match.group(1)), []).append(f"{tier}: {kind}")
+            if not match or kind in VISUAL_KINDS:
+                continue
+            # 검사기 사유는 「낱말」 앞뒤에 원문 줄을 통째로 붙인다 — 낱말만 뽑는다.
+            # 앞에도 말이 붙는다(「표 머리 「비고」」) — 처음부터 찾으면 놓친다
+            body = LINE_PREFIX.sub("", message).strip()
+            quoted = re.search(r"「([^」]+)」", body)
+            add(int(match.group(1)), "문서 검사기", kind,
+                quoted.group(1) if quoted else "", "", "" if quoted else body)
 
     for row in read_jsonl(LABELS):
         if str(row["document_id"]) != document_id:
             continue
+        head = row["original"].splitlines()[0]
         for number, line in enumerate(lines, 1):
-            if row["original"].splitlines()[0] in line:
-                verdict = "지적" if row.get("human_label") == "revise" else "허용"
-                found.setdefault(number, []).append(f"라벨({verdict}): {row['category']}")
+            if head in line:
+                verdict = "사람이 고치라 함" if row.get("human_label") == "revise" else "사람이 괜찮다 함"
+                add(number, verdict, row["category"], row["original"], row.get("revised", ""), "")
                 break
 
     for row in read_jsonl(LAYER2):
         if str(row["document_id"]) == document_id:
-            found.setdefault(int(row["line_number"]), []).append(f"2층: {row['category']}")
-    return found
+            add(int(row["line_number"]), "2층 읽기", row["category"],
+                row.get("original", ""), row.get("revised", ""), row.get("why", ""))
+
+    rows = [r for r in sorted(found.values(), key=lambda r: (r["line"], r["category"]))
+            if r["category"] not in VISUAL_CATEGORIES]
+    return merge_overlapping(rows)
 
 
-def visible(marks: list[str]) -> list[str]:
-    """시각 형식 지적을 뺀다 — 이 시스템이 보는 것은 한국어 표현이다."""
-    return [m for m in marks if not any(v in m for v in VISUAL_MARKS)]
+def merge_overlapping(rows: list[dict]) -> list[dict]:
+    """같은 줄·같은 갈래에서 한쪽 구절이 다른 쪽에 들어 있으면 한 건이다.
+
+    층마다 구절을 잡는 폭이 다르다 — 문서 검사기는 「강력한」, 2층은 「강력한
+    `.claudeignore` 활용」을 낸다. 나란히 두면 읽는 사람이 두 번 판정해야 한다.
+    긴 쪽을 남기고 「누가」만 합친다.
+
+    갈래는 **한국어 이름으로 맞춰 본다** — 문서 검사기는 「평가 수식어」로,
+    다른 층은 `EVALUATIVE_MODIFIER` 로 같은 것을 부른다. 코드로 대조하면
+    같은 지적이 두 줄로 남는다(실측으로 걸렸다).
+    """
+    out: list[dict] = []
+    for row in sorted(rows, key=lambda r: -len(r["original"])):
+        for kept in out:
+            if (kept["line"], category_ko(kept["category"])) != (
+                    row["line"], category_ko(row["category"])):
+                continue
+            if not row["original"] or row["original"] in kept["original"]:
+                for source in row["sources"]:
+                    if source not in kept["sources"]:
+                        kept["sources"].append(source)
+                for field in ("revised", "why"):
+                    if row[field] and not kept[field]:
+                        kept[field] = row[field]
+                break
+        else:
+            out.append(row)
+    return sorted(out, key=lambda r: (r["line"], r["category"]))
 
 
-def build(document_id: str, out: Path) -> int:
+def cell(text: str) -> str:
+    return (text or "").strip().replace("|", "\\|").replace("\n", " ")
+
+
+def quoted_cell(text: str) -> str:
+    """원문에서 따온 글은 「」로 감싼다.
+
+    이유 둘 — 읽는 사람에게 「이건 내가 쓴 말이 아니라 문서에서 따온 것」임을
+    보이고, 문서 검사기가 그 칸을 자기 규칙으로 재지 않게 한다(원문은 글자가
+    같아야 하므로 개조식으로 고칠 수 없다).
+    """
+    text = cell(text)
+    return f"「{text}」" if text else "—"
+
+
+def build(document_id: str, out: Path) -> tuple[int, int]:
     source = SOURCE_DIR / f"{document_id}.md"
     lines = source.read_text(encoding="utf-8").splitlines()
-    found = existing(document_id, lines)
     numbers = judgeable(lines)
+    findings = [f for f in existing(document_id, lines) if f["line"] in set(numbers)]
+    flagged = {f["line"] for f in findings}
+    clean = [n for n in numbers if n not in flagged]
 
     parts = [
         "---\nform: structured\n---\n",
         f"# 줄 단위 판정 — {document_id}\n",
-        f"**{len(numbers)}행을 「깨끗함」이나 「고칠 것」으로 판정 요청** — "
-        "붙어 있는 지적을 확인하고 **빠진 것만** 적으면 됨 · "
-        "판정이 끝나야 회수율의 분모가 참이 됨\n",
-        "## 읽는 법\n",
-        "- **판정**: 붙은 지적이 맞으면 `O` · 틀리면 `X` · "
-        "**아무도 안 잡았는데 한국어가 어색하면 그것을 적음**\n"
-        "- 손댈 곳이 없으면 비워 두면 됨 — 빈 칸은 「깨끗함」으로 읽음\n"
-        "- **굵게·이모지·강조 개수는 대상 아님** — 이 시스템이 보는 것은 한국어 표현\n"
-        f"- **뺀 줄**: 제목·제품명·날짜·출처 링크 등 한글 어절 {MIN_KOREAN_WORDS}개 미만\n",
-        f"## 판정 대상 {len(numbers)}행\n",
-        "| 행 | 원문 | 이미 나온 지적 | 판정 |\n|---|---|---|---|",
+        f"**한글 {len(numbers)}행이 바르게 쓰였는지 판정 요청** — "
+        f"**「② 빠진 것 찾기」의 {len(clean)}행이 본 일** · "
+        f"①은 이미 나온 지적 {len(findings)}건이 맞는지 보는 것 · "
+        "빈 칸은 「고칠 데 없음」으로 읽음\n",
+        "## 이 판정으로 얻는 것\n",
+        "- **지금 세는 것**: 누군가 알아챈 문제뿐 — 검사기가 놓친 것은 안 세어짐\n"
+        "- **판정 뒤에 셀 수 있는 것**: 문서에 실제로 있는 문제 대비 검사기가 잡는 비율\n",
+        "## 쓰는 법\n",
+        "| 어느 표 | 묻는 것 | 판정 칸에 적을 것 |\n|---|---|---|\n"
+        "| ① 지적 확인 | 이 지적이 맞나 | 맞으면 `O` · 아니면 `X` · 헷갈리면 `?` |\n"
+        f"| ② 빠진 것 찾기 | 어색한 데가 있나 | 어색한 **구절을 그대로** 적음 · 없으면 빈 칸 |\n",
+        "**②의 보기** — 「멀티 에이전트 환경에서 세션 간 비동기 메시지 전달」 같은 줄이 걸린다면 "
+        "판정 칸에 `비동기 메시지 전달` 이라고만 적으면 됨 · 고칠 말까지는 안 적어도 됨\n",
+        "**대상 아닌 것** — 굵게·이모지·강조 개수는 이 검사가 보는 축이 아님 · "
+        f"한글 어절 {MIN_KOREAN_WORDS}개 미만인 줄(제목·제품명·날짜·출처)은 목록에서 뺌\n",
+        f"## ① 지적 확인 — {len(findings)}건\n",
+        "| 행 | 갈래 | 지적한 구절 | 이렇게 고치자 | 왜 | 누가 | 판정 |\n"
+        "|---|---|---|---|---|---|---|",
     ]
-    for number in numbers:
-        text = lines[number - 1].strip().replace("|", "\\|")
-        if len(text) > 96:
-            text = text[:95] + "…"
-        marks = " · ".join(visible(found.get(number, []))) or ""
-        parts.append(f"| {number} | {text} | {marks} | |")
+    # 구절과 고칠 말은 자르지 않는다 — 자르면 그 지적이 맞는지 판정할 수 없다
+    for f in findings:
+        parts.append("| {line} | {cat} | {orig} | {rev} | {why} | {who} | |".format(
+            line=f["line"], cat=cell(category_ko(f["category"])),
+            orig=quoted_cell(f["original"]),
+            rev=quoted_cell(f["revised"]),
+            why=cell(f["why"]) or "—",
+            who=cell(" · ".join(f["sources"]))))
+
+    parts += [
+        f"\n## ② 빠진 것 찾기 — {len(clean)}행\n",
+        "**아무도 지적하지 않은 줄** — 어색한 구절이 있으면 그것을 판정 칸에 적음\n",
+        "| 행 | 원문 | 판정 |\n|---|---|---|",
+    ]
+    for number in clean:
+        parts.append(f"| {number} | {quoted_cell(lines[number - 1])} | |")
+
     out.write_text("\n".join(parts) + "\n", encoding="utf-8")
-    return len(numbers)
+    return len(findings), len(clean)
 
 
 def main() -> None:
@@ -162,7 +280,8 @@ def main() -> None:
         if not (SOURCE_DIR / f"{document_id}.md").is_file():
             continue
         out = args.out_dir / f"line-review-{document_id}.md"
-        print(f"{out} · {build(document_id, out)}행")
+        marked, clean = build(document_id, out)
+        print(f"{out} · 지적 확인 {marked}건 · 빠진 것 찾기 {clean}행")
 
 
 if __name__ == "__main__":
