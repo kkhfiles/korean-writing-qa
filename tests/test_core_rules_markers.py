@@ -28,6 +28,7 @@ CASES = [
     ("압축한 명사구 풀기", "테스트를 만드는 구간에서 공수가 든다는 뜻", "사람"),
     ("막연한 비유 — 경로", "제품화 경로를 검토", "스킬"),
     ("막연한 비유 — 자리", "규칙을 넣을 자리를 정함", "전역"),
+    ("지어낸 명사구", "모으는 창을 하루로 잡음", "사람"),
     ("실무 행위 밝히기", "이 문제를 AI로 푼다는 뜻", "사람"),
     ("계획과 결과 구분", "커버리지를 더 올린다는 뜻", "사람"),
     ("번역투", "검증 자동화에 대한 검토 결과", "사람"),
@@ -85,6 +86,27 @@ class CoreRulesMarkerTests(unittest.TestCase):
                     f"{name}: core-rules.md 의 담당 표시가 실제 검사기와 다릅니다",
                 )
 
+    def test_the_stated_number_of_principles_matches_the_list(self) -> None:
+        """머리글의 개수는 규칙을 더할 때 같이 안 고쳐진다 — 실제로 낡은 채 발견됐다.
+
+        이 문장은 「검사기가 안 보는 것이 몇 개인가」를 알리는 자리다. 원칙을 하나
+        더했는데 숫자가 그대로면 읽는 쪽은 덜 남았다고 믿고 그만큼 덜 본다.
+        """
+        korean = {8: "여덟", 9: "아홉", 10: "열", 11: "열한", 12: "열두",
+                  13: "열세", 14: "열네", 15: "열다섯"}
+        section = self.core_rules.split("## 공통 원칙", 1)[1].split("\n## ", 1)[0]
+        bullets = [l for l in section.split("\n") if l.startswith("- **")]
+
+        self.assertIn(korean[len(bullets)] + " 개", section,
+                      f"원칙이 {len(bullets)}개인데 머리글의 개수가 다릅니다")
+
+    def test_every_principle_says_who_looks_at_it(self) -> None:
+        """표시 없는 원칙은 검사기가 본다고 오해된다 — 그러면 아무도 안 본다."""
+        section = self.core_rules.split("## 공통 원칙", 1)[1].split("\n## ", 1)[0]
+        for line in (l for l in section.split("\n") if l.startswith("- **")):
+            with self.subTest(principle=line.split("**")[1]):
+                self.assertRegex(line, r"\[(스킬|전역|사람)")
+
     def test_the_english_rule_keeps_its_two_exemptions(self) -> None:
         """오탐 판정에서 나온 예외가 지워지면 같은 오탐이 되돌아온다.
 
@@ -102,6 +124,23 @@ class CoreRulesMarkerTests(unittest.TestCase):
         for term in ("포지셔닝", "에이전틱"):
             with self.subTest(term=term):
                 self.assertIn(term, self.core_rules)
+
+    def test_the_made_up_noun_rule_keeps_its_test_and_its_carve_out(self) -> None:
+        """낱말 목록만 남고 판정 기준이 지워지면 굳은 말까지 고치게 된다.
+
+        사용자 지시는 「~창·~판 같은 안 쓰는 말투를 다 고쳐라」였다. 그런데 `편집창`·
+        `바둑판`은 한 낱말로 굳은 정상 표현이라 목록만으로는 갈리지 않는다. 가르는
+        것은 **그 명사가 혼자 서는가**뿐이므로, 그 기준과 굳은 말 예시가 함께 남아야
+        규칙이 쓸 수 있는 형태다.
+
+        결정 규칙으로는 못 넣는다는 것이 이미 실측으로 갈렸다 — 문서에서 이 구문은
+        사용자 1만자당 0.90 대 0.52로 오히려 내가 적게 쓰고, 세 뭉치 11건이 전부
+        정상 문장이었다. 그래서 자리가 판단 층이고, 판단 층에서는 이 표시가 전부다.
+        """
+        for phrase in ("혼자 서는가", "편집창", "판`·`창"):
+            with self.subTest(phrase=phrase):
+                self.assertIn(phrase, self.core_rules,
+                              "지어낸 명사구 규칙에서 판정 기준이나 예외가 지워졌습니다")
 
     def test_every_contextual_rule_reaches_the_layer_that_can_apply_it(self) -> None:
         """문맥 교정은 이 표가 유일한 통로다. 빠지면 확정하고도 아무 데서도 안 쓰인다.
