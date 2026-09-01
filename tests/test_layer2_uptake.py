@@ -53,6 +53,68 @@ class MarkerTests(unittest.TestCase):
         self.assertEqual(self.mod.SELF, "korean-writing-qa")
 
 
+class PublishDefinitionTests(unittest.TestCase):
+    """발행의 정의를 두 벌로 두면 어긋난다 — 실제로 어긋난 채 기준선을 냈다.
+
+    측정기가 자기 정규식(`notion\\.py|marp|\\.pptx`)을 들고 있어서 조회
+    (`notion.py children`)와 소스 읽기(`grep ... notion.py`)까지 발행으로 셌다.
+    분모가 244 대신 627 이 됐고 기준선 발화율이 21.3% 대신 8.3% 로 기록됐다.
+    """
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.mod = load()
+        hook = Path.home() / ".claude" / "hooks" / "doc-style-gate.py"
+        if not hook.is_file():
+            raise unittest.SkipTest(f"훅이 없습니다: {hook}")
+        cls.hook = cls.mod.load_hook()
+
+    def call(self, command):
+        return {"name": "Bash", "input": {"command": command}}
+
+    def test_reading_the_publisher_is_not_publishing(self) -> None:
+        for command in (
+            "grep -n 'def ' ~/.claude/skills/notion-publish/notion.py",
+            "python notion.py children --id abc --max 300",
+            "python notion.py search --query 평가 --limit 30",
+        ):
+            with self.subTest(command=command[:40]):
+                self.assertFalse(self.mod.is_publish(self.hook, self.call(command)))
+
+    def test_an_actual_publish_still_counts(self) -> None:
+        command = "python -X utf8 notion.py create --parent abc --title 보고 report.md"
+        self.assertTrue(self.mod.is_publish(self.hook, self.call(command)))
+
+    def test_the_meter_keeps_no_publish_pattern_of_its_own(self) -> None:
+        """사본을 되살리면 같은 어긋남이 돌아온다."""
+        source = SCRIPT.read_text(encoding="utf-8")
+
+        self.assertNotIn("PUBLISH = re.compile", source)
+        self.assertIn("hook.targets(payload)", source)
+
+
+class BoundaryTests(unittest.TestCase):
+    """경계는 날짜가 아니라 그 순간이다.
+
+    자정으로 잡았더니 훅을 고치기 네 시간 **전** 활동이 「붙인 뒤」로 들어가
+    「발행 8건에 안내 0건」이 됐다. 안내가 있을 수 없던 구간이다.
+    """
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.mod = load()
+
+    def test_the_boundary_is_a_moment_not_midnight(self) -> None:
+        changed = self.mod.CHANGED
+
+        self.assertNotEqual((changed.hour, changed.minute), (0, 0),
+                            "경계가 자정이면 그날 앞 시간의 활동이 「붙인 뒤」로 샌다")
+
+    def test_that_morning_falls_before_the_change(self) -> None:
+        self.assertEqual(self.mod.bucket("2026-08-31T04:08:10.000Z"), "붙이기 전")
+        self.assertEqual(self.mod.bucket("2026-08-31T09:00:00.000Z"), "붙인 뒤")
+
+
 class VerdictTests(unittest.TestCase):
     """표본이 적을 때 침묵하는지 — 0%를 결과로 내면 「안 먹혔다」로 읽힌다."""
 

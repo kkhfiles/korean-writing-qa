@@ -19,15 +19,17 @@
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import json
-import re
 import time
 from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
 
 TRANSCRIPTS = Path.home() / ".claude" / "projects"
-CHANGED = datetime(2026, 8, 31, tzinfo=timezone.utc)   # 안내를 발행 경로로 옮긴 날
+# 경계는 **날짜가 아니라 그 순간**이다. 자정으로 잡았더니 같은 날 아침의 활동이
+# 「붙인 뒤」로 세어져, 안내가 있을 수 없던 발행 8건을 「안내 0회」로 보고했다.
+CHANGED = datetime(2026, 8, 31, 7, 56, 13, tzinfo=timezone.utc)   # 커밋 2037126
 # 안내를 세는 표시는 **훅이 내는 그 줄 전체**여야 한다. 「발행 직전」만 찾으면
 # 그 문구를 논의한 글까지 세어 발화율이 208%로 나온다(실측으로 걸렸다).
 NOTICE_MARK = "★ 발행 직전 — 이 문서에 finalize-korean-document 스킬을 돌린다"
@@ -35,7 +37,32 @@ OLD_NOTICE_MARK = "한글 문서 최종화 검사 — 전달 전에 finalize-kor
 # 이 시스템을 만드는 세션은 문구를 계속 인용하므로 뺀다
 SELF = "korean-writing-qa"
 SKILL_NAME = "finalize-korean-document"
-PUBLISH = re.compile(r"notion\.py|slides-to-pptx|marp|\.pptx", re.I)
+HOOK = Path.home() / ".claude" / "hooks" / "doc-style-gate.py"
+
+
+def load_hook():
+    """발행의 정의를 훅에서 그대로 가져온다 — 두 벌로 두면 어긋난다.
+
+    처음에는 이 파일이 `notion\\.py|marp|\\.pptx` 라는 자기 나름의 정규식을 들고
+    있었다. 그래서 `notion.py children`(조회)과 `grep ... notion.py`(소스 읽기)까지
+    발행으로 셌다. 훅은 그 셋을 하나도 발행으로 보지 않는다. 분모가 부풀면
+    발화율이 실제보다 낮게 나오고, 안 고쳐도 될 것을 고치게 된다.
+    """
+    spec = importlib.util.spec_from_file_location("doc_style_gate", HOOK)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def is_publish(hook, block) -> bool:
+    """훅이 이 호출에서 발행 게이트를 걸었을지 그대로 물어본다."""
+    payload = {
+        "hook_event_name": "PreToolUse",
+        "tool_name": block.get("name") or "",
+        "tool_input": block.get("input") or {},
+    }
+    files, _, mode = hook.targets(payload)
+    return bool(files) and mode == "always"
 
 
 def bucket(stamp: str) -> str:
@@ -48,6 +75,7 @@ def bucket(stamp: str) -> str:
 
 def measure(days: int) -> dict:
     cutoff = time.time() - days * 86400
+    hook = load_hook()
     notices, skill_calls, publishes = Counter(), Counter(), Counter()
     sessions = {"붙이기 전": set(), "붙인 뒤": set()}
 
@@ -83,7 +111,7 @@ def measure(days: int) -> dict:
                 args = json.dumps(block.get("input") or {}, ensure_ascii=False)
                 if block.get("name") == "Skill" and SKILL_NAME in args:
                     skill_calls[when] += 1
-                if PUBLISH.search(args) or PUBLISH.search(block.get("name", "")):
+                if is_publish(hook, block):
                     publishes[when] += 1
 
     out = {"days": days, "buckets": {}}
