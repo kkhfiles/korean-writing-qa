@@ -230,6 +230,34 @@ class UndeclaredFormTests(unittest.TestCase):
         self.assertIn("형식 미표기", warnings)
         self.assertNotIn("형식 미표기", errors)
 
+    def test_a_list_of_prose_explanations_is_asked_about_too(self) -> None:
+        """표와 목록이 뼈대인데 그 안이 설명문인 문서 — 산문 비율만 보면 놓친다.
+
+        실측으로 문서의 10%(41건)가 이 모양이었다. 개조식 지적이 쏟아지는데
+        그것을 없앨 한 줄(`form: prose`)을 알려 주는 물음은 안 떴다.
+        **조언이 필요한 조건과 조언이 뜨는 조건이 어긋나 있었다.**
+        """
+        rows = "\n".join(
+            f"- 항목 {i} 는 이런 방식으로 처리하고 있습니다." for i in range(1, 15))
+        document = ("# 처리 방식 안내\n\n"
+                    "**처리 방식 한 장 조망** — 항목별 안내\n\n"
+                    "## 본문\n\n" + rows + "\n")
+        errors, warnings = self.scan(document)
+
+        self.assertGreaterEqual(errors.count("서술형 종결"), 10)
+        self.assertIn("형식 미표기", warnings)
+
+    def test_a_few_narrative_findings_do_not_trigger_the_question(self) -> None:
+        """몇 군데 고칠 곳이 있는 정상 문서까지 물으면 묻는 줄이 흔해진다."""
+        document = ("# 처리 방식 안내\n\n"
+                    "**처리 방식 한 장 조망** — 항목별 안내\n\n"
+                    "## 본문\n\n"
+                    "- 첫째 항목은 이런 방식으로 처리하고 있습니다.\n"
+                    "- **둘째 항목** — 처리 완료\n"
+                    "- **셋째 항목** — 대기\n")
+
+        self.assertNotIn("형식 미표기", self.scan(document)[1])
+
 
 class SkillWiringTests(unittest.TestCase):
     """형식 축을 쓰라는 지시가 스킬에 실제로 닿는지 본다.
