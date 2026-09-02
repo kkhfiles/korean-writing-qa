@@ -50,7 +50,7 @@
 
 - [현재 상태](docs/status.md)
 - [판단이 필요한 것](docs/decisions-pending.md)
-- [인수인계 설계](docs/design-handoff.md)
+- [인수인계 설계](docs/design-handoff.md) — 2026-08-24에 멈춘 창립 문서 · 현재 상태 아님
 - [기존 검사기 조사](docs/existing-tools.md)
 - [Claude Code 한글 표현 규칙 수집](docs/claude-korean-expression-inventory.md)
 - [사용자 문체 피드백 반영](docs/user-feedback-workflow.md)
