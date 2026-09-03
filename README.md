@@ -48,6 +48,7 @@
 
 ## 설계 문서
 
+- [사용 안내](docs/user-guide.md) — **받는 사람에게 건네는 문서** · 설치·실행·결과 읽는 법
 - [시스템 구조와 역할](docs/architecture.md) — 부품·실행 시점·되먹임
 - [현재 상태](docs/status.md)
 - [판단이 필요한 것](docs/decisions-pending.md)
