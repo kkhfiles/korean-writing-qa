@@ -48,6 +48,7 @@
 
 ## 설계 문서
 
+- [시스템 구조와 역할](docs/architecture.md) — 부품·실행 시점·되먹임
 - [현재 상태](docs/status.md)
 - [판단이 필요한 것](docs/decisions-pending.md)
 - [인수인계 설계](docs/design-handoff.md) — 2026-08-24에 멈춘 창립 문서 · 현재 상태 아님
