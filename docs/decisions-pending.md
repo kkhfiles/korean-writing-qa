@@ -8,7 +8,7 @@ form: structured
 | 번호 | 무엇 | 무게 | 판단할 것 |
 |---|---|---|---|
 | ~~A~~ | ~~전역 검사기가 죽어도 훅이 말을 안 함~~ | **큼** | **처리 완료**(9/3) · 세 갈래 다 알림 |
-| **B** | `source_text.py` 가 두 곳에 byte 단위로 같은 사본 | 중간 | 정본을 어느 쪽에 둘지 |
+| ~~B~~ | ~~`source_text.py` 가 두 곳에 같은 사본~~ | 중간 | **처리 완료**(9/3) · 사본 지우고 다리로 바꿈 |
 | ~~C~~ | ~~훅의 실패 경로에 시험 없음~~ | 중간 | **처리 완료**(9/3) · 시험 6건 · 돌연변이 5건 |
 | **D** | `agents/openai.yaml` 을 아무도 참조 안 함 | 작음 | 두거나 지우거나 |
 | **E** | 전역 자산이 없으면 시험 절반이 조용히 건너뜀 | 작음 | 그대로 둘지 |
@@ -87,7 +87,20 @@ form: structured
 
 **저장소가 두 방식을 섞어 씀** — 탐지 논리는 `skill_bridge`로 다리를 놓고(4개 파일), 추출 논리는 사본을 직접 부른다(2개 파일).
 
-**고치는 안** — 추출도 `skill_bridge.load("source_text")`로 바꾸고 사본을 지운다.
+### 고친 것 — 다리 하나로 모음
+
+| 무엇 | 전 | 후 |
+|---|---|---|
+| `scripts/source_text.py` | 사본 12,174바이트 | **지움** |
+| `scan_path_metaphor.py`·`scan_user_feedback.py` | 사본을 직접 부름 | `skill_bridge.load("source_text")` |
+| `tests/test_source_text.py` | 사본을 시험 | 배포본을 시험 |
+| 실행 기록의 `source_text_sha256` | 저장소 사본의 해시 | **배포본의 해시** |
+
+**마지막 줄이 조용한 결함** — 실행 기록에 「무엇으로 뽑았나」를 적는 항목인데 실제로 돈 파일이 아니라 저장소 사본의 해시를 적고 있었다. 둘이 갈라지면 기록이 거짓이 된다.
+
+**★ 고치자 깨진 직접 실행** — `python scripts/scan_user_feedback.py` 가 `ImportError` 로 죽었다. `from scripts import skill_bridge` 는 `scripts` 가 위치 없는 이름공간으로 잡힐 때 `ModuleNotFoundError` 가 아니라 **`ImportError`** 를 낸다. 예전에는 첫 import 줄이 사본을 부르며 `ModuleNotFoundError` 를 던져 이 차이가 가려져 있었다. `except ImportError` 로 바꿨다.
+
+**막아 둔 것** — 시험 4건(`tests/test_no_extractor_copy.py`) · 사본 파일 · 사본 import · 다리 동작 · 기록 해시. 돌연변이 3건 전부 잡힘.
 **되돌리기** — 파일 하나 복구 · 시험이 잡음
 
 ## C. 훅의 실패 경로에 시험 없음 — 처리 완료 (2026-09-03)

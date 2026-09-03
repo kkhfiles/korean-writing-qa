@@ -3,7 +3,10 @@ from __future__ import annotations
 import unittest
 from pathlib import Path
 
-from scripts.source_text import extract_source_text
+from scripts import skill_bridge
+
+# 배포본을 시험한다 — 저장소 사본을 시험하면 스킬이 망가져도 초록으로 남는다.
+extract_source_text = skill_bridge.load("source_text").extract_source_text
 
 
 class SourceTextExtractionTests(unittest.TestCase):
