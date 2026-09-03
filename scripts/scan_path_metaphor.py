@@ -11,11 +11,16 @@ from collections import Counter
 from pathlib import Path
 
 try:
-    from scripts.source_text import TEXT_EXTENSIONS, extract_source_text
     from scripts import skill_bridge
-except ModuleNotFoundError:  # Direct execution: python scripts/scan_path_metaphor.py
-    from source_text import TEXT_EXTENSIONS, extract_source_text
+except ImportError:  # Direct execution: python scripts/scan_path_metaphor.py
+    # ImportError 로 잡는다 — `scripts` 가 위치 없는 이름공간으로 잡히면
+    # ModuleNotFoundError 가 아니라 ImportError 가 난다(실측).
     import skill_bridge
+
+# 추출 논리도 스킬이 정본이다 — 사본을 두면 한쪽만 고쳐진다.
+_source_text = skill_bridge.load("source_text")
+TEXT_EXTENSIONS = _source_text.TEXT_EXTENSIONS
+extract_source_text = _source_text.extract_source_text
 
 # 탐지 논리는 배포된 스킬이 정본이다. 여기서 다시 적으면 한쪽만 고쳐진다.
 _check = skill_bridge.load("check")
@@ -103,7 +108,9 @@ def main() -> int:
         "positive_seed": "제품화 경로",
         "implementation": {
             "scanner_sha256": hash_file(Path(__file__)),
-            "source_text_sha256": hash_file(Path(__file__).with_name("source_text.py")),
+            # 배포본의 해시를 적는다 — 저장소 사본을 적으면 실제로 돈 것과 어긋난다
+            "source_text_sha256": hash_file(
+                skill_bridge.skill_home() / "scripts" / "source_text.py"),
         },
     }
     args.summary.parent.mkdir(parents=True, exist_ok=True)
