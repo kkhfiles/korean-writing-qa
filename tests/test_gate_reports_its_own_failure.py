@@ -33,6 +33,11 @@ DOC = ("# 검토 결과\n\n**하반기 검토 범위** — 한 장 조망\n\n## 
        "- 산출물은 해당 폴더에\n")
 # 같은 문서인데 본문에 「검사 불가」가 지적으로 실린다 — 예전에는 이것이 전부를 지웠다
 DOC_WITH_PHRASE = DOC + "- 그 판정은 검사 불가로\n"
+# 값 슬롯이 안 잡히는 마크업 — 검사기가 「⛔ … 값 슬롯 미인식」을 실제로 낸다.
+# 그러면서 잡을 수 있는 것(모호한 지칭)은 잡으므로 부분 검사 처리도 함께 볼 수 있다.
+NO_SLOTS = ("<h1>검토 결과</h1>\n"
+            "<div><span>산출물은 해당 폴더에</span></div>\n"
+            "<div><span>우리 제품이 먼저 대응함</span></div>\n")
 
 
 def load_hook():
@@ -79,16 +84,28 @@ class GateReportsItsOwnFailureTests(unittest.TestCase):
         self.assertIn("못 돌렸다", out)
 
     def test_an_unexaminable_file_is_announced(self) -> None:
-        """값 슬롯을 못 찾은 파일은 합격이 아니라 **안 본 것**이다."""
-        original = self.hook.call_checker
-        self.hook.call_checker = lambda *a, **k: (
-            "\n⛔ doc.md — 값 슬롯 미인식, 부분 검사만 됨. 합격이 아니다\n")
-        try:
-            out = self.gate(DOC)
-        finally:
-            self.hook.call_checker = original
+        """값 슬롯을 못 찾은 파일은 합격이 아니라 **안 본 것**이다.
+
+        흉내가 아니라 **진짜 검사기 출력**으로 잰다. 흉내로 재면 내 흉내와 내
+        정규식이 맞는 것만 증명되고, 검사기가 그 줄 모양을 바꾸면 훅이 조용히
+        어긋난 채로 시험은 초록으로 남는다.
+        """
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "noslots.html"
+            path.write_text(NO_SLOTS, encoding="utf-8")
+            out = self.hook.run_checker(str(path), False)
 
         self.assertIn("안 본 것", out)
+
+    def test_a_partial_check_still_shows_what_it_did_find(self) -> None:
+        """알림만 내고 지적을 버리면 실제로 잡은 오류가 사라진다."""
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "noslots.html"
+            path.write_text(NO_SLOTS, encoding="utf-8")
+            out = self.hook.run_checker(str(path), False)
+
+        self.assertIn("안 본 것", out)
+        self.assertIn("모호한 지칭", out)
 
     def test_the_phrase_in_a_document_does_not_erase_its_findings(self) -> None:
         """본문에 「검사 불가」가 있어도 그 파일의 지적은 그대로 나와야 한다."""
@@ -98,6 +115,32 @@ class GateReportsItsOwnFailureTests(unittest.TestCase):
         self.assertIn("절단형 종결", plain)
         self.assertIn("절단형 종결", with_phrase,
                       "본문의 낱말이 그 파일의 지적을 지웠습니다")
+
+    def test_the_prose_retry_judges_by_the_line_shape_too(self) -> None:
+        """같은 함수에 판정이 두 곳 있다 — 한 곳만 고치면 다른 곳이 남는다.
+
+        산문 재검사도 「출력에 ⛔ 글자가 있나」로 보고 있었다. 그러면 본문에 그
+        기호를 쓴 산문 문서는 접기가 조용히 멈춰 개조식 지적이 쏟아진다.
+        """
+        prose = ("# 임베디드 검증 백서\n\n"
+                 "소프트웨어가 안전을 좌우하게 되면서 검증의 무게가 달라졌다. "
+                 "이 글은 자동화가 무엇을 바꾸는지 다룬다.\n\n"
+                 "## 검증 비용\n\n"
+                 # ⛔ 가 **지적 줄에 실려야** 이 경로를 지난다 — 산문 모드에서도
+                 # 남는 낱말 지적(모호한 지칭)과 같은 줄에 둔다.
+                 "개발자가 코드를 한 줄 쓰면 검증에는 세 줄이 든다. "
+                 "⛔ 우리 팀은 그 한계를 안다.\n\n"
+                 "비용의 대부분은 새로 만드는 데 들지 않는다. 이미 만든 것을 고치는 데 든다.\n\n"
+                 "자동 생성 도구는 입력 조합을 기계적으로 늘려 준다. "
+                 "그 숫자가 결함을 잡는다는 뜻은 아니다.\n\n"
+                 "그래서 자동화의 값은 생성보다 유지에서 나온다. "
+                 "요구사항을 잇는 일은 사람의 몫이다.\n")
+        out = self.gate(prose)
+
+        # 「form: prose」 로 단정하면 안 갈린다 — 접기가 멈춘 쪽의 「형식 미표기」
+        # 안내 줄에도 그 글자가 들어 있다. 갈리는 것은 개조식 지적이 남았는지다.
+        self.assertNotIn("서술형 종결", out,
+                         "본문의 ⛔ 기호가 산문 접기를 멈췄습니다")
 
     def test_the_marker_is_matched_on_the_line_shape(self) -> None:
         """글자 대조로 되돌리면 같은 함정이 되살아난다 — 줄 모양으로 봐야 한다."""
