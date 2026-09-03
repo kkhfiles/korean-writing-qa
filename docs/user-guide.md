@@ -43,10 +43,30 @@ form: structured
 | 3 | 위 + 훅 + 설정 두 줄 | Claude Code 설정 편집 | 문서를 쓸 때마다 자동으로 돌리고 싶을 때 |
 
 **1단계** — 파일을 아무 데나 두고 바로 실행한다. 설치할 라이브러리가 없다(파이썬 기본 모듈만 씀).
+**필요한 파이썬** — 3.6 이상 · 만든 쪽 확인은 3.14 · 화면 인코딩은 검사기가 스스로 맞춘다.
 
 **2단계** — 폴더를 통째로 `~/.claude/skills/`에 복사한다.
+**한 곳만 손봄** — `record_feedback.py`의 기본 저장 위치가 만든 쪽 경로다. 그 스크립트를 쓸 때만 `KOREAN_WRITING_QA_HOME`을 쓸 디렉터리로 지정한다. 검사·교정 스크립트는 그대로 돈다.
 
-**3단계** — `~/.claude/settings.json`에 아래 두 항목을 넣는다.
+**3단계** — `~/.claude/settings.json`의 `hooks`에 아래를 넣는다. 이미 다른 훅이 있으면 그 목록에 `command` 한 줄만 더한다.
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      { "matcher": "Artifact|Bash|PowerShell",
+        "hooks": [{ "type": "command",
+                    "command": "python \"$HOME/.claude/hooks/doc-style-gate.py\"" }] }
+    ],
+    "PostToolUse": [
+      { "matcher": "Edit|Write|MultiEdit",
+        "hooks": [{ "type": "command",
+                    "command": "python \"$HOME/.claude/hooks/doc-style-gate.py\"" }] }
+    ]
+  }
+}
+```
+
 
 | 시점 | 걸리는 도구 | 나오는 것 |
 |---|---|---|
