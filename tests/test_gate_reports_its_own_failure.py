@@ -1,0 +1,114 @@
+"""훅이 검사를 **못 돌렸을 때** 그것을 알리는지 고정한다.
+
+**왜 열렸나** — 2026-09-03 아키텍처 검토. 훅의 두 검사기가 실패할 때 정반대로
+행동하고 있었다.
+
+| 부순 것 | 그때 훅이 낸 것 |
+|---|---|
+| 스킬 검사기 없음 | 「검사기 없음」을 경로까지 찍어 알림 |
+| 전역 검사기 없음 | **아무 말 없음** · 지적의 대부분을 내는 쪽이 조용히 죽음 |
+
+발행하는 사람에게 「지적 없음」과 「검사 못 함」이 구별되지 않았다. `SKILL.md` 10단계
+「검사 실패와 검사할 수 없음을 합격으로 처리하지 않는다」가 훅에서 깨져 있었다.
+
+**둘째 결함 — 문서가 자기 지적을 지웠다.** 값 슬롯 미인식을 「출력 어딘가에 `검사
+불가`라는 글자가 있나」로 판정해서, 문서 **본문**에 그 말이 든 줄이 지적으로 실리면
+그 파일의 지적이 통째로 사라졌다. 이 저장소 문서 여럿이 그 말을 쓴다.
+
+**침묵이 맞는 자리도 있다** — 아무도 안 거르는 감시 보고가 그렇다. 훅 보고는 사람이
+읽으므로 알리는 쪽이다(`references/work-principles.md` 「검사·규칙을 설계할 때」).
+"""
+
+from __future__ import annotations
+
+import importlib.util
+import tempfile
+import unittest
+from pathlib import Path
+
+HOOK = Path.home() / ".claude" / "hooks" / "doc-style-gate.py"
+
+# 값 슬롯이 잡히고 오류가 하나 나는 가장 단순한 문서
+DOC = ("# 검토 결과\n\n**하반기 검토 범위** — 한 장 조망\n\n## 본문\n\n"
+       "- 산출물은 해당 폴더에\n")
+# 같은 문서인데 본문에 「검사 불가」가 지적으로 실린다 — 예전에는 이것이 전부를 지웠다
+DOC_WITH_PHRASE = DOC + "- 그 판정은 검사 불가로\n"
+
+
+def load_hook():
+    spec = importlib.util.spec_from_file_location("doc_style_gate", HOOK)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+class GateReportsItsOwnFailureTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        if not HOOK.is_file():
+            raise unittest.SkipTest(f"훅이 없습니다: {HOOK}")
+        cls.hook = load_hook()
+
+    def gate(self, text: str) -> str:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "doc.md"
+            path.write_text(text, encoding="utf-8")
+            return self.hook.run_checker(str(path), False)
+
+    def test_a_missing_checker_is_announced(self) -> None:
+        """전역 검사기 파일이 사라지면 그 사실이 발행 화면에 떠야 한다."""
+        original = self.hook.CHECKER
+        self.hook.CHECKER = original.with_name("no-such-checker.py")
+        try:
+            out = self.gate(DOC)
+        finally:
+            self.hook.CHECKER = original
+
+        self.assertIn("못 돌렸다", out)
+        self.assertIn("검사기 없음", out)
+
+    def test_a_crashing_checker_is_announced(self) -> None:
+        """실행이 안 되거나 시간이 넘으면 그것도 알린다 — 빈 결과로 바꾸지 않는다."""
+        original = self.hook.call_checker
+        self.hook.call_checker = lambda *a, **k: None
+        try:
+            out = self.gate(DOC)
+        finally:
+            self.hook.call_checker = original
+
+        self.assertIn("못 돌렸다", out)
+
+    def test_an_unexaminable_file_is_announced(self) -> None:
+        """값 슬롯을 못 찾은 파일은 합격이 아니라 **안 본 것**이다."""
+        original = self.hook.call_checker
+        self.hook.call_checker = lambda *a, **k: (
+            "\n⛔ doc.md — 값 슬롯 미인식, 부분 검사만 됨. 합격이 아니다\n")
+        try:
+            out = self.gate(DOC)
+        finally:
+            self.hook.call_checker = original
+
+        self.assertIn("안 본 것", out)
+
+    def test_the_phrase_in_a_document_does_not_erase_its_findings(self) -> None:
+        """본문에 「검사 불가」가 있어도 그 파일의 지적은 그대로 나와야 한다."""
+        plain = self.gate(DOC)
+        with_phrase = self.gate(DOC_WITH_PHRASE)
+
+        self.assertIn("절단형 종결", plain)
+        self.assertIn("절단형 종결", with_phrase,
+                      "본문의 낱말이 그 파일의 지적을 지웠습니다")
+
+    def test_the_marker_is_matched_on_the_line_shape(self) -> None:
+        """글자 대조로 되돌리면 같은 함정이 되살아난다 — 줄 모양으로 봐야 한다."""
+        source = HOOK.read_text(encoding="utf-8")
+
+        self.assertIn("BLIND", source)
+        self.assertNotIn('"검사 불가" in out', source)
+
+    def test_a_clean_document_still_says_nothing(self) -> None:
+        """알리기로 바꾼 것이 깨끗한 문서까지 시끄럽게 만들면 안 된다."""
+        clean = ("# 검토 결과\n\n**하반기 검토 범위** — 한 장 조망\n\n## 본문\n\n"
+                 "- **기한** 10월 30일\n")
+
+        self.assertEqual(self.gate(clean), "")
