@@ -15,6 +15,7 @@
 from __future__ import annotations
 
 import importlib.util
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -55,10 +56,22 @@ class GateCoverageMeterTests(unittest.TestCase):
         self.assertIn("「범위에 든다」이지 「실제로 돌았다」가 아니다", self.source)
 
     def test_no_documents_gives_no_verdict(self) -> None:
-        """0건일 때 100%나 0%를 내면 안 된다 — 판정 불가다."""
-        result = self.meter.measure(0, False)
+        """0건일 때 100%나 0%를 내면 안 된다 — 판정 불가다.
+
+        **`--days 0` 으로 흉내 내면 안 된다.** 처음에 그렇게 짰더니 지금 세션의 기록이
+        계속 쓰이는 바람에 돌릴 때마다 결과가 달랐다(일일 점검이 첫 실행에서 잡았다).
+        기록이 아예 없는 자리를 주고 잰다.
+        """
+        original = self.meter.TRANSCRIPTS
+        with tempfile.TemporaryDirectory() as empty:
+            self.meter.TRANSCRIPTS = Path(empty)
+            try:
+                result = self.meter.measure(14, False)
+            finally:
+                self.meter.TRANSCRIPTS = original
 
         self.assertIsNone(result["덮개"])
+        self.assertEqual(result["문서 수"], 0)
 
     def test_its_own_sessions_are_left_out_by_default(self) -> None:
         """이 저장소의 시험이 수치를 부풀리지 않게 한다."""
