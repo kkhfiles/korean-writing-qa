@@ -84,6 +84,26 @@ class DailyHealthCheckTests(unittest.TestCase):
             with self.subTest(part=part):
                 self.assertIn(part, text)
 
+    def test_batch_and_scheduled_runs_exit_at_once(self) -> None:
+        """자동으로 도는 세션에서 9초짜리 시험을 돌리면 안 된다.
+
+        SessionStart 훅 넷이 다 이 검사를 하는데 이것만 빠져 있었다(재검토에서 잡음).
+        """
+        import os
+        for flag in ("CLAUDE_BATCH_MODE", "CLAUDE_SCHEDULED"):
+            with self.subTest(flag=flag):
+                env = dict(os.environ, **{flag: "1"})
+                start = __import__("time").monotonic()
+                done = subprocess.run(
+                    [sys.executable, "-X", "utf8", str(CHECK)],
+                    input="{}", capture_output=True, text=True,
+                    encoding="utf-8", env=env)
+                elapsed = __import__("time").monotonic() - start
+
+                self.assertEqual(done.returncode, 0)
+                self.assertEqual((done.stdout or "").strip(), "")
+                self.assertLess(elapsed, 3.0, "즉시 끝나야 합니다")
+
     def test_it_is_wired_into_session_start(self) -> None:
         """훅을 써 두고 등록을 안 하면 규칙이 존재만 하고 효력이 0이다."""
         if not SETTINGS.is_file():
