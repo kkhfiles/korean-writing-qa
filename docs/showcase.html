@@ -14,164 +14,264 @@
   }
 :root{
   color-scheme: light;
-  --ground:#F2F5F1; --paper:#FFFFFF; --card:#FFFFFF;
-  --ink:#19201B; --ink2:#525D56; --ink3:#7B867F;
-  --line:#DCE2DB; --line2:#EDF0EB;
-  --red:#B93A2C; --red-bg:#FCF0EE; --red-line:#E9C6C0;
-  --green:#2C7A4F; --green-bg:#EDF6F0; --green-line:#BFDECB;
-  --amber:#9C6708; --amber-bg:#FBF3E3; --amber-line:#E7D3A8;
+  --ground:#F1F4F0; --paper:#FFFFFF;
+  --ink:#141A16; --ink2:#4E5A53; --ink3:#7B857E;
+  --line:#DCE2DB; --line2:#EBEFE9;
+  --red:#B3342A; --red-bg:#FCF0EE; --red-line:#E9C5BF;
+  --green:#1F6B44; --green-bg:#EDF5F0; --green-line:#BEDCCA;
+  --amber:#9A6407; --amber-bg:#FBF3E3; --amber-line:#E7D3A8;
   --kr:"Pretendard KR",Pretendard,"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",system-ui,sans-serif;
   --mono:Consolas,"Cascadia Mono",ui-monospace,monospace;
+  --grid:linear-gradient(var(--line2) 1px,transparent 1px),linear-gradient(90deg,var(--line2) 1px,transparent 1px);
 }
 *{box-sizing:border-box}
-html{-webkit-text-size-adjust:100%}
+html{-webkit-text-size-adjust:100%; scroll-behavior:smooth}
 body{
   margin:0; background:var(--ground); color:var(--ink);
   font-family:var(--kr); font-size:15px; line-height:1.7;
   word-break:keep-all; overflow-wrap:anywhere;
 }
-.wrap{max-width:1020px; margin:0 auto; padding:0 20px 96px}
 b,strong{font-weight:700}
 a{color:var(--green); text-underline-offset:3px}
-code,.num{font-family:var(--mono); font-variant-numeric:tabular-nums}
+code,.mono{font-family:var(--mono); font-variant-numeric:tabular-nums}
+.band{padding:0 20px}
+.band.paper{background:var(--paper); border-block:1px solid var(--line)}
+.in{max-width:1040px; margin:0 auto; padding:74px 0}
 
-/* ── 머리 ───────────────────────────────── */
-.hero{
-  background:var(--paper); border-bottom:1px solid var(--line);
-  background-image:linear-gradient(var(--line2) 1px,transparent 1px),
-                   linear-gradient(90deg,var(--line2) 1px,transparent 1px);
-  background-size:26px 26px; background-position:-1px -1px;
-}
-.hero-in{max-width:1020px; margin:0 auto; padding:52px 20px 40px}
-.eyebrow{font-size:12.5px; color:var(--green); font-weight:700; margin:0 0 10px}
-h1{
-  font-size:clamp(28px,4.6vw,40px); font-weight:700; letter-spacing:-.028em;
-  line-height:1.28; margin:0 0 14px; text-wrap:balance;
-}
-.lede{font-size:17px; color:var(--ink2); margin:0; max-width:62ch; font-weight:500}
-.stats{display:grid; grid-template-columns:repeat(auto-fit,minmax(158px,1fr)); gap:12px; margin:30px 0 0}
-.stat{background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px 16px}
-.stat .k{font-size:12px; color:var(--ink3); font-weight:600; margin:0 0 4px}
-.stat .v{font-size:26px; font-weight:700; letter-spacing:-.02em; font-family:var(--mono); font-variant-numeric:tabular-nums; line-height:1.2}
-.stat .u{font-size:12.5px; color:var(--ink2); margin:2px 0 0}
+/* ── 첫 화면 ─────────────────────────────── */
+.hero{background:var(--paper); background-image:var(--grid); background-size:26px 26px;
+  background-position:-1px -1px; border-bottom:1px solid var(--line); padding:0 20px;
+  position:relative; overflow:hidden}
+.hero::after{content:""; position:absolute; inset:auto 0 0 0; height:130px;
+  background:linear-gradient(transparent,var(--paper)); pointer-events:none}
+.hero-in{max-width:1040px; margin:0 auto; padding:76px 0 62px; position:relative; z-index:1}
+.eyebrow{font-size:13px; color:var(--green); font-weight:700; margin:0 0 16px;
+  display:flex; align-items:center; gap:9px}
+.eyebrow::before{content:""; width:26px; height:2px; background:var(--green); display:inline-block}
+h1{font-size:clamp(34px,6.2vw,60px); font-weight:800; letter-spacing:-.042em; line-height:1.17;
+  margin:0 0 20px; text-wrap:balance; max-width:18ch; position:relative}
+h1 .mark{position:relative; display:inline-block}
+h1 .mark::after{content:""; position:absolute; left:-.04em; right:-.04em; bottom:.06em;
+  height:.32em; background:var(--green-bg); border-bottom:3px solid var(--green); z-index:-1}
+.lede{font-size:clamp(16px,1.9vw,19px); color:var(--ink2); margin:0; max-width:56ch;
+  font-weight:500; line-height:1.72}
 
-/* ── 차례 ───────────────────────────────── */
-.toc{display:flex; flex-wrap:wrap; gap:8px; margin:26px 0 0; padding:0; list-style:none}
-.toc a{
-  display:inline-block; font-size:13px; font-weight:600; text-decoration:none;
+.demo{margin:42px 0 0; max-width:760px}
+.demo-head{display:flex; align-items:center; gap:10px; font-size:12.5px; color:var(--ink3);
+  font-weight:600; margin:0 0 12px}
+.demo-dots{display:flex; gap:6px; margin-left:auto}
+.demo-dots i{width:7px; height:7px; border-radius:50%; background:var(--line); display:block;
+  transition:background .3s; cursor:pointer}
+.demo-dots i.on{background:var(--green)}
+.slides{position:relative}
+.slide{opacity:0; visibility:hidden; position:absolute; inset:0; transition:opacity .45s ease}
+.slide.on{opacity:1; visibility:visible; position:relative}
+.pair{list-style:none; margin:0; padding:0; display:grid; gap:10px}
+.pair li{margin:0; display:grid; grid-template-columns:32px 1fr; gap:12px; align-items:start;
+  border:1px solid var(--line); border-radius:11px; padding:14px 16px}
+.pair li.bad{border-color:var(--red-line); background:var(--red-bg)}
+.pair li.good{border-color:var(--green-line); background:var(--green-bg)}
+.pair li::before{font-size:11.5px; font-weight:700; border-radius:5px; padding:2px 0;
+  text-align:center; color:#fff; margin-top:2px}
+.pair li.bad::before{content:"전"; background:var(--red)}
+.pair li.good::before{content:"후"; background:var(--green)}
+.pair p{margin:0; font-size:clamp(14.5px,1.65vw,16.5px); line-height:1.62}
+.pair li.bad p{text-decoration-line:line-through; text-decoration-color:transparent;
+  text-decoration-thickness:2px}
+.slide.on li.bad p{animation:strike .45s .3s ease forwards}
+.slide.on li.good{animation:rise .45s .65s cubic-bezier(.22,1,.36,1) backwards}
+@keyframes strike{to{text-decoration-color:var(--red)}}
+@keyframes rise{from{opacity:0; transform:translateY(9px)}}
+.why{margin:12px 0 0; font-size:13px; color:var(--ink3); line-height:1.65}
+.why b{color:var(--red)}
+
+.stats{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:1px;
+  margin:46px 0 0; background:var(--line); border:1px solid var(--line); border-radius:12px;
+  overflow:hidden}
+.stat{background:var(--paper); padding:16px 18px}
+.stat .k{font-size:12px; color:var(--ink3); font-weight:600; margin:0 0 5px}
+.stat .v{font-size:clamp(24px,3vw,30px); font-weight:800; letter-spacing:-.03em; line-height:1.15;
+  font-family:var(--mono); font-variant-numeric:tabular-nums; margin:0}
+.stat .u{font-size:12.5px; color:var(--ink2); margin:3px 0 0}
+.toc{display:flex; flex-wrap:wrap; gap:7px; margin:30px 0 0; padding:0; list-style:none}
+.toc li{margin:0}
+.toc a{display:inline-block; font-size:13px; font-weight:600; text-decoration:none;
   color:var(--ink2); background:var(--paper); border:1px solid var(--line);
-  border-radius:999px; padding:5px 13px;
-}
-.toc a:hover{border-color:var(--green); color:var(--green)}
+  border-radius:999px; padding:6px 14px; transition:.18s}
+.toc a:hover{border-color:var(--green); color:var(--green); transform:translateY(-1px)}
 
-/* ── 절 ─────────────────────────────────── */
-section{margin:56px 0 0; scroll-margin-top:20px}
-h2{
-  font-size:23px; font-weight:700; letter-spacing:-.022em; margin:0 0 6px;
-  padding-bottom:10px; border-bottom:2px solid var(--ink); display:inline-block;
-}
-.sub{color:var(--ink2); margin:0 0 22px; font-size:14.5px; max-width:70ch}
+/* ── 절 ──────────────────────────────────── */
+.snum{font-size:12.5px; font-weight:700; color:var(--green); margin:0 0 8px; font-family:var(--mono)}
+h2{font-size:clamp(24px,3.3vw,32px); font-weight:800; letter-spacing:-.032em; margin:0 0 12px;
+  line-height:1.3; text-wrap:balance}
+.sub{color:var(--ink2); margin:0 0 30px; font-size:15.5px; max-width:64ch; line-height:1.75}
 h3{font-size:17px; font-weight:700; letter-spacing:-.015em; margin:0}
-
-/* ── 규칙 카드 ──────────────────────────── */
-.rule{
-  background:var(--card); border:1px solid var(--line); border-radius:12px;
-  padding:20px 22px; margin:0 0 14px;
+.reveal{opacity:0; transform:translateY(14px); transition:opacity .55s, transform .55s}
+.reveal.seen{opacity:1; transform:none}
+@media (prefers-reduced-motion:reduce){
+  .reveal{opacity:1; transform:none; transition:none}
+  .slide.on li.bad p{text-decoration-color:var(--red); animation:none}
+  .slide.on li.good{animation:none}
+  html{scroll-behavior:auto}
 }
-.rule-head{display:flex; align-items:center; flex-wrap:wrap; gap:9px; margin:0 0 12px}
-.pill{font-size:11.5px; font-weight:700; border-radius:5px; padding:2px 8px; letter-spacing:0}
+
+/* ── 큰 수치 ─────────────────────────────── */
+.figures{display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:22px; margin:0 0 28px}
+.fig{border-left:3px solid var(--green); padding:2px 0 2px 16px}
+.fig .n{font-size:clamp(30px,4.4vw,44px); font-weight:800; letter-spacing:-.035em; line-height:1.1;
+  font-family:var(--mono); font-variant-numeric:tabular-nums; margin:0}
+.fig.warn{border-left-color:var(--red)}
+.fig.warn .n{color:var(--red)}
+.fig p:last-child{margin:6px 0 0; font-size:13.5px; color:var(--ink2); line-height:1.6}
+.rank{list-style:none; margin:0; padding:0; display:grid; gap:8px; max-width:580px}
+.rank li{margin:0; display:grid; grid-template-columns:140px 1fr 56px; gap:12px; align-items:center;
+  font-size:13.5px}
+.rank .bar{height:9px; border-radius:5px; background:var(--line2); overflow:hidden}
+.rank .bar i{display:block; height:100%; background:var(--green); border-radius:5px; width:0;
+  transition:width .9s cubic-bezier(.22,1,.36,1)}
+.rank.seen .bar i{width:var(--w)}
+.rank .c{text-align:right; font-family:var(--mono); font-variant-numeric:tabular-nums; color:var(--ink2)}
+
+/* ── 규칙 카드 ───────────────────────────── */
+.grouphead{display:flex; align-items:baseline; gap:14px; margin:0 0 6px; flex-wrap:wrap}
+.grouphead .tag{font-size:12px; font-weight:700; color:#fff; background:var(--ink);
+  border-radius:5px; padding:3px 10px}
+.rule{background:var(--paper); border:1px solid var(--line); border-radius:13px;
+  padding:22px 24px; margin:0 0 14px}
+.rule-head{display:flex; align-items:center; flex-wrap:wrap; gap:9px; margin:0 0 14px}
+.pill{font-size:11.5px; font-weight:700; border-radius:5px; padding:2px 8px}
 .pill.err{background:var(--red-bg); color:var(--red); border:1px solid var(--red-line)}
 .pill.warn{background:var(--amber-bg); color:var(--amber); border:1px solid var(--amber-line)}
 .pill.human{background:var(--green-bg); color:var(--green); border:1px solid var(--green-line)}
 .count{margin-left:auto; font-size:12.5px; color:var(--ink3)}
-.count b{color:var(--ink); font-size:15px; font-family:var(--mono); font-variant-numeric:tabular-nums}
-
-dl.meta{display:grid; grid-template-columns:max-content 1fr; gap:5px 16px; margin:0 0 14px}
+.count b{color:var(--ink); font-size:16px; font-family:var(--mono); font-variant-numeric:tabular-nums; margin:0 2px}
+dl.meta{display:grid; grid-template-columns:max-content 1fr; gap:5px 16px; margin:0 0 15px}
 dl.meta dt{font-size:12.5px; font-weight:700; color:var(--ink3); white-space:nowrap; padding-top:1px}
 dl.meta dd{margin:0; font-size:14px; color:var(--ink2)}
-
 ul.pairs{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:8px}
 ul.pairs>li{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:0}
-@media (max-width:720px){ ul.pairs>li{grid-template-columns:1fr} }
-.ba{display:flex; gap:9px; align-items:flex-start; border-radius:8px; padding:9px 12px; font-size:14px; line-height:1.6}
+@media (max-width:760px){ ul.pairs>li{grid-template-columns:1fr} }
+.ba{display:flex; gap:9px; align-items:flex-start; border-radius:8px; padding:9px 12px;
+  font-size:14px; line-height:1.6}
 .ba.bad{background:var(--red-bg); border:1px solid var(--red-line)}
 .ba.good{background:var(--green-bg); border:1px solid var(--green-line)}
-.ba::before{flex:none; font-size:11px; font-weight:700; border-radius:4px; padding:1px 6px; margin-top:3px; color:#fff}
+.ba::before{flex:none; font-size:11px; font-weight:700; border-radius:4px; padding:1px 6px;
+  margin-top:3px; color:#fff}
 .ba.bad::before{content:"전"; background:var(--red)}
 .ba.good::before{content:"후"; background:var(--green)}
 .ba p{margin:0}
-.note{
-  margin:13px 0 0; padding:10px 13px; border-left:3px solid var(--green);
-  background:var(--green-bg); border-radius:0 7px 7px 0; font-size:13.5px; color:var(--ink2);
-}
+.note{margin:14px 0 0; padding:11px 14px; border-left:3px solid var(--green);
+  background:var(--green-bg); border-radius:0 8px 8px 0; font-size:13.5px; color:var(--ink2)}
 .note b{color:var(--green)}
 
-/* ── 표 ─────────────────────────────────── */
-.scroll{overflow-x:auto; -webkit-overflow-scrolling:touch; margin:0 0 8px}
-table{border-collapse:collapse; width:100%; min-width:560px; font-size:13.5px; background:var(--card)}
-caption{text-align:left; font-size:13px; color:var(--ink3); padding:0 0 8px}
-th,td{border-bottom:1px solid var(--line2); padding:8px 12px; text-align:left; vertical-align:top}
-thead th{background:var(--paper); border-bottom:2px solid var(--line); font-size:12.5px; color:var(--ink2); white-space:nowrap}
-td.n{text-align:right; font-family:var(--mono); font-variant-numeric:tabular-nums; white-space:nowrap}
+/* ── 표 ──────────────────────────────────── */
+.scroll{overflow-x:auto; -webkit-overflow-scrolling:touch; margin:0 0 10px;
+  border:1px solid var(--line); border-radius:12px; background:var(--paper)}
+table{border-collapse:collapse; width:100%; min-width:580px; font-size:13.5px}
+th,td{border-bottom:1px solid var(--line2); padding:9px 14px; text-align:left; vertical-align:top}
+thead th{background:#FAFCF9; border-bottom:2px solid var(--line); font-size:12.5px;
+  color:var(--ink2); white-space:nowrap}
 th.n{text-align:right; white-space:nowrap}
 th.n b{font-family:var(--mono); font-variant-numeric:tabular-nums}
+td.n{text-align:right; font-family:var(--mono); font-variant-numeric:tabular-nums; white-space:nowrap}
+tbody tr:last-child td{border-bottom:0}
 tbody tr:hover{background:#FAFCF9}
-td .dot{display:inline-block; width:7px; height:7px; border-radius:50%; margin-right:6px; vertical-align:1px}
+td .dot{display:inline-block; width:7px; height:7px; border-radius:50%; margin-right:7px;
+  vertical-align:1px}
 .dot.e{background:var(--red)} .dot.w{background:var(--amber)}
 .zero{color:var(--ink3)}
 
-/* ── 통짜 문서 비교 ─────────────────────── */
-.docpair{display:grid; grid-template-columns:1fr 1fr; gap:14px}
-@media (max-width:840px){ .docpair{grid-template-columns:1fr} }
-.pane{background:var(--card); border:1px solid var(--line); border-radius:12px; overflow:hidden}
-.pane>header{padding:12px 16px; display:flex; align-items:center; gap:10px; border-bottom:1px solid var(--line)}
+/* ── 통짜 문서 ───────────────────────────── */
+.docpair{display:grid; grid-template-columns:1fr 1fr; gap:16px}
+@media (max-width:860px){ .docpair{grid-template-columns:1fr} }
+.pane{background:var(--paper); border:1px solid var(--line); border-radius:13px; overflow:hidden}
+.pane>header{padding:13px 17px; display:flex; align-items:center; gap:10px;
+  border-bottom:1px solid var(--line)}
 .pane.bad>header{background:var(--red-bg); border-bottom-color:var(--red-line)}
 .pane.good>header{background:var(--green-bg); border-bottom-color:var(--green-line)}
 .pane>header h3{font-size:15px}
-.pane>header .score{margin-left:auto; font-family:var(--mono); font-size:13px; font-weight:700}
-.pane.bad .score{color:var(--red)} .pane.good .score{color:var(--green)}
-pre{
-  margin:0; padding:15px 16px; font-family:var(--mono); font-size:12px; line-height:1.62;
-  white-space:pre; overflow-x:auto; color:var(--ink2); background:var(--paper);
-}
-pre .hl{background:#FBE4E0; border-radius:2px}
-pre .ok{background:#DFF0E6; border-radius:2px}
-.findings{margin:0; padding:13px 16px; border-top:1px dashed var(--line); font-size:12.5px; color:var(--ink2); list-style:none; display:flex; flex-direction:column; gap:4px}
-.findings li{padding-left:16px; position:relative}
+.pane>header .score{margin-left:auto; font-family:var(--mono); font-size:13.5px; font-weight:700}
+.pane.bad .score{color:var(--red)}
+.pane.good .score{color:var(--green)}
+pre{margin:0; padding:16px 17px; font-family:var(--mono); font-size:12px; line-height:1.64;
+  white-space:pre; overflow-x:auto; color:var(--ink2); background:var(--paper)}
+pre .hl{background:#FAE0DC; border-radius:2px}
+pre .ok{background:#DCEFE4; border-radius:2px}
+.findings{margin:0; padding:14px 17px; border-top:1px dashed var(--line); font-size:12.5px;
+  color:var(--ink2); list-style:none; display:flex; flex-direction:column; gap:5px}
+.findings li{padding-left:17px; position:relative; margin:0}
 .findings li::before{content:"×"; position:absolute; left:0; color:var(--red); font-weight:700}
 .findings.clean li::before{content:"✓"; color:var(--green)}
 
-/* ── 자료 ───────────────────────────────── */
-dl.src{display:grid; grid-template-columns:max-content 1fr; gap:11px 20px; margin:0;
-  background:var(--card); border:1px solid var(--line); border-radius:12px; padding:20px 22px}
-@media (max-width:660px){ dl.src{grid-template-columns:1fr; gap:3px 0} dl.src dd{margin-bottom:12px} }
+/* ── 자료·쓰는 법 ────────────────────────── */
+dl.src{display:grid; grid-template-columns:max-content 1fr; gap:13px 22px; margin:0;
+  background:var(--paper); border:1px solid var(--line); border-radius:13px; padding:22px 24px}
+@media (max-width:680px){ dl.src{grid-template-columns:1fr; gap:3px 0} dl.src dd{margin-bottom:14px} }
 dl.src dt{font-size:13.5px; font-weight:700; white-space:nowrap}
 dl.src dd{margin:0; font-size:14px; color:var(--ink2)}
 dl.src dd .m{font-family:var(--mono); font-size:12.5px; color:var(--ink3)}
-
-footer{margin:66px 0 0; padding:22px 0 0; border-top:1px solid var(--line); font-size:12.5px; color:var(--ink3)}
+.cmd{display:block; background:var(--ink); color:#E8EFEA; border-radius:9px; padding:14px 17px;
+  font-family:var(--mono); font-size:13px; overflow-x:auto; margin:0 0 14px}
+footer{border-top:1px solid var(--line); padding:26px 20px 64px; font-size:12.5px; color:var(--ink3)}
+footer .in{padding:0; display:flex; gap:18px; flex-wrap:wrap; align-items:baseline}
 </style>
 </head>
 <body>
 
+<!-- ═══ 첫 화면 ═══ -->
 <div class="hero">
   <div class="hero-in">
-    <p class="eyebrow">AI가 쓴 한글 문서 · 검사 사례집</p>
-    <h1>AI가 쓴 한글에서 걸러내는 것</h1>
-    <p class="lede">갈래별 실제 사례와 고친 문장 · 실측 건수와 참고 자료 · 일부러 안 잡는 것까지</p>
+    <p class="eyebrow">AI가 쓴 한글 문서 검사</p>
+    <h1>보내기 전에 <span class="mark">한 번</span> 읽어 주는 검사기</h1>
+    <p class="lede">사람에게 나갈 한글 문서의 표현 검사 — 걸린 문장과 고친 문장을 갈래별로 모은 사례집</p>
+
+    <div class="demo">
+      <p class="demo-head">실제로 걸린 문장 넷<span class="demo-dots" id="dots"><i class="on"></i><i></i><i></i><i></i></span></p>
+      <div class="slides" id="slides">
+        <div class="slide on">
+          <ul class="pair">
+            <li class="bad"><p>「이 문서는 검사 도구 세 종을 비교하여 도입 여부를 정리한 것입니다.」</p></li>
+            <li class="good"><p>「문서 검사 도구 세 종 비교 · 자체 제작 채택」</p></li>
+          </ul>
+          <p class="why"><b>진입점 서술형</b> — 독자는 이미 그 문서를 열고 있다. 주어를 「이 문서」로 잡지 않는다.</p>
+        </div>
+        <div class="slide">
+          <ul class="pair">
+            <li class="bad"><p>「고칠 것은 코멘트로」</p></li>
+            <li class="good"><p>「코멘트로 표시」</p></li>
+          </ul>
+          <p class="why"><b>절단형 종결</b> — 조사로 끝나 서술어가 잘렸다. 표시인지 저장인지 이동인지가 사라진다.</p>
+        </div>
+        <div class="slide">
+          <ul class="pair">
+            <li class="bad"><p>「대체하지 않는다」</p></li>
+            <li class="good"><p>「대체 아님 · 별도 추가」</p></li>
+          </ul>
+          <p class="why"><b>서술형 종결</b> — 값 칸을 문장으로 끝냈다. 전체 지적의 61%가 이 갈래다.</p>
+        </div>
+        <div class="slide">
+          <ul class="pair">
+            <li class="bad"><p>「우리 제품이 아니다 — 이들이 우리를 호출한다」</p></li>
+            <li class="good"><p>「검사기 개발 범위 밖 — 검사기를 호출하는 주체」</p></li>
+          </ul>
+          <p class="why"><b>모호한 지칭</b> — 공유 문서의 「우리」는 읽는 사람의 소속에 따라 뜻이 갈린다.</p>
+        </div>
+      </div>
+    </div>
+
     <div class="stats">
       <div class="stat"><p class="k">검사한 업무 보고서</p><p class="v">603</p><p class="u">개 · 2.2초</p></div>
       <div class="stat"><p class="k">지적</p><p class="v">2,174</p><p class="u">오류 1,534 · 주의 640</p></div>
-      <div class="stat"><p class="k">오류가 있던 문서</p><p class="v">195</p><p class="u">개 · 32%</p></div>
-      <div class="stat"><p class="k">갈래</p><p class="v">24</p><p class="u">종 · 기계 판정</p></div>
+      <div class="stat"><p class="k">오류가 있던 문서</p><p class="v">32%</p><p class="u">603개 중 195개</p></div>
+      <div class="stat"><p class="k">기계가 보는 갈래</p><p class="v">24</p><p class="u">종 · 사람 판단은 별도</p></div>
     </div>
+
     <ul class="toc">
-      <li><a href="#overview">갈래별 건수</a></li>
-      <li><a href="#a">문장과 낱말</a></li>
-      <li><a href="#b">문서 구조</a></li>
-      <li><a href="#c">사람이 읽어야 갈리는 것</a></li>
+      <li><a href="#scale">문제의 크기</a></li>
       <li><a href="#doc">보고서 한 편 전체</a></li>
       <li><a href="#exempt">일부러 안 잡는 것</a></li>
+      <li><a href="#catalog">갈래별 사례</a></li>
+      <li><a href="#counts">갈래별 건수</a></li>
       <li><a href="#flip">사람이 뒤집은 지적</a></li>
       <li><a href="#src">참고한 자료</a></li>
       <li><a href="#run">쓰는 법</a></li>
@@ -179,454 +279,44 @@ footer{margin:66px 0 0; padding:22px 0 0; border-top:1px solid var(--line); font
   </div>
 </div>
 
-<div class="wrap">
+<!-- ═══ 01 문제의 크기 ═══ -->
+<div class="band paper"><div class="in" id="scale">
+  <p class="snum">01</p>
+  <h2>문제의 크기</h2>
+  <p class="sub">사내 분석·진행 보고 <b>603개</b>를 그대로 통과시켰다. 문서는 손대지 않고 검사만 돌렸다.</p>
 
-<!-- ═══ 갈래 한눈에 ═══ -->
-<section id="overview">
-  <h2>갈래별 건수</h2>
-  <p class="sub">두 뭉치에 같은 검사기를 돌린 실측. <b>업무 보고서</b>는 사내 분석·진행 보고 603개, <b>규칙·기록 문서</b>는 작업 규칙과 진행 기록 1,948개.</p>
-  <div class="scroll">
-  <table>
-    <caption>2026-09-04 실측 · 오류는 발행을 막는 것, 주의는 사람이 보고 가르는 것</caption>
-    <thead><tr><th>갈래</th><th>무게</th><th class="n">업무 보고서 <b>603</b>개</th><th class="n">규칙·기록 <b>1,948</b>개</th></tr></thead>
-    <tbody>
-      <tr><td><span class="dot e"></span>서술형 종결</td><td>오류</td><td class="n">1,326</td><td class="n">3,375</td></tr>
-      <tr><td><span class="dot e"></span>모호한 지칭</td><td>오류</td><td class="n">68</td><td class="n">220</td></tr>
-      <tr><td><span class="dot e"></span>절단형 종결</td><td>오류</td><td class="n">43</td><td class="n">45</td></tr>
-      <tr><td><span class="dot e"></span>제목 서술형</td><td>오류</td><td class="n">36</td><td class="n">69</td></tr>
-      <tr><td><span class="dot e"></span>진입점 서술형</td><td>오류</td><td class="n">30</td><td class="n">127</td></tr>
-      <tr><td><span class="dot e"></span>제목 명사형 위반</td><td>오류</td><td class="n">29</td><td class="n">31</td></tr>
-      <tr><td><span class="dot e"></span>진입점 없음</td><td>오류</td><td class="n zero">0</td><td class="n">93</td></tr>
-      <tr><td><span class="dot e"></span>「회기」</td><td>오류</td><td class="n zero">0</td><td class="n">19</td></tr>
-      <tr><td><span class="dot e"></span>은유 「자리」</td><td>오류</td><td class="n zero">0</td><td class="n">12</td></tr>
-      <tr><td><span class="dot e"></span>진입점 명사형 위반</td><td>오류</td><td class="n">2</td><td class="n">1</td></tr>
-      <tr><td><span class="dot e"></span>이중 피동</td><td>오류</td><td class="n zero">0</td><td class="n zero">0</td></tr>
-      <tr><td><span class="dot w"></span>스캔 가치 없는 라벨</td><td>주의</td><td class="n">211</td><td class="n">110</td></tr>
-      <tr><td><span class="dot w"></span>절단형 의심</td><td>주의</td><td class="n">145</td><td class="n">225</td></tr>
-      <tr><td><span class="dot w"></span>해설을 인용 부호로 씀</td><td>주의</td><td class="n">87</td><td class="n">125</td></tr>
-      <tr><td><span class="dot w"></span>서술형 문단</td><td>주의</td><td class="n">55</td><td class="n">188</td></tr>
-      <tr><td><span class="dot w"></span>형식 미표기</td><td>주의</td><td class="n">49</td><td class="n">295</td></tr>
-      <tr><td><span class="dot w"></span>반복 블록 라벨 불일치</td><td>주의</td><td class="n">47</td><td class="n">204</td></tr>
-      <tr><td><span class="dot w"></span>평가 수식어</td><td>주의</td><td class="n">26</td><td class="n">24</td></tr>
-      <tr><td><span class="dot w"></span>번역투 이중 조사</td><td>주의</td><td class="n">12</td><td class="n">12</td></tr>
-      <tr><td><span class="dot w"></span>「~하는 자리」 의심</td><td>주의</td><td class="n zero">0</td><td class="n">59</td></tr>
-      <tr><td><span class="dot w"></span>지어낸 명사구</td><td>주의</td><td class="n zero">0</td><td class="n">36</td></tr>
-      <tr><td><span class="dot w"></span>제목 형태 확인</td><td>주의</td><td class="n">6</td><td class="n">6</td></tr>
-      <tr><td><span class="dot w"></span>지시어 확인</td><td>주의</td><td class="n">2</td><td class="n">6</td></tr>
-      <tr><td><span class="dot w"></span>번역투 「그녀」</td><td>주의</td><td class="n zero">0</td><td class="n">2</td></tr>
-    </tbody>
-  </table>
+  <div class="figures reveal">
+    <div class="fig warn"><p class="n" data-to="195">0</p><p>오류가 있던 문서 — 세 편에 한 편꼴</p></div>
+    <div class="fig warn"><p class="n" data-to="305">0</p><p>지적이 하나라도 있던 문서 — 절반</p></div>
+    <div class="fig"><p class="n" data-to="2174">0</p><p>지적 전체 — 오류 1,534 · 주의 640</p></div>
+    <div class="fig"><p class="n">2.2초</p><p>603개를 다 보는 데 걸린 시간</p></div>
   </div>
-  <p class="note"><b>0건도 규칙은 돈다</b> — 「이 뭉치에 안 나왔다」와 「규칙이 없다」는 다르다. 이중 피동은 두 뭉치 모두 0건인데, 만들어 넣은 시료에서는 잡힌다(<a href="#exempt">일부러 안 잡는 것</a>의 짝 실험).</p>
-</section>
 
-<!-- ═══ A. 문장과 낱말 ═══ -->
-<section id="a">
-  <h2>A. 문장과 낱말</h2>
-  <p class="sub">글자만 보고 갈리는 갈래. 기계가 전수로 본다.</p>
+  <p class="sub">가장 많이 걸린 여섯 갈래 — 상위 둘이 전체의 71%</p>
+  <ul class="rank" id="rank">
+    <li><span>서술형 종결</span><span class="bar"><i style="--w:100%"></i></span><span class="c">1,326</span></li>
+    <li><span>스캔 가치 없는 라벨</span><span class="bar"><i style="--w:16%"></i></span><span class="c">211</span></li>
+    <li><span>절단형 의심</span><span class="bar"><i style="--w:11%"></i></span><span class="c">145</span></li>
+    <li><span>해설을 인용 부호로 씀</span><span class="bar"><i style="--w:7%"></i></span><span class="c">87</span></li>
+    <li><span>모호한 지칭</span><span class="bar"><i style="--w:5%"></i></span><span class="c">68</span></li>
+    <li><span>서술형 문단</span><span class="bar"><i style="--w:4%"></i></span><span class="c">55</span></li>
+  </ul>
+  <p class="note reveal"><b>존댓말 종결이 상위 셋</b> — 서술형 종결 1,326건의 어미를 세면 「~습니다」 56 · 「~입니다」 41 · 「~합니다」 37 순이다. 보고서 말투가 그대로 값 칸에 들어간 것이다.</p>
+</div></div>
 
-  <article class="rule">
-    <div class="rule-head"><h3>서술형 종결</h3><span class="pill err">오류</span>
-      <span class="count">보고서 <b>1,326</b>건 · 전체 지적의 61%</span></div>
-    <dl class="meta">
-      <dt>무엇</dt><dd>값 칸·목록·표 칸을 완전한 문장으로 끝냄</dd>
-      <dt>고치는 법</dt><dd>명사형(~음·~함·~임)이나 체언으로 끝냄 · 두 사실은 가운뎃점으로 이음</dd>
-      <dt>안 잡는 것</dt><dd>산문형 문서 전체(머리말에 「form: prose」) · 근거를 설명하는 문장</dd>
-    </dl>
-    <ul class="pairs">
-      <li><div class="ba bad"><p>「대체하지 않는다」 · 「별개로 추가」</p></div>
-          <div class="ba good"><p>「대체 아님 · 별도 추가」</p></div></li>
-      <li><div class="ba bad"><p>「하드필터가 이미 그 수요를 흡수했다.」</p></div>
-          <div class="ba good"><p>「하드필터가 그 수요를 이미 흡수」</p></div></li>
-      <li><div class="ba bad"><p>「결론: 트랙 열지 않는다.」</p></div>
-          <div class="ba good"><p>「결론 — 트랙 열지 않음」</p></div></li>
-      <li><div class="ba bad"><p>「되돌리기가 가장 비싸다」</p></div>
-          <div class="ba good"><p>「되돌리기 비용 최대」</p></div></li>
-      <li><div class="ba bad"><p>「재측정 결과 26/38 → 25/38 로 1건 내렸다.」</p></div>
-          <div class="ba good"><p>「재측정 26/38 → 25/38 · 1건 내림」</p></div></li>
-    </ul>
-    <p class="note"><b>실제로 걸린 어미 순위</b> — 「~습니다」 56 · 「~입니다」 41 · 「~합니다」 37 · 「~있다」 29 · 「~않는다」 26 · 「~없다」 20. 존댓말 종결이 상위 셋을 차지한다.</p>
-  </article>
-
-  <article class="rule">
-    <div class="rule-head"><h3>절단형 종결 — 조사에서 끊김</h3><span class="pill err">오류</span><span class="pill warn">주의</span>
-      <span class="count">보고서 오류 <b>43</b> · 의심 <b>145</b></span></div>
-    <dl class="meta">
-      <dt>무엇</dt><dd>서술어를 날린 채 조사로 끝내 미완성으로 읽힘</dd>
-      <dt>고치는 법</dt><dd>조사를 떼어 명사로 끝냄 · 또는 서술 명사를 붙임(표시·저장·전용·담당)</dd>
-      <dt>무게 구분</dt><dd>「에서·에게·로서」는 오류 · 「만·까지·부터·로」는 정당한 값이 섞여 주의</dd>
-    </dl>
-    <ul class="pairs">
-      <li><div class="ba bad"><p>「고칠 것은 코멘트로」</p></div>
-          <div class="ba good"><p>「코멘트로 표시」</p></div></li>
-      <li><div class="ba bad"><p>「새 자료는 해당 폴더에」</p></div>
-          <div class="ba good"><p>「새 자료 → 해당 폴더」</p></div></li>
-      <li><div class="ba bad"><p>「로컬 삭제 파일은 Drive 휴지통으로」</p></div>
-          <div class="ba good"><p>「로컬 삭제 파일 → Drive 휴지통 · 30일 복구 가능」</p></div></li>
-      <li><div class="ba bad"><p>「이 화면은 그리기만」</p></div>
-          <div class="ba good"><p>「이 화면은 그리기 전용」</p></div></li>
-      <li><div class="ba bad"><p>「시퀀스 표를 다이어그램으로」</p></div>
-          <div class="ba good"><p>「시퀀스 표를 다이어그램으로 바꿈」</p></div></li>
-    </ul>
-  </article>
-
-  <article class="rule">
-    <div class="rule-head"><h3>의문문 라벨</h3><span class="pill err">오류</span>
-      <span class="count">보고서 <b>35</b>건</span></div>
-    <dl class="meta">
-      <dt>무엇</dt><dd>표 머리·소제목을 물음으로 씀 — 질문도 값도 아닌 어중간한 형태</dd>
-      <dt>고치는 법</dt><dd>독자가 품는 질문에 답하는 <b>명사구</b>로 · 한 어절에서 두 어절</dd>
-    </dl>
-    <ul class="pairs">
-      <li><div class="ba bad"><p>「무엇을 보나」</p></div>
-          <div class="ba good"><p>「관측 대상」</p></div></li>
-      <li><div class="ba bad"><p>「무엇이 어디 있나」</p></div>
-          <div class="ba good"><p>「파일별 위치」</p></div></li>
-      <li><div class="ba bad"><p>「어디를 보나」</p></div>
-          <div class="ba good"><p>「확인 위치」</p></div></li>
-      <li><div class="ba bad"><p>「어디에 녹였나」</p></div>
-          <div class="ba good"><p>「반영 위치」</p></div></li>
-    </ul>
-  </article>
-
-  <article class="rule">
-    <div class="rule-head"><h3>모호한 지칭</h3><span class="pill err">오류</span>
-      <span class="count">보고서 <b>68</b>건 · 「우리」가 62</span></div>
-    <dl class="meta">
-      <dt>무엇</dt><dd>「우리·이들·저쪽·여기」가 읽는 사람마다 다른 것을 가리킴</dd>
-      <dt>고치는 법</dt><dd>제품명·파트명·역할로 바꿈</dd>
-      <dt>공유 문서 주의점</dt><dd>「우리」는 소속에 따라 뜻이 갈림</dd>
-    </dl>
-    <ul class="pairs">
-      <li><div class="ba bad"><p>「우리 제품이 아니다 — 이들이 우리를 호출한다」</p></div>
-          <div class="ba good"><p>「검사기 개발 범위 밖 — 검사기를 호출하는 주체」</p></div></li>
-      <li><div class="ba bad"><p>「우리 코퍼스는 사내 규정 비중이 크다」</p></div>
-          <div class="ba good"><p>「사내 문서 뭉치 — 규정 비중이 큼」</p></div></li>
-      <li><div class="ba bad"><p>「이 둘을 구분해서 보는 것이 우리 설계에 유용하다」</p></div>
-          <div class="ba good"><p>「두 방식을 갈라 보는 것이 CT 설계에 유용」</p></div></li>
-    </ul>
-  </article>
-
-  <article class="rule">
-    <div class="rule-head"><h3>은유 「자리」</h3><span class="pill err">오류</span><span class="pill warn">주의</span>
-      <span class="count">규칙·기록 오류 <b>12</b> · 의심 <b>59</b></span></div>
-    <dl class="meta">
-      <dt>무엇</dt><dd>글·코드·절차의 지점을 「자리」로 부름 — 문장인지 항목인지 단계인지 사라짐</dd>
-      <dt>고치는 법</dt><dd>지점·위치·사례·단계·시점·대목 중 맞는 말 · 없으면 문장을 서술로 폄</dd>
-      <dt>실측 근거</dt><dd>사용자가 쓴 한국어 대비 <b>5.3배</b>(1만자당 0.4 대 2.4) · 흔히 AI 티로 꼽는 「수 있」 0.4배·「것이다」 0.2배는 오히려 적음</dd>
-    </dl>
-    <ul class="pairs">
-      <li><div class="ba bad"><p>「규칙을 넣을 자리」</p></div>
-          <div class="ba good"><p>「규칙을 넣을 위치」</p></div></li>
-      <li><div class="ba bad"><p>「표 칸이 특히 새는 자리」</p></div>
-          <div class="ba good"><p>「표 칸에서 특히 자주 샌다」</p></div></li>
-      <li><div class="ba bad"><p>「실패 모드가 그대로 걸리는 자리」</p></div>
-          <div class="ba good"><p>「실패 모드가 그대로 걸리는 사례」</p></div></li>
-    </ul>
-    <p class="note"><b>안 잡는 것</b> — 「앞자리」·「빈자리」·「같은 자리에 같은 라벨」. 실제 좌석과 굳은 쓰임은 은유가 아니라 그 뜻 그대로다.</p>
-    <p class="note"><b>모임도 「자리」로 부르지 않는다</b>(2026-09-04에 좁힘) — 「의견을 받는 자리」보다 「의견을 수렴하는 회의」가, 「보고하는 자리」보다 「보고 회의」·「발표 세미나」가 무엇인지를 밝힌다. 예전에는 모임 뜻을 예외로 두었는데 <b>그 예외가 은유까지 통과시키고 있었다</b> — 화면의 입력 칸을 가리키는 「「있나」를 묻는 자리」가 지적을 못 받았다. 어간 열 개를 뺀 뒤 실측은 <b>오류 5,529건 그대로 · 새로 주의 7건 · 사라진 지적 0건</b>.</p>
-  </article>
-
-  <article class="rule">
-    <div class="rule-head"><h3>지어낸 명사구 — 판·창·결</h3><span class="pill warn">주의</span>
-      <span class="count">규칙·기록 <b>36</b>건</span></div>
-    <dl class="meta">
-      <dt>무엇</dt><dd>관형형 어미 뒤에 뜻이 옅은 명사를 붙여 새 말을 만듦 · 사람이 쓴 한국어에는 안 나오는 형태</dd>
-      <dt>판정 기준</dt><dd>그 명사가 <b>혼자 서는가</b> — 「판」만 떼어 무엇인지 말할 수 없으면 지어낸 것</dd>
-      <dt>안 잡는 것</dt><dd>굳은 합성어와 실물 — 편집창·바둑판·대화창 · 「같은 결」·「뜨는 창」</dd>
-    </dl>
-    <ul class="pairs">
-      <li><div class="ba bad"><p>「1판·2판」</p></div>
-          <div class="ba good"><p>「1차·2차」 · 「첫 시도·두 번째 시도」</p></div></li>
-      <li><div class="ba bad"><p>「모으는 창」·「무르는 창」</p></div>
-          <div class="ba good"><p>「모으는 시간」·「무를 수 있는 시간」</p></div></li>
-      <li><div class="ba bad"><p>「앞 판에서」</p></div>
-          <div class="ba good"><p>「앞 실험에서」 · 「먼저 잰 것에서」로 바꿈</p></div></li>
-    </ul>
-    <p class="note"><b>여섯 낱말 중 셋만 넣었다</b> — 실문서 1,161개로 따로 재니 「판·창」 0건 · 「결」 1건이라 넣고, 「값」 9건 · 「축」 4건 · 「층」 2건은 그 명사가 이 분야에서 혼자 서므로(계산하는 값 · 못 보는 축 · 읽는 층) 뺐다. <b>빈도가 아니라 정밀도로 잘랐다.</b> 여섯을 한 덩어리로 셌을 때는 「전부 정상」이 나와 규칙을 통째로 접어 두었었다.</p>
-  </article>
-
-  <article class="rule">
-    <div class="rule-head"><h3>「회기」</h3><span class="pill err">오류</span>
-      <span class="count">규칙·기록 <b>19</b>건</span></div>
-    <dl class="meta">
-      <dt>무엇</dt><dd>「회귀(regression)」의 오타 · 또는 「세션」을 뜻하는 잘못된 말</dd>
-      <dt>고치는 법</dt><dd>regression이면 「회귀」 · 작업 단위면 「세션」·「회차」</dd>
-      <dt>안 잡는 것</dt><dd>낱말 안에 우연히 든 것(조회기간·사회기여) · 회의체 이름 뒤(국회 회기·정기 회기)</dd>
-    </dl>
-    <ul class="pairs">
-      <li><div class="ba bad"><p>「-4.9pp 회기」</p></div>
-          <div class="ba good"><p>「-4.9pp 회귀」</p></div></li>
-      <li><div class="ba bad"><p>「다음 회기 계획」</p></div>
-          <div class="ba good"><p>「다음 회차 계획」</p></div></li>
-    </ul>
-    <p class="note"><b>전수 점검에서 78곳 전부 틀렸다</b> — 회귀 오타 46 · 「이번 작업 세션」 뜻 32 · 정당한 쓰임 0. 「어려운 말로 쓰지 않음」 규칙이 이미 적혀 있었는데도 계속 나와서 검사기로 옮겼다.</p>
-  </article>
-
-  <article class="rule">
-    <div class="rule-head"><h3>이중 피동 · 번역투 이중 조사</h3><span class="pill err">오류</span><span class="pill warn">주의</span>
-      <span class="count">이중 조사 <b>12</b>건 · 이중 피동 0건</span></div>
-    <dl class="meta">
-      <dt>무엇</dt><dd>피동을 두 번 겹침(「되어진」·「불려진」) · 조사를 두 개 겹침(「~로의」·「~에서의」)</dd>
-      <dt>고치는 법</dt><dd>피동은 한 번만 · 조사는 하나로 풂</dd>
-      <dt>안 잡는 것</dt><dd>「로」가 낱말의 일부인 것 — 경로의·대로의·회로의·진로의 · 「-지 않다」 부정형</dd>
-    </dl>
-    <ul class="pairs">
-      <li><div class="ba bad"><p>「값이 잘못 계산되어진다」</p></div>
-          <div class="ba good"><p>「값이 잘못 계산된다」</p></div></li>
-      <li><div class="ba bad"><p>「서버로의 접속」</p></div>
-          <div class="ba good"><p>「서버 접속」</p></div></li>
-      <li><div class="ba bad"><p>「단일에서 복합으로의 progression」</p></div>
-          <div class="ba good"><p>「단일에서 복합으로 나아감」</p></div></li>
-    </ul>
-    <p class="note"><b>규칙을 넣고 실문서 409개에 돌려 오탐 둘을 잡아냈다</b> — 「구축되지는 않습니다」가 이중 피동으로 걸렸고(어간에서 「되」를 뺌), 「경로의」·「대로의」가 이중 조사로 걸렸다(낱말 목록으로 막음).</p>
-  </article>
-</section>
-
-<!-- ═══ B. 문서 구조 ═══ -->
-<section id="b">
-  <h2>B. 문서 구조</h2>
-  <p class="sub">문장은 멀쩡한데 찾아 읽기가 안 되는 갈래. 값을 찾는 데 문장을 끝까지 읽어야 하면 문서가 진 것이다.</p>
-
-  <article class="rule">
-    <div class="rule-head"><h3>제목 서술형 · 제목 명사형 위반</h3><span class="pill err">오류</span>
-      <span class="count">보고서 <b>36</b> + <b>29</b>건</span></div>
-    <dl class="meta">
-      <dt>무엇</dt><dd>제목을 문장으로 끝내거나 물음으로 씀</dd>
-      <dt>고치는 법</dt><dd>명사구로 · 대비가 필요하면 대시로 이어 붙임</dd>
-      <dt>고친 이력</dt><dd>마크다운 제목만 검사하고 <b>HTML 제목은 안 보고 있었음</b> · 값이 전부 개조식인 페이지가 제목만 서술 문장인 채로 오류 0을 받음</dd>
-    </dl>
-    <ul class="pairs">
-      <li><div class="ba bad"><p>「분산을 왜 택했는가 — 검색 정확도 때문이 아니다」</p></div>
-          <div class="ba good"><p>「분산을 택한 까닭 — 검색 정확도 아님」</p></div></li>
-      <li><div class="ba bad"><p>「무엇을 어떻게 틀렸나」</p></div>
-          <div class="ba good"><p>「틀린 지점과 원인」</p></div></li>
-      <li><div class="ba bad"><p>「진단 — 어디서 무거워졌는가」</p></div>
-          <div class="ba good"><p>「진단 — 무거워진 지점」</p></div></li>
-      <li><div class="ba bad"><p>「의존성 검사가 직접 의존성만 본다」</p></div>
-          <div class="ba good"><p>「의존성 검사 — 직접 의존성만 봄」</p></div></li>
-    </ul>
-  </article>
-
-  <article class="rule">
-    <div class="rule-head"><h3>진입점</h3><span class="pill err">오류</span>
-      <span class="count">보고서 서술형 <b>30</b> · 규칙·기록 없음 <b>93</b></span></div>
-    <dl class="meta">
-      <dt>무엇</dt><dd>첫 줄에 「이 문서를 읽고 무엇을 하게 되나」가 없거나 서술 문장으로 씀</dd>
-      <dt>고치는 법</dt><dd>독자가 품는 질문을 개조식으로 · 주어를 「이 문서」로 잡지 않음</dd>
-      <dt>누락 시 영향</dt><dd>독자가 라벨 스무 개를 스스로 조립 — 찾기는 빨라지고 이해는 느려진 문서</dd>
-    </dl>
-    <ul class="pairs">
-      <li><div class="ba bad"><p>「이 문서는 사내 문서 검사 도구 세 종을 비교하여 도입 여부를 정리한 것입니다.」</p></div>
-          <div class="ba good"><p>「문서 검사 도구 세 종 비교 · 자체 제작 채택 — 판정 기준과 되돌리는 방법 포함」</p></div></li>
-      <li><div class="ba bad"><p>「최신 릴리즈 노트와 변경 사항을 검토하여 정리한 주요 업데이트는 다음과 같습니다.」</p></div>
-          <div class="ba good"><p>「릴리즈 노트 주요 변경 — 검토 정리본」</p></div></li>
-      <li><div class="ba bad"><p>「본 보고서는 첫 보고서. 향후 보고서는 이 보고서 이후의 변경사항만 다룬다.」</p></div>
-          <div class="ba good"><p>「AI 활용 첫 보고서 — 다음 회차부터 변경분만 다룸」</p></div></li>
-    </ul>
-  </article>
-
-  <article class="rule">
-    <div class="rule-head"><h3>스캔 가치 없는 라벨</h3><span class="pill warn">주의</span>
-      <span class="count">보고서 <b>211</b>건 · 「비고」가 133</span></div>
-    <dl class="meta">
-      <dt>무엇</dt><dd>열 이름만 봐서 안에 무엇이 있는지 모름 — 비고·설명·내용·메모·참고·기타</dd>
-      <dt>고치는 법</dt><dd>그 칸에 실제로 들어가는 것의 이름으로 바꿈</dd>
-      <dt>실측 근거</dt><dd>걸린 것의 57%가 표 머리 「비고」 · <b>공문서 표의 표준 관례</b>라 발행을 막을 근거가 못 됨</dd>
-    </dl>
-    <ul class="pairs">
-      <li><div class="ba bad"><p>「분류 · 카운트 · 비율 · 설명」</p></div>
-          <div class="ba good"><p>「분류 · 건수 · 비율 · 판정 근거」</p></div></li>
-      <li><div class="ba bad"><p>「단계 · 상태 · 비고」</p></div>
-          <div class="ba good"><p>「단계 · 상태 · 다음 행동」</p></div></li>
-      <li><div class="ba bad"><p>「파일 · 줄 수 · 내용」</p></div>
-          <div class="ba good"><p>「파일 · 줄 수 · 담는 것」</p></div></li>
-    </ul>
-  </article>
-
-  <article class="rule">
-    <div class="rule-head"><h3>해설을 인용 부호로 씀</h3><span class="pill warn">주의</span>
-      <span class="count">보고서 <b>87</b>건</span></div>
-    <dl class="meta">
-      <dt>무엇</dt><dd>인용 부호를 강조 상자로 씀 — 남의 말이 아니라 내가 쓴 문장</dd>
-      <dt>고치는 법</dt><dd>라벨:값으로 바꿈 · 강조는 굵게 · 경고는 경고 기호</dd>
-      <dt>안 잡는 것</dt><dd>출처가 붙은 남의 말 원문 — 「[실장 8/5]」·「(7/30 회의)」 · 원문은 글자가 같아야 하므로 개조식으로 고칠 수 없음</dd>
-    </dl>
-    <ul class="pairs">
-      <li><div class="ba bad"><p>「이 문서는 설계 전용이다」 · 「코드 실행은 재컨펌 후 별도 진행」</p></div>
-          <div class="ba good"><p>「적용 범위 — 설계 전용 · 코드 실행은 사용자 재컨펌 후 별도 진행」</p></div></li>
-      <li><div class="ba bad"><p>「이 계획은 시범 적용 결과에 따라 바뀔 수 있다.」</p></div>
-          <div class="ba good"><p>「변경 가능성 — 시범 적용 결과에 따라 바뀔 수 있음」</p></div></li>
-    </ul>
-  </article>
-
-  <article class="rule">
-    <div class="rule-head"><h3>형식 미표기</h3><span class="pill warn">주의</span>
-      <span class="count">규칙·기록 <b>295</b>건</span></div>
-    <dl class="meta">
-      <dt>무엇</dt><dd>흐르는 문장이 뼈대인 산문 문서인데 형식을 안 적어 개조식 검사가 잘못 걸림</dd>
-      <dt>고치는 법</dt><dd>마크다운은 머리말에 「form: prose」 · HTML은 메타 태그 한 줄</dd>
-      <dt>설계 이유</dt><dd>플래그로만 두면 검사할 때마다 사람이 기억해야 함 · <b>기억해야 하는 구조는 실패함</b></dd>
-    </dl>
-    <p class="note"><b>실제 효과</b> — 산문으로 된 원칙 문서 하나에 형식을 적자 오류 <b>81건 → 3건</b>. 나머지 78건은 규칙이 잘못 걸린 것이었다.</p>
-  </article>
-
-  <article class="rule">
-    <div class="rule-head"><h3>평가 수식어</h3><span class="pill warn">주의</span>
-      <span class="count">보고서 <b>26</b>건</span></div>
-    <dl class="meta">
-      <dt>무엇</dt><dd>평가가 섞인 형용사를 이름처럼 붙임 — 사실은 안 남고 자평만 남음</dd>
-      <dt>고치는 법</dt><dd>무엇을 하는지 씀 · 예외는 측정된 값뿐(「메모리 40MB」는 사실 · 「가벼운」은 자평)</dd>
-    </dl>
-    <ul class="pairs">
-      <li><div class="ba bad"><p>「가벼운 검증 실행체」</p></div>
-          <div class="ba good"><p>「화면 없이 명령줄로 호출하는 실행체」</p></div></li>
-      <li><div class="ba bad"><p>「강력한 Context Engineer 워크플로우」</p></div>
-          <div class="ba good"><p>「도구 호출 순서를 정해 두는 워크플로우」</p></div></li>
-      <li><div class="ba bad"><p>「풍부한 메타데이터」</p></div>
-          <div class="ba good"><p>「메타데이터 12종」</p></div></li>
-    </ul>
-  </article>
-</section>
-
-<!-- ═══ C. 사람 판단 ═══ -->
-<section id="c">
-  <h2>C. 사람이 읽어야 갈리는 것</h2>
-  <p class="sub">줄만 봐서는 안 갈리는 갈래. 읽는 층이 문맥을 보고 판정하고, 오탐은 결정 규칙으로 되먹인다.
-     이 절의 사례는 모두 <b>사람이 확정한 교정</b>이다 — 검토 세 회차에서 42건을 판정했다.</p>
-
-  <article class="rule">
-    <div class="rule-head"><h3>불필요한 영어</h3><span class="pill human">사람 판단</span>
-      <span class="count">확정 교정 <b>14</b>건 · 가장 잦음</span></div>
-    <dl class="meta">
-      <dt>무엇</dt><dd>같은 뜻의 한국어가 이미 굳었는데 영문·음차를 씀 · 한글 뒤에 원문 괄호를 매번 붙임</dd>
-      <dt>안 고치는 것</dt><dd>업계에 굳은 외래어(리팩터링·파이프라인) · 뜻이 같은 대체어가 없는 말(에이전틱) · API·필드·모듈의 실제 이름</dd>
-    </dl>
-    <ul class="pairs">
-      <li><div class="ba bad"><p>「메메틱 구조」</p></div>
-          <div class="ba good"><p>「기억 구조」</p></div></li>
-      <li><div class="ba bad"><p>「메모리 초과 클래시」</p></div>
-          <div class="ba good"><p>「메모리 초과로 인한 비정상 종료」</p></div></li>
-      <li><div class="ba bad"><p>「메인 라인업」</p></div>
-          <div class="ba good"><p>「주력 제품군」</p></div></li>
-      <li><div class="ba bad"><p>「산출물을 타깃」</p></div>
-          <div class="ba good"><p>「산출물을 검증 대상으로 지정」</p></div></li>
-      <li><div class="ba bad"><p>「프러리리스 배포 시작」</p></div>
-          <div class="ba good"><p>「사전 공개판 배포 시작」</p></div></li>
-      <li><div class="ba bad"><p>「최대 출력 토큰(max output tokens)」</p></div>
-          <div class="ba good"><p>「최대 출력 토큰」</p></div></li>
-      <li><div class="ba bad"><p>「safety-critical 시스템 단위/통합 테스팅」</p></div>
-          <div class="ba good"><p>「안전 필수 시스템의 단위·통합 테스트」</p></div></li>
-      <li><div class="ba bad"><p>「scratch 공간에 명세 및 실행 계획을 수립하고 verification gate를 사전에 정의」</p></div>
-          <div class="ba good"><p>「임시 공간에 명세와 실행 계획을 적고 검증 관문을 미리 정의」</p></div></li>
-      <li><div class="ba bad"><p>「에러」</p></div>
-          <div class="ba good"><p>「오류」</p></div></li>
-    </ul>
-  </article>
-
-  <article class="rule">
-    <div class="rule-head"><h3>명사화 · 조사 없는 명사 나열</h3><span class="pill human">사람 판단</span>
-      <span class="count">확정 교정 <b>4</b>건 + 새 갈래 1</span></div>
-    <dl class="meta">
-      <dt>무엇</dt><dd>동사를 명사로 굳혀 누가 무엇을 하는지 사라짐 · 조사 없이 명사만 이어 붙임</dd>
-      <dt>고치는 법</dt><dd>동사로 되돌려 주어와 목적어를 살림</dd>
-    </dl>
-    <ul class="pairs">
-      <li><div class="ba bad"><p>「로컬 실행 환경 구축 기능 추가」</p></div>
-          <div class="ba good"><p>「로컬 실행 환경을 구축하는 기능 추가」</p></div></li>
-      <li><div class="ba bad"><p>「컨텍스트 압축 및 세션 리셋 주기적 수행」</p></div>
-          <div class="ba good"><p>「주기적으로 컨텍스트를 압축하고 세션을 초기화」</p></div></li>
-      <li><div class="ba bad"><p>「가변 추론 기능 도입으로 작업 난이도에 따른 동적 추론 깊이 조절 가능.」</p></div>
-          <div class="ba good"><p>「가변 추론 기능을 도입해 작업 난이도에 따라 추론 깊이를 조절.」</p></div></li>
-      <li><div class="ba bad"><p>「사용자 인터페이스 고도화」</p></div>
-          <div class="ba good"><p>「사용자 인터페이스 개선」</p></div></li>
-    </ul>
-    <p class="note"><b>사용자가 잡아낸 미탐</b> — 「로컬 실행 환경 구축 기능 추가」는 검사기도 읽는 층도 못 잡았다. 판정 근거는 <b>조사가 하나도 없다</b>는 것이었고, 이 지적으로 새 갈래가 생겼다.</p>
-  </article>
-
-  <article class="rule">
-    <div class="rule-head"><h3>번역투</h3><span class="pill human">사람 판단</span>
-      <span class="count">확정 교정 <b>2</b>건</span></div>
-    <dl class="meta">
-      <dt>무엇</dt><dd>「~를 통해」·「~에 대한」·불필요한 피동·영어식 명사 나열</dd>
-      <dt>안 잡는 것</dt><dd>「~에 있어」 — 실문서 8건이 <b>전부 정당</b>해서 판단 층으로 옮김</dd>
-    </dl>
-    <ul class="pairs">
-      <li><div class="ba bad"><p>「HTTPS URL을 통해 직접 플러그인 아카이브 패키지를 설치 및 관리하는 스펙 지원.」</p></div>
-          <div class="ba good"><p>「HTTPS URL로 플러그인 아카이브 패키지를 직접 설치하고 관리하는 스펙 지원.」</p></div></li>
-      <li><div class="ba bad"><p>「인터뷰를 통해」</p></div>
-          <div class="ba good"><p>「인터뷰에서」로 바꿈</p></div></li>
-    </ul>
-  </article>
-
-  <article class="rule">
-    <div class="rule-head"><h3>압축한 명사구 · 넓은 뜻의 동사</h3><span class="pill human">사람 판단</span>
-      <span class="count">발표자 노트 확정 교정 <b>6</b>건</span></div>
-    <dl class="meta">
-      <dt>무엇</dt><dd>「곳·구간·부분·갈래·뒤의 것」이 실제 대상을 숨김 · 「풉니다·돕습니다·돕니다」가 실제 행위를 가림</dd>
-      <dt>고치는 법</dt><dd>과정·단계·테스트 유형처럼 실제 대상을 드러냄 · 설계·개발·검증처럼 실제 행위로 바꿈</dd>
-      <dt>안 잡는 것</dt><dd>문맥이 없으면 추측하지 않음 — 원문에 근거가 있을 때만 고침</dd>
-    </dl>
-    <ul class="pairs">
-      <li><div class="ba bad"><p>「검증에서 사람이 가장 많이 붙는 곳이 테스트를 만드는 구간이고, 여기를 AI로 풉니다」</p></div>
-          <div class="ba good"><p>「단위 통합 검증에서 공수가 많이 필요한 과정이 테스트를 설계하는 것입니다」</p></div></li>
-      <li><div class="ba bad"><p>「갈래는 둘, 요구사항에서 도출하는 것과 코드 구조를 훑어 커버리지를 채우는 것입니다」</p></div>
-          <div class="ba good"><p>「크게 두 가지로 나뉘는데, 요구사항 기반 테스트와 구조 기반 테스트입니다」</p></div></li>
-      <li><div class="ba bad"><p>「에이전트가 자체적으로 돌 수 있도록」</p></div>
-          <div class="ba good"><p>「에이전트가 스스로 실행할 수 있도록」</p></div></li>
-      <li><div class="ba bad"><p>「막대가 상반기 실측입니다」</p></div>
-          <div class="ba good"><p>「현재 보여드리는 내용이 상반기 결과이며」</p></div></li>
-      <li><div class="ba bad"><p>「제품화 경로」</p></div>
-          <div class="ba good"><p>「제품화 단계」</p></div></li>
-      <li><div class="ba bad"><p>「CT를 다시 세우는 부분」</p></div>
-          <div class="ba good"><p>「CT 재개발이 필요한 항목」</p></div></li>
-    </ul>
-  </article>
-
-  <article class="rule">
-    <div class="rule-head"><h3>자평과 강조 소음</h3><span class="pill human">사람 판단</span>
-      <span class="count">확정 교정 <b>8</b>건</span></div>
-    <dl class="meta">
-      <dt>무엇</dt><dd>측정값으로 바꿀 수 없는 자평 · 뜻 없는 굵게와 이모지</dd>
-      <dt>고치는 법</dt><dd>구체적인 기능이나 수치로 바꿈 · 바꿀 수 없으면 삭제</dd>
-    </dl>
-    <ul class="pairs">
-      <li><div class="ba bad"><p>「비약적으로 상승한 플래그십 모델」</p></div>
-          <div class="ba good"><p>「에이전틱 작업·시스템 설계·리팩터링 능력을 개선한 최상위 모델」</p></div></li>
-      <li><div class="ba bad"><p>「차세대 임베디드 테스팅 파이프라인 대응」</p></div>
-          <div class="ba good"><p>「임베디드 테스트 연계 지원」</p></div></li>
-      <li><div class="ba bad"><p>「적극 제외하여」</p></div>
-          <div class="ba good"><p>「제외해」</p></div></li>
-      <li><div class="ba bad"><p>「**상위 4개 벤더가 모두 AI 보조 기능을 올린 상태**」 — 문장 전체가 굵게</p></div>
-          <div class="ba good"><p>「상위 4개 벤더가 모두 AI 보조 기능을 정규 제품군에 올린 상태」</p></div></li>
-    </ul>
-  </article>
-
-  <article class="rule">
-    <div class="rule-head"><h3>뜻이 여럿인 말 · 뜻풀이 없는 용어</h3><span class="pill human">사람 판단</span>
-      <span class="count">사용자가 잡은 미탐 <b>4</b>건</span></div>
-    <dl class="meta">
-      <dt>무엇</dt><dd>다른 뜻으로 읽힐 수 있는 한자말 · 한 일이 숨는 말 · 처음 나온 내부 용어에 뜻풀이 없음</dd>
-      <dt>고치는 법</dt><dd>다른 말로 바꾸거나 첫 등장에 괄호로 한 줄 뜻풀이 · 두 번째부터는 그대로</dd>
-    </dl>
-    <ul class="pairs">
-      <li><div class="ba bad"><p>「최초 버전 인도」 — 나라 이름으로 읽힘</p></div>
-          <div class="ba good"><p>「최초 버전 공급」 · 「최초 버전 전달」</p></div></li>
-      <li><div class="ba bad"><p>「브랜드 재정립」 — 무엇을 어떻게 바꿨는지 숨음</p></div>
-          <div class="ba good"><p>바꾼 내용을 그대로 적음 · 원문에 근거가 있을 때만 고침</p></div></li>
-      <li><div class="ba bad"><p>「시드 목록」</p></div>
-          <div class="ba good"><p>「시드(조사 대상으로 미리 정한 도구) 목록」</p></div></li>
-      <li><div class="ba bad"><p>「AI 조립 라인」</p></div>
-          <div class="ba good"><p>「AI 조립 라인(AI Assembly Line)」</p></div></li>
-    </ul>
-  </article>
-</section>
-
-<!-- ═══ 통짜 문서 ═══ -->
-<section id="doc">
+<!-- ═══ 02 보고서 한 편 ═══ -->
+<div class="band"><div class="in" id="doc">
+  <p class="snum">02</p>
   <h2>보고서 한 편 전체</h2>
-  <p class="sub">AI가 쓸 법한 도입 검토 보고서 한 편. 사람이 손대기 전과 검사 지적을 다 반영한 뒤를 나란히 놓았다.</p>
-  <div class="docpair">
+  <p class="sub">AI가 쓸 법한 도입 검토 보고서 한 편. 사람이 손대기 전과 검사 지적을 다 반영한 뒤를 나란히 놓았다.
+     걸린 낱말에는 「」 표시를 해 두었다.</p>
+
+  <div class="figures reveal">
+    <div class="fig warn"><p class="n" data-to="17">0</p><p>손대기 전 오류 — 30줄짜리 문서 한 편에서</p></div>
+    <div class="fig"><p class="n">0</p><p>지적 반영 뒤 — 값 슬롯 42개 전부 통과</p></div>
+  </div>
+
+  <div class="docpair reveal">
     <div class="pane bad">
       <header><h3>사람이 손대기 전</h3><span class="score">오류 17 · 주의 6</span></header>
 <pre># 검사 도구 도입 검토 결과 보고
@@ -707,13 +397,16 @@ footer{margin:66px 0 0; padding:22px 0 0; border-top:1px solid var(--line); font
       </ul>
     </div>
   </div>
-</section>
+  <p class="note reveal"><b>한 번에 0이 안 됐다</b> — 첫 수정본이 오류 3으로 남았다. 근거를 설명하는 문단을 그냥 문장으로 둔 것이 원인이고, 「굵은 결론 — 근거 문장」 형태로 고쳐서 통과했다. <b>개조식으로 바꾸라는 뜻이 아니라 결론을 앞에 세우라는 뜻</b>임이 이 수정에서 드러난다.</p>
+</div></div>
 
-<!-- ═══ 일부러 안 잡는 것 ═══ -->
-<section id="exempt">
+<!-- ═══ 03 안 잡는 것 ═══ -->
+<div class="band paper"><div class="in" id="exempt">
+  <p class="snum">03</p>
   <h2>일부러 안 잡는 것</h2>
-  <p class="sub">겉모습이 위반과 같은 정당한 표기를 한 파일에 모아 돌렸다. 같은 모양의 진짜 위반을 모은 짝 파일도 함께 돌렸다.</p>
-  <div class="docpair">
+  <p class="sub">위반을 잡는 능력만 재면 「전부 지적」이 만점이 된다. <b>통과시켜야 하는 쪽을 같이 재야</b> 규칙이 쓸 만한지 갈린다.
+     겉모습이 같은 두 묶음을 만들어 함께 돌렸고, 회귀 시험에 넣어 규칙을 고칠 때마다 다시 돈다.</p>
+  <div class="docpair reveal">
     <div class="pane good">
       <header><h3>정당한 표기 20종</h3><span class="score">오류 0 · 주의 0</span></header>
       <ul class="findings clean">
@@ -749,115 +442,571 @@ footer{margin:66px 0 0; padding:22px 0 0; border-top:1px solid var(--line); font
       </ul>
     </div>
   </div>
-  <p class="note"><b>이 짝 실험이 재는 것</b> — 위반을 잡는 능력만 재면 「전부 지적」이 만점이 된다. 정당한 표기를 통과시키는 쪽을 같이 재야 규칙이 쓸 만한지 갈린다. 두 파일은 회귀 시험에 넣어 두어 규칙을 고칠 때마다 다시 돈다.</p>
-</section>
+</div></div>
 
-<!-- ═══ 사람이 뒤집은 것 ═══ -->
-<section id="flip">
+<!-- ═══ 04 갈래별 사례 ═══ -->
+<div class="band"><div class="in" id="catalog">
+  <p class="snum">04</p>
+  <h2>갈래별 사례</h2>
+  <p class="sub">세 층으로 나눈다. 앞의 둘은 기계가 전수로 보고, 마지막은 사람이 문맥을 보고 가른다.
+     사례는 모두 실제 문서나 사용자가 확정한 교정에서 가져왔다.</p>
+
+  <div class="grouphead"><span class="tag">A</span><h3>문장과 낱말</h3>
+    <span class="count">글자만 보고 갈림 · 8갈래</span></div>
+  <p class="sub">한국어 자체가 어긋난 갈래.</p>
+
+  <article class="rule reveal">
+    <div class="rule-head"><h3>서술형 종결</h3><span class="pill err">오류</span>
+      <span class="count">보고서 <b>1,326</b>건 · 전체 지적의 61%</span></div>
+    <dl class="meta">
+      <dt>무엇</dt><dd>값 칸·목록·표 칸을 완전한 문장으로 끝냄</dd>
+      <dt>고치는 법</dt><dd>명사형(~음·~함·~임)이나 체언으로 끝냄 · 두 사실은 가운뎃점으로 이음</dd>
+      <dt>안 잡는 것</dt><dd>산문형 문서 전체(머리말에 「form: prose」) · 근거를 설명하는 문장</dd>
+    </dl>
+    <ul class="pairs">
+      <li><div class="ba bad"><p>「대체하지 않는다」 · 「별개로 추가」</p></div>
+          <div class="ba good"><p>「대체 아님 · 별도 추가」</p></div></li>
+      <li><div class="ba bad"><p>「하드필터가 이미 그 수요를 흡수했다.」</p></div>
+          <div class="ba good"><p>「하드필터가 그 수요를 이미 흡수」</p></div></li>
+      <li><div class="ba bad"><p>「결론: 트랙 열지 않는다.」</p></div>
+          <div class="ba good"><p>「결론 — 트랙 열지 않음」</p></div></li>
+      <li><div class="ba bad"><p>「되돌리기가 가장 비싸다」</p></div>
+          <div class="ba good"><p>「되돌리기 비용 최대」</p></div></li>
+      <li><div class="ba bad"><p>「재측정 결과 26/38 → 25/38 로 1건 내렸다.」</p></div>
+          <div class="ba good"><p>「재측정 26/38 → 25/38 · 1건 내림」</p></div></li>
+    </ul>
+  </article>
+
+  <article class="rule reveal">
+    <div class="rule-head"><h3>절단형 종결 — 조사에서 끊김</h3><span class="pill err">오류</span><span class="pill warn">주의</span>
+      <span class="count">보고서 오류 <b>43</b> · 의심 <b>145</b></span></div>
+    <dl class="meta">
+      <dt>무엇</dt><dd>서술어를 날린 채 조사로 끝내 미완성으로 읽힘</dd>
+      <dt>고치는 법</dt><dd>조사를 떼어 명사로 끝냄 · 또는 서술 명사를 붙임(표시·저장·전용·담당)</dd>
+      <dt>무게 구분</dt><dd>「에서·에게·로서」는 오류 · 「만·까지·부터·로」는 정당한 값이 섞여 주의</dd>
+    </dl>
+    <ul class="pairs">
+      <li><div class="ba bad"><p>「고칠 것은 코멘트로」</p></div>
+          <div class="ba good"><p>「코멘트로 표시」</p></div></li>
+      <li><div class="ba bad"><p>「새 자료는 해당 폴더에」</p></div>
+          <div class="ba good"><p>「새 자료 → 해당 폴더」</p></div></li>
+      <li><div class="ba bad"><p>「로컬 삭제 파일은 Drive 휴지통으로」</p></div>
+          <div class="ba good"><p>「로컬 삭제 파일 → Drive 휴지통 · 30일 복구 가능」</p></div></li>
+      <li><div class="ba bad"><p>「이 화면은 그리기만」</p></div>
+          <div class="ba good"><p>「이 화면은 그리기 전용」</p></div></li>
+      <li><div class="ba bad"><p>「시퀀스 표를 다이어그램으로」</p></div>
+          <div class="ba good"><p>「시퀀스 표를 다이어그램으로 바꿈」</p></div></li>
+    </ul>
+  </article>
+
+  <article class="rule reveal">
+    <div class="rule-head"><h3>의문문 라벨</h3><span class="pill err">오류</span>
+      <span class="count">보고서 <b>35</b>건</span></div>
+    <dl class="meta">
+      <dt>무엇</dt><dd>표 머리·소제목을 물음으로 씀 — 질문도 값도 아닌 어중간한 형태</dd>
+      <dt>고치는 법</dt><dd>독자가 품는 질문에 답하는 <b>명사구</b>로 · 한 어절에서 두 어절</dd>
+    </dl>
+    <ul class="pairs">
+      <li><div class="ba bad"><p>「무엇을 보나」</p></div><div class="ba good"><p>「관측 대상」</p></div></li>
+      <li><div class="ba bad"><p>「무엇이 어디 있나」</p></div><div class="ba good"><p>「파일별 위치」</p></div></li>
+      <li><div class="ba bad"><p>「어디를 보나」</p></div><div class="ba good"><p>「확인 위치」</p></div></li>
+      <li><div class="ba bad"><p>「어디에 녹였나」</p></div><div class="ba good"><p>「반영 위치」</p></div></li>
+    </ul>
+  </article>
+
+  <article class="rule reveal">
+    <div class="rule-head"><h3>모호한 지칭</h3><span class="pill err">오류</span>
+      <span class="count">보고서 <b>68</b>건 · 「우리」가 62</span></div>
+    <dl class="meta">
+      <dt>무엇</dt><dd>「우리·이들·저쪽·여기」가 읽는 사람마다 다른 것을 가리킴</dd>
+      <dt>고치는 법</dt><dd>제품명·파트명·역할로 바꿈</dd>
+      <dt>공유 문서 주의점</dt><dd>「우리」는 소속에 따라 뜻이 갈림</dd>
+    </dl>
+    <ul class="pairs">
+      <li><div class="ba bad"><p>「우리 제품이 아니다 — 이들이 우리를 호출한다」</p></div>
+          <div class="ba good"><p>「검사기 개발 범위 밖 — 검사기를 호출하는 주체」</p></div></li>
+      <li><div class="ba bad"><p>「우리 코퍼스는 사내 규정 비중이 크다」</p></div>
+          <div class="ba good"><p>「사내 문서 뭉치 — 규정 비중이 큼」</p></div></li>
+      <li><div class="ba bad"><p>「이 둘을 구분해서 보는 것이 우리 설계에 유용하다」</p></div>
+          <div class="ba good"><p>「두 방식을 갈라 보는 것이 CT 설계에 유용」</p></div></li>
+    </ul>
+  </article>
+
+  <article class="rule reveal">
+    <div class="rule-head"><h3>은유 「자리」</h3><span class="pill err">오류</span><span class="pill warn">주의</span>
+      <span class="count">규칙·기록 오류 <b>12</b> · 의심 <b>59</b></span></div>
+    <dl class="meta">
+      <dt>무엇</dt><dd>글·코드·절차의 지점을 「자리」로 부름 — 문장인지 항목인지 단계인지 사라짐</dd>
+      <dt>고치는 법</dt><dd>지점·위치·사례·단계·시점·대목 중 맞는 말 · 없으면 문장을 서술로 폄</dd>
+      <dt>실측 근거</dt><dd>사용자가 쓴 한국어 대비 <b>5.3배</b>(1만자당 0.4 대 2.4) · 흔히 AI 티로 꼽는 「수 있」 0.4배·「것이다」 0.2배는 오히려 적음</dd>
+    </dl>
+    <ul class="pairs">
+      <li><div class="ba bad"><p>「규칙을 넣을 자리」</p></div><div class="ba good"><p>「규칙을 넣을 위치」</p></div></li>
+      <li><div class="ba bad"><p>「표 칸이 특히 새는 자리」</p></div><div class="ba good"><p>「표 칸에서 특히 자주 샌다」</p></div></li>
+      <li><div class="ba bad"><p>「실패 모드가 그대로 걸리는 자리」</p></div><div class="ba good"><p>「실패 모드가 그대로 걸리는 사례」</p></div></li>
+      <li><div class="ba bad"><p>「의견을 받는 자리」</p></div><div class="ba good"><p>「의견을 수렴하는 회의」</p></div></li>
+      <li><div class="ba bad"><p>「보고하는 자리」</p></div><div class="ba good"><p>「보고 회의」 · 「발표 세미나」</p></div></li>
+    </ul>
+    <p class="note"><b>안 잡는 것</b> — 「앞자리」·「빈자리」·「같은 자리에 같은 라벨」. 실제 좌석과 굳은 쓰임은 은유가 아니라 그 뜻 그대로다.</p>
+    <p class="note"><b>모임도 「자리」로 부르지 않는다</b>(2026-09-04에 좁힘) — 예전에는 모임 뜻을 예외로 두었는데 <b>그 예외가 은유까지 통과시키고 있었다</b>. 화면의 입력 칸을 가리키는 은유 하나가 그 예외에 숨어 지적을 못 받고 있었다. 어간 열 개를 뺀 뒤 실측은 <b>오류 5,529건 그대로 · 새로 주의 7건 · 사라진 지적 0건</b>.</p>
+  </article>
+
+  <article class="rule reveal">
+    <div class="rule-head"><h3>지어낸 명사구 — 판·창·결</h3><span class="pill warn">주의</span>
+      <span class="count">규칙·기록 <b>36</b>건</span></div>
+    <dl class="meta">
+      <dt>무엇</dt><dd>관형형 어미 뒤에 뜻이 옅은 명사를 붙여 새 말을 만듦 · 사람이 쓴 한국어에는 안 나오는 형태</dd>
+      <dt>고치는 법</dt><dd>그 명사가 <b>혼자 서는지</b> 봄 — 「판」만 떼어 무엇인지 말할 수 없으면 지어낸 것</dd>
+      <dt>안 잡는 것</dt><dd>굳은 합성어와 실물 — 편집창·바둑판·대화창 · 「같은 결」·「뜨는 창」</dd>
+    </dl>
+    <ul class="pairs">
+      <li><div class="ba bad"><p>「1판·2판」</p></div><div class="ba good"><p>「1차·2차」 · 「첫 시도·두 번째 시도」</p></div></li>
+      <li><div class="ba bad"><p>「모으는 창」·「무르는 창」</p></div><div class="ba good"><p>「모으는 시간」·「무를 수 있는 시간」</p></div></li>
+      <li><div class="ba bad"><p>「앞 판에서」</p></div><div class="ba good"><p>「앞 실험에서」 · 「먼저 잰 것에서」로 바꿈</p></div></li>
+    </ul>
+    <p class="note"><b>여섯 낱말 중 셋만 넣었다</b> — 실문서 1,161개로 따로 재니 「판·창」 0건 · 「결」 1건이라 넣고, 「값」 9건 · 「축」 4건 · 「층」 2건은 그 명사가 이 분야에서 혼자 서므로(계산하는 값 · 못 보는 축 · 읽는 층) 뺐다. <b>빈도가 아니라 정밀도로 잘랐다.</b> 여섯을 한 덩어리로 셌을 때는 「전부 정상」이 나와 규칙을 통째로 접어 두었었다.</p>
+  </article>
+
+  <article class="rule reveal">
+    <div class="rule-head"><h3>「회기」</h3><span class="pill err">오류</span>
+      <span class="count">규칙·기록 <b>19</b>건</span></div>
+    <dl class="meta">
+      <dt>무엇</dt><dd>「회귀(regression)」의 오타 · 또는 「세션」을 뜻하는 잘못된 말</dd>
+      <dt>고치는 법</dt><dd>regression이면 「회귀」 · 작업 단위면 「세션」·「회차」</dd>
+      <dt>안 잡는 것</dt><dd>낱말 안에 우연히 든 것(조회기간·사회기여) · 회의체 이름 뒤(국회 회기·정기 회기)</dd>
+    </dl>
+    <ul class="pairs">
+      <li><div class="ba bad"><p>「-4.9pp 회기」</p></div><div class="ba good"><p>「-4.9pp 회귀」</p></div></li>
+      <li><div class="ba bad"><p>「다음 회기 계획」</p></div><div class="ba good"><p>「다음 회차 계획」</p></div></li>
+    </ul>
+    <p class="note"><b>전수 점검에서 78곳 전부 틀렸다</b> — 회귀 오타 46 · 「이번 작업 세션」 뜻 32 · 정당한 쓰임 0. 「어려운 말로 쓰지 않음」 규칙이 이미 적혀 있었는데도 계속 나와서 검사기로 옮겼다.</p>
+  </article>
+
+  <article class="rule reveal">
+    <div class="rule-head"><h3>이중 피동 · 번역투 이중 조사</h3><span class="pill err">오류</span><span class="pill warn">주의</span>
+      <span class="count">이중 조사 <b>12</b>건 · 이중 피동 0건</span></div>
+    <dl class="meta">
+      <dt>무엇</dt><dd>피동을 두 번 겹침(「되어진」·「불려진」) · 조사를 두 개 겹침(「~로의」·「~에서의」)</dd>
+      <dt>고치는 법</dt><dd>피동은 한 번만 · 조사는 하나로 풂</dd>
+      <dt>안 잡는 것</dt><dd>「로」가 낱말의 일부인 것 — 경로의·대로의·회로의·진로의 · 「-지 않다」 부정형</dd>
+    </dl>
+    <ul class="pairs">
+      <li><div class="ba bad"><p>「값이 잘못 계산되어진다」</p></div><div class="ba good"><p>「값이 잘못 계산된다」</p></div></li>
+      <li><div class="ba bad"><p>「서버로의 접속」</p></div><div class="ba good"><p>「서버 접속」</p></div></li>
+      <li><div class="ba bad"><p>「단일에서 복합으로의 progression」</p></div><div class="ba good"><p>「단일에서 복합으로 나아감」</p></div></li>
+    </ul>
+    <p class="note"><b>규칙을 넣고 실문서 409개에 돌려 오탐 둘을 잡아냈다</b> — 「구축되지는 않습니다」가 이중 피동으로 걸렸고(어간에서 「되」를 뺌), 「경로의」·「대로의」가 이중 조사로 걸렸다(낱말 목록으로 막음).</p>
+  </article>
+
+  <div class="grouphead"><span class="tag">B</span><h3>문서 구조</h3>
+    <span class="count">찾아 읽기가 안 됨 · 6갈래</span></div>
+  <p class="sub">문장은 멀쩡한데 값을 찾는 데 문장을 끝까지 읽어야 하는 갈래.</p>
+
+  <article class="rule reveal">
+    <div class="rule-head"><h3>제목 서술형 · 제목 명사형 위반</h3><span class="pill err">오류</span>
+      <span class="count">보고서 <b>36</b> + <b>29</b>건</span></div>
+    <dl class="meta">
+      <dt>무엇</dt><dd>제목을 문장으로 끝내거나 물음으로 씀</dd>
+      <dt>고치는 법</dt><dd>명사구로 · 대비가 필요하면 대시로 이어 붙임</dd>
+      <dt>고친 이력</dt><dd>마크다운 제목만 검사하고 <b>HTML 제목은 안 보고 있었음</b> · 값이 전부 개조식인 페이지가 제목만 서술 문장인 채로 오류 0을 받음</dd>
+    </dl>
+    <ul class="pairs">
+      <li><div class="ba bad"><p>「분산을 왜 택했는가 — 검색 정확도 때문이 아니다」</p></div>
+          <div class="ba good"><p>「분산을 택한 까닭 — 검색 정확도 아님」</p></div></li>
+      <li><div class="ba bad"><p>「무엇을 어떻게 틀렸나」</p></div><div class="ba good"><p>「틀린 지점과 원인」</p></div></li>
+      <li><div class="ba bad"><p>「진단 — 어디서 무거워졌는가」</p></div><div class="ba good"><p>「진단 — 무거워진 지점」</p></div></li>
+      <li><div class="ba bad"><p>「의존성 검사가 직접 의존성만 본다」</p></div>
+          <div class="ba good"><p>「의존성 검사 — 직접 의존성만 봄」</p></div></li>
+    </ul>
+  </article>
+
+  <article class="rule reveal">
+    <div class="rule-head"><h3>진입점</h3><span class="pill err">오류</span>
+      <span class="count">보고서 서술형 <b>30</b> · 규칙·기록 없음 <b>93</b></span></div>
+    <dl class="meta">
+      <dt>무엇</dt><dd>첫 줄에 「이 문서를 읽고 무엇을 하게 되나」가 없거나 서술 문장으로 씀</dd>
+      <dt>고치는 법</dt><dd>독자가 품는 질문을 개조식으로 · 주어를 「이 문서」로 잡지 않음</dd>
+      <dt>누락 시 영향</dt><dd>독자가 라벨 스무 개를 스스로 조립 — 찾기는 빨라지고 이해는 느려진 문서</dd>
+    </dl>
+    <ul class="pairs">
+      <li><div class="ba bad"><p>「이 문서는 사내 문서 검사 도구 세 종을 비교하여 도입 여부를 정리한 것입니다.」</p></div>
+          <div class="ba good"><p>「문서 검사 도구 세 종 비교 · 자체 제작 채택 — 판정 기준과 되돌리는 방법 포함」</p></div></li>
+      <li><div class="ba bad"><p>「최신 릴리즈 노트와 변경 사항을 검토하여 정리한 주요 업데이트는 다음과 같습니다.」</p></div>
+          <div class="ba good"><p>「릴리즈 노트 주요 변경 — 검토 정리본」</p></div></li>
+      <li><div class="ba bad"><p>「본 보고서는 첫 보고서. 향후 보고서는 이 보고서 이후의 변경사항만 다룬다.」</p></div>
+          <div class="ba good"><p>「AI 활용 첫 보고서 — 다음 회차부터 변경분만 다룸」</p></div></li>
+    </ul>
+  </article>
+
+  <article class="rule reveal">
+    <div class="rule-head"><h3>스캔 가치 없는 라벨</h3><span class="pill warn">주의</span>
+      <span class="count">보고서 <b>211</b>건 · 「비고」가 133</span></div>
+    <dl class="meta">
+      <dt>무엇</dt><dd>열 이름만 봐서 안에 무엇이 있는지 모름 — 비고·설명·내용·메모·참고·기타</dd>
+      <dt>고치는 법</dt><dd>그 칸에 실제로 들어가는 것의 이름으로 바꿈</dd>
+      <dt>실측 근거</dt><dd>걸린 것의 57%가 표 머리 「비고」 · <b>공문서 표의 표준 관례</b>라 발행을 막을 근거가 못 됨</dd>
+    </dl>
+    <ul class="pairs">
+      <li><div class="ba bad"><p>「분류 · 카운트 · 비율 · 설명」</p></div>
+          <div class="ba good"><p>「분류 · 건수 · 비율 · 판정 근거」</p></div></li>
+      <li><div class="ba bad"><p>「단계 · 상태 · 비고」</p></div><div class="ba good"><p>「단계 · 상태 · 다음 행동」</p></div></li>
+      <li><div class="ba bad"><p>「파일 · 줄 수 · 내용」</p></div><div class="ba good"><p>「파일 · 줄 수 · 담는 것」</p></div></li>
+    </ul>
+  </article>
+
+  <article class="rule reveal">
+    <div class="rule-head"><h3>해설을 인용 부호로 씀</h3><span class="pill warn">주의</span>
+      <span class="count">보고서 <b>87</b>건</span></div>
+    <dl class="meta">
+      <dt>무엇</dt><dd>인용 부호를 강조 상자로 씀 — 남의 말이 아니라 내가 쓴 문장</dd>
+      <dt>고치는 법</dt><dd>라벨:값으로 바꿈 · 강조는 굵게 · 경고는 경고 기호</dd>
+      <dt>안 잡는 것</dt><dd>출처가 붙은 남의 말 원문 — 「[실장 8/5]」·「(7/30 회의)」 · 원문은 글자가 같아야 하므로 개조식으로 고칠 수 없음</dd>
+    </dl>
+    <ul class="pairs">
+      <li><div class="ba bad"><p>「이 문서는 설계 전용이다」 · 「코드 실행은 재컨펌 후 별도 진행」</p></div>
+          <div class="ba good"><p>「적용 범위 — 설계 전용 · 코드 실행은 사용자 재컨펌 후 별도 진행」</p></div></li>
+      <li><div class="ba bad"><p>「이 계획은 시범 적용 결과에 따라 바뀔 수 있다.」</p></div>
+          <div class="ba good"><p>「변경 가능성 — 시범 적용 결과에 따라 바뀔 수 있음」</p></div></li>
+    </ul>
+  </article>
+
+  <article class="rule reveal">
+    <div class="rule-head"><h3>형식 미표기</h3><span class="pill warn">주의</span>
+      <span class="count">규칙·기록 <b>295</b>건</span></div>
+    <dl class="meta">
+      <dt>무엇</dt><dd>흐르는 문장이 뼈대인 산문 문서인데 형식을 안 적어 개조식 검사가 잘못 걸림</dd>
+      <dt>고치는 법</dt><dd>마크다운은 머리말에 「form: prose」 · HTML은 메타 태그 한 줄</dd>
+      <dt>설계 이유</dt><dd>플래그로만 두면 검사할 때마다 사람이 기억해야 함 · <b>기억해야 하는 구조는 실패함</b></dd>
+    </dl>
+    <p class="note"><b>실제 효과</b> — 산문으로 된 원칙 문서 하나에 형식을 적자 오류 <b>81건 → 3건</b>. 나머지 78건은 규칙이 잘못 걸린 것이었다.</p>
+  </article>
+
+  <article class="rule reveal">
+    <div class="rule-head"><h3>평가 수식어</h3><span class="pill warn">주의</span>
+      <span class="count">보고서 <b>26</b>건</span></div>
+    <dl class="meta">
+      <dt>무엇</dt><dd>평가가 섞인 형용사를 이름처럼 붙임 — 사실은 안 남고 자평만 남음</dd>
+      <dt>고치는 법</dt><dd>무엇을 하는지 씀 · 예외는 측정된 값뿐(「메모리 40MB」는 사실 · 「가벼운」은 자평)</dd>
+    </dl>
+    <ul class="pairs">
+      <li><div class="ba bad"><p>「가벼운 검증 실행체」</p></div>
+          <div class="ba good"><p>「화면 없이 명령줄로 호출하는 실행체」</p></div></li>
+      <li><div class="ba bad"><p>「강력한 Context Engineer 워크플로우」</p></div>
+          <div class="ba good"><p>「도구 호출 순서를 정해 두는 워크플로우」</p></div></li>
+      <li><div class="ba bad"><p>「풍부한 메타데이터」</p></div><div class="ba good"><p>「메타데이터 12종」</p></div></li>
+    </ul>
+  </article>
+
+  <div class="grouphead"><span class="tag">C</span><h3>사람이 읽어야 갈리는 것</h3>
+    <span class="count">문맥을 봐야 판정됨 · 6갈래</span></div>
+  <p class="sub">줄만 봐서는 안 갈리는 갈래. 읽는 층이 판정하고, 오탐은 결정 규칙으로 되먹인다.
+     검토 세 회차에서 <b>42건</b>을 판정했고, 사례는 모두 사람이 확정한 교정이다.</p>
+
+  <article class="rule reveal">
+    <div class="rule-head"><h3>불필요한 영어</h3><span class="pill human">사람 판단</span>
+      <span class="count">확정 교정 <b>14</b>건 · 가장 잦음</span></div>
+    <dl class="meta">
+      <dt>무엇</dt><dd>같은 뜻의 한국어가 이미 굳었는데 영문·음차를 씀 · 한글 뒤에 원문 괄호를 매번 붙임</dd>
+      <dt>안 잡는 것</dt><dd>업계에 굳은 외래어(리팩터링·파이프라인) · 뜻이 같은 대체어가 없는 말(에이전틱) · API·필드·모듈의 실제 이름</dd>
+    </dl>
+    <ul class="pairs">
+      <li><div class="ba bad"><p>「메메틱 구조」</p></div><div class="ba good"><p>「기억 구조」</p></div></li>
+      <li><div class="ba bad"><p>「메모리 초과 클래시」</p></div><div class="ba good"><p>「메모리 초과로 인한 비정상 종료」</p></div></li>
+      <li><div class="ba bad"><p>「메인 라인업」</p></div><div class="ba good"><p>「주력 제품군」</p></div></li>
+      <li><div class="ba bad"><p>「산출물을 타깃」</p></div><div class="ba good"><p>「산출물을 검증 대상으로 지정」</p></div></li>
+      <li><div class="ba bad"><p>「프러리리스 배포 시작」</p></div><div class="ba good"><p>「사전 공개판 배포 시작」</p></div></li>
+      <li><div class="ba bad"><p>「최대 출력 토큰(max output tokens)」</p></div><div class="ba good"><p>「최대 출력 토큰」</p></div></li>
+      <li><div class="ba bad"><p>「safety-critical 시스템 단위/통합 테스팅」</p></div>
+          <div class="ba good"><p>「안전 필수 시스템의 단위·통합 테스트」</p></div></li>
+      <li><div class="ba bad"><p>「scratch 공간에 명세 및 실행 계획을 수립하고 verification gate를 사전에 정의」</p></div>
+          <div class="ba good"><p>「임시 공간에 명세와 실행 계획을 적고 검증 관문을 미리 정의」</p></div></li>
+      <li><div class="ba bad"><p>「에러」</p></div><div class="ba good"><p>「오류」</p></div></li>
+    </ul>
+  </article>
+
+  <article class="rule reveal">
+    <div class="rule-head"><h3>명사화 · 조사 없는 명사 나열</h3><span class="pill human">사람 판단</span>
+      <span class="count">확정 교정 <b>4</b>건 + 새 갈래 1</span></div>
+    <dl class="meta">
+      <dt>무엇</dt><dd>동사를 명사로 굳혀 누가 무엇을 하는지 사라짐 · 조사 없이 명사만 이어 붙임</dd>
+      <dt>고치는 법</dt><dd>동사로 되돌려 주어와 목적어를 살림</dd>
+    </dl>
+    <ul class="pairs">
+      <li><div class="ba bad"><p>「로컬 실행 환경 구축 기능 추가」</p></div>
+          <div class="ba good"><p>「로컬 실행 환경을 구축하는 기능 추가」</p></div></li>
+      <li><div class="ba bad"><p>「컨텍스트 압축 및 세션 리셋 주기적 수행」</p></div>
+          <div class="ba good"><p>「주기적으로 컨텍스트를 압축하고 세션을 초기화」</p></div></li>
+      <li><div class="ba bad"><p>「가변 추론 기능 도입으로 작업 난이도에 따른 동적 추론 깊이 조절 가능.」</p></div>
+          <div class="ba good"><p>「가변 추론 기능을 도입해 작업 난이도에 따라 추론 깊이를 조절.」</p></div></li>
+      <li><div class="ba bad"><p>「사용자 인터페이스 고도화」</p></div><div class="ba good"><p>「사용자 인터페이스 개선」</p></div></li>
+    </ul>
+    <p class="note"><b>사용자가 잡아낸 미탐</b> — 「로컬 실행 환경 구축 기능 추가」는 검사기도 읽는 층도 못 잡았다. 판정 근거는 <b>조사가 하나도 없다</b>는 것이었고, 이 지적으로 새 갈래가 생겼다.</p>
+  </article>
+
+  <article class="rule reveal">
+    <div class="rule-head"><h3>번역투</h3><span class="pill human">사람 판단</span>
+      <span class="count">확정 교정 <b>2</b>건</span></div>
+    <dl class="meta">
+      <dt>무엇</dt><dd>「~를 통해」·「~에 대한」·불필요한 피동·영어식 명사 나열</dd>
+      <dt>안 잡는 것</dt><dd>「~에 있어」 — 실문서 8건이 <b>전부 정당</b>해서 결정 규칙에서 빼고 판단 층으로 옮김</dd>
+    </dl>
+    <ul class="pairs">
+      <li><div class="ba bad"><p>「HTTPS URL을 통해 직접 플러그인 아카이브 패키지를 설치 및 관리하는 스펙 지원.」</p></div>
+          <div class="ba good"><p>「HTTPS URL로 플러그인 아카이브 패키지를 직접 설치하고 관리하는 스펙 지원.」</p></div></li>
+      <li><div class="ba bad"><p>「인터뷰를 통해」</p></div><div class="ba good"><p>「인터뷰에서」로 바꿈</p></div></li>
+    </ul>
+  </article>
+
+  <article class="rule reveal">
+    <div class="rule-head"><h3>압축한 명사구 · 넓은 뜻의 동사</h3><span class="pill human">사람 판단</span>
+      <span class="count">발표자 노트 확정 교정 <b>6</b>건</span></div>
+    <dl class="meta">
+      <dt>무엇</dt><dd>「곳·구간·부분·갈래·뒤의 것」이 실제 대상을 숨김 · 「풉니다·돕습니다」가 실제 행위를 가림</dd>
+      <dt>고치는 법</dt><dd>과정·단계·테스트 유형처럼 실제 대상을 드러냄 · 설계·개발·검증처럼 실제 행위로 바꿈</dd>
+      <dt>안 잡는 것</dt><dd>문맥이 없으면 추측하지 않음 — 원문에 근거가 있을 때만 고침</dd>
+    </dl>
+    <ul class="pairs">
+      <li><div class="ba bad"><p>「검증에서 사람이 가장 많이 붙는 곳이 테스트를 만드는 구간이고, 여기를 AI로 풉니다」</p></div>
+          <div class="ba good"><p>「단위 통합 검증에서 공수가 많이 필요한 과정이 테스트를 설계하는 것입니다」</p></div></li>
+      <li><div class="ba bad"><p>「갈래는 둘, 요구사항에서 도출하는 것과 코드 구조를 훑어 커버리지를 채우는 것입니다」</p></div>
+          <div class="ba good"><p>「크게 두 가지로 나뉘는데, 요구사항 기반 테스트와 구조 기반 테스트입니다」</p></div></li>
+      <li><div class="ba bad"><p>「에이전트가 자체적으로 돌 수 있도록」</p></div>
+          <div class="ba good"><p>「에이전트가 스스로 실행할 수 있도록」</p></div></li>
+      <li><div class="ba bad"><p>「막대가 상반기 실측입니다」</p></div>
+          <div class="ba good"><p>「현재 보여드리는 내용이 상반기 결과이며」</p></div></li>
+      <li><div class="ba bad"><p>「제품화 경로」</p></div><div class="ba good"><p>「제품화 단계」</p></div></li>
+      <li><div class="ba bad"><p>「CT를 다시 세우는 부분」</p></div><div class="ba good"><p>「CT 재개발이 필요한 항목」</p></div></li>
+    </ul>
+  </article>
+
+  <article class="rule reveal">
+    <div class="rule-head"><h3>자평과 강조 소음</h3><span class="pill human">사람 판단</span>
+      <span class="count">확정 교정 <b>8</b>건</span></div>
+    <dl class="meta">
+      <dt>무엇</dt><dd>측정값으로 바꿀 수 없는 자평 · 뜻 없는 굵게와 이모지</dd>
+      <dt>고치는 법</dt><dd>구체적인 기능이나 수치로 바꿈 · 바꿀 수 없으면 삭제</dd>
+    </dl>
+    <ul class="pairs">
+      <li><div class="ba bad"><p>「비약적으로 상승한 플래그십 모델」</p></div>
+          <div class="ba good"><p>「에이전틱 작업·시스템 설계·리팩터링 능력을 개선한 최상위 모델」</p></div></li>
+      <li><div class="ba bad"><p>「차세대 임베디드 테스팅 파이프라인 대응」</p></div>
+          <div class="ba good"><p>「임베디드 테스트 연계 지원」</p></div></li>
+      <li><div class="ba bad"><p>「적극 제외하여」</p></div><div class="ba good"><p>「제외해」</p></div></li>
+      <li><div class="ba bad"><p>「상위 4개 벤더가 모두 AI 보조 기능을 올린 상태」 — 문장 전체가 굵게</p></div>
+          <div class="ba good"><p>「상위 4개 벤더가 모두 AI 보조 기능을 정규 제품군에 올린 상태」</p></div></li>
+    </ul>
+  </article>
+
+  <article class="rule reveal">
+    <div class="rule-head"><h3>뜻이 여럿인 말 · 뜻풀이 없는 용어</h3><span class="pill human">사람 판단</span>
+      <span class="count">사용자가 잡은 미탐 <b>4</b>건</span></div>
+    <dl class="meta">
+      <dt>무엇</dt><dd>다른 뜻으로 읽힐 수 있는 한자말 · 한 일이 숨는 말 · 처음 나온 내부 용어에 뜻풀이 없음</dd>
+      <dt>고치는 법</dt><dd>다른 말로 바꾸거나 첫 등장에 괄호로 한 줄 뜻풀이 · 두 번째부터는 그대로</dd>
+    </dl>
+    <ul class="pairs">
+      <li><div class="ba bad"><p>「최초 버전 인도」 — 나라 이름으로 읽힘</p></div>
+          <div class="ba good"><p>「최초 버전 공급」 · 「최초 버전 전달」</p></div></li>
+      <li><div class="ba bad"><p>「브랜드 재정립」 — 무엇을 어떻게 바꿨는지 숨음</p></div>
+          <div class="ba good"><p>바꾼 내용을 그대로 적음 · 원문에 근거가 있을 때만 고침</p></div></li>
+      <li><div class="ba bad"><p>「시드 목록」</p></div>
+          <div class="ba good"><p>「시드(조사 대상으로 미리 정한 도구) 목록」</p></div></li>
+      <li><div class="ba bad"><p>「AI 조립 라인」</p></div><div class="ba good"><p>「AI 조립 라인(AI Assembly Line)」</p></div></li>
+    </ul>
+  </article>
+</div></div>
+
+<!-- ═══ 05 갈래별 건수 ═══ -->
+<div class="band paper"><div class="in" id="counts">
+  <p class="snum">05</p>
+  <h2>갈래별 건수</h2>
+  <p class="sub">두 뭉치에 같은 검사기를 돌린 실측. <b>업무 보고서</b>는 사내 분석·진행 보고 603개,
+     <b>규칙·기록 문서</b>는 작업 규칙과 진행 기록 1,948개.</p>
+  <div class="scroll">
+  <table>
+    <thead><tr><th>갈래</th><th>무게</th><th class="n">업무 보고서 <b>603</b>개</th><th class="n">규칙·기록 <b>1,948</b>개</th></tr></thead>
+    <tbody>
+      <tr><td><span class="dot e"></span>서술형 종결</td><td>오류</td><td class="n">1,326</td><td class="n">3,375</td></tr>
+      <tr><td><span class="dot e"></span>모호한 지칭</td><td>오류</td><td class="n">68</td><td class="n">220</td></tr>
+      <tr><td><span class="dot e"></span>절단형 종결</td><td>오류</td><td class="n">43</td><td class="n">45</td></tr>
+      <tr><td><span class="dot e"></span>제목 서술형</td><td>오류</td><td class="n">36</td><td class="n">69</td></tr>
+      <tr><td><span class="dot e"></span>진입점 서술형</td><td>오류</td><td class="n">30</td><td class="n">127</td></tr>
+      <tr><td><span class="dot e"></span>제목 명사형 위반</td><td>오류</td><td class="n">29</td><td class="n">31</td></tr>
+      <tr><td><span class="dot e"></span>진입점 없음</td><td>오류</td><td class="n zero">0</td><td class="n">93</td></tr>
+      <tr><td><span class="dot e"></span>「회기」</td><td>오류</td><td class="n zero">0</td><td class="n">19</td></tr>
+      <tr><td><span class="dot e"></span>은유 「자리」</td><td>오류</td><td class="n zero">0</td><td class="n">12</td></tr>
+      <tr><td><span class="dot e"></span>진입점 명사형 위반</td><td>오류</td><td class="n">2</td><td class="n">1</td></tr>
+      <tr><td><span class="dot e"></span>이중 피동</td><td>오류</td><td class="n zero">0</td><td class="n zero">0</td></tr>
+      <tr><td><span class="dot w"></span>스캔 가치 없는 라벨</td><td>주의</td><td class="n">211</td><td class="n">110</td></tr>
+      <tr><td><span class="dot w"></span>절단형 의심</td><td>주의</td><td class="n">145</td><td class="n">225</td></tr>
+      <tr><td><span class="dot w"></span>해설을 인용 부호로 씀</td><td>주의</td><td class="n">87</td><td class="n">125</td></tr>
+      <tr><td><span class="dot w"></span>서술형 문단</td><td>주의</td><td class="n">55</td><td class="n">188</td></tr>
+      <tr><td><span class="dot w"></span>형식 미표기</td><td>주의</td><td class="n">49</td><td class="n">295</td></tr>
+      <tr><td><span class="dot w"></span>반복 블록 라벨 불일치</td><td>주의</td><td class="n">47</td><td class="n">204</td></tr>
+      <tr><td><span class="dot w"></span>평가 수식어</td><td>주의</td><td class="n">26</td><td class="n">24</td></tr>
+      <tr><td><span class="dot w"></span>번역투 이중 조사</td><td>주의</td><td class="n">12</td><td class="n">12</td></tr>
+      <tr><td><span class="dot w"></span>「~하는 자리」 의심</td><td>주의</td><td class="n zero">0</td><td class="n">59</td></tr>
+      <tr><td><span class="dot w"></span>지어낸 명사구</td><td>주의</td><td class="n zero">0</td><td class="n">36</td></tr>
+      <tr><td><span class="dot w"></span>제목 형태 확인</td><td>주의</td><td class="n">6</td><td class="n">6</td></tr>
+      <tr><td><span class="dot w"></span>지시어 확인</td><td>주의</td><td class="n">2</td><td class="n">6</td></tr>
+      <tr><td><span class="dot w"></span>번역투 「그녀」</td><td>주의</td><td class="n zero">0</td><td class="n">2</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p class="note"><b>0건도 규칙은 돈다</b> — 「이 뭉치에 안 나왔다」와 「규칙이 없다」는 다르다. 이중 피동은 두 뭉치 모두 0건인데, 만들어 넣은 시료에서는 잡힌다.</p>
+</div></div>
+
+<!-- ═══ 06 사람이 뒤집은 것 ═══ -->
+<div class="band"><div class="in" id="flip">
+  <p class="snum">06</p>
   <h2>사람이 뒤집은 지적</h2>
   <p class="sub">읽는 층이 낸 지적을 사람이 검토해 오탐으로 판정한 것들. 판정은 그때 한 번으로 끝나지 않고 규칙 문서에 예외로 박힌다.</p>
   <div class="scroll">
   <table>
-    <caption>검토 세 회차 42건 중 사람이 뒤집은 것 · 판정 근거는 사용자가 직접 적은 말</caption>
     <thead><tr><th>지적한 것</th><th>제안한 고침</th><th>판정 근거</th><th>규칙에 반영한 것</th></tr></thead>
     <tbody>
-      <tr>
-        <td>「에이전틱」</td><td>「자율 수행」</td>
-        <td>두 말이 가리키는 범위가 다름</td>
-        <td>「뜻이 같은 대체어가 없는 말」 예외 신설 · 대체어를 먼저 정하고 원어와 같은 것을 가리키는지 확인한 뒤에 지적</td>
-      </tr>
-      <tr>
-        <td>「라인으로 포지셔닝」</td><td>「제품군으로 자리매김」</td>
-        <td>업계에서 많이 쓰는 말</td>
-        <td>「업계에 굳은 외래어」 예외 신설 · 판정 기준은 사전 등재가 아니라 그 문서의 독자가 그 말로 소통하는지</td>
-      </tr>
-      <tr>
-        <td>「플랫폼 기능 고도화 발표」</td><td>「플랫폼 기능을 확장한다고 발표」</td>
-        <td>발표 자료에서는 적절 · 문장으로 쓸 때만 고칠 것</td>
-        <td>문서 종류로 갈라 적용</td>
-      </tr>
-      <tr>
-        <td>「~에 있어」 8건</td><td>결정 규칙으로 전수 지적</td>
-        <td>8건 <b>전부</b> 정당한 쓰임</td>
-        <td>결정 규칙에서 뺌 · 판단 층 소관으로 옮김</td>
-      </tr>
-      <tr>
-        <td>「최초 실행 보고서로 재평가 대상 항목 없음」</td><td>「최초 보고서 · 재평가 대상 없음」</td>
-        <td>줄이면 맥락이 완전히 남지 않음 · 애매함</td>
-        <td>보류 — 확정 규칙에 넣지 않음</td>
-      </tr>
+      <tr><td>「에이전틱」</td><td>「자율 수행」</td><td>두 말이 가리키는 범위가 다름</td>
+        <td>「뜻이 같은 대체어가 없는 말」 예외 신설 · 대체어를 먼저 정하고 원어와 같은 것을 가리키는지 확인한 뒤에 지적</td></tr>
+      <tr><td>「라인으로 포지셔닝」</td><td>「제품군으로 자리매김」</td><td>업계에서 많이 쓰는 말</td>
+        <td>「업계에 굳은 외래어」 예외 신설 · 판정 기준은 사전 등재가 아니라 그 문서의 독자가 그 말로 소통하는지</td></tr>
+      <tr><td>「플랫폼 기능 고도화 발표」</td><td>「플랫폼 기능을 확장한다고 발표」</td><td>발표 자료에서는 적절 · 문장으로 쓸 때만 고칠 것</td>
+        <td>문서 종류로 갈라 적용</td></tr>
+      <tr><td>「~에 있어」 8건</td><td>결정 규칙으로 전수 지적</td><td>8건 <b>전부</b> 정당한 쓰임</td>
+        <td>결정 규칙에서 뺌 · 판단 층 소관으로 옮김</td></tr>
+      <tr><td>모임 뜻 「자리」</td><td>예외로 두어 통과</td><td>회의·세미나로 쓰는 편이 나음</td>
+        <td>예외에서 어간 10개 삭제 · 그 예외가 은유 7건까지 통과시키고 있었음</td></tr>
+      <tr><td>「최초 실행 보고서로 재평가 대상 항목 없음」</td><td>「최초 보고서 · 재평가 대상 없음」</td><td>줄이면 맥락이 완전히 남지 않음 · 애매함</td>
+        <td>보류 — 확정 규칙에 넣지 않음</td></tr>
     </tbody>
   </table>
   </div>
   <p class="note"><b>애매한 것을 다루는 세 갈래</b> — 아무도 안 거르는 자동 보고는 <b>침묵</b>이 맞고, 사람이 읽는 검사는 지적을 지우지 말고 <b>오류에서 주의로</b> 내리며, 넓은 문맥이 필요한 것은 <b>판단 층으로 옮긴다</b>. 옮길 곳을 안 적으면 그 순간부터 놓치는 것이 된다.</p>
-</section>
+</div></div>
 
-<!-- ═══ 참고 자료 ═══ -->
-<section id="src">
+<!-- ═══ 07 참고한 자료 ═══ -->
+<div class="band paper"><div class="in" id="src">
+  <p class="snum">07</p>
   <h2>참고한 자료</h2>
-  <p class="sub">규칙의 출처와 실측에 쓴 문서 뭉치. 외부 저장소는 확인한 커밋과 라이선스를 함께 적었고, 가져오지 않은 원칙도 남겼다.</p>
+  <p class="sub">규칙의 출처와 실측에 쓴 문서 뭉치. 외부 저장소는 확인한 커밋과 라이선스를 함께 적었고, <b>가져오지 않은 원칙도 근거와 함께</b> 남겼다.</p>
   <dl class="src">
     <dt>글쓰기 원칙</dt>
     <dd>유시민 「유시민의 글쓰기 특강」 4장 「못난 글을 피하는 법」·5장 「압축 기술」 요약 자료 —
         군더더기 판정(지워 보고 뜻이 통하면 군더더기) · 단문 우선 · 같은 말 두 번 하지 않기 ·
         어려운 말 안 쓰기 · 다 쓴 뒤 소리 내어 읽기</dd>
-
     <dt>외부 저장소 ①</dt>
     <dd><b>korean-report-skills</b> · Apache-2.0 · 커밋 <span class="m">d35f47e1</span> · 2026-08-24 확인<br>
         <b>가져온 것</b> — 동사 하나를 금지하지 않고 주어와 술어의 결합을 봄 · 실제 식별자와 일반 설명을 구분<br>
         <b>안 가져온 것</b> — 격식 어미 일괄 치환(마크다운 30개 실측에서 16건 · 자연스러움 개선 근거 없음) ·
         「엔드포인트」를 영문으로 되돌리기(3건 모두 API 식별자가 아닌 일반 명사) · 엠대시 전역 억제</dd>
-
     <dt>외부 저장소 ②</dt>
     <dd><b>fluent-korean</b> · MIT · 커밋 <span class="m">ce8683f0</span> · 2026-08-24 확인<br>
         <b>가져온 것</b> — 생략된 문장 성분 복원 · 분야에서 굳지 않은 비유를 실제 행위로<br>
         <b>안 가져온 것</b> — 모든 본문의 완전한 문장화(제목·목록·값 칸과 충돌)</dd>
-
     <dt>사내 스킬</dt>
     <dd><b>humanize-korean</b> — 내용·수치·인용·장르를 보존하고 번역투·영어 과다·기계적 병렬·균일한 리듬을 문맥으로 판단</dd>
-
     <dt>사용자 확정 교정</dt>
     <dd>확정 규칙 <b>8</b>건(적용 조건 포함) · 대표 수정 표 <b>14</b>행 · 사람 판정 <b>42</b>건 ·
         판정 내역은 확정 16 · 수정 13 · 오탐 3 · 통과 1 · 보류 1, 별도 낱말 판정 8건(오탐 1 · 보류 1 · 미탐 6)</dd>
-
     <dt>실문서 뭉치</dt>
     <dd><b>규칙 출처 1,713건</b> — 플러그인 규칙 1,023 · 스킬 375 · 프로젝트 메모리 280 · 그 밖 35<br>
-        <b>검사 대상 603건</b> — 사내 분석·진행 보고(위 표의 왼쪽 수치)<br>
-        <b>규칙·기록 1,948건</b> — 작업 규칙과 진행 기록(위 표의 오른쪽 수치)<br>
+        <b>검사 대상 603건</b> — 사내 분석·진행 보고<br>
+        <b>규칙·기록 1,948건</b> — 작업 규칙과 진행 기록<br>
         <b>낱말 재측정 1,161건</b> — 판·창·결·값·축·층 여섯을 따로 셈<br>
         <b>비유 재점검 445건</b> — 「자리」의 은유 용언 목록 확정</dd>
-
     <dt>회귀 시험</dt>
-    <dd>시험 <b>277</b>건 · 하위 단언 <b>726</b>개 · 시료 파일 <b>68</b>건(양성·정상·경계) ·
+    <dd>시험 <b>284</b>건 · 하위 단언 <b>772</b>개 · 시료 파일 <b>68</b>건(양성·정상·경계) ·
         규칙을 일부러 망가뜨려 잡히는지 보는 확인 <b>86</b>회 전부 잡힘</dd>
   </dl>
-</section>
+</div></div>
 
-<!-- ═══ 쓰는 법 ═══ -->
-<section id="run">
+<!-- ═══ 08 쓰는 법 ═══ -->
+<div class="band"><div class="in" id="run">
+  <p class="snum">08</p>
   <h2>쓰는 법</h2>
-  <p class="sub">따로 부르지 않아도 문서를 저장·발행할 때 돈다. 지적만 보여 주고 저장과 발행은 막지 않는다.</p>
+  <p class="sub">따로 부르지 않아도 문서를 저장·발행할 때 돈다. <b>지적만 보여 주고 저장과 발행은 막지 않는다.</b></p>
+  <code class="cmd">python ~/.claude/assets/doc-style-check.py &lt;파일 또는 폴더&gt;</code>
   <dl class="src">
     <dt>자동</dt>
     <dd>Claude Code와 Codex가 한글 문서를 쓰거나 고칠 때 같은 훅이 걸림 · 규칙은 한 곳에만 둠</dd>
-    <dt>손으로</dt>
-    <dd><code>python ~/.claude/assets/doc-style-check.py &lt;파일 또는 폴더&gt;</code><br>
-        <span class="m">--form prose</span> 산문형으로 검사 · <span class="m">-v</span> 주의 전부 보기 · <span class="m">--html-only</span> HTML만</dd>
+    <dt>손으로 쓰는 선택지</dt>
+    <dd><span class="m">--form prose</span> 산문형으로 검사 · <span class="m">-v</span> 주의 전부 보기 ·
+        <span class="m">--html-only</span> HTML만 · 모르는 플래그는 조용히 무시하지 않고 멈춤</dd>
     <dt>파일 형식</dt>
     <dd>마크다운 · HTML · 텍스트 · JSON · JSONL · YAML · properties ·
         Word와 PowerPoint는 표시 문구를 뽑아 검사 · <span class="m">\uXXXX</span> 로 적힌 한글도 풀어서 봄</dd>
     <dt>날마다</dt>
-    <dd>하루 첫 세션에 회귀 시험 277건 · 통과하면 아무 말도 안 함</dd>
+    <dd>하루 첫 세션에 회귀 시험 284건 · 통과하면 아무 말도 안 함</dd>
     <dt>판정 세 단계</dt>
     <dd><b>오류</b> 확실한 위반 · <b>주의</b> 사람이 봐야 함 · <b>검사 불가</b> 값 슬롯을 못 찾음 —
         마지막은 합격이 아니라 <b>안 본 것</b></dd>
   </dl>
-</section>
+</div></div>
 
-<footer>
-  실측 2026-09-04 · 검사기 <code>doc-style-check.py</code> · 사례는 모두 실제 문서와 사람이 확정한 교정에서 가져왔다.
-</footer>
+<footer><div class="in">
+  <span>실측 2026-09-04</span>
+  <span>검사기 <code>doc-style-check.py</code></span>
+  <span>사례는 모두 실제 문서와 사람이 확정한 교정에서 가져왔다.</span>
+  <span>이 페이지도 같은 검사기를 통과했다 — 오류 0.</span>
+</div></footer>
 
-</div>
+<script>
+(function () {
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // 첫 화면 시연 — 네 쌍을 돌린다. 내용은 정적 HTML 이고 보이기만 바꾼다.
+  var slides = document.querySelectorAll('#slides .slide');
+  var dots = document.querySelectorAll('#dots i');
+  var at = 0, timer = null;
+  function show(n) {
+    slides[at].classList.remove('on');
+    dots[at].classList.remove('on');
+    at = n % slides.length;
+    slides[at].classList.add('on');
+    dots[at].classList.add('on');
+  }
+  function play() { timer = setInterval(function () { show(at + 1); }, 4200); }
+  function stop() { clearInterval(timer); timer = null; }
+  if (slides.length > 1 && !reduce) {
+    play();
+    var demo = document.querySelector('.demo');
+    demo.addEventListener('mouseenter', stop);
+    demo.addEventListener('mouseleave', function () { if (!timer) play(); });
+    Array.prototype.forEach.call(dots, function (d, i) {
+      d.addEventListener('click', function () { stop(); show(i); play(); });
+    });
+  }
+
+  // 스크롤 등장 · 수치 세기 · 막대 채우기
+  function countUp(el) {
+    var to = parseInt(el.getAttribute('data-to'), 10);
+    if (!to) { return; }
+    if (reduce) { el.textContent = to.toLocaleString(); return; }
+    var start = null, dur = 900;
+    function step(ts) {
+      if (!start) { start = ts; }
+      var p = Math.min((ts - start) / dur, 1);
+      var eased = 1 - Math.pow(1 - p, 3);
+      el.textContent = Math.round(to * eased).toLocaleString();
+      if (p < 1) { requestAnimationFrame(step); }
+    }
+    requestAnimationFrame(step);
+  }
+  var targets = document.querySelectorAll('.reveal, .rank');
+  if (!('IntersectionObserver' in window)) {
+    Array.prototype.forEach.call(targets, function (n) { n.classList.add('seen'); });
+    Array.prototype.forEach.call(document.querySelectorAll('[data-to]'), countUp);
+    return;
+  }
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      if (!e.isIntersecting) { return; }
+      e.target.classList.add('seen');
+      Array.prototype.forEach.call(e.target.querySelectorAll('[data-to]'), countUp);
+      io.unobserve(e.target);
+    });
+  }, { rootMargin: '0px 0px -12% 0px', threshold: 0.12 });
+  Array.prototype.forEach.call(targets, function (n) { io.observe(n); });
+})();
+</script>
 </body>
 </html>
