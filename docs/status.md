@@ -136,7 +136,7 @@ form: structured
 | 되먹임 | 오탐을 규칙 예외로 기록 | `record_feedback.py --user-verdict false_positive` |
 | 되먹임 확인 | 적은 예외가 판단 층 행동을 바꾸나 | `scripts/probe_layer2_exemption.py` · 규칙 바뀔 때 1회 |
 | 연쇄 확인 | 처방이 새 지적을 만드는지 | `scripts/check_fix_cascade.py` |
-| **덮개 계기판** | 쓴 문서 중 검사 범위에 든 비율 | `scripts/measure_gate_coverage.py` |
+| **덮개 계기판** | 쓴 문서 중 검사 범위에 든 비율 · 실측 `runs/eval-008` | `scripts/measure_gate_coverage.py` |
 | **일일 건강 검진** | 하루 첫 세션에 회귀 · 초록이면 침묵 | `~/.claude/hooks/korean-gate-daily-check.py` |
 
 ## 안전장치
