@@ -31,7 +31,17 @@ form: structured
 }
 ```
 
-- **영문판 없음** — 다른 도구는 ko·en 짝이 있는데 이 페이지는 한국어 검사기라 영문판이 뜻을 잃는다. `group` 짝이 하나뿐이어도 빌드는 돈다(`hreflang` 이 자기 자신만 가리킴).
+- **★ `build.mjs` 의 `ABOUT` 표에 항목을 더해야 함** — `dispatch`·`mycelium` 처럼 `vermilion` 한 줄. 없으면 구조화 자료의 갈래와 breadcrumb 이 비어 나간다.
+
+```js
+vermilion: {
+  type: 'SoftwareApplication', name: 'Vermilion',
+  category: 'BusinessApplication',
+  crumb: { ko: 'Vermilion', en: 'Vermilion' },
+},
+```
+
+- **`group` 을 적으면 공개 대상이 됨** — 빌드가 `group` 있는 페이지만 sitemap 에 싣는다. 안 적으면 `noindex` 가 붙고 검색에서 빠진다. 번역 짝을 맺는 값이 아니라 **발행 여부를 정하는 값**이다.
 - **`build` 필요 없음** — 사례집은 정적 파일이다.
 
 ## 2. `work-assistant/docs/home.html` 에 넣을 카드
