@@ -15,7 +15,7 @@
 
 **상태 둘.**
 
-| 상태 | 뜻 | 시험에서 |
+| 상태 | 뜻 | 시험 처리 |
 |---|---|---|
 | `open` | 접수했고 아직 규칙이 없음 | 실패가 예정된 것으로 처리 · 통과하면 오히려 알림 |
 | `pinned` | 규칙이 들어가 실제로 잡힘 | 깨지면 실패 |
@@ -28,7 +28,6 @@
 from __future__ import annotations
 
 import argparse
-import io
 import json
 import subprocess
 import sys
@@ -36,6 +35,9 @@ import tempfile
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+# Windows 기본 인코딩(CP949)으로 나가면 한글이 깨진다. 검사기와 같은 처리를 한다.
+sys.stdout.reconfigure(encoding='utf-8')
 
 import repo_paths  # noqa: E402
 

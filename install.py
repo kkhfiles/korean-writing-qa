@@ -24,6 +24,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+# Windows 기본 인코딩(CP949)으로 나가면 한글이 깨진다. 검사기와 같은 처리를 한다.
+sys.stdout.reconfigure(encoding='utf-8')
+
 import repo_paths  # noqa: E402
 
 HOOK_FILES = ["doc-style-gate.py", "block-backslash-in-shell.py", "korean-gate-daily-check.py"]
