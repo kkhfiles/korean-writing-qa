@@ -405,7 +405,8 @@ def scan_html(path, relaxed=False, form=None, rules=None):
             # 「굵은 결론 — 근거 문장」이면 결론만 본다(규칙 §1).
             # **목록 항목에만** 적용한다 — 표 칸(td)·값 칸(dd)은 그 자체가 값 슬롯이라 예외가 없다
             if tag == 'li':
-                m = re.match(r'\s*<(b|strong)[^>]*>(.*?)</\1>(.*)$', x.strip(), re.S)
+                # 줄머리 기호(⚠️ ★ 📌 …)를 떼고 굵은 머리를 찾는다 — 문단 경로와 같다.
+                m = re.match(r'\s*<(b|strong)[^>]*>(.*?)</\1>(.*)$', LEAD_MARK.sub('', x.strip()), re.S)
                 if m and EVIDENCE_END.search(strip(m.group(3))):
                     t = strip(m.group(2))
             # 값 하나에 문장이 둘이면 끝 문장만 봐서는 앞 문장을 놓친다.
@@ -508,7 +509,15 @@ def scan_html(path, relaxed=False, form=None, rules=None):
         if not t or is_example(t):
             continue
         # 「굵은 결론 — 근거 문장」이면 결론만 본다(규칙 §1) — 목록 항목과 같은 처리다.
-        m = re.match(r'\s*<(b|strong)[^>]*>(.*?)</\1>(.*)$', p.strip(), re.S)
+        #
+        #   ⛔ 2026-09-08 이전에는 `<b>` 로 **시작할 때만** 이 예외를 줬다. 그래서
+        #      「⚠️ **결론** — 근거 문장.」처럼 줄머리 기호가 앞에 붙으면 예외를 못 받고
+        #      근거 문장이 통째로 오류가 됐다. 마크다운 경로는 진작 `LEAD_MARK` 로
+        #      기호를 떼고 굵은 머리를 찾는데(§split_value) **여기만 안 뗐다** —
+        #      같은 문장을 두 형식에 넣어 재면 마크다운 0 · HTML 1 로 갈렸다(실측).
+        #      기호를 떼도 굵은 머리 자체는 그대로 `is_narrative` 로 본다 — 결론이
+        #      서술형이면 여전히 걸린다. 예외가 넓어지는 것은 **근거 문장 쪽뿐**이다.
+        m = re.match(r'\s*<(b|strong)[^>]*>(.*?)</\1>(.*)$', LEAD_MARK.sub('', p.strip()), re.S)
         if m and EVIDENCE_END.search(strip(m.group(3))):
             t = strip(m.group(2))
         for sent in sentences(t):
