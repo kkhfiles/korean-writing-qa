@@ -18,6 +18,13 @@ import importlib.util
 import unittest
 from pathlib import Path
 
+import sys
+from pathlib import Path as _Path
+
+sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))
+
+import repo_paths  # noqa: E402
+
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = REPO_ROOT / "scripts" / "measure_layer2_uptake.py"
 
@@ -41,7 +48,7 @@ class MarkerTests(unittest.TestCase):
 
     def test_the_marker_matches_what_the_hook_actually_prints(self) -> None:
         """훅 문구를 고치면 측정기가 조용히 0을 내기 시작한다."""
-        hook = Path.home() / ".claude" / "hooks" / "doc-style-gate.py"
+        hook = repo_paths.hook("doc-style-gate.py")
         if not hook.is_file():
             self.skipTest(f"훅이 없습니다: {hook}")
 
@@ -64,7 +71,7 @@ class PublishDefinitionTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         cls.mod = load()
-        hook = Path.home() / ".claude" / "hooks" / "doc-style-gate.py"
+        hook = repo_paths.hook("doc-style-gate.py")
         if not hook.is_file():
             raise unittest.SkipTest(f"훅이 없습니다: {hook}")
         cls.hook = cls.mod.load_hook()

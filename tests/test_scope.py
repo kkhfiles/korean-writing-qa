@@ -20,10 +20,17 @@ import tempfile
 import unittest
 from pathlib import Path
 
+import sys
+from pathlib import Path as _Path
+
+sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))
+
+import repo_paths  # noqa: E402
+
 REPO_ROOT = Path(__file__).resolve().parents[1]
 STATUS = REPO_ROOT / "docs" / "status.md"
 DECISIONS = REPO_ROOT / "docs" / "decisions-pending.md"
-CHECKER = Path.home() / ".claude" / "assets" / "doc-style-check.py"
+CHECKER = repo_paths.CHECKER
 
 
 def load_checker():

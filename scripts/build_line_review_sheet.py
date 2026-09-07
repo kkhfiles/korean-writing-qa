@@ -34,8 +34,10 @@ sys.path.insert(0, str(REPO_ROOT))
 
 from scripts import skill_bridge                                    # noqa: E402
 
+import repo_paths
+
 SOURCE_DIR = REPO_ROOT / "data" / "raw" / "diagnostic-002"
-GLOBAL_CHECKER = Path.home() / ".claude" / "assets" / "doc-style-check.py"
+GLOBAL_CHECKER = repo_paths.CHECKER
 LABELS = REPO_ROOT / "data" / "annotations" / "diagnostic-002-review.jsonl"
 LAYER2 = REPO_ROOT / "runs" / "eval-003" / "llm-findings.jsonl"
 LINE_PREFIX = re.compile(r"^(\d+)행")

@@ -23,8 +23,15 @@ import unittest
 from datetime import datetime, timedelta
 from pathlib import Path
 
-CHECK = Path.home() / ".claude" / "hooks" / "korean-gate-daily-check.py"
-SETTINGS = Path.home() / ".claude" / "settings.json"
+import sys
+from pathlib import Path as _Path
+
+sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))
+
+import repo_paths  # noqa: E402
+
+CHECK = repo_paths.hook("korean-gate-daily-check.py")
+SETTINGS = repo_paths.installed("settings.json")
 
 
 def load_check():

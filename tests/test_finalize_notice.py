@@ -30,8 +30,15 @@ import unittest
 import uuid
 from pathlib import Path
 
+import sys
+from pathlib import Path as _Path
+
+sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))
+
+import repo_paths  # noqa: E402
+
 REPO_ROOT = Path(__file__).resolve().parents[1]
-HOOK = Path.home() / ".claude" / "hooks" / "doc-style-gate.py"
+HOOK = repo_paths.hook("doc-style-gate.py")
 SANDBOX = REPO_ROOT / ".hook-sandbox"        # 훅이 건너뛰지 않는 경로
 
 CLEAN = """---
@@ -71,7 +78,7 @@ class FinalizeNoticeTests(unittest.TestCase):
         # 검사기와 스킬까지 갖춘 가짜 HOME 을 한 번만 만든다 — 없으면 훅이
         # 「검사기 없음」만 내고, 그러면 시험이 아무것도 안 지킨다
         cls.home = Path(tempfile.mkdtemp())
-        real = Path.home() / ".claude"
+        real = repo_paths.INSTALLED
         fake = cls.home / ".claude"
         (fake / "hooks").mkdir(parents=True)
         (fake / "assets").mkdir(parents=True)
@@ -212,7 +219,7 @@ class FinalizeNoticeTests(unittest.TestCase):
 
     def test_the_test_does_not_touch_the_shared_state(self) -> None:
         """공용 파일을 쓰면 다음 실행이 깨지고 사람이 쓰는 훅까지 더럽힌다."""
-        shared = Path.home() / ".claude" / "state" / "doc-style-seen.json"
+        shared = repo_paths.installed("state", "doc-style-seen.json")
         before = shared.read_text(encoding="utf-8") if shared.is_file() else ""
 
         self.call(self.publish(self.document("clean.md"), "s9"))

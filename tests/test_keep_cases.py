@@ -20,7 +20,14 @@ import tempfile
 import unittest
 from pathlib import Path
 
-SKILL = Path.home() / ".claude" / "skills" / "finalize-korean-document"
+import sys
+from pathlib import Path as _Path
+
+sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))
+
+import repo_paths  # noqa: E402
+
+SKILL = repo_paths.SKILL
 CASES = SKILL / "references" / "context-cases.jsonl"
 SELF_TEST = SKILL / "scripts" / "self_test.py"
 

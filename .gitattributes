@@ -1,0 +1,9 @@
+# 줄바꿈은 어느 기계에서든 LF 로 둔다.
+#
+# 정본을 이 저장소로 옮기면서 파일이 바이트까지 같아야 하는 곳이 셋 생겼다 —
+# 저장소 · ~/.claude 설치본 · 설정 백업 저장소. Windows 에서 CRLF 로 체크아웃되면
+# 해시가 갈라져 install.py --check 와 대조 시험이 매번 「다름」을 낸다.
+* text=auto eol=lf
+
+# 폰트를 심은 사례집은 이진 취급 — diff 로 열면 562KB base64 가 쏟아진다.
+docs/showcase.html -diff

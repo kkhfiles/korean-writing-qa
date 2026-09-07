@@ -29,9 +29,11 @@ import re
 import sys
 from pathlib import Path
 
+import repo_paths
+
 REPO_ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_SKILL_ROOT = Path.home() / ".claude" / "skills" / "finalize-korean-document"
-DEFAULT_GLOBAL_CHECKER = Path.home() / ".claude" / "assets" / "doc-style-check.py"
+DEFAULT_SKILL_ROOT = repo_paths.SKILL
+DEFAULT_GLOBAL_CHECKER = repo_paths.CHECKER
 REVIEW_LABELS = REPO_ROOT / "data" / "annotations" / "diagnostic-002-review.jsonl"
 PATH_ALLOW = REPO_ROOT / "runs" / "diagnostic-002" / "path-term-candidates.jsonl"
 SOURCE_DIR = REPO_ROOT / "data" / "raw" / "diagnostic-002"

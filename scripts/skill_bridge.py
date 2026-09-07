@@ -19,8 +19,15 @@ import sys
 from pathlib import Path
 from types import ModuleType
 
+import sys as _sys
+from pathlib import Path as _Path
+
+_sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))
+
+import repo_paths  # noqa: E402
+
 ENV_HOME = "KOREAN_WRITING_SKILL_HOME"
-DEFAULT_HOME = Path.home() / ".claude" / "skills" / "finalize-korean-document"
+DEFAULT_HOME = repo_paths.SKILL
 _loaded: dict[str, ModuleType] = {}
 
 

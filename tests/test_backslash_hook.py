@@ -16,7 +16,14 @@ import sys
 import unittest
 from pathlib import Path
 
-HOOK = Path.home() / ".claude" / "hooks" / "block-backslash-in-shell.py"
+import sys
+from pathlib import Path as _Path
+
+sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))
+
+import repo_paths  # noqa: E402
+
+HOOK = repo_paths.hook("block-backslash-in-shell.py")
 BS = chr(92)
 
 
