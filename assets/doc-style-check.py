@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 """문서 서술 규칙 검사기 — 글로벌 CLAUDE.md 「문서 서술 규칙」이 실제로 지켜지는지 센다.
 
-    python ~/.claude/assets/doc-style-check.py <파일…|디렉터리> [--relaxed] [--html-only] [-v]
+    python assets/doc-style-check.py <파일…|디렉터리> [--relaxed] [--html-only] [-v]
+                                     [--form structured|prose]
+                                     [--rules <파일>] [--no-rules] [--list-rules]
 
 대상: .md · .html — 디렉터리를 주면 둘 다 본다(`--html-only` 로 html만).
 판정 3단계
@@ -9,6 +11,11 @@
     ⚠️ 주의       사람이 봐야 한다
     ⛔ 검사 불가   값 슬롯을 못 찾았다 — 합격이 아니라 **안 본 것**이다
 `--relaxed`: 머리 없는 설명 문장을 주의로 낮춘다(작업 문서용). 공유 자료엔 쓰지 않는다.
+
+갈래 고르기: 조직마다 문서 관행이 다르다. `korean-qa.toml` 로 갈래를 끄거나 severity 를
+      바꾼다(`--list-rules` 로 이름 확인). **끈 것은 출력 맨 위와 합계에 적힌다** —
+      안 보이면 「오류 0」이 통과인지 안 본 것인지 갈리지 않는다.
+      발행 게이트는 `--no-rules` 로 설정을 무시하고 전부 본다.
 
 원칙: 판단이 불가능하면 침묵한다. 오탐이 섞이면 아무도 안 본다.
       그래서 확실한 것만 「오류」로, 사람이 봐야 하는 것만 「주의」로 낸다.
@@ -349,7 +356,7 @@ def split_value(c):
 
 
 # ── HTML ─────────────────────────────────────────────────────────────────────
-def scan_html(path, relaxed=False, form=None):
+def scan_html(path, relaxed=False, form=None, rules=None):
     raw = io.open(path, encoding='utf-8').read()
     # base64 등 초장문 줄 제외 → 그 안의 우연한 일치를 오탐으로 세지 않는다
     body = '\n'.join(l for l in raw.split('\n') if len(l) < 800)
@@ -550,6 +557,7 @@ def scan_html(path, relaxed=False, form=None):
     # 기억해야 하는 구조는 실패한다 — `<meta name="form" content="prose">` 로 파일이
     # 자기 형식을 들고 있게 한다. 플래그가 오면 그쪽이 이긴다(그 자리에서 뒤집어 봄).
     err, warn = apply_form(err, warn, form or declared_form(raw))
+    err, warn = apply_selection(err, warn, rules) if rules else (err, warn)
     return err, warn, slots
 
 
@@ -621,6 +629,141 @@ def apply_form(err, warn, form):
         return err, warn
     keep = lambda items: [(k, m) for k, m in items if k not in FORM_ONLY_STRUCTURED]
     return keep(err), keep(warn)
+
+
+# ── 갈래 고르기 ───────────────────────────────────────────────────────────────
+# 문서 관행은 조직마다 다르다. 표 머리 「비고」는 공문서 표준 관례이고, 발표 대본은
+# 산문이 정상이다. 남이 이 검사기를 받아 쓰려면 갈래를 끄고 낮출 길이 있어야 한다.
+#
+# ⛔ **끈 것은 반드시 출력에 적는다.** 조용히 끄면 「오류 0」이 무엇을 뜻하는지 알 수
+#    없어진다. 이 검사기가 자기에게서 배운 「검사 불가는 합격이 아니라 안 본 것」이
+#    설정에도 그대로 걸린다 — 껐다는 사실이 안 보이면 안 본 것과 구별이 안 된다.
+#
+# 갈래 이름은 지적에 찍히는 이름 그대로다. `--list-rules` 로 전부 볼 수 있다.
+RULE_GROUPS = {
+    '문장': ('한국어 문장 자체가 어긋난 갈래', [
+        '서술형 종결', '서술형 문단', '절단형 종결', '절단형 의심',
+        '결론 라벨 없는 설명',
+    ]),
+    '낱말': ('낱말 선택 — 지어낸 말과 뜻이 흐려지는 말', [
+        '「~하는 자리」', '「~하는 자리」 의심', '지어낸 명사구', '평가 수식어',
+        '모호한 지칭', '지시어 확인', '「회기」',
+    ]),
+    '번역투': ('번역에서 옮아온 문형', [
+        '이중 피동', '번역투 이중 조사', '번역투 그녀',
+    ]),
+    '구조': ('찾아 읽기가 안 되는 갈래 — 문장은 멀쩡하다', [
+        '제목 서술형', '제목 명사형 위반', '제목 형태 확인',
+        '진입점 없음', '진입점 서술형', '진입점 명사형 위반', '진입점 형태 확인',
+        '스캔 가치 없는 라벨', '반복 블록 라벨 불일치', '해설을 인용으로',
+    ]),
+    '안내': ('지적이 아니라 물음 — 형식을 안 적은 문서에 한 줄', [
+        '형식 미표기',
+    ]),
+}
+ALL_KINDS = {k: g for g, (_, kinds) in RULE_GROUPS.items() for k in kinds}
+RULES_FILENAME = 'korean-qa.toml'
+
+
+class Selection:
+    """어느 갈래를 볼 것인가. `source` 가 None 이면 전부 본다."""
+
+    def __init__(self, off=(), warn=(), err=(), source=None):
+        self.off, self.warn, self.err = set(off), set(warn), set(err)
+        self.source = source
+
+    def __bool__(self):
+        return bool(self.off or self.warn or self.err)
+
+    def summary(self):
+        bits = []
+        if self.off:
+            bits.append(f'끔 {len(self.off)}종')
+        if self.warn:
+            bits.append(f'주의로 낮춤 {len(self.warn)}종')
+        if self.err:
+            bits.append(f'오류로 올림 {len(self.err)}종')
+        return ' · '.join(bits)
+
+
+def _expand(names, where):
+    """묶음 이름을 갈래로 편다. 모르는 이름은 오타이므로 멈춘다."""
+    out, unknown = set(), []
+    for name in names:
+        if name in RULE_GROUPS:
+            out |= set(RULE_GROUPS[name][1])
+        elif name in ALL_KINDS:
+            out.add(name)
+        else:
+            unknown.append(name)
+    if unknown:
+        raise ValueError(f'{where} 에 모르는 이름: {" · ".join(unknown)}')
+    return out
+
+
+def load_rules(path):
+    """설정 파일 하나를 읽어 Selection 을 낸다."""
+    import tomllib
+    data = tomllib.loads(io.open(path, encoding='utf-8').read())
+    rules = data.get('rules', {})
+    return Selection(
+        off=_expand(rules.get('off', []), f'{path} 의 off'),
+        warn=_expand(rules.get('warn', []), f'{path} 의 warn'),
+        err=_expand(rules.get('err', []), f'{path} 의 err'),
+        source=path,
+    )
+
+
+def find_rules(targets):
+    """대상 경로에서 위로 올라가며 설정 파일을 찾는다. 없으면 None."""
+    starts = []
+    for t in targets:
+        p = os.path.abspath(t)
+        starts.append(p if os.path.isdir(p) else os.path.dirname(p))
+    starts.append(os.getcwd())
+    seen = set()
+    for start in starts:
+        cur = start
+        while True:
+            if cur in seen:
+                break
+            seen.add(cur)
+            candidate = os.path.join(cur, RULES_FILENAME)
+            if os.path.isfile(candidate):
+                return candidate
+            parent = os.path.dirname(cur)
+            if parent == cur:
+                break
+            cur = parent
+    return None
+
+
+def apply_selection(err, warn, sel):
+    """끄고 · 낮추고 · 올린다. 순서는 끄기가 먼저다."""
+    if not sel:
+        return err, warn
+    err = [i for i in err if i[0] not in sel.off]
+    warn = [i for i in warn if i[0] not in sel.off]
+    demoted = [i for i in err if i[0] in sel.warn]
+    err = [i for i in err if i[0] not in sel.warn]
+    promoted = [i for i in warn if i[0] in sel.err]
+    warn = [i for i in warn if i[0] not in sel.err]
+    return err + promoted, warn + demoted
+
+
+def list_rules():
+    """갈래 목록을 낸다 — 설정 파일에 적을 이름이 이것이다."""
+    print(f'설정 파일 이름: {RULES_FILENAME} (검사 대상에서 위로 올라가며 찾는다)\n')
+    for group, (why, kinds) in RULE_GROUPS.items():
+        print(f'[{group}] {why}')
+        for k in kinds:
+            print(f'    {k}')
+        print()
+    print('보기 — 표 머리 「비고」를 쓰는 조직, 제목 형식은 자유로 두는 조직\n')
+    print('    [rules]')
+    print('    off  = ["스캔 가치 없는 라벨", "구조"]')
+    print('    warn = ["절단형 의심"]')
+    print('\n묶음 이름을 적으면 그 묶음의 갈래가 모두 걸린다.')
 
 
 def md_body(raw):
@@ -698,7 +841,7 @@ def md_blocks(body):
     return blocks
 
 
-def scan_md(path, relaxed=False, form=None):
+def scan_md(path, relaxed=False, form=None, rules=None):
     raw = io.open(path, encoding='utf-8').read()
     body = merge_wrapped(md_body(raw))
     err, warn = [], []
@@ -945,27 +1088,36 @@ def scan_md(path, relaxed=False, form=None):
             '개조식 검사를 빼고 본다. 개조식이 맞다면 `form: structured`',
         ))
     err, warn = apply_form(err, warn, resolved)
+    err, warn = apply_selection(err, warn, rules) if rules else (err, warn)
     return err, warn, slots
 
 
 def main():
     argv = sys.argv[1:]
-    form, taken = None, set()
+    if '--list-rules' in argv:
+        list_rules(); return 0
+    form, rules_path, taken = None, None, set()
     for i, a in enumerate(argv):
         if a == '--form' and i + 1 < len(argv):
             form = argv[i + 1].lower()
-            taken.add(i + 1)          # 값이 파일 이름으로 새지 않게 자리로 뺀다
+            taken.add(i + 1)          # 값이 파일 이름으로 새지 않게 뒤로 뺀다
         elif a.startswith('--form='):
             form = a.split('=', 1)[1].lower()
+        elif a == '--rules' and i + 1 < len(argv):
+            rules_path = argv[i + 1]
+            taken.add(i + 1)
+        elif a.startswith('--rules='):
+            rules_path = a.split('=', 1)[1]
     if form is not None and form not in FORM_VALUES:
         print(f'--form 은 {" 또는 ".join(FORM_VALUES)} 만 받는다'); return 1
     # **모르는 플래그는 멈춘다.** 조용히 무시하면 `--relaxd` 처럼 한 글자 틀렸을 때
     # **끄려던 검사가 안 꺼진 채 통과로 읽힌다** — 사람은 껐다고 알고 있다.
-    known = {'--html-only', '--relaxed', '-v', '--form'}
+    known = {'--html-only', '--relaxed', '-v', '--form',
+             '--rules', '--no-rules', '--list-rules'}
     for i, a in enumerate(argv):
         if not a.startswith('-') or i in taken:
             continue
-        if a in known or a.startswith('--form='):
+        if a in known or a.startswith('--form=') or a.startswith('--rules='):
             continue
         print(f'모르는 플래그 {a} — 쓸 수 있는 것: '
               f'{" · ".join(sorted(known))} · --form <structured|prose>')
@@ -987,10 +1139,36 @@ def main():
         else:
             files.append(a)
 
+    # 갈래 설정 — 명시한 것이 먼저, 없으면 대상에서 위로 올라가며 찾는다.
+    # `--no-rules` 는 발행 게이트용이다. 설정이 무엇을 끄든 전부 보게 한다.
+    rules = None
+    if '--no-rules' not in argv:
+        found = rules_path or find_rules(args)
+        if found:
+            try:
+                rules = load_rules(found)
+            except (ValueError, OSError) as exc:
+                print(f'갈래 설정을 못 읽었다 — {exc}'); return 1
+            except ModuleNotFoundError:
+                print('갈래 설정에는 Python 3.11 이상이 필요하다(tomllib)'); return 1
+    elif rules_path:
+        print('--rules 와 --no-rules 를 같이 줄 수 없다'); return 1
+
+    # ⛔ 껐다는 사실이 안 보이면 「오류 0」이 무엇을 뜻하는지 알 수 없다.
+    if rules:
+        print(f'갈래 설정 {rules.source} — {rules.summary()}')
+        for kind in sorted(rules.off):
+            print(f'   ⊘ {kind} — 끔')
+        for kind in sorted(rules.warn):
+            print(f'   ↓ {kind} — 오류에서 주의로')
+        for kind in sorted(rules.err):
+            print(f'   ↑ {kind} — 주의에서 오류로')
+        print()
+
     total_e = total_w = total_blind = 0
     for f in sorted(files):
         scan = scan_md if f.endswith('.md') else scan_html
-        e, w, slots = scan(f, relaxed, form)
+        e, w, slots = scan(f, relaxed, form, rules)
         total_e += len(e); total_w += len(w)
         name = os.path.basename(f)
         if slots:
@@ -1017,6 +1195,9 @@ def main():
             print(f'   … 주의 {len(w)-8}건 더 (-v)')
 
     tail = f' · 검사 불가 {total_blind}' if total_blind else ''
+    # 합계만 잘라 보는 사람이 많다. 설정으로 줄어든 수라는 것을 여기서도 적는다.
+    if rules:
+        tail += f' · 갈래 설정 적용({rules.summary()})'
     print(f'\n합계 — 오류 {total_e} · 주의 {total_w}{tail}')
     return 1 if total_e else 0
 
