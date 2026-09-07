@@ -28,6 +28,11 @@ BUILDER = REPO_ROOT / "scripts" / "build_line_review_sheet.py"
 SOURCE_DIR = REPO_ROOT / "data" / "raw" / "diagnostic-002"
 SHEET_DIR = REPO_ROOT / "runs" / "eval-004"
 
+#: 건너뛸 때 쓰는 설명 — 왜 안 돌았는지 안 적으면 통과와 구별이 안 된다.
+RAW_NOTE = (
+    "진단용 원문 복사본이 없습니다 — `data/raw/**` 는 사내 문서라 Git 제외이고 작성자 기계에만 있습니다"
+)
+
 DOCUMENT = re.compile(r"^# 줄 단위 판정 — (doc-\d+)")
 SECTION = re.compile(r"^## (①|②|③)")
 CELL_SPLIT = re.compile(r"(?<!\\)\|")
@@ -157,6 +162,9 @@ class AnsweredSheetTests(SheetShapeChecks, unittest.TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
+        # 시트는 저장소에 있지만 대조할 원문은 작성자 기계에만 있다.
+        if not SOURCE_DIR.is_dir():
+            raise unittest.SkipTest(RAW_NOTE)
         paths = sorted(SHEET_DIR.glob("line-review-doc-*.md"))
         if not paths:
             raise unittest.SkipTest(f"시트가 없습니다: {SHEET_DIR}")
@@ -180,6 +188,9 @@ class FreshSheetTests(SheetShapeChecks, unittest.TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
+        # 양식을 만드는 스크립트가 원문을 읽는다.
+        if not SOURCE_DIR.is_dir():
+            raise unittest.SkipTest(RAW_NOTE)
         cls.directory = tempfile.TemporaryDirectory()
         done = subprocess.run(
             [sys.executable, "-X", "utf8", str(BUILDER), "--out-dir", cls.directory.name],
@@ -207,6 +218,12 @@ class FreshSheetTests(SheetShapeChecks, unittest.TestCase):
 
 class OverwriteGuardTests(unittest.TestCase):
     """채운 시트를 덮어쓰지 않는지 — 한 번 날린 뒤에 붙인 안전장치다."""
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        # 양식을 만드는 스크립트가 원문을 읽는다.
+        if not SOURCE_DIR.is_dir():
+            raise unittest.SkipTest(RAW_NOTE)
 
     def build(self, directory: Path, force: bool = False) -> str:
         command = [sys.executable, "-X", "utf8", str(BUILDER), "--out-dir", str(directory)]
