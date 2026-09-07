@@ -3,7 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>한글 검사 사례집</title>
+<meta name="color-scheme" content="light">
+<meta name="description" content="사람에게 나갈 한글 문서를 보내기 전에 기계가 한 번 읽는다. 사내 보고서 603개에서 지적 2,174건 · 갈래별 수정 전후 사례와 실측 근거.">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="/favicon-180.png">
+<title>보내기 전에 한 번 읽는 한글 검사기</title>
 <style>
   /* [inline-korean-font] Doc KR — Pretendard 1.3.9 의 KS X 1001 완성형 2,350자 서브셋,
      가변축 wght 45~930. CSP가 폰트 CDN을 막으므로 data URI로 심는다.
@@ -288,7 +293,7 @@ footer .in{padding:0; display:flex; gap:18px; flex-wrap:wrap; align-items:baseli
       <li><a href="#counts">갈래별 건수</a></li>
       <li><a href="#flip">사람이 뒤집은 지적</a></li>
       <li><a href="#src">참고한 자료</a></li>
-      <li><a href="#run">쓰는 법</a></li>
+      <li><a href="#run">받는 법</a></li>
     </ul>
   </div>
 </div>
@@ -924,48 +929,65 @@ footer .in{padding:0; display:flex; gap:18px; flex-wrap:wrap; align-items:baseli
   </dl>
 </div></div>
 
-<!-- ═══ 08 쓰는 법 ═══ -->
+<!-- ═══ 08 받는 법 ═══ -->
 <div class="band"><div class="in" id="run">
   <p class="snum">08</p>
-  <h2>받아 쓰는 법</h2>
-  <p class="sub">셋 중 하나를 고른다. <b>1단계면 대부분 충분하다</b> — 파일 하나에 파이썬만 있으면 되고,
+  <h2>받는 법</h2>
+  <p class="sub">전부 공개돼 있다. <b>MIT</b> 라 받아서 고쳐 쓰고 다시 나눠 줘도 된다.</p>
+
+  <code class="cmd">git clone https://github.com/kkhfiles/korean-writing-qa.git</code>
+
+  <p class="sub">깊이를 셋 중에 고른다. <b>1단계면 대부분 충분하다</b> — 파일 하나에 파이썬만 있으면 되고,
      지금까지 본 지적의 대부분을 그 파일 하나가 낸다.</p>
   <div class="scroll">
   <table>
+    <colgroup><col style="width:8%"><col style="width:34%"><col style="width:24%"><col style="width:34%"></colgroup>
     <thead><tr><th>단계</th><th>받는 것</th><th>준비</th><th>고르는 기준</th></tr></thead>
     <tbody>
-      <tr><td><b>1</b></td><td><code>doc-style-check.py</code> 파일 하나 · 57KB</td>
-        <td><b>파이썬만</b> · 설치할 라이브러리 0</td><td>대부분 1단계로 충분</td></tr>
-      <tr><td>2</td><td>스킬 폴더 · 13개 파일 · 154KB</td><td>Claude Code</td>
+      <tr><td><b>1</b></td><td><code>assets/doc-style-check.py</code> 파일 하나 · 68KB</td>
+        <td><b>파이썬 3.11 이상</b> · 설치할 라이브러리 0</td><td>대부분 1단계로 충분</td></tr>
+      <tr><td>2</td><td>스킬 폴더 · 13개 파일 · 154KB</td><td>Claude Code · <code>python install.py</code></td>
         <td>표현 교정까지 맡기고 싶을 때 · YAML 검사할 때만 <code>pyyaml</code></td></tr>
-      <tr><td>3</td><td>위 + 훅 설정 두 줄</td><td>Claude Code 설정 편집</td>
+      <tr><td>3</td><td>위 + 훅 셋</td><td><code>python install.py --hooks</code></td>
         <td>문서를 쓸 때마다 자동으로 돌리고 싶을 때</td></tr>
     </tbody>
   </table>
   </div>
-  <p class="sub">1단계는 파일을 아무 데나 두고 바로 실행한다. 단계별 설치 절차와 오탐이 났을 때 할 일은
-     <b>사용 안내</b> 문서에 있다.</p>
-  <code class="cmd">python doc-style-check.py &lt;파일 또는 폴더&gt;</code>
+
+  <p class="sub"><b>코딩 에이전트에게 맡겨도 된다</b> — README 첫 절이 클론부터 시험까지 명령 순서이고,
+     단계마다 나와야 하는 값이 붙어 있다. 주소만 던지면 설치까지 간다.</p>
+
   <dl class="src">
+    <dt>갈래 골라 쓰기</dt>
+    <dd>조직마다 문서 관행이 다름 — 표 머리 「비고」는 공문서 표준 관례이고 발표 대본은 산문이 정상 ·
+        <code>korean-qa.toml</code> 로 <b>26갈래</b>를 끄거나 severity 를 바꿈 ·
+        <b>끈 것은 결과 맨 위와 합계에 찍힘</b>(안 보이면 통과인지 안 본 것인지 갈리지 않음)</dd>
+    <dt>어색한 문장을 보내는 곳</dt>
+    <dd>GitHub 이슈 서식 둘 — 「안 잡히는 표현」·「멀쩡한데 잡힌 표현」 ·
+        <b>보낸 문장이 회귀 시료로 박혀</b> 규칙이 바뀔 때마다 다시 돌아감</dd>
     <dt>자동으로 도는 경우</dt>
     <dd>3단계까지 넣으면 Claude Code와 Codex가 한글 문서를 쓰거나 고칠 때 같은 훅이 걸림 ·
         <b>지적만 보여 주고 저장과 발행은 막지 않음</b></dd>
     <dt>명령 선택지</dt>
     <dd><span class="m">--form prose</span> 산문형으로 검사 · <span class="m">-v</span> 주의 전부 보기 ·
-        <span class="m">--html-only</span> HTML만 · 모르는 플래그는 조용히 무시하지 않고 멈춤</dd>
+        <span class="m">--list-rules</span> 갈래 목록 · <span class="m">--no-rules</span> 설정 무시 ·
+        모르는 플래그는 조용히 무시하지 않고 멈춤</dd>
     <dt>파일 형식</dt>
     <dd>마크다운 · HTML · 텍스트 · JSON · JSONL · YAML · properties ·
         Word와 PowerPoint는 표시 문구를 뽑아 검사 · <span class="m">\uXXXX</span> 로 적힌 한글도 풀어서 봄</dd>
     <dt>날마다</dt>
-    <dd>하루 첫 세션에 회귀 시험 284건 · 통과하면 아무 말도 안 함</dd>
+    <dd>하루 첫 세션에 회귀 시험 · 통과하면 아무 말도 안 함</dd>
     <dt>판정 세 단계</dt>
     <dd><b>오류</b> 확실한 위반 · <b>주의</b> 사람이 봐야 함 · <b>검사 불가</b> 값 슬롯을 못 찾음 —
         마지막은 합격이 아니라 <b>안 본 것</b></dd>
   </dl>
+
+  <p class="note reveal"><b>저장소에 함께 있는 것</b> — 시험 329건 · 갈래별 회귀 시료 ·
+     실행 기록 25개 · 규칙마다 왜 그렇게 정했는지의 실측 근거. 이 페이지의 숫자는 전부 그 기록에서 나온다.</p>
 </div></div>
 
 <footer><div class="in">
-  <span>실측 2026-09-04</span>
+  <span>실측 2026-09-07</span>
   <span>검사기 <code>doc-style-check.py</code></span>
   <span>사례는 모두 실제 문서와 사람이 확정한 교정에서 가져왔다.</span>
   <span>이 페이지도 같은 검사기를 통과했다 — 오류 0.</span>

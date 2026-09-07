@@ -6,7 +6,7 @@ form: structured
 
 **한국어 업무 문서를 기계로 검사하는 도구** — 사내 보고서 603개에서 지적 2,174건 · 세 편에 한 편꼴로 오류 · 받아서 그대로 쓸 수 있음
 
-- **사례집** — [`docs/showcase.html`](docs/showcase.html) · 수정 전후 약 90쌍 · 브라우저로 열면 됨
+- **사례집** — [`docs/showcase.html`](docs/showcase.html) · 수정 전후 약 90쌍 · 브라우저로 열면 됨 · [올릴 준비물](docs/site-listing.md)
 - **사례 보내기** — [`CONTRIBUTING.md`](CONTRIBUTING.md) · 이슈로 문장 하나
 - **필요한 것** — Python 3.11 이상 · 검사기 자체는 의존성 0
 
