@@ -362,6 +362,20 @@ def scan_html(path, relaxed=False, form=None, rules=None):
     body = '\n'.join(l for l in raw.split('\n') if len(l) < 800)
     body = re.sub(r'<style.*?</style>', ' ', body, flags=re.S)
     body = re.sub(r'<script.*?</script>', ' ', body, flags=re.S)   # 코드는 문서가 아니다
+    # 코드는 문서가 아니다 — 마크다운은 코드펜스와 인라인 코드를 처음부터 뺐는데
+    # HTML 경로만 안 빼서 **같은 내용이 형식에 따라 다르게 판정됐다**(2026-09-07).
+    # 제목 검사(09-02)·문단 검사(09-04)에 이어 세 번째로 같은 모양의 결함이다.
+    #
+    # ⛔ **맨 `<pre>` 는 빼지 않는다.** 처음에 `<pre>` 를 통째로 뺐다가 업무 칸반 한 장에서
+    #    지적 44건이 사라지는 것을 보고 좁혔다 — 그 파일의 `<pre>` 33개는 코드가 아니라
+    #    공백을 살리려고 감싼 한국어 기록이었다. HTML 에서 코드 의미를 지는 것은 `<code>`
+    #    이고, 마크다운 코드펜스에 대응하는 것은 `<pre><code>` 다.
+    #
+    # 빈칸이 아니라 표시를 남긴다 — 값이 코드뿐인 칸이 사라지면 슬롯 수가 줄고,
+    # 0이 되면 「값 슬롯 미인식」으로 넘어간다. 그건 못 본 것이 아니라 정당하게 뺀 것이다.
+    body = re.sub(r'(<pre[^>]*>)\s*<code[^>]*>.*?</code>\s*(</pre>)', r'\1code\2',
+                  body, flags=re.S | re.I)
+    body = re.sub(r'(<code[^>]*>).*?(</code>)', r'\1code\2', body, flags=re.S | re.I)
     err, warn = [], []
     slots = 0
 
