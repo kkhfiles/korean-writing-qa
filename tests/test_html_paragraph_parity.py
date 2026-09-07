@@ -104,6 +104,47 @@ class ParagraphParityTests(unittest.TestCase):
             "<b>한 번에 0이 안 됐다</b> 첫 수정본이 오류 3으로 남았다.")
         self.assertIn(KIND, errors)
 
+    def test_lead_mark_before_the_bold_head_keeps_the_exemption(self) -> None:
+        """줄머리 기호가 앞에 붙어도 「굵은 결론 — 근거 문장」은 그대로 예외다.
+
+        2026-09-08 이전에는 `<b>` 로 **시작할 때만** 예외를 줬다. 마크다운 경로는
+        진작 `LEAD_MARK` 로 기호를 뗐는데 HTML 경로만 안 떼서, 같은 문장을 두 형식에
+        넣으면 마크다운 0 · HTML 1 로 갈렸다. 규칙 파일이 기호로 강조를 다는 형태라
+        정작 그 규칙을 설명하는 문서가 자기 규칙에 걸렸다.
+        """
+        body = "적용 범위 — 설계 전용</b> 코드 실행은 사용자 재컨펌 후 별도로 진행한다."
+        for mark in ("⚠️", "★", "📌", "⛔"):
+            with self.subTest(mark=mark):
+                errors, _ = self.html(f"{mark} <b>{body}")
+                self.assertNotIn(KIND, errors,
+                                 f"줄머리 기호 「{mark}」 때문에 예외를 못 받았습니다")
+
+    def test_lead_mark_does_not_excuse_a_narrative_head(self) -> None:
+        """기호를 떼는 것은 굵은 머리를 찾으려는 것뿐 — 서술형 결론은 그대로 걸린다."""
+        errors, _ = self.html(
+            "⚠️ <b>한 번에 0이 안 됐다</b> 첫 수정본이 오류 3으로 남았다.")
+        self.assertIn(KIND, errors)
+
+    def test_markdown_agrees_on_the_lead_mark_cases(self) -> None:
+        """두 형식이 같은 판정을 내는지가 이 시험 파일의 본론이다."""
+        cases = [
+            ("면제되는 것", "적용 범위 — 설계 전용", "코드 실행은 사용자 재컨펌 후 별도로 진행한다.", False),
+            ("걸려야 하는 것", "한 번에 0이 안 됐다", "첫 수정본이 오류 3으로 남았다.", True),
+        ]
+        for name, head, tail, should in cases:
+            with self.subTest(case=name):
+                md_err, _ = self.md(f"⚠️ **{head}** {tail}")
+                html_err, _ = self.html(f"⚠️ <b>{head}</b> {tail}")
+                self.assertEqual(should, MD_KIND in md_err, f"마크다운: {md_err}")
+                self.assertEqual(should, KIND in html_err, f"HTML: {html_err}")
+
+    def test_list_items_take_the_lead_mark_too(self) -> None:
+        """목록 항목 경로에도 같은 규칙이 걸린다 — 한쪽만 고치면 그쪽이 낡는다."""
+        html = (HTML_HEAD + "<ul><li>⚠️ <b>적용 범위 — 설계 전용</b> "
+                "코드 실행은 사용자 재컨펌 후 별도로 진행한다.</li></ul>")
+        errors, _ = self.scan("doc.html", html)
+        self.assertNotIn("서술형 종결", errors)
+
     def test_prose_form_turns_it_off(self) -> None:
         """발표 대본처럼 흐르는 문장이 뼈대인 문서는 형식 선언으로 끈다."""
         errors, warnings = self.html("이 문서는 설계 전용이다.", form="prose")
