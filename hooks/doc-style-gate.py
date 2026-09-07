@@ -32,9 +32,34 @@ except (AttributeError, OSError):
     pass
 
 HOME = Path.home()
-CHECKER = HOME / ".claude" / "assets" / "doc-style-check.py"
-KOREAN_CHECKER = (
-    HOME / ".claude" / "skills" / "finalize-korean-document" / "scripts" / "check.py"
+
+
+def _find(env_name, installed, in_repo):
+    """검사기를 찾는다 — 환경 변수 · 설치본 · 저장소 순.
+
+    설치된 Claude Code 안에서는 두 번째가 맞다. 저장소를 클론만 한 기계에서
+    시험을 돌릴 때는 설치본이 없으므로 세 번째(훅 파일의 형제)를 쓴다.
+    셋째 길이 없던 동안 그런 기계에서 시험 18건이 「검사기 없음」으로 깨졌다.
+    """
+    from os import environ
+    override = environ.get(env_name)
+    if override:
+        return Path(override)
+    if installed.is_file():
+        return installed
+    sibling = Path(__file__).resolve().parent.parent / in_repo
+    return sibling if sibling.is_file() else installed
+
+
+CHECKER = _find(
+    "KOREAN_QA_CHECKER",
+    HOME / ".claude" / "assets" / "doc-style-check.py",
+    Path("assets") / "doc-style-check.py",
+)
+KOREAN_CHECKER = _find(
+    "KOREAN_QA_SKILL_CHECK",
+    HOME / ".claude" / "skills" / "finalize-korean-document" / "scripts" / "check.py",
+    Path("skills") / "finalize-korean-document" / "scripts" / "check.py",
 )
 STATE = HOME / ".claude" / "state" / "doc-style-seen.json"
 TTL = 12 * 3600          # 세션키를 못 구할 때 기록이 영원히 쌓이지 않게 한다
