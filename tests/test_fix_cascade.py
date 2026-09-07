@@ -48,7 +48,9 @@ class FixCascadeTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         if not GLOBAL_CHECKER.is_file():
-            raise unittest.SkipTest(f"전역 검사기가 없습니다: {GLOBAL_CHECKER}")
+            raise unittest.SkipTest(f"검사기가 없습니다: {GLOBAL_CHECKER}")
+        # 심어 넣은 연쇄는 원문 없이도 재지만, 실제 수정 쌍은 원문에서 나온다.
+        cls.has_sources = (repo_paths.REPO / "data" / "raw" / "diagnostic-002").is_dir()
         cls.check = skill_bridge.load("check")
         cls.rules = cls.check.load_rules()
         cls.global_checker = load_global()
@@ -71,6 +73,8 @@ class FixCascadeTests(unittest.TestCase):
 
     def test_no_prescribed_fix_creates_a_new_finding(self) -> None:
         """확정 규칙·문맥 시료·2층 지적의 수정문이 다른 규칙을 어기면 안 된다."""
+        if not self.has_sources:
+            self.skipTest("진단용 원문 복사본이 없습니다 — `data/raw/**` 는 사내 문서라 Git 제외이고 작성자 기계에만 있습니다")
         offenders = []
         for pair in pairs():
             new = self.new_kinds(pair["before"], pair["after"])
@@ -80,6 +84,8 @@ class FixCascadeTests(unittest.TestCase):
 
     def test_the_pair_set_is_not_empty(self) -> None:
         """쌍을 하나도 못 읽으면 위 시험이 조용히 통과한다."""
+        if not self.has_sources:
+            self.skipTest("진단용 원문 복사본이 없습니다 — `data/raw/**` 는 사내 문서라 Git 제외이고 작성자 기계에만 있습니다")
         collected = pairs()
         self.assertGreaterEqual(len(collected), 40)
         # 문구만 떼어 재면 문장이 아니라는 이유로 없는 연쇄가 잡힌다. 줄을 아는
