@@ -180,6 +180,8 @@ td .dot{display:inline-block; width:7px; height:7px; border-radius:50%; margin-r
   vertical-align:1px}
 .dot.e{background:var(--red)} .dot.w{background:var(--amber)}
 .zero{color:var(--ink3)}
+td.pass{background:var(--green-bg)} td.flag{background:var(--red-bg)}
+td.pass, td.flag{border-left:1px solid var(--line2)}
 
 /* ── 통짜 문서 ───────────────────────────── */
 .docpair{display:grid; grid-template-columns:1fr 1fr; gap:16px}
@@ -269,7 +271,7 @@ footer .in{padding:0; display:flex; gap:18px; flex-wrap:wrap; align-items:baseli
     <ul class="toc">
       <li><a href="#scale">문제의 크기</a></li>
       <li><a href="#doc">보고서 한 편 전체</a></li>
-      <li><a href="#exempt">일부러 안 잡는 것</a></li>
+      <li><a href="#exempt">건드리지 않는 문장</a></li>
       <li><a href="#catalog">갈래별 사례</a></li>
       <li><a href="#counts">갈래별 건수</a></li>
       <li><a href="#flip">사람이 뒤집은 지적</a></li>
@@ -400,48 +402,34 @@ footer .in{padding:0; display:flex; gap:18px; flex-wrap:wrap; align-items:baseli
   <p class="note reveal"><b>한 번에 0이 안 됨</b> — 첫 수정본이 오류 3으로 남았다. 근거를 설명하는 문단을 그냥 문장으로 둔 것이 원인이고, 「굵은 결론 — 근거 문장」 형태로 고쳐서 통과했다. <b>개조식으로 바꾸라는 뜻이 아니라 결론을 앞에 세우라는 뜻</b>임이 이 수정에서 드러난다.</p>
 </div></div>
 
-<!-- ═══ 03 안 잡는 것 ═══ -->
+<!-- ═══ 03 멀쩡한 문장 ═══ -->
 <div class="band paper"><div class="in" id="exempt">
   <p class="snum">03</p>
-  <h2>일부러 안 잡는 것</h2>
-  <p class="sub">위반을 잡는 능력만 재면 「전부 지적」이 만점이 된다. <b>통과시켜야 하는 쪽을 같이 재야</b> 규칙이 쓸 만한지 갈린다.
-     겉모습이 같은 두 묶음을 만들어 함께 돌렸고, 회귀 시험에 넣어 규칙을 고칠 때마다 다시 돈다.</p>
-  <div class="docpair reveal">
-    <div class="pane good">
-      <header><h3>정당한 표기 20종</h3><span class="score">오류 0 · 주의 0</span></header>
-      <ul class="findings clean">
-        <li>고유명 표기 — 「같은 함정에 두 번 넘어가면 기계로 옮긴다」</li>
-        <li>굳은 합성어 — 편집창 · 바둑판 · 대화창</li>
-        <li>실물 창 — 뜨는 창 · 닫는 창</li>
-        <li>실제 좌석 — 앞자리 · 빈자리 · 옆자리</li>
-        <li>뒤 명사가 혼자 서는 관형형 — 걸린 시간 · 실린 토큰 · 계산하는 값</li>
-        <li>「~다」로 끝나지만 서술어가 아닌 말 — 보다 · 마다 · 최다 · 과다</li>
-        <li>수사 「하나」 — 남은 방법은 하나</li>
-        <li>회귀 시험 — 회귀 · 회귀 분석</li>
-        <li>파일 경로 — 상대 경로 표기 · 절대 경로</li>
-        <li>낱말 속 「로」 — 경로의 구분자 · 대로의 폭 · 회로의 저항</li>
-        <li>대조 예시 줄 — 「고칠 것은 코멘트로 → 코멘트로 표시」</li>
-        <li>출처가 붙은 남의 말 원문 — 「[실장 8/5]」</li>
-        <li>인라인 코드 안의 서술형</li>
-      </ul>
-    </div>
-    <div class="pane bad">
-      <header><h3>같은 모양의 위반 15종</h3><span class="score">15건 전부 잡음</span></header>
-      <ul class="findings">
-        <li>「대체하지 않는다」 — 서술형 종결</li>
-        <li>「고칠 것은 코멘트로」 — 조사 종결</li>
-        <li>「무엇이 어디 있나」 — 의문문 라벨</li>
-        <li>「규칙을 넣을 자리」 — 은유 자리</li>
-        <li>「앞 판에서 잰 값」 — 지어낸 명사구</li>
-        <li>「우리 제품이 아니다」 — 모호한 지칭</li>
-        <li>「가벼운 검증 실행체」 — 평가 수식어</li>
-        <li>「-4.9pp 회기가 났다」 — 잘못 쓴 「회기」</li>
-        <li>「값이 잘못 계산되어진다」 — 이중 피동</li>
-        <li>「서버로의 접속」 — 이중 조사</li>
-        <li>표 머리 「비고」 — 스캔 가치 없는 라벨</li>
-      </ul>
-    </div>
+  <h2>건드리지 않는 문장</h2>
+  <p class="sub">받아 보는 사람이 가장 먼저 묻는 것 — <b>내 문서를 통째로 빨갛게 칠하는 것 아닌가</b>.
+     겉모습이 같은데 한쪽은 정당하고 한쪽은 위반인 짝을 만들어 함께 돌린다.
+     <b>위반을 잡는 능력만 재면 「전부 지적」이 만점</b>이 되기 때문이다.</p>
+  <div class="scroll reveal">
+    <table>
+      <colgroup><col style="width:13%"><col style="width:29%"><col style="width:26%"><col style="width:32%"></colgroup>
+      <thead><tr><th>같은 겉모습</th><th>통과</th><th>지적</th><th>통과하는 까닭</th></tr></thead>
+      <tbody>
+        <tr><td><b>「자리」</b></td><td class="pass">「앞자리」·「빈자리」·「옆자리」</td>
+            <td class="flag">「규칙을 넣을 자리」</td><td>실제로 앉는 좌석</td></tr>
+        <tr><td><b>「창」·「판」</b></td><td class="pass">「편집창」·「대화창」·「바둑판」</td>
+            <td class="flag">「모으는 창」·「앞 판」</td><td>한 낱말로 굳은 이름</td></tr>
+        <tr><td><b>「회기」</b></td><td class="pass">「국회 회기」·「임시 회기」</td>
+            <td class="flag">「-4.9pp 회기」</td><td>국회·시의회가 여는 기간</td></tr>
+        <tr><td><b>「~다」 종결</b></td><td class="pass">규칙 이름 「같은 함정에 두 번 넘어가면 기계로 옮긴다」</td>
+            <td class="flag">값 칸의 「대체하지 않는다」</td><td>정본과 글자가 같아야 하는 이름</td></tr>
+        <tr><td><b>인용 부호</b></td><td class="pass">출처가 붙은 남의 말 — 「[실장 8/5] …」</td>
+            <td class="flag">출처 없이 감싼 내 해설</td><td>고칠 수 없는 남의 원문</td></tr>
+      </tbody>
+    </table>
   </div>
+  <p class="note reveal"><b>규칙을 고칠 때마다 다시 측정</b> — 위와 같은 짝을 정당한 표기 20종 · 같은 모양의 위반 15종으로 모아
+     회귀 시험에 넣어 두었다. 지금 정당한 쪽 <b>지적 0건</b> · 위반 쪽 <b>15건 전부 제 갈래로 잡음</b>.
+     규칙을 넓히다 정당한 쪽이 하나라도 걸리면 시험이 깨져 바로 드러난다.</p>
   <p class="note reveal"><b>검사기 자신의 빈 곳</b>(2026-09-04에 찾음) — HTML 문단 검사가 이름은 「서술형 문단」인데
      <b>길이만 재고 있었다</b>. 같은 내용을 마크다운과 HTML 에 넣어 보니 마크다운은 오류 2, HTML 은 오류 0 · 주의 0 이었다.
      짧은 서술 문단을 통째로 못 본 것이다. 고치고 나서야 이 페이지의 굵은 결론 여섯이 서술형이라는 것이 드러났다.
@@ -467,7 +455,7 @@ footer .in{padding:0; display:flex; gap:18px; flex-wrap:wrap; align-items:baseli
     <dl class="meta">
       <dt>무엇</dt><dd>값 칸·목록·표 칸을 완전한 문장으로 끝냄</dd>
       <dt>고치는 법</dt><dd>명사형(~음·~함·~임)이나 체언으로 끝냄 · 두 사실은 가운뎃점으로 이음</dd>
-      <dt>안 잡는 것</dt><dd>산문형 문서 전체(머리말에 「form: prose」) · 근거를 설명하는 문장</dd>
+      <dt>지적 제외</dt><dd>산문형 문서 전체(머리말에 「form: prose」) · 근거를 설명하는 문장</dd>
     </dl>
     <ul class="pairs">
       <li><div class="ba bad"><p>「대체하지 않는다」 · 「별개로 추가」</p></div>
@@ -553,7 +541,7 @@ footer .in{padding:0; display:flex; gap:18px; flex-wrap:wrap; align-items:baseli
       <li><div class="ba bad"><p>「의견을 받는 자리」</p></div><div class="ba good"><p>「의견을 수렴하는 회의」</p></div></li>
       <li><div class="ba bad"><p>「보고하는 자리」</p></div><div class="ba good"><p>「보고 회의」 · 「발표 세미나」</p></div></li>
     </ul>
-    <p class="note"><b>안 잡는 것</b> — 「앞자리」·「빈자리」·「같은 자리에 같은 라벨」. 실제 좌석과 굳은 쓰임은 은유가 아니라 그 뜻 그대로다.</p>
+    <p class="note"><b>지적 제외</b> — 「앞자리」·「빈자리」·「같은 자리에 같은 라벨」. 실제 좌석과 굳은 쓰임은 은유가 아니라 그 뜻 그대로다.</p>
     <p class="note"><b>모임도 「자리」로 부르지 않음</b>(2026-09-04에 좁힘) — 예전에는 모임 뜻을 예외로 두었는데 <b>그 예외가 은유까지 통과시키고 있었다</b>. 화면의 입력 칸을 가리키는 은유 하나가 그 예외에 숨어 지적을 못 받고 있었다. 어간 열 개를 뺀 뒤 실측은 <b>오류 5,529건 그대로 · 새로 주의 7건 · 사라진 지적 0건</b>.</p>
   </article>
 
@@ -563,7 +551,7 @@ footer .in{padding:0; display:flex; gap:18px; flex-wrap:wrap; align-items:baseli
     <dl class="meta">
       <dt>무엇</dt><dd>관형형 어미 뒤에 뜻이 옅은 명사를 붙여 새 말을 만듦 · 사람이 쓴 한국어에는 안 나오는 형태</dd>
       <dt>고치는 법</dt><dd>그 명사가 <b>혼자 서는지</b> 봄 — 「판」만 떼어 무엇인지 말할 수 없으면 지어낸 것</dd>
-      <dt>안 잡는 것</dt><dd>굳은 합성어와 실물 — 편집창·바둑판·대화창 · 「같은 결」·「뜨는 창」</dd>
+      <dt>지적 제외</dt><dd>굳은 합성어와 실물 — 편집창·바둑판·대화창 · 「같은 결」·「뜨는 창」</dd>
     </dl>
     <ul class="pairs">
       <li><div class="ba bad"><p>「1판·2판」</p></div><div class="ba good"><p>「1차·2차」 · 「첫 시도·두 번째 시도」</p></div></li>
@@ -579,7 +567,7 @@ footer .in{padding:0; display:flex; gap:18px; flex-wrap:wrap; align-items:baseli
     <dl class="meta">
       <dt>무엇</dt><dd>「회귀(regression)」의 오타 · 또는 「세션」을 뜻하는 잘못된 말</dd>
       <dt>고치는 법</dt><dd>regression이면 「회귀」 · 작업 단위면 「세션」·「회차」</dd>
-      <dt>안 잡는 것</dt><dd>낱말 안에 우연히 든 것(조회기간·사회기여) · 회의체 이름 뒤(국회 회기·정기 회기)</dd>
+      <dt>지적 제외</dt><dd>「국회 회기」·「임시 회기」 — 국회·시의회가 여는 기간</dd>
     </dl>
     <ul class="pairs">
       <li><div class="ba bad"><p>「-4.9pp 회기」</p></div><div class="ba good"><p>「-4.9pp 회귀」</p></div></li>
@@ -594,7 +582,6 @@ footer .in{padding:0; display:flex; gap:18px; flex-wrap:wrap; align-items:baseli
     <dl class="meta">
       <dt>무엇</dt><dd>피동을 두 번 겹침(「되어진」·「불려진」) · 조사를 두 개 겹침(「~로의」·「~에서의」)</dd>
       <dt>고치는 법</dt><dd>피동은 한 번만 · 조사는 하나로 풂</dd>
-      <dt>안 잡는 것</dt><dd>「로」가 낱말의 일부인 것 — 경로의·대로의·회로의·진로의 · 「-지 않다」 부정형</dd>
     </dl>
     <ul class="pairs">
       <li><div class="ba bad"><p>「값이 잘못 계산되어진다」</p></div><div class="ba good"><p>「값이 잘못 계산된다」</p></div></li>
@@ -666,7 +653,7 @@ footer .in{padding:0; display:flex; gap:18px; flex-wrap:wrap; align-items:baseli
     <dl class="meta">
       <dt>무엇</dt><dd>인용 부호를 강조 상자로 씀 — 남의 말이 아니라 내가 쓴 문장</dd>
       <dt>고치는 법</dt><dd>라벨:값으로 바꿈 · 강조는 굵게 · 경고는 경고 기호</dd>
-      <dt>안 잡는 것</dt><dd>출처가 붙은 남의 말 원문 — 「[실장 8/5]」·「(7/30 회의)」 · 원문은 글자가 같아야 하므로 개조식으로 고칠 수 없음</dd>
+      <dt>지적 제외</dt><dd>출처가 붙은 남의 말 원문 — 「[실장 8/5]」·「(7/30 회의)」 · 원문은 글자가 같아야 하므로 개조식으로 고칠 수 없음</dd>
     </dl>
     <ul class="pairs">
       <li><div class="ba bad"><p>「이 문서는 설계 전용이다」 · 「코드 실행은 재컨펌 후 별도 진행」</p></div>
@@ -713,7 +700,7 @@ footer .in{padding:0; display:flex; gap:18px; flex-wrap:wrap; align-items:baseli
       <span class="count">확정 교정 <b>14</b>건 · 가장 잦음</span></div>
     <dl class="meta">
       <dt>무엇</dt><dd>같은 뜻의 한국어가 이미 굳었는데 영문·음차를 씀 · 한글 뒤에 원문 괄호를 매번 붙임</dd>
-      <dt>안 잡는 것</dt><dd>업계에 굳은 외래어(리팩터링·파이프라인) · 뜻이 같은 대체어가 없는 말(에이전틱) · API·필드·모듈의 실제 이름</dd>
+      <dt>지적 제외</dt><dd>업계에 굳은 외래어(리팩터링·파이프라인) · 뜻이 같은 대체어가 없는 말(에이전틱) · API·필드·모듈의 실제 이름</dd>
     </dl>
     <ul class="pairs">
       <li><div class="ba bad"><p>「메메틱 구조」</p></div><div class="ba good"><p>「기억 구조」</p></div></li>
@@ -754,7 +741,7 @@ footer .in{padding:0; display:flex; gap:18px; flex-wrap:wrap; align-items:baseli
       <span class="count">확정 교정 <b>2</b>건</span></div>
     <dl class="meta">
       <dt>무엇</dt><dd>「~를 통해」·「~에 대한」·불필요한 피동·영어식 명사 나열</dd>
-      <dt>안 잡는 것</dt><dd>「~에 있어」 — 실문서 8건이 <b>전부 정당</b>해서 결정 규칙에서 빼고 판단 층으로 옮김</dd>
+      <dt>지적 제외</dt><dd>「~에 있어」 — 실문서 8건이 <b>전부 정당</b>해서 결정 규칙에서 빼고 판단 층으로 옮김</dd>
     </dl>
     <ul class="pairs">
       <li><div class="ba bad"><p>「HTTPS URL을 통해 직접 플러그인 아카이브 패키지를 설치 및 관리하는 스펙 지원.」</p></div>
@@ -769,7 +756,7 @@ footer .in{padding:0; display:flex; gap:18px; flex-wrap:wrap; align-items:baseli
     <dl class="meta">
       <dt>무엇</dt><dd>「곳·구간·부분·갈래·뒤의 것」이 실제 대상을 숨김 · 「풉니다·돕습니다」가 실제 행위를 가림</dd>
       <dt>고치는 법</dt><dd>과정·단계·테스트 유형처럼 실제 대상을 드러냄 · 설계·개발·검증처럼 실제 행위로 바꿈</dd>
-      <dt>안 잡는 것</dt><dd>문맥이 없으면 추측하지 않음 — 원문에 근거가 있을 때만 고침</dd>
+      <dt>지적 제외</dt><dd>문맥이 없으면 추측하지 않음 — 원문에 근거가 있을 때만 고침</dd>
     </dl>
     <ul class="pairs">
       <li><div class="ba bad"><p>「검증에서 사람이 가장 많이 붙는 곳이 테스트를 만드는 구간이고, 여기를 AI로 풉니다」</p></div>
