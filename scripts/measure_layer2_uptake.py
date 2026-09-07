@@ -26,7 +26,14 @@ from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
 
-TRANSCRIPTS = Path.home() / ".claude" / "projects"
+import sys as _sys
+from pathlib import Path as _Path
+
+_sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))
+
+import repo_paths  # noqa: E402
+
+TRANSCRIPTS = repo_paths.installed("projects")
 # 경계는 **날짜가 아니라 그 순간**이다. 자정으로 잡았더니 같은 날 아침의 활동이
 # 「붙인 뒤」로 세어져, 안내가 있을 수 없던 발행 8건을 「안내 0회」로 보고했다.
 CHANGED = datetime(2026, 8, 31, 7, 56, 13, tzinfo=timezone.utc)   # 커밋 2037126
@@ -37,7 +44,7 @@ OLD_NOTICE_MARK = "한글 문서 최종화 검사 — 전달 전에 finalize-kor
 # 이 시스템을 만드는 세션은 문구를 계속 인용하므로 뺀다
 SELF = "korean-writing-qa"
 SKILL_NAME = "finalize-korean-document"
-HOOK = Path.home() / ".claude" / "hooks" / "doc-style-gate.py"
+HOOK = repo_paths.hook("doc-style-gate.py")
 
 
 def load_hook():

@@ -18,7 +18,14 @@ import tempfile
 import unittest
 from pathlib import Path
 
-HOOK = Path.home() / ".claude" / "hooks" / "doc-style-gate.py"
+import sys
+from pathlib import Path as _Path
+
+sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))
+
+import repo_paths  # noqa: E402
+
+HOOK = repo_paths.hook("doc-style-gate.py")
 
 PROSE = """# 임베디드 검증 백서
 

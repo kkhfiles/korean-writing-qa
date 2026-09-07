@@ -26,7 +26,14 @@ import tempfile
 import unittest
 from pathlib import Path
 
-CHECKER = Path.home() / ".claude" / "assets" / "doc-style-check.py"
+import sys
+from pathlib import Path as _Path
+
+sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))
+
+import repo_paths  # noqa: E402
+
+CHECKER = repo_paths.CHECKER
 HEAD = "# 검토 결과\n\n**하반기 검토 범위** — 한 장 조망\n\n## 본문\n\n"
 WARN = "「~하는 자리」 의심"
 ERROR = "「~하는 자리」"
@@ -151,7 +158,7 @@ class SeatExemptionTests(unittest.TestCase):
 
     def test_the_written_rule_matches_the_checker(self) -> None:
         """글로벌 규칙이 아직 「사람이 모이는 상황」을 정당하다고 적어 두면 안 된다."""
-        rules = Path.home() / ".claude" / "CLAUDE.md"
+        rules = repo_paths.installed("CLAUDE.md")
         if not rules.is_file():
             self.skipTest(f"글로벌 규칙 파일이 없습니다: {rules}")
         text = rules.read_text(encoding="utf-8")

@@ -35,8 +35,15 @@ import tempfile
 import unittest
 from pathlib import Path
 
+import sys
+from pathlib import Path as _Path
+
+sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))
+
+import repo_paths  # noqa: E402
+
 ADAPTER = Path("P:/github/claude-workflow/scripts/codex-hook-adapter.py")
-GATE = Path.home() / ".claude" / "hooks" / "doc-style-gate.py"
+GATE = repo_paths.hook("doc-style-gate.py")
 HOOKS_TEMPLATE = Path("P:/github/claude-workflow/codex/hooks.json")
 
 # 훅이 건너뛰지 않는 자리여야 한다 — Temp·scratchpad 는 제외 대상이다

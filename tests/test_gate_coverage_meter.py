@@ -19,8 +19,15 @@ import tempfile
 import unittest
 from pathlib import Path
 
+import sys
+from pathlib import Path as _Path
+
+sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))
+
+import repo_paths  # noqa: E402
+
 METER = Path(__file__).resolve().parent.parent / "scripts" / "measure_gate_coverage.py"
-HOOK = Path.home() / ".claude" / "hooks" / "doc-style-gate.py"
+HOOK = repo_paths.hook("doc-style-gate.py")
 
 
 def load(path: Path, name: str):

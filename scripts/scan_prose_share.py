@@ -13,7 +13,14 @@ import re
 import sys
 from pathlib import Path
 
-CHECKER = Path.home() / ".claude" / "assets" / "doc-style-check.py"
+import sys as _sys
+from pathlib import Path as _Path
+
+_sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))
+
+import repo_paths  # noqa: E402
+
+CHECKER = repo_paths.CHECKER
 CORPUS = Path("P:/github/claude-workflow/reports")
 
 STRUCTURE = re.compile(r"^\s*(?:[-*+]\s|\d+[.)]\s|\||#{1,6}\s|>|```|:?-{3,})")

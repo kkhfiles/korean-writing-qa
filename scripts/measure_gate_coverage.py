@@ -33,8 +33,15 @@ import time
 from collections import Counter
 from pathlib import Path
 
-TRANSCRIPTS = Path.home() / ".claude" / "projects"
-HOOK = Path.home() / ".claude" / "hooks" / "doc-style-gate.py"
+import sys as _sys
+from pathlib import Path as _Path
+
+_sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))
+
+import repo_paths  # noqa: E402
+
+TRANSCRIPTS = repo_paths.installed("projects")
+HOOK = repo_paths.hook("doc-style-gate.py")
 WRITE_TOOLS = ("Write", "Edit", "MultiEdit")
 # 사람이 읽을 문서 — 훅이 보는 것과 같은 확장자를 훅에서 가져온다
 SELF = "korean-writing-qa"

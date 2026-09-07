@@ -1,0 +1,4 @@
+interface:
+  display_name: "한글 문서 최종화"
+  short_description: "AI 한글 문서를 자연스럽고 정확하게 최종 점검"
+  default_prompt: "Use $finalize-korean-document to finalize this Korean document before handoff."

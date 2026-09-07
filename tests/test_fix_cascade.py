@@ -26,7 +26,14 @@ from pathlib import Path
 from scripts import skill_bridge
 from scripts.check_fix_cascade import kinds, load_global, pairs
 
-GLOBAL_CHECKER = Path.home() / ".claude" / "assets" / "doc-style-check.py"
+import sys
+from pathlib import Path as _Path
+
+sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))
+
+import repo_paths  # noqa: E402
+
+GLOBAL_CHECKER = repo_paths.CHECKER
 
 # (이름, 수정 전, 수정 후, 새로 생겨야 하는 지적)
 INJECTED = [

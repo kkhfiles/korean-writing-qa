@@ -26,7 +26,9 @@ sys.path.insert(0, str(REPO_ROOT))
 
 from scripts import skill_bridge                                    # noqa: E402
 
-GLOBAL_CHECKER = Path.home() / ".claude" / "assets" / "doc-style-check.py"
+import repo_paths
+
+GLOBAL_CHECKER = repo_paths.CHECKER
 # 진입점·제목이 없으면 검사기가 뼈대를 지적해 본문 판정을 가린다. 본문은 늘 7행이다.
 SKELETON = "# 검토 결과\n\n**하반기 검토 범위** — 한 장 조망\n\n## 본문\n\n- {line}\n"
 BODY_LINE = "7행"

@@ -24,7 +24,14 @@ import tempfile
 import unittest
 from pathlib import Path
 
-CHECKER = Path.home() / ".claude" / "assets" / "doc-style-check.py"
+import sys
+from pathlib import Path as _Path
+
+sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))
+
+import repo_paths  # noqa: E402
+
+CHECKER = repo_paths.CHECKER
 
 HEAD = "# 검토 결과\n\n**하반기 검토 범위** — 한 장 조망\n\n## 본문\n\n"
 
