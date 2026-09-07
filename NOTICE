@@ -1,0 +1,46 @@
+Korean Writing QA
+Copyright (c) 2026 SureSoft Technologies Inc.
+
+This product is licensed under the MIT License. See LICENSE.
+
+================================================================================
+THIRD-PARTY COMPONENTS
+================================================================================
+
+--------------------------------------------------------------------------------
+Doc KR (embedded font subset)
+--------------------------------------------------------------------------------
+
+docs/showcase.html embeds a WOFF2 font subset as a base64 data URI. That subset
+is NOT covered by the MIT License above. It is Font Software licensed under the
+SIL Open Font License, Version 1.1, and it remains under that license.
+
+  License text:  licenses/OFL-1.1.txt
+  Also at:       https://openfontlicense.org/
+
+The subset, named "Doc KR", is a Modified Version of Pretendard 1.3.9
+(https://github.com/orioncactus/pretendard) restricted to the KS X 1001 range.
+Because it is a Modified Version and is not Functionally Equivalent to the
+Original Version, it does not use any of the Reserved Font Names below.
+
+Pretendard is itself derived from three other font families, so four copyright
+statements apply:
+
+  Copyright (c) 2021, Kil Hyung-jin
+  (https://github.com/orioncactus/pretendard),
+  with Reserved Font Name 'Pretendard'.
+
+  Copyright 2014-2021 Adobe (http://www.adobe.com/),
+  with Reserved Font Name 'Source'.
+
+  Copyright (c) 2016 The Inter Project Authors
+  (https://github.com/rsms/inter),
+  with Reserved Font Name 'Inter'.
+
+  Copyright 2021 The M+ FONTS Project Authors
+  (https://github.com/coz-m/MPLUS_FONTS),
+  with Reserved Font Name 'M PLUS 1'.
+
+The CSS font stack in docs/showcase.html lists "Pretendard" as a fallback. That
+name refers to a font installed on the reader's own machine, not to the embedded
+subset, and is unaffected by the Reserved Font Name restriction.
