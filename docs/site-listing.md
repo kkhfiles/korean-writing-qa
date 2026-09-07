@@ -4,21 +4,22 @@ form: structured
 
 # dispatchflow.cc 에 올릴 준비물
 
-**dispatchflow.cc 에 한글 검사기를 올릴 때 붙일 것 셋** — 다른 세션이 `artifact-host` 를 쓰고 있어 적용은 안 함 · 사례집 쪽 손질은 끝남
+**Vermilion 사례집을 dispatchflow.cc 에 붙일 때 손댈 곳 셋** — 다른 세션이 두 저장소를 쓰고 있어 **사용자 신호까지 대기** · 아래 값은 2026-09-07 에 실제 파일을 읽어 맞춘 것
 
 ## 이미 끝난 것
 
 | 무엇 | 상태 |
 |---|---|
-| 사례집을 사이트 규격에 맞춤 | `color-scheme` · `description` · 파비콘 · 제목 넣음 · 오류 0 |
+| 사례집을 사이트 규격에 맞춤 | `color-scheme` · `description` · 파비콘 · 제목 넣음 |
+| 사례집 검사 | **오류 0 · 주의 0** · 값 슬롯 324 |
 | 08 절을 공개 저장소 기준으로 고침 | `git clone` 명령 · MIT · 갈래 고르기 · 이슈로 사례 보내기 |
 | 저장소에서 이 페이지로 링크 | README 「사례집」 줄 · 주소는 올린 뒤에 바꿈 |
 
-**사본 없음** — `work-assistant/docs` 의 다른 페이지와 같은 모양(자체 완결 HTML · 폰트 심음)이라 사례집 파일을 그대로 올릴 수 있다. 두 벌을 두면 한쪽이 낡는다.
+**사본 없음** — `work-assistant/docs` 의 다른 페이지와 같은 모양(자체 완결 HTML · 폰트 심음)이라 사례집 파일을 그대로 올린다. 두 벌을 두면 한쪽이 낡는다.
 
 ## 1. `artifact-host/sources.json` 에 넣을 항목
 
-**이름은 Vermilion 으로 정해짐**(2026-09-07) — 주묵(朱墨) · 원고를 고칠 때 쓰던 붉은 먹. 사례집의 붉은색이 그 뜻으로 바뀌었다.
+**구조 확인** — 최상위가 목록 9건 · 키는 `to` `title` `note` `from` `lang` `group` (`build` 는 선택). 아래 항목이 그 모양 그대로다.
 
 ```json
 {
@@ -31,7 +32,23 @@ form: structured
 }
 ```
 
-- **★ `build.mjs` 의 `ABOUT` 표에 항목을 더해야 함** — `dispatch`·`mycelium` 처럼 `vermilion` 한 줄. 없으면 구조화 자료의 갈래와 breadcrumb 이 비어 나간다.
+- **`build` 없음** — 사례집은 정적 파일이다.
+- **`title`·`note` 는 예비값** — 빌드가 파일 안의 `<title>`·`description` 을 먼저 쓴다(`metaOf`).
+
+### `group` 이 하는 일 셋 — 앞서 하나로만 적었던 값
+
+| 하는 일 | 근거 |
+|---|---|
+| 번역 짝 맺기 | `langGroups` 가 `group` → (`lang` → 주소) 로 모음 · hreflang 과 언어 전환에 씀 |
+| 발행 여부 정하기 | `sitemapXml` 이 `group` 있는 것만 실음 · 없으면 `noindex` |
+| 구조화 자료 갈래 붙이기 | `ABOUT[it.group]` 이 없으면 breadcrumb 과 앱 정보가 통째로 빠짐 |
+
+- **한국어 한 벌만 넣어도 됨** — 짝이 없으면 hreflang 을 안 적을 뿐이고 오류가 아니다. 같은 묶음에 같은 `lang` 이 둘이면 그때 빌드가 멈춘다.
+- **움직임 CSS 가 딸려 옴** — `group` 이 있고 `demo` 가 아니면 `motionStyle()` 이 붙는다. 사례집에는 `data-rv`·`data-draw` 가 **0개**라 아무 효과가 없다(확인함).
+
+## 2. `artifact-host/scripts/build.mjs` 의 `ABOUT` 에 넣을 한 줄
+
+**넣을 모양** — `dispatch`·`mycelium` 과 같다.
 
 ```js
 vermilion: {
@@ -41,15 +58,11 @@ vermilion: {
 },
 ```
 
-- **`group` 을 적으면 공개 대상이 됨** — 빌드가 `group` 있는 페이지만 sitemap 에 싣는다. 안 적으면 `noindex` 가 붙고 검색에서 빠진다. 번역 짝을 맺는 값이 아니라 **발행 여부를 정하는 값**이다.
-- **`build` 필요 없음** — 사례집은 정적 파일이다.
+- **`crumb.en` 도 적음** — 한국어 전용 페이지지만 빌드가 `crumb[lang] || crumb.en` 으로 되짚는다.
 
-## 2. `work-assistant/docs/home.html` 에 넣을 카드
+## 3. `work-assistant/docs/home.html` 에 넣을 카드 — **지금 막힘**
 
-**지금 소개 화면은 도구 둘** — 셋으로 늘리면 두 곳을 함께 고쳐야 한다.
-
-- **도구 카드 하나 추가** — `<article>` 에 `figs` 통계 셋과 `golink`
-- **「두 도구 비교」 표** — 제목과 열이 둘 기준이라 손봐야 함. 셋으로 늘리거나, 그 표는 Dispatch·Mycelium 둘만 두고 검사기는 카드로만 소개
+**다른 세션의 미커밋 변경이 그 파일에 있음**(2026-09-07 15:32 이후) — 손대면 남의 작업과 섞여 한 커밋으로 나간다.
 
 **카드에 쓸 수 있는 실측값**
 
@@ -84,13 +97,20 @@ vermilion: {
 </article>
 ```
 
-## 3. 올린 뒤에 할 것
+## 풀린 물음 — 접근 제한
+
+**사이트는 이미 공개** — `wrangler.jsonc` 의 `workers_dev` 가 `false`(2026-09-03 에 끔)라 Cloudflare Access 가 걸려 있던 주소는 살아 있지 않고, 산 도메인 `dispatchflow.cc` 로만 서비스한다. **한 장만 따로 여는 조치가 필요 없다.**
+
+## 정하셔야 하는 것 셋
+
+| 무엇 | 선택지 |
+|---|---|
+| **사이트 이름** | 지금은 「Dispatch & Mycelium」 · 구조화 자료·breadcrumb·`llms.txt` 가 다 이 글자를 씀 · 셋째 도구가 붙으면 낡음 → 바꿀지 · 그대로 둘지 |
+| **「두 도구 비교」 표** | 셋으로 늘릴지 · 둘만 두고 Vermilion 은 카드로만 소개할지 |
+| **경로** | 위 제안은 `/vermilion/` |
+
+## 올린 뒤에 할 것
 
 - **README 주소 바꾸기** — 지금은 저장소 안 파일을 가리킨다. 올라가면 공개 주소로.
 - **`llms.txt`·`sitemap.xml`** — 빌드가 `sources.json` 에서 만드므로 따로 손댈 것 없음.
-- **접근 제한 확인** — `artifact-host` 는 Cloudflare Access 뒤에 있다. 이 페이지는 사내 내용이 없어 밖에 열어도 되지만, **사이트 전체 설정이라 한 장만 따로 열 수 있는지 확인이 필요**하다.
-
-## 정하셔야 하는 것
-
-- **경로** — 위 제안은 `/vermilion/`
-- **비교 표** — 셋으로 늘릴지, 둘만 두고 카드로만 소개할지
+- **`artifact-host` 재배포** — 폰트 저작권 고지 수정이 파일에는 있고 서비스판에는 아직 없다.
