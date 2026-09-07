@@ -1,0 +1,60 @@
+name: 안 잡히는 표현
+description: 고쳐야 할 한국어인데 검사기가 그냥 지나갔다
+title: "[미탐] "
+labels: ["미탐"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        여기 적은 문장은 **회귀 시료로 박힙니다**. 규칙을 고칠 때마다 다시 돌아가므로,
+        한 번 잡히기 시작하면 나중에 다시 놓치는 것을 시험이 막습니다.
+
+  - type: textarea
+    id: text
+    attributes:
+      label: 그냥 지나간 문장
+      description: 한 줄이면 좋습니다. 여러 줄이면 문제가 되는 줄만 남겨 주십시오.
+      placeholder: 고칠 것은 코멘트로
+    validations:
+      required: true
+
+  - type: textarea
+    id: better
+    attributes:
+      label: 어떻게 쓰는 것이 맞나
+      placeholder: 고칠 것은 코멘트 · 또는 코멘트로 표시
+    validations:
+      required: true
+
+  - type: textarea
+    id: why
+    attributes:
+      label: 왜 그것이 맞나
+      description: |
+        근거가 있어야 규칙으로 옮길 수 있습니다. 「어색해서」만으로는 남이 판단할 수
+        없으니, 무엇이 사라졌는지·무엇으로 읽히는지를 적어 주십시오.
+      placeholder: 조사로 끝나 뒤에 서술어가 올 것 같아 미완성으로 읽힌다.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: form
+    attributes:
+      label: 어떤 문서에서 나왔나
+      options:
+        - 개조식 문서 (표·라벨·목록이 뼈대)
+        - 산문 문서 (발표 대본·소개 글·설명문)
+        - 둘 다
+    validations:
+      required: true
+
+  - type: textarea
+    id: counter
+    attributes:
+      label: 비슷하게 생겼지만 잡으면 안 되는 것
+      description: |
+        같은 모양인데 정당한 쓰임이 있으면 함께 적어 주십시오. **이것이 가장 값진
+        정보입니다** — 규칙을 넓혔을 때 멀쩡한 문장이 걸리는지를 이것으로 잽니다.
+      placeholder: 「경로의 구분자」처럼 「로」가 낱말의 일부인 것은 잡으면 안 된다.
+    validations:
+      required: false

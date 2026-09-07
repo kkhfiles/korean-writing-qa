@@ -1,0 +1,4 @@
+{"case_id": "C-001", "expect": "finding", "form": "structured", "kind": "절단형 의심", "source": "보기", "status": "pinned", "text": "고칠 것은 코멘트로", "why": "조사로 끝나 미완성으로 읽힘 · 서술 명사를 붙여 완결해야 함"}
+{"case_id": "C-002", "expect": "clean", "form": "structured", "kind": null, "source": "보기", "status": "pinned", "text": "「국회 회기」·「임시 회기」", "why": "회의체가 여는 기간이라 「회귀」 오타가 아님"}
+{"case_id": "C-003", "expect": "finding", "form": "structured", "kind": "절단형 의심", "source": "보기", "status": "pinned", "text": "이 화면은 그리기만", "why": "조사 종결 — 「그리기 전용」이 맞음"}
+{"case_id": "C-004", "expect": "clean", "form": "structured", "kind": "「~하는 자리」 의심", "source": "판단 I", "status": "open", "text": "격식 있는 자리에서 처음 꺼낸 말", "why": "실제 모임을 가리키는 정당한 쓰임인데 JARI_OK 에 「있는」이 없어 주의가 남 · 판단 I"}

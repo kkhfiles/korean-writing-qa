@@ -1,0 +1,61 @@
+name: 멀쩡한데 잡힌 표현
+description: 정상인 한국어를 검사기가 지적했다
+title: "[오탐] "
+labels: ["오탐"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        오탐은 미탐보다 비쌉니다. 멀쩡한 문장이 몇 번 걸리면 사람이 검사 결과를 통째로
+        안 보기 시작하고, 그때부터 진짜 지적도 함께 묻힙니다.
+
+  - type: textarea
+    id: text
+    attributes:
+      label: 잡힌 문장
+      placeholder: 격식 있는 자리에서 처음 꺼낸 말
+    validations:
+      required: true
+
+  - type: input
+    id: kind
+    attributes:
+      label: 어느 갈래로 잡혔나
+      description: 지적 줄의 대괄호 안에 있는 이름 그대로 적어 주십시오.
+      placeholder: 「~하는 자리」 의심
+    validations:
+      required: true
+
+  - type: textarea
+    id: why
+    attributes:
+      label: 왜 정상인가
+      placeholder: 실제 모임을 가리키는 쓰임이라 은유가 아니다.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: scope
+    attributes:
+      label: 어디까지 통과해야 하나
+      description: |
+        이 문장 하나만 통과하면 되는지, 같은 모양이 전부 통과해야 하는지에 따라
+        고치는 방법이 달라집니다.
+      options:
+        - 이 문장만 — 좁게 예외로 두면 됨
+        - 같은 모양 전부 — 규칙 자체가 너무 넓음
+        - 우리 조직 문서만 — 설정으로 끄면 됨
+    validations:
+      required: true
+
+  - type: markdown
+    attributes:
+      value: |
+        **설정으로 먼저 풀리는지 보십시오.** 그 조직의 관행이라 안 잡히면 되는
+        갈래라면 규칙을 바꾸지 않아도 됩니다.
+
+        ```
+        python assets/doc-style-check.py --list-rules
+        ```
+
+        `korean-qa.toml` 에 그 갈래를 적으면 그 문서 아래로 꺼집니다.
