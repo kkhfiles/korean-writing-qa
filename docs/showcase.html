@@ -4,11 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light">
-<meta name="description" content="사람에게 나갈 한글 문서를 보내기 전에 기계가 한 번 읽는다. 사내 보고서 603개에서 지적 2,174건 · 갈래별 수정 전후 사례와 실측 근거.">
+<meta name="description" content="Vermilion — 사람에게 나갈 한글 문서를 보내기 전에 기계가 한 번 읽는다. 사내 보고서 603개에서 지적 2,174건 · 갈래별 수정 전후 사례와 실측 근거.">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
 <link rel="apple-touch-icon" href="/favicon-180.png">
-<title>보내기 전에 한 번 읽는 한글 검사기</title>
+<title>Vermilion — 보내기 전에 한 번 읽는 한글 검사기</title>
 <style>
   /* [inline-korean-font] Doc KR — Pretendard 1.3.9 의 KS X 1001 완성형 2,350자 서브셋,
      가변축 wght 45~930. CSP가 폰트 CDN을 막으므로 data URI로 심는다.
@@ -34,7 +34,9 @@
   --ground:#F1F4F0; --paper:#FFFFFF;
   --ink:#141A16; --ink2:#4E5A53; --ink3:#7B857E;
   --line:#DCE2DB; --line2:#EBEFE9;
+  /* 주묵(朱墨) — 이 도구의 이름이자 목소리. 표시하는 손이지 「나쁨」이 아니다. */
   --red:#B3342A; --red-bg:#FCF0EE; --red-line:#E9C5BF;
+  /* 원고지 — 바탕과 「고쳐진 상태」. 「후」 배지·통과한 칸·✓ 가 여기 쓴다. */
   --green:#1F6B44; --green-bg:#EDF5F0; --green-line:#BEDCCA;
   --amber:#9A6407; --amber-bg:#FBF3E3; --amber-line:#E7D3A8;
   --kr:"Doc KR",Pretendard,"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",system-ui,sans-serif;
@@ -49,7 +51,7 @@ body{
   word-break:keep-all; overflow-wrap:anywhere;
 }
 b,strong{font-weight:700}
-a{color:var(--green); text-underline-offset:3px}
+a{color:var(--red); text-underline-offset:3px}
 code,.mono{font-family:var(--mono); font-variant-numeric:tabular-nums}
 .band{padding:0 20px}
 .band.paper{background:var(--paper); border-block:1px solid var(--line)}
@@ -62,14 +64,14 @@ code,.mono{font-family:var(--mono); font-variant-numeric:tabular-nums}
 .hero::after{content:""; position:absolute; inset:auto 0 0 0; height:130px;
   background:linear-gradient(transparent,var(--paper)); pointer-events:none}
 .hero-in{max-width:1040px; margin:0 auto; padding:76px 0 62px; position:relative; z-index:1}
-.eyebrow{font-size:13px; color:var(--green); font-weight:700; margin:0 0 16px;
+.eyebrow{font-size:13px; color:var(--red); font-weight:700; margin:0 0 16px;
   display:flex; align-items:center; gap:9px}
-.eyebrow::before{content:""; width:26px; height:2px; background:var(--green); display:inline-block}
+.eyebrow::before{content:""; width:26px; height:2px; background:var(--red); display:inline-block}
 h1{font-size:clamp(34px,6.2vw,60px); font-weight:800; letter-spacing:-.042em; line-height:1.17;
   margin:0 0 20px; text-wrap:balance; max-width:18ch; position:relative}
 h1 .mark{position:relative; display:inline-block}
 h1 .mark::after{content:""; position:absolute; left:-.04em; right:-.04em; bottom:.06em;
-  height:.32em; background:var(--green-bg); border-bottom:3px solid var(--green); z-index:-1}
+  height:.32em; background:var(--red-bg); border-bottom:3px solid var(--red); z-index:-1}
 .lede{font-size:clamp(16px,1.9vw,19px); color:var(--ink2); margin:0; max-width:56ch;
   font-weight:500; line-height:1.72}
 
@@ -79,7 +81,7 @@ h1 .mark::after{content:""; position:absolute; left:-.04em; right:-.04em; bottom
 .demo-dots{display:flex; gap:6px; margin-left:auto}
 .demo-dots i{width:7px; height:7px; border-radius:50%; background:var(--line); display:block;
   transition:background .3s; cursor:pointer}
-.demo-dots i.on{background:var(--green)}
+.demo-dots i.on{background:var(--red)}
 .slides{position:relative}
 .slide{opacity:0; visibility:hidden; position:absolute; inset:0; transition:opacity .45s ease}
 .slide.on{opacity:1; visibility:visible; position:relative}
@@ -102,6 +104,9 @@ h1 .mark::after{content:""; position:absolute; left:-.04em; right:-.04em; bottom
 .why{margin:12px 0 0; font-size:13px; color:var(--ink3); line-height:1.65}
 .why b{color:var(--red)}
 
+.whyname{margin:26px 0 0; padding:13px 16px; font-size:13.5px; color:var(--ink2);
+  border-left:3px solid var(--red); background:var(--red-bg); border-radius:0 8px 8px 0}
+.whyname b{color:var(--red)}
 .stats{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:1px;
   margin:46px 0 0; background:var(--line); border:1px solid var(--line); border-radius:12px;
   overflow:hidden}
@@ -115,10 +120,10 @@ h1 .mark::after{content:""; position:absolute; left:-.04em; right:-.04em; bottom
 .toc a{display:inline-block; font-size:13px; font-weight:600; text-decoration:none;
   color:var(--ink2); background:var(--paper); border:1px solid var(--line);
   border-radius:999px; padding:6px 14px; transition:.18s}
-.toc a:hover{border-color:var(--green); color:var(--green); transform:translateY(-1px)}
+.toc a:hover{border-color:var(--red); color:var(--red); transform:translateY(-1px)}
 
 /* ── 절 ──────────────────────────────────── */
-.snum{font-size:12.5px; font-weight:700; color:var(--green); margin:0 0 8px; font-family:var(--mono)}
+.snum{font-size:12.5px; font-weight:700; color:var(--red); margin:0 0 8px; font-family:var(--mono)}
 h2{font-size:clamp(24px,3.3vw,32px); font-weight:800; letter-spacing:-.032em; margin:0 0 12px;
   line-height:1.3; text-wrap:balance}
 .sub{color:var(--ink2); margin:0 0 30px; font-size:15.5px; max-width:64ch; line-height:1.75}
@@ -134,7 +139,7 @@ h3{font-size:17px; font-weight:700; letter-spacing:-.015em; margin:0}
 
 /* ── 큰 수치 ─────────────────────────────── */
 .figures{display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:22px; margin:0 0 28px}
-.fig{border-left:3px solid var(--green); padding:2px 0 2px 16px}
+.fig{border-left:3px solid var(--red); padding:2px 0 2px 16px}
 .fig .n{font-size:clamp(30px,4.4vw,44px); font-weight:800; letter-spacing:-.035em; line-height:1.1;
   font-family:var(--mono); font-variant-numeric:tabular-nums; margin:0}
 .fig.warn{border-left-color:var(--red)}
@@ -144,7 +149,7 @@ h3{font-size:17px; font-weight:700; letter-spacing:-.015em; margin:0}
 .rank li{margin:0; display:grid; grid-template-columns:140px 1fr 56px; gap:12px; align-items:center;
   font-size:13.5px}
 .rank .bar{height:9px; border-radius:5px; background:var(--line2); overflow:hidden}
-.rank .bar i{display:block; height:100%; background:var(--green); border-radius:5px; width:0;
+.rank .bar i{display:block; height:100%; background:var(--red); border-radius:5px; width:0;
   transition:width .9s cubic-bezier(.22,1,.36,1)}
 .rank.seen .bar i{width:var(--w)}
 .rank .c{text-align:right; font-family:var(--mono); font-variant-numeric:tabular-nums; color:var(--ink2)}
@@ -177,9 +182,10 @@ ul.pairs>li{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:0}
 .ba.bad::before{content:"전"; background:var(--red)}
 .ba.good::before{content:"후"; background:var(--green)}
 .ba p{margin:0}
-.note{margin:14px 0 0; padding:11px 14px; border-left:3px solid var(--green);
-  background:var(--green-bg); border-radius:0 8px 8px 0; font-size:13.5px; color:var(--ink2)}
-.note b{color:var(--green)}
+/* 각주는 원고 옆에 붉은 먹으로 적어 둔 말이다 — 주묵이 여기 온다. */
+.note{margin:14px 0 0; padding:11px 14px; border-left:3px solid var(--red);
+  background:var(--red-bg); border-radius:0 8px 8px 0; font-size:13.5px; color:var(--ink2)}
+.note b{color:var(--red)}
 
 /* ── 표 ──────────────────────────────────── */
 .scroll{overflow-x:auto; -webkit-overflow-scrolling:touch; margin:0 0 10px;
@@ -240,7 +246,7 @@ footer .in{padding:0; display:flex; gap:18px; flex-wrap:wrap; align-items:baseli
 <!-- ═══ 첫 화면 ═══ -->
 <div class="hero">
   <div class="hero-in">
-    <p class="eyebrow">AI가 쓴 한글 문서 검사</p>
+    <p class="eyebrow">Vermilion · 한글 문서 검사기</p>
     <h1>보내기 전에 <span class="mark">한 번</span> 읽어 주는 검사기</h1>
     <p class="lede">사람에게 나갈 한글 문서의 표현 검사 — 걸린 문장과 고친 문장을 갈래별로 모은 사례집</p>
 
@@ -277,6 +283,9 @@ footer .in{padding:0; display:flex; gap:18px; flex-wrap:wrap; align-items:baseli
         </div>
       </div>
     </div>
+
+    <p class="whyname"><b>Vermilion</b> — 주묵(朱墨) · 원고를 고칠 때 쓰던 붉은 먹.
+       <b>이 페이지의 붉은색은 전부 고치는 손</b>이고, 초록은 원고지 바탕이자 고쳐진 뒤다.</p>
 
     <div class="stats">
       <div class="stat"><p class="k">검사한 업무 보고서</p><p class="v">603</p><p class="u">개 · 2.2초</p></div>
@@ -991,6 +1000,7 @@ footer .in{padding:0; display:flex; gap:18px; flex-wrap:wrap; align-items:baseli
   <span>검사기 <code>doc-style-check.py</code></span>
   <span>사례는 모두 실제 문서와 사람이 확정한 교정에서 가져왔다.</span>
   <span>이 페이지도 같은 검사기를 통과했다 — 오류 0.</span>
+  <span>Vermilion · MIT · <code>github.com/kkhfiles/korean-writing-qa</code></span>
 </div></footer>
 
 <script>
