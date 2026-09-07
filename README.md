@@ -131,6 +131,14 @@ err  = []                                 # 주의에서 오류로 올린다
 
 **정본이 여기 있음** — 예전에는 `~/.claude/` 가 정본이고 이 저장소가 그것을 불러다 썼다. 저장소만 받은 사람이 아무것도 못 돌려서 방향을 뒤집었다. 설치본을 직접 고치면 `tests/test_installed_copy_matches.py` 가 잡는다.
 
+## 라이선스
+
+**MIT** — `LICENSE` · 받아서 고쳐 쓰고 다시 배포해도 된다
+
+**심긴 서체는 별도** — 사례집(`docs/showcase.html`)에 들어 있는 서체 「Doc KR」은 MIT가 아니라 **SIL Open Font License 1.1** 이다. Pretendard 1.3.9 의 KS X 1001 서브셋이고, 저작권자가 넷이다. 전문은 `licenses/OFL-1.1.txt` · 상세는 `NOTICE`.
+
+**보내 주시는 사례와 코드** — 저장소와 같은 MIT 조건으로 들어간다. 자세히는 `CONTRIBUTING.md`.
+
 ## 설계 문서
 
 - [사용 안내](docs/user-guide.md) — 설치·실행·결과 읽는 법

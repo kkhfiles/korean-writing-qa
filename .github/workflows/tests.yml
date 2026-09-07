@@ -22,6 +22,10 @@ jobs:
       - name: 의존성 설치
         run: python -m pip install -r requirements.txt
 
+      - name: 시험용 의존성 설치
+        # fontTools 가 있어야 심긴 서체의 라이선스 메타데이터까지 본다.
+        run: python -m pip install -r requirements-dev.txt
+
       - name: 검사기가 의존성 없이 도는지
         # 이 저장소를 받는 사람 대부분은 파일 하나만 쓴다. 그 길이 살아 있는지 먼저 본다.
         run: python assets/doc-style-check.py --list-rules
