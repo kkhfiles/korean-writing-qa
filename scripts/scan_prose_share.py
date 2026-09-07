@@ -21,7 +21,7 @@ _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))
 import repo_paths  # noqa: E402
 
 CHECKER = repo_paths.CHECKER
-CORPUS = Path("P:/github/claude-workflow/reports")
+CORPUS = Path("<설정 저장소>/reports")
 
 STRUCTURE = re.compile(r"^\s*(?:[-*+]\s|\d+[.)]\s|\||#{1,6}\s|>|```|:?-{3,})")
 SENTENCE_END = re.compile(r"[.!?。]\s*$")

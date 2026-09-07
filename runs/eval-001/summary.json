@@ -5,8 +5,8 @@
   "why": "회귀시험은 통과와 실패만 낸다. 규칙을 더했을 때 실제로 더 잡게 됐는지 답할 수단이 없어 점진 개선을 검증할 수 없었다",
   "tool": "scripts/eval_detectors.py",
   "measured_layers": {
-    "skill_checker": "C:/Users/<사용자>/.claude/skills/finalize-korean-document/scripts/check.py",
-    "global_checker": "C:/Users/<사용자>/.claude/assets/doc-style-check.py",
+    "skill_checker": "~/.claude/skills/finalize-korean-document/scripts/check.py",
+    "global_checker": "~/.claude/assets/doc-style-check.py",
     "note": "저장소 사본이 아니라 배포되어 실제로 도는 코드를 측정"
   },
   "label_sources": {

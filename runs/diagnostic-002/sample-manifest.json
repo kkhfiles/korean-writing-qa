@@ -1,7 +1,7 @@
 {
   "run_id": "diagnostic-002",
   "created_utc": "2026-08-23T15:55:01.697335+00:00",
-  "source_root": "P:/github/claude-workflow/reports",
+  "source_root": "<설정 저장소>/reports",
   "candidate_condition": "frontmatter contains model and generated_at",
   "candidate_documents": 66,
   "catalog_path": "data/catalog/confirmed-ai-documents.jsonl",

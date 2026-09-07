@@ -9,7 +9,7 @@
       "claim": "훅과 검사기의 산문 정의 두 벌이 어긋난다",
       "verdict": "축소해 적었음",
       "measured": {
-        "corpus": "P:/github/claude-workflow/reports · 문서 378건",
+        "corpus": "<설정 저장소>/reports · 문서 378건",
         "hook_fold_triggers": 44,
         "fold_share": 0.116,
         "folded_but_not_prose": 40,

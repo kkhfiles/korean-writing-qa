@@ -4,8 +4,8 @@
 
 ## 전역 문서 구조 검사기
 
-- **정본**: `P:/github/claude-workflow/assets/doc-style-check.py`
-- **자동 호출**: `P:/github/claude-workflow/hooks/doc-style-gate.py`
+- **정본**: `<설정 저장소>/assets/doc-style-check.py`
+- **자동 호출**: `<설정 저장소>/hooks/doc-style-gate.py`
 - **도구 해시**: `F353864D4016C11FA4AC26E7BEB976A2130171BD0EB040A52BFBDD8E228603F2`
 - **검사 대상**: Markdown · HTML
 - **주요 규칙**: 라벨과 값 구조 · 서술형 종결 · 모호한 지칭 · 평가 수식어 · 문서·코드 은유의 「자리」 · 강조와 묶음 크기
@@ -16,7 +16,7 @@
 
 ## `humanize-korean` 플러그인
 
-- **설치본**: `C:/Users/<사용자>/.claude/plugins/cache/im-not-ai/humanize-korean/1.5.0`
+- **설치본**: `~/.claude/plugins/cache/im-not-ai/humanize-korean/1.5.0`
 - **규칙 자산**: 번역투·대명사 직역·접속사·형식명사·문장 리듬 등 40여 개 패턴
 - **정량 코드**: `metrics.py` · `metrics_v2.py`
 - **회귀시험 결과**: 전체 57건 · 통과 45건 · 오류 12건

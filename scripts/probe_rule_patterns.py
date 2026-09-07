@@ -14,8 +14,8 @@ from collections import Counter
 from pathlib import Path
 
 CORPORA = {
-    "보고서": Path("P:/github/claude-workflow/reports"),
-    "발표자료": Path("P:/github/claude-workflow/reports/project-summary"),
+    "보고서": Path("<설정 저장소>/reports"),
+    "발표자료": Path("<설정 저장소>/reports/project-summary"),
     "AI원문": Path("P:/github/korean-writing-qa/data/raw"),
 }
 

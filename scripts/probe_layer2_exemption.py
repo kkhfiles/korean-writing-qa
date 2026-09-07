@@ -30,7 +30,7 @@ from pathlib import Path
 import repo_paths
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-CLIENT_DIR = Path("P:/github/claude-workflow")
+CLIENT_DIR = Path("<설정 저장소>")
 SKILL = repo_paths.SKILL
 RULES = SKILL / "references" / "core-rules.md"
 DOCUMENT = REPO_ROOT / "data" / "raw" / "diagnostic-002" / "doc-002.md"

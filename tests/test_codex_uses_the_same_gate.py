@@ -42,9 +42,9 @@ sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))
 
 import repo_paths  # noqa: E402
 
-ADAPTER = Path("P:/github/claude-workflow/scripts/codex-hook-adapter.py")
+ADAPTER = Path("<설정 저장소>/scripts/codex-hook-adapter.py")
 GATE = repo_paths.hook("doc-style-gate.py")
-HOOKS_TEMPLATE = Path("P:/github/claude-workflow/codex/hooks.json")
+HOOKS_TEMPLATE = Path("<설정 저장소>/codex/hooks.json")
 
 # 훅이 건너뛰지 않는 자리여야 한다 — Temp·scratchpad 는 제외 대상이다
 WORK = Path("P:/d/codex-gate-test")

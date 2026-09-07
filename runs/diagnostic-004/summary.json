@@ -5,7 +5,7 @@
   "why": "6단계 계획은 스킬의 scope 필드를 세 축으로 나누는 것이었다. 그 계획이 백서 문제를 실제로 푸는지 먼저 확인했다",
   "tool": "scripts/scan_prose_share.py",
   "corpus": {
-    "path": "P:/github/claude-workflow/reports",
+    "path": "<설정 저장소>/reports",
     "documents_scanned": 378,
     "filter": "한글 300자 이상",
     "note": "사용자가 실제로 쓰거나 받은 문서 · 이 세션이 만든 표본 아님"
@@ -28,7 +28,7 @@
     "verdict": "산문 비율이 오를수록 구조 지적이 단조 증가 · 표본 탓이 아님"
   },
   "step3_are_they_false_positives": {
-    "document": "P:/github/claude-workflow/reports/crossdept-invite-mail.md",
+    "document": "<설정 저장소>/reports/crossdept-invite-mail.md",
     "kind": "사용자가 쓴 부서 안내 메일",
     "errors": 9,
     "judged_false_positive": 9,

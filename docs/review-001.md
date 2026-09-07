@@ -87,6 +87,6 @@
 ## 레퍼런스
 
 - **프로젝트 내부**: `docs/design-handoff.md` · `docs/claude-korean-expression-inventory.md` · `docs/manual-review-001.md` · `docs/external-korean-tools-review.md`
-- **Claude Code 정본**: `C:/Users/<사용자>/.claude/CLAUDE.md` · `C:/Users/<사용자>/.claude/references/doc-review-principles.md`
-- **`humanize-korean` 설치본**: `C:/Users/<사용자>/.claude/plugins/cache/im-not-ai/humanize-korean/1.5.0/.claude/skills/humanize-korean/references/quick-rules.md`
+- **Claude Code 정본**: `~/.claude/CLAUDE.md` · `~/.claude/references/doc-review-principles.md`
+- **`humanize-korean` 설치본**: `~/.claude/plugins/cache/im-not-ai/humanize-korean/1.5.0/.claude/skills/humanize-korean/references/quick-rules.md`
 - **외부 저장소**: [`korean-report-skills`](https://github.com/JangHyun-bin/korean-report-skills) · [`fluent-korean`](https://github.com/snflkd/fluent-korean) · 확인 커밋과 라이선스는 `data/catalog/external-korean-tools.jsonl`

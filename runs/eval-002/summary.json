@@ -6,7 +6,7 @@
   "why_no_rule_was_adopted": {
     "principle": "정확도 우선 — 정상 문장을 지적하면 사용자가 검사기를 끈다",
     "corpora": {
-      "reports": {"path": "P:/github/claude-workflow/reports", "korean_documents": 695, "chars": 5010180},
+      "reports": {"path": "<설정 저장소>/reports", "korean_documents": 695, "chars": 5010180},
       "ai_written": {"path": "data/raw/diagnostic-002", "korean_documents": 20, "chars": 144065}
     },
     "measurements": [
