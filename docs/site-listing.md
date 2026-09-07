@@ -18,16 +18,16 @@ form: structured
 
 ## 1. `artifact-host/sources.json` 에 넣을 항목
 
-경로와 제목은 정해야 한다 — 아래는 제안이고, **이름은 사용자가 고른다**(옆의 둘은 Dispatch·Mycelium 처럼 고유명을 쓴다).
+**이름은 Vermilion 으로 정해짐**(2026-09-07) — 주묵(朱墨) · 원고를 고칠 때 쓰던 붉은 먹. 사례집의 붉은색이 그 뜻으로 바뀌었다.
 
 ```json
 {
-  "to": "korean-qa/index.html",
-  "title": "한글 검사기 — 보내기 전에 한 번",
+  "to": "vermilion/index.html",
+  "title": "Vermilion — 보내기 전에 한 번 읽는 한글 검사기",
   "note": "사람에게 나갈 한글 문서를 기계가 먼저 읽는다 · 갈래별 수정 전후 사례",
   "from": "P:/github/korean-writing-qa/docs/showcase.html",
   "lang": "ko",
-  "group": "korean-qa"
+  "group": "vermilion"
 }
 ```
 
@@ -54,8 +54,8 @@ form: structured
 
 ```html
 <article>
-  <p class="eyebrow">셋째 도구</p>
-  <h3>한글 검사기</h3>
+  <p class="eyebrow">셋째 도구 · 주묵(朱墨)</p>
+  <h3>Vermilion</h3>
   <p class="lede">사람에게 나갈 한글 문서를 <b>보내기 전에</b> 기계가 한 번 읽습니다.
     어색한 표기를 갈래로 짚고, 고친 문장을 함께 보여 줍니다.</p>
   <dl class="facts">
@@ -70,7 +70,7 @@ form: structured
     <div class="fig"><span class="v">2,174건</span><span class="k">그 안에서 나온 지적</span></div>
     <div class="fig"><span class="v">2.2초</span><span class="k">603개를 다 보는 데 걸린 시간</span></div>
   </div>
-  <a class="golink" href="/korean-qa/">한글 검사기 자세히 보기 →</a>
+  <a class="golink" href="/vermilion/">Vermilion 자세히 보기 →</a>
 </article>
 ```
 
@@ -82,6 +82,5 @@ form: structured
 
 ## 정하셔야 하는 것
 
-- **이름** — 옆의 둘은 Dispatch·Mycelium 이다. 고유명을 붙일지, 「한글 검사기」로 둘지.
-- **경로** — 위 제안은 `/korean-qa/`
+- **경로** — 위 제안은 `/vermilion/`
 - **비교 표** — 셋으로 늘릴지, 둘만 두고 카드로만 소개할지
