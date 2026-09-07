@@ -85,10 +85,10 @@ def particle_is_part_of_word(hit):
 
 # (이름, 패턴, 등급, 고치는 법, 걸러낼 조건)
 TRANSLATIONESE = [
-    ('이중 피동', DOUBLE_PASSIVE, 'err', '피동을 한 번만', None),
+    ('이중 피동', DOUBLE_PASSIVE, 'err', '피동을 한 번만 쓸 것', None),
     ('번역투 이중 조사', DOUBLE_PARTICLE, 'warn', '조사를 하나로 풀 것',
      particle_is_part_of_word),
-    ('번역투 그녀', SHE_PRONOUN, 'warn', '이름이나 직책으로', None),
+    ('번역투 그녀', SHE_PRONOUN, 'warn', '이름이나 직책으로 바꿀 것', None),
 ]
 
 
@@ -451,7 +451,7 @@ def scan_html(path, relaxed=False, form=None, rules=None):
     for w in VAGUE_SOFT:
         n = len(re.findall(w, text))
         if n:
-            warn.append(('지시어 확인', f'「{w}」 {n}회 — 가리키는 대상이 하나로 읽히는지'))
+            warn.append(('지시어 확인', f'「{w}」 {n}회 — 가리키는 대상이 하나로 읽히는지 볼 것'))
     for w in SELF_PRAISE:
         for m in re.findall(r'[^·\n]{0,20}' + w + r'[^·\n]{0,22}', text):
             warn.append(('평가 수식어', f'「{w}」 … {m.strip()[:56]} — 무엇을 하는지로 바꿀 것'))
@@ -465,7 +465,7 @@ def scan_html(path, relaxed=False, form=None, rules=None):
     def around(m):
         return ' '.join(text[max(0, m.start() - 24):m.end() + 8].split())
     for m in JARI.finditer(text):
-        err.append(('「~하는 자리」', f'{around(m)[:56]} — 지점·위치·사례·단계·시점 중 맞는 말로'))
+        err.append(('「~하는 자리」', f'{around(m)[:56]} — 지점·위치·사례·단계·시점 중 맞는 말로 바꿀 것'))
     for m in JARI_ANY.finditer(text):
         if JARI.search(m.group(0)) or JARI_OK.search(m.group(0)):
             continue
@@ -474,7 +474,7 @@ def scan_html(path, relaxed=False, form=None, rules=None):
         if EMPTY_NOUN_OK.search(m.group(0)):
             continue
         warn.append(('지어낸 명사구',
-                     f'{around(m)[:56]} — 그 명사가 혼자 서나 · 아니면 문장을 서술로'))
+                     f'{around(m)[:56]} — 그 명사가 혼자 서는지 볼 것 · 아니면 문장을 서술로 펼 것'))
     for m in HOEGI.finditer(text):
         span = text[max(0, m.start() - 6):m.end() + 6]
         if HOEGI_OK.search(span):
@@ -683,7 +683,7 @@ RULE_GROUPS = {
     '구조': ('찾아 읽기가 안 되는 갈래 — 문장은 멀쩡하다', [
         '제목 서술형', '제목 명사형 위반', '제목 형태 확인',
         '진입점 없음', '진입점 서술형', '진입점 명사형 위반', '진입점 형태 확인',
-        '스캔 가치 없는 라벨', '반복 블록 라벨 불일치', '해설을 인용으로',
+        '스캔 가치 없는 라벨', '반복 블록 라벨 불일치', '해설을 인용 부호로 씀',
     ]),
     '안내': ('지적이 아니라 물음 — 형식을 안 적은 문서에 한 줄', [
         '형식 미표기',
@@ -889,7 +889,7 @@ def scan_md(path, relaxed=False, form=None, rules=None):
     prev_is_table = contrast_table = False
     for n, line in body:
         s = line.strip()
-        if s.startswith('>'):        # 인용은 아래 「해설을 인용으로」에서 따로 본다
+        if s.startswith('>'):        # 인용은 아래 「해설을 인용 부호로 씀」에서 따로 본다
             continue
         is_table = s.startswith('|')
         # ❌/✅ 가 표 **머리**에만 있는 대조표 — 데이터 행이 곧 나쁜 예다. 표 단위로 뺀다
@@ -951,9 +951,9 @@ def scan_md(path, relaxed=False, form=None, rules=None):
                         bare = (not has_head) and EVIDENCE_END.search(t.strip())
                         msg = f'{t[:56]}'
                         if bare and relaxed:
-                            warn.append((n, '결론 라벨 없는 설명', msg + ' — 결론을 라벨로 앞에'))
+                            warn.append((n, '결론 라벨 없는 설명', msg + ' — 결론을 라벨로 앞에 낼 것'))
                         elif bare:
-                            err.append((n, '서술형 종결', msg + ' — 결론 라벨을 앞에 두거나 개조식으로'))
+                            err.append((n, '서술형 종결', msg + ' — 결론 라벨을 앞에 두거나 개조식으로 고칠 것'))
                         else:
                             err.append((n, '서술형 종결', msg))
 
@@ -989,7 +989,7 @@ def scan_md(path, relaxed=False, form=None, rules=None):
             if EMPTY_NOUN_OK.search(e.group(0)):
                 continue
             warn.append((n, '지어낸 명사구',
-                         f'「{e.group(0)}」 — 그 명사가 혼자 서나 · '
+                         f'「{e.group(0)}」 — 그 명사가 혼자 서는지 볼 것 · '
                          f'{strip(line).strip()[:36]}'))
         for kind, level, fix, hit in translationese_hits(m):
             note = f'「{hit.group(0)}」 — {fix} · {strip(line).strip()[:40]}'
@@ -1085,7 +1085,7 @@ def scan_md(path, relaxed=False, form=None, rules=None):
             for chunk in re.split(r'(?<=다\.)\s+', b):
                 c = strip(chunk).replace('**', '').strip()
                 if c and NARRATIVE.search(c) and not NOT_NARRATIVE.search(c):
-                    warn.append((start + k + 1, '해설을 인용으로', f'{c[:52]} — 라벨:값으로'))
+                    warn.append((start + k + 1, '해설을 인용 부호로 씀', f'{c[:52]} — 라벨:값으로 고칠 것'))
 
     # 한 줄에서 같은 종류가 여러 번 나오면 한 건으로 센다 — 건수가 고칠 곳 수와 어긋나지 않게
     def dedupe(items):
@@ -1113,7 +1113,7 @@ def scan_md(path, relaxed=False, form=None, rules=None):
         warn.append((
             '형식 미표기',
             '산문으로 보이는데 형식을 안 적었다 — 머리말에 `form: prose` 를 적으면 '
-            '개조식 검사를 빼고 본다. 개조식이 맞다면 `form: structured`',
+            '개조식 검사를 빼고 본다. 개조식이 맞다면 `form: structured` 를 적는다.',
         ))
     err, warn = apply_form(err, warn, resolved)
     err, warn = apply_selection(err, warn, rules) if rules else (err, warn)
@@ -1188,9 +1188,9 @@ def main():
         for kind in sorted(rules.off):
             print(f'   ⊘ {kind} — 끔')
         for kind in sorted(rules.warn):
-            print(f'   ↓ {kind} — 오류에서 주의로')
+            print(f'   ↓ {kind} — 오류에서 주의로 낮춤')
         for kind in sorted(rules.err):
-            print(f'   ↑ {kind} — 주의에서 오류로')
+            print(f'   ↑ {kind} — 주의에서 오류로 올림')
         print()
 
     total_e = total_w = total_blind = 0
