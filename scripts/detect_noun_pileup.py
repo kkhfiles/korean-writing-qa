@@ -49,7 +49,7 @@ ACTION_NOUN = {
     '배치', '설정', '초기화', '동기화', '전파', '차단', '해제', '복원', '분류',
 }
 
-CORPUS_ROOTS = (Path("P:/github/claude-workflow/reports"),
+CORPUS_ROOTS = (Path("<설정 저장소>/reports"),
                 Path("P:/github/korean-writing-qa/docs"))
 
 # 사용자 판정으로 확인된 참 문제 — 규칙이 이것을 잡는지가 첫 관문

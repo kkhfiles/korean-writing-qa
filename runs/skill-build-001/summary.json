@@ -2,9 +2,9 @@
   "run_id": "skill-build-001",
   "date": "2026-08-24",
   "objective": "Claude Code와 Codex가 생성하거나 수정한 한글 문서 산출물을 자연스럽게 최종화하는 단일 스킬 설치",
-  "canonical_skill": "C:/Users/<사용자>/.claude/skills/finalize-korean-document",
-  "repository_backup": "P:/github/claude-workflow/skills/finalize-korean-document",
-  "codex_projection": "C:/Users/<사용자>/.agents/skills/finalize-korean-document",
+  "canonical_skill": "~/.claude/skills/finalize-korean-document",
+  "repository_backup": "<설정 저장소>/skills/finalize-korean-document",
+  "codex_projection": "~/.agents/skills/finalize-korean-document",
   "commits": [
     "6c967f5c",
     "283cc4b3",

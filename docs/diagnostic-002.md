@@ -4,7 +4,7 @@
 
 ## 입력
 
-- **출처**: `P:/github/claude-workflow/reports`
+- **출처**: `<설정 저장소>/reports`
 - **후보 조건**: Markdown 앞부분에 `model`과 `generated_at` 보유
 - **확인된 후보**: 66개
 - **진단 표본**: 20개 · 보고서 종류 6개 · 소형 3개 · 중형 14개 · 대형 3개

@@ -1,7 +1,7 @@
 {
   "run_id": "claude-korean-rules-004",
   "created_utc": "2026-08-23T23:26:58.973238+00:00",
-  "claude_root": "C:/Users/<사용자>/.claude",
+  "claude_root": "~/.claude",
   "workspace_roots": [
     "<프로젝트 1>",
     "<프로젝트 2>",

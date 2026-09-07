@@ -25,10 +25,10 @@
 | Claude Code 명령 | 13 | 슬라이드·검토 명령 문서 |
 | 전역 참고 문서 | 10 | 작업·문서·발표 원칙 |
 | 프로젝트 규칙 | 10 | 지정한 작업 디렉터리의 `CLAUDE.md` |
-| 전역 규칙 | 1 | `C:/Users/<사용자>/.claude/CLAUDE.md` |
-| 전역 메모리 | 1 | `C:/Users/<사용자>/.claude/memory/` |
+| 전역 규칙 | 1 | `~/.claude/CLAUDE.md` |
+| 전역 메모리 | 1 | `~/.claude/memory/` |
 
-**프로젝트 규칙 탐색 범위**: `<프로젝트 1>` · `<프로젝트 2>` · `<프로젝트 3>` · `<프로젝트 4>` · `P:/github`
+**프로젝트 규칙 탐색 범위**: 작성자 기계의 프로젝트 디렉터리 5곳
 
 **제외 대상**: 세션 대화 원문 · 도구 출력 · 디버그 로그 · `node_modules` · Git 내부 파일
 
@@ -38,7 +38,7 @@
 
 | 파일 | 용도 |
 |---|---|
-| `data/catalog/claude-rule-sources.jsonl` | 출처 종류 · 절대 위치 · 해시 · 중복 출처 |
+| `data/catalog/claude-rule-sources.jsonl` | 출처 종류 · 위치 · 해시 · 중복 출처 (개인 경로가 들어 있어 공개본에서는 뺌 · 수집 스크립트가 다시 만듦) |
 | `data/raw/claude-korean-rules-004/candidate-passages.jsonl` | 자동 추출한 원문 문단 · Git 제외 |
 | `data/annotations/claude-korean-expression-rules.jsonl` | 사람이 정리한 규칙 · 적용 범위 · 예시 · 출처 줄 |
 | `runs/claude-korean-rules-004/collection-summary.json` | 검색 범위 · 수량 · 도구 해시 · 한계 |
@@ -85,7 +85,7 @@
 - 블로그·백서·발표 원고: 서술형 문장 유지 · 어색한 한국어만 공통 검사
 - 터미널 응답: 자연스러운 문장 유지 · 개조식 종결 규칙 제외
 
-**근거**: `C:/Users/<사용자>/.claude/references/doc-review-principles.md` 84~105행
+**근거**: `~/.claude/references/doc-review-principles.md` 84~105행
 
 ### 슬라이드 종결
 
@@ -97,7 +97,7 @@
 
 **충돌 자료**: 과거 프로젝트 메모리에는 부제·본문도 `~합니다` 체로 쓰라는 규칙 존재
 
-**우선 근거**: `C:/Users/<사용자>/.claude/commands/formal-slides.md` 192~206행
+**우선 근거**: `~/.claude/commands/formal-slides.md` 192~206행
 
 ### Humanize 규칙
 
@@ -108,7 +108,7 @@
 - 반대 실측: 사용자 작성문보다 AI 문서의 접속부사·복수 어미·`~에 대한` 빈도가 더 낮은 표본 존재
 - 사용 방식: 문서 단위 수치와 후보 표시만 허용 · 자동 오류 판정과 자동 윤문 금지
 
-**근거**: `docs/existing-tools.md` · `docs/manual-review-001.md` · `C:/Users/<사용자>/.claude/CLAUDE.md` 205~209행
+**근거**: `docs/existing-tools.md` · `docs/manual-review-001.md` · `~/.claude/CLAUDE.md` 205~209행
 
 ## 이번 세션에서 새로 받은 표현
 
@@ -142,9 +142,9 @@
 
 ```powershell
 python scripts/collect_claude_korean_rules.py `
-  --claude-root C:\Users\<사용자>\.claude `
+  --claude-root ~/.claude `
   --project-root P:\github\korean-writing-qa `
-  --workspace-root <프로젝트 1> `
+  --workspace-root <프로젝트 디렉터리> `
   --workspace-root <프로젝트 2> `
   --workspace-root <프로젝트 3> `
   --workspace-root <프로젝트 4> `

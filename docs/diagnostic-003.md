@@ -10,7 +10,7 @@
 | JSONL 레코드 | `llm-generated-raw` 원본 파일 | 500 | 100 |
 | 일반 텍스트 | 모델 출력임을 나타내는 파일명 · 한국어 포함 | 19 | 19 |
 
-- **출처**: `P:/github/claude-workflow/reports`
+- **출처**: `<설정 저장소>/reports`
 - **선정 방식**: 원본 종류·자료 출처·크기별 순환 선택 · SHA-256 순서
 - **원본 검증**: 복사한 149개 단위의 SHA-256 일치
 - **원문 보관**: `data/raw/diagnostic-003/` · Git 제외

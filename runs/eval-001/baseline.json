@@ -1,6 +1,6 @@
 {
   "profile": "general",
-  "skill_root": "C:\\Users\\<사용자>\\.claude\\skills\\finalize-korean-document",
+  "skill_root": "~/.claude/skills/finalize-korean-document",
   "positives": {
     "total": 13,
     "caught": 2,

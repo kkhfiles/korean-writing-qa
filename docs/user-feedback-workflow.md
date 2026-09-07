@@ -58,7 +58,7 @@
 **QA 저장소 기본 위치**: `P:/github/korean-writing-qa` · 다른 복사본은 `KOREAN_WRITING_QA_HOME`으로 지정
 
 ```powershell
-python C:/Users/<사용자>/.claude/skills/finalize-korean-document/scripts/record_feedback.py `
+python ~/.claude/skills/finalize-korean-document/scripts/record_feedback.py `
   --candidate-id <고유-ID> `
   --rule-id <규칙-ID> `
   --original <수정-전> `
@@ -74,7 +74,7 @@ python C:/Users/<사용자>/.claude/skills/finalize-korean-document/scripts/reco
 **규칙 반영 시작**: 승격 미리보기
 
 ```powershell
-python C:/Users/<사용자>/.claude/skills/finalize-korean-document/scripts/promote_feedback.py `
+python ~/.claude/skills/finalize-korean-document/scripts/promote_feedback.py `
   --candidate-id <고유-ID>
 ```
 

@@ -1,7 +1,7 @@
 {
   "run_id": "diagnostic-001",
   "created_utc": "2026-08-23T15:46:37.319282+00:00",
-  "source_root": "P:/github/claude-workflow/reports",
+  "source_root": "<설정 저장소>/reports",
   "catalog_path": "data/catalog/documents.jsonl",
   "catalog_documents": 587,
   "sample_size": 30,

@@ -21,7 +21,7 @@ form: structured
 
 ```
 # 갈래별 건수 — -v 를 빼면 문서마다 주의 8건에서 잘린다(합계와 안 맞는다)
-python -X utf8 ~/.claude/assets/doc-style-check.py -v P:/github/claude-workflow/reports
+python -X utf8 ~/.claude/assets/doc-style-check.py -v <설정 저장소>/reports
 python -X utf8 ~/.claude/assets/doc-style-check.py -v ~/.claude P:/github/korean-writing-qa
 
 # 짝 실험 시료
@@ -86,7 +86,7 @@ python -X utf8 ~/.claude/skills/finalize-korean-document/scripts/check.py <형�
 
 | 처음 쓴 것 | 사용자 지적 | 바꾼 것 |
 |---|---|---|
-| 「관찰한 사실은 LCT가 낸다」 | 「사실을 낸다」가 이상함 | 「같은 함정에 두 번 넘어가면 기계로 옮긴다」 |
+| 「관찰한 사실은 검사기가 낸다」 | 「사실을 낸다」가 이상함 | 「같은 함정에 두 번 넘어가면 기계로 옮긴다」 |
 | 「의견을 받는 자리」·「보고하는 자리」 | 회의·세미나가 나음 | 실제 좌석(앞자리·빈자리·옆자리) |
 | 서술형처럼 보이는 **명사** — 최다·과다·보다 | 「보다」는 명사가 아님 | 「~다」로 끝나지만 서술어가 아닌 말 |
 | 「남은 방법 하나」 | 「한 가지」가 나음 | 「남은 방법은 하나」 |

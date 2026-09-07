@@ -6,7 +6,7 @@
 
 | 항목 | 결과 |
 |---|---|
-| 정본 | `C:/Users/<사용자>/.claude/skills/finalize-korean-document/` |
+| 정본 | `~/.claude/skills/finalize-korean-document/` |
 | Codex 사용 | 정본을 가리키는 junction 설치 |
 | Claude Code 자동 검사 | 문서 수정 직후와 발행 직전에 실행 |
 | Codex 자동 검사 | `apply_patch`·`Edit`·`Write` 직후 실행 |

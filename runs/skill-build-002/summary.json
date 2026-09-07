@@ -2,9 +2,9 @@
   "run_id": "skill-build-002",
   "date": "2026-08-24",
   "objective": "사용자 교정을 후보로 수집하고 사람 판단과 회귀시험을 통과한 표현만 문서 종류별 검사 규칙으로 반영",
-  "canonical_skill": "C:/Users/<사용자>/.claude/skills/finalize-korean-document",
-  "repository_backup": "P:/github/claude-workflow/skills/finalize-korean-document",
-  "codex_projection": "C:/Users/<사용자>/.agents/skills/finalize-korean-document",
+  "canonical_skill": "~/.claude/skills/finalize-korean-document",
+  "repository_backup": "<설정 저장소>/skills/finalize-korean-document",
+  "codex_projection": "~/.agents/skills/finalize-korean-document",
   "validation": {
     "skill_schema": "passed",
     "detector_assertions": 68,
