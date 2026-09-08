@@ -115,6 +115,40 @@ class GlobalCheckerFormTests(unittest.TestCase):
             self.assertIn("스캔 가치 없는 라벨", prose_warn, "형식과 무관한데 사라졌습니다")
             self.assertNotIn("스캔 가치 없는 라벨", plain, "발행을 막는 오류로 되돌아갔습니다")
 
+    def test_no_title_or_lede_kind_leaks_through_a_prose_declaration(self) -> None:
+        """제목·진입점 갈래는 통째로 개조식 전제다 — 하나만 남으면 선언이 반만 듣는다.
+
+        **왜 낱말을 세지 않고 집합을 대조하나.** 같은 함정에 두 번 걸렸다. 2026-08-28
+        에는 「서술형 문단」이, 2026-09-08 에는 「진입점 형태 확인」이 목록에서
+        빠져 있었다. 갈래를 하나씩 적어 두는 형태로는 다음 갈래가 늘 때 또 빠진다.
+        여기서는 검사기 자신의 갈래 목록에서 가족을 뽑아 대조하므로 새로 늘어난
+        갈래도 걸린다.
+
+        **형제가 하나만 말하는 것이 침묵보다 나쁘다.** 아무것도 안 바뀌면 사람은
+        선언이 안 먹었다고 여기지만, 넷이 조용한데 하나만 남으면 그 지적이 정당한
+        줄로 읽고 산문 문서를 개조식으로 고친다.
+        """
+        family = sorted(
+            kind
+            for _, kinds in self.checker.RULE_GROUPS.values()
+            for kind in kinds
+            if kind.startswith(("제목", "진입점"))
+        )
+        self.assertTrue(family, "갈래 목록에서 제목·진입점 가족을 못 찾았습니다")
+        leaking = [k for k in family if k not in self.checker.FORM_ONLY_STRUCTURED]
+        self.assertEqual([], leaking, f"산문 선언을 뚫고 남습니다: {leaking}")
+
+    def test_a_prose_document_with_a_particle_ending_lede_stays_quiet(self) -> None:
+        """증상이 났던 그 모양 그대로 — 조사로 끝나는 첫 줄이 진입점 지적을 냈다."""
+        doc = (
+            "---\nform: prose\n---\n"
+            "# 검사기 소개\n\n"
+            "도입 배경과 적용 범위까지\n\n"
+            "글을 쓴다는 것은 생각을 정리하는 일이다.\n"
+        )
+        _, warnings = self.scan(doc)
+        self.assertNotIn("진입점 형태 확인", warnings)
+
     def test_the_default_is_unchanged(self) -> None:
         """기본값이 바뀌면 이 검사기를 쓰는 모든 문서의 판정이 조용히 달라진다."""
         self.assertEqual(self.scan(STRUCTURED)[0], self.scan(STRUCTURED, "structured")[0])
