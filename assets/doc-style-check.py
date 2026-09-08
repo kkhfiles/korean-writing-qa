@@ -549,13 +549,23 @@ def scan_html(path, relaxed=False, form=None, rules=None):
     #   ⛔ 한국어 제품 홍보 쪽에 반말은 안 쓴다. 같이 만든 소개 쪽 셋은 서술 문장이
     #      100% 존댓말인데 사례집 하나만 67건이 반말이었다(2026-09-08 실측) —
     #      만든 사람의 작업 문서 말투가 그대로 나간 것이다.
-    for p in re.findall(r'<p(?![a-zA-Z])[^>]*>(.*?)</p>', body, re.S):
+    #   ⛔ `<p>` 만 보면 꼬리말을 놓친다 — 발행한 쪽의 꼬리말이 `<span>` 으로만
+    #      짜여 있어 반말 한 줄이 그대로 나갔다(2026-09-08 · 사람이 읽고서야 걸림).
+    #      꼬리말은 사람이 보는 글이므로 함께 본다.
+    chunks = re.findall(r'<p(?![a-zA-Z])[^>]*>(.*?)</p>', body, re.S)
+    chunks += re.findall(r'<footer[^>]*>(.*?)</footer>', body, re.S)
+    for p in chunks:
         t = strip(p)
         if not t or is_example(t):
             continue
+        # 대시 앞뒤를 따로 본다 — 「이 페이지도 통과했다 — 오류 0.」 처럼 반말이
+        # 대시 앞에 있으면 문장의 끝이 아니라서 통째로 빠진다(2026-09-08 실측).
+        # 개조식 결론 머리(「대체 아님 — …」)는 서술형이 아니라 그대로 지나간다.
         for sent in sentences(t):
-            if is_plain_speech(sent):
-                err.append(('반말 서술형', f'{sent[:52]} — 존댓말로 쓸 것'))
+            for part in re.split(r'\s+[—–]\s+', sent):
+                if is_plain_speech(part):
+                    err.append(('반말 서술형', f'{part[:52]} — 존댓말로 쓸 것'))
+                    break
 
     # 4b. 제목 — 마크다운과 같은 규칙을 HTML 에도 건다.
     #     규칙(§1 개조식)은 진작 있었는데 이 경로에만 안 걸려 있었다. 그래서 값은
