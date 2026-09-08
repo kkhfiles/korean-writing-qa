@@ -162,9 +162,32 @@ class SelectionBehaviourTests(unittest.TestCase):
         tail = out.strip().splitlines()[-1]
         self.assertIn("갈래 설정 적용", tail, f"합계 줄에 안 적혔습니다: {tail}")
 
-    def test_no_config_changes_nothing(self) -> None:
-        """설정이 없으면 예전과 똑같이 돈다."""
-        self.assertEqual(run(self.doc).stdout, run(self.doc, "--no-rules").stdout)
+    def test_no_config_changes_nothing_that_is_on_by_default(self) -> None:
+        """설정이 없으면 기본 갈래의 판정이 `--no-rules` 와 같다.
+
+        ⚠️ **출력까지 같지는 않다**(2026-09-08 부터) — `--no-rules` 는 발행
+        게이트용이라 「전부 본다」에 **기본으로 꺼진 갈래**까지 든다. 그래서 켰다는
+        줄이 맨 위에 하나 더 붙는다. 판정이 갈리는 것은 그 갈래뿐이다.
+        """
+        plain = run(self.doc).stdout
+        gate = run(self.doc, "--no-rules").stdout
+        self.assertIn("── sample.md  오류 2 · 주의 2", plain)
+        self.assertIn("── sample.md  오류 2 · 주의 2", gate)
+        self.assertNotIn("갈래 설정", plain, "설정이 없는데 뭔가 적용됐습니다")
+        self.assertIn("켬 1종", gate, "발행 게이트가 기본으로 꺼진 갈래를 안 켰습니다")
+
+    def test_the_gate_switches_on_the_kinds_that_are_off_by_default(self) -> None:
+        """★ 발행 게이트가 못 보는 갈래가 있으면 그 갈래는 영영 안 걸린다."""
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("dsc", CHECKER)
+        dsc = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(dsc)
+        self.assertTrue(dsc.DEFAULT_OFF, "기본으로 꺼진 갈래가 없습니다")
+        banmal = self.doc.parent / "banmal.html"
+        banmal.write_text("<h1>소개</h1><p>사례는 실제 문서에서 가져왔다.</p>",
+                          encoding="utf-8")
+        self.assertNotIn("반말 서술형", run(banmal).stdout)
+        self.assertIn("반말 서술형", run(banmal, "--no-rules").stdout)
 
     def test_broken_config_stops_rather_than_ignoring(self) -> None:
         self.config('[rules]\noff = ["없는 갈래 이름"]\n')

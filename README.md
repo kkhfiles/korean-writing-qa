@@ -69,8 +69,10 @@ python doc-style-check.py <파일…|디렉터리> [-v]
 
 **조직마다 문서 관행이 다름** — 표 머리 「비고」는 공문서 표의 표준 관례이고, 발표 대본은 산문이 정상이다. 갈래를 끄거나 severity 를 바꿀 수 있다.
 
+**기본으로 꺼진 갈래 하나** — 「반말 서술형」. 반말 자체는 잘못이 아니라서 꺼 둔다(실측 2026-09-08: 작업 기록과 규칙 문서는 서술 문장의 90%, 업무 보고서는 63%가 반말이고 그게 정상). **사람에게 내보이는 홍보·안내 자료에서만** `on = ["반말 서술형"]` 으로 켠다.
+
 ```
-python assets/doc-style-check.py --list-rules      # 갈래 26종 · 묶음 5종
+python assets/doc-style-check.py --list-rules      # 갈래 27종 · 묶음 5종
 cp korean-qa.example.toml korean-qa.toml           # 고쳐서 문서 위에 둔다
 ```
 
