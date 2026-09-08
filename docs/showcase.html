@@ -32,7 +32,9 @@
     :root{
   color-scheme: light;
   --ground:#F1F4F0; --paper:#FFFFFF;
-  --ink:#141A16; --ink2:#4E5A53; --ink3:#7B857E;
+  /* ⚠️ `--ink3` 은 12~13px 라벨에만 쓰인다(여섯 곳). 옛 값 `#7B857E` 는 바탕에서
+     3.82:1 이라 AA(4.5) 아래였다 — 작은 글자에는 큰 글자 예외가 없다. */
+  --ink:#141A16; --ink2:#4E5A53; --ink3:#626C66;
   --line:#DCE2DB; --line2:#EBEFE9;
   /* 주묵(朱墨) — 이 도구의 이름이자 목소리. 표시하는 손이지 「나쁨」이 아니다. */
   --red:#B3342A; --red-bg:#FCF0EE; --red-line:#E9C5BF;
@@ -117,7 +119,10 @@ h1 .mark::after{content:""; position:absolute; left:-.04em; right:-.04em; bottom
 .stat .u{font-size:12.5px; color:var(--ink2); margin:3px 0 0}
 .toc{display:flex; flex-wrap:wrap; gap:7px; margin:30px 0 0; padding:0; list-style:none}
 .toc li{margin:0}
-.toc a{display:inline-block; font-size:13px; font-weight:600; text-decoration:none;
+/* 폰에서 누를 수 있는 크기는 44px — 알약이라 높이만 키우면 글자가 위로 뜬다.
+   그래서 `inline-flex` + `align-items:center` 로 가운데에 앉힌다. */
+.toc a{display:inline-flex; align-items:center; min-height:44px;
+  font-size:13px; font-weight:600; text-decoration:none;
   color:var(--ink2); background:var(--paper); border:1px solid var(--line);
   border-radius:999px; padding:6px 14px; transition:.18s}
 .toc a:hover{border-color:var(--red); color:var(--red); transform:translateY(-1px)}
