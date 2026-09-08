@@ -11,21 +11,24 @@
 import collections
 import importlib.util
 import json
+import os
 import pathlib
 import re
 import time
 
-CHECKER = pathlib.Path("P:/github/korean-writing-qa/assets/doc-style-check.py")
+REPO = pathlib.Path(__file__).resolve().parents[2]
+CHECKER = REPO / "assets" / "doc-style-check.py"
 spec = importlib.util.spec_from_file_location("dsc", CHECKER)
 dsc = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(dsc)
 
 SKIP = {".git", "node_modules", "__pycache__", ".venv", "projects", "todos",
         "shell-snapshots", "backups", "file-history", "cache", "statsig", "runs", "data"}
+#: 「보고서」 뭉치는 이 저장소 밖이다 — 없는 기계에서는 그 열이 비고 규칙·기록만 나온다.
+REPORTS = pathlib.Path(os.environ.get("QA_REPORTS_DIR", "P:/github/claude-workflow/reports"))
 CORPORA = {
-    "보고서": [pathlib.Path("P:/github/claude-workflow/reports")],
-    "규칙·기록": [pathlib.Path("C:/Users/kkhfiles/.claude"),
-                pathlib.Path("P:/github/korean-writing-qa")],
+    "보고서": [REPORTS],
+    "규칙·기록": [pathlib.Path.home() / ".claude", REPO],
 }
 
 out = {}
