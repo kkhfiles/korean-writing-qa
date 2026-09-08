@@ -114,6 +114,29 @@ class PlainSpeechTests(unittest.TestCase):
         polite = "<h1>소개</h1><p>사례는 모두 실제 문서에서 가져왔습니다.</p>"
         self.assertNotIn("반말 서술형", self.scan(polite, ".html", on))
 
+    def test_it_reads_the_footer_too(self) -> None:
+        """★ 꼬리말은 사람이 보는 글이다 — `<p>` 만 보면 그대로 나간다.
+
+        발행한 쪽의 꼬리말이 `<span>` 으로만 짜여 있어 반말 한 줄이 나갔고,
+        검사기가 아니라 사람이 읽고서야 걸렸다(2026-09-08).
+        """
+        on = self.dsc.Selection(on={"반말 서술형"}, source="시험")
+        doc = ("<h1>소개</h1><p>사례는 실제 문서에서 가져왔습니다.</p>"
+               "<footer><span>이 페이지도 같은 검사기를 통과했다.</span></footer>")
+        self.assertIn("반말 서술형", self.scan(doc, ".html", on))
+
+    def test_plain_speech_before_a_dash_is_caught(self) -> None:
+        """반말이 대시 앞에 있으면 문장의 끝이 아니라서 통째로 빠졌다."""
+        on = self.dsc.Selection(on={"반말 서술형"}, source="시험")
+        doc = "<h1>소개</h1><p>이 페이지도 같은 검사기를 통과했다 — 오류 0.</p>"
+        self.assertIn("반말 서술형", self.scan(doc, ".html", on))
+
+    def test_a_noun_ending_head_before_a_dash_still_passes(self) -> None:
+        """개조식 결론 머리까지 걸면 규칙 §1 이 요구하는 형태가 못 쓰이게 된다."""
+        on = self.dsc.Selection(on={"반말 서술형"}, source="시험")
+        doc = "<h1>소개</h1><p><b>대체 아님 · 별도 추가</b> — 근거를 아래에 적었습니다.</p>"
+        self.assertNotIn("반말 서술형", self.scan(doc, ".html", on))
+
     def test_the_kind_is_in_the_default_off_list(self) -> None:
         """목록에서 빠지면 조용히 기본 켜짐이 되어 모든 작업 문서가 쏟아진다."""
         self.assertIn("반말 서술형", self.dsc.DEFAULT_OFF)
