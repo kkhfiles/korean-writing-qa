@@ -38,8 +38,13 @@ jobs:
         run: python -X utf8 skills/finalize-korean-document/scripts/self_test.py
 
       - name: 공유 자료는 오류 0
-        # 사례집은 발행물이다. 규칙을 고치다 이 페이지가 깨지면 여기서 걸린다.
-        run: python assets/doc-style-check.py docs/showcase.html --no-rules
+        # 사례집과 안내 문서 셋은 받는 사람이 그대로 읽는다. 규칙을 고치다 깨지거나
+        # 반말로 되돌아가면 여기서 걸린다 — README 가 반말이던 것을 사람이 읽고서야
+        # 찾았다(2026-09-09). 사례집만 걸려 있어서 옆의 셋은 아무도 안 봤다.
+        run: >
+          python assets/doc-style-check.py
+          docs/showcase.html README.md CONTRIBUTING.md docs/user-guide.md
+          --no-rules
 
       - name: 나가면 안 되는 것
         # 공개 직전에 사람이 한 번 훑었지만 그 뒤 커밋은 아무도 안 봤다. 실제로
