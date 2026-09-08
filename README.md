@@ -4,10 +4,10 @@ form: structured
 
 # Vermilion
 
-**한국어 업무 문서 검사기** — 사내 보고서 603개에서 지적 2,174건 · 세 편에 한 편꼴로 오류 · 받아서 그대로 쓸 수 있음
+**한국어 업무 문서 검사기** — 사내 보고서 600여 개에서 세 편에 한 편꼴로 오류 · 받아서 그대로 쓸 수 있음
 
 - **이름** — 주묵(朱墨) · 원고를 고칠 때 쓰던 붉은 먹
-- **사례집** — [`docs/showcase.html`](docs/showcase.html) · 수정 전후 약 90쌍 · 브라우저로 열면 됨 · [올릴 준비물](docs/site-listing.md)
+- **사례집** — [`docs/showcase.html`](docs/showcase.html) · 수정 전후 74쌍 · 브라우저로 열면 됨 · [올릴 준비물](docs/site-listing.md)
 - **사례 보내기** — [`CONTRIBUTING.md`](CONTRIBUTING.md) · 이슈로 문장 하나
 - **필요한 것** — Python 3.11 이상 · 검사기 자체는 의존성 0
 
@@ -53,7 +53,7 @@ python -X utf8 -m unittest discover -s tests
 
 | 갈래 | 되는 일 | 받는 것 |
 |---|---|---|
-| **파일 하나** | 명령줄로 문서 검사 | `assets/doc-style-check.py` 60KB · 의존성 0 |
+| **파일 하나** | 명령줄로 문서 검사 | `assets/doc-style-check.py` 70KB 안팎 · 의존성 0 |
 | **스킬 포함** | Claude Code 가 문서를 낼 때 문맥까지 읽어 고침 | `python install.py` |
 | **훅 포함** | 발행 직전에 자동으로 걸림 | `python install.py --hooks` |
 
@@ -125,7 +125,7 @@ err  = []                                 # 주의에서 오류로 올린다
 | `skills/finalize-korean-document/` | 2층 스킬 정본 |
 | `hooks/` | 발행 직전 검사 · 겹 역슬래시 차단 · 매일 건강 검사 |
 | `install.py` · `repo_paths.py` | 설치와 경로 해석 |
-| `tests/` | 시험 파일 48개 · 시험 337건 |
+| `tests/` | 시험 파일 48개 · 시험 300여 건 |
 | `docs/` | 설계·결정·조사 기록 |
 | `data/` | 사람 판정 · 회귀 시료 · 받은 사례 |
 | `runs/` | 실행별 입력·결과·요약 |

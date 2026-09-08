@@ -41,7 +41,7 @@ form: structured
 
 ### 전역 문서 검사기 — 구조와 낱말
 
-**위치** `~/.claude/assets/doc-style-check.py` · 60KB · **바깥 의존성 0**(파이썬 기본 모듈만)
+**위치** `~/.claude/assets/doc-style-check.py` · 70KB 안팎 · **바깥 의존성 0**(파이썬 기본 모듈만)
 
 | 무게 | 갈래와 실측 건수 |
 |---|---|
