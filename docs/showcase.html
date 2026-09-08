@@ -55,17 +55,20 @@ body{
 b,strong{font-weight:700}
 a{color:var(--red); text-underline-offset:3px}
 code,.mono{font-family:var(--mono); font-variant-numeric:tabular-nums}
-.band{padding:0 20px}
+/* 좌우 여백은 창 폭을 따라간다 — 20px 고정이면 700~1100px 창에서 글이 화면
+   끝에서 끝까지 흐른다. 세로 여백과 어긋나는 그 폭이 「붙었다」로 읽힌다. */
+.band{padding:0 clamp(20px, 4.4vw, 46px)}
 .band.paper{background:var(--paper); border-block:1px solid var(--line)}
-.in{max-width:1040px; margin:0 auto; padding:74px 0}
+.in{max-width:1040px; margin:0 auto; padding:clamp(46px, 6.4vw, 74px) 0}
 
 /* ── 첫 화면 ─────────────────────────────── */
 .hero{background:var(--paper); background-image:var(--grid); background-size:26px 26px;
-  background-position:-1px -1px; border-bottom:1px solid var(--line); padding:0 20px;
+  background-position:-1px -1px; border-bottom:1px solid var(--line);
+  padding:0 clamp(20px, 4.4vw, 46px);
   position:relative; overflow:hidden}
 .hero::after{content:""; position:absolute; inset:auto 0 0 0; height:130px;
   background:linear-gradient(transparent,var(--paper)); pointer-events:none}
-.hero-in{max-width:1040px; margin:0 auto; padding:76px 0 62px; position:relative; z-index:1}
+.hero-in{max-width:1040px; margin:0 auto; padding:clamp(48px, 6.6vw, 76px) 0 clamp(40px, 5.4vw, 62px); position:relative; z-index:1}
 .eyebrow{font-size:13px; color:var(--red); font-weight:700; margin:0 0 16px;
   display:flex; align-items:center; gap:9px}
 .eyebrow::before{content:""; width:26px; height:2px; background:var(--red); display:inline-block}
@@ -192,13 +195,22 @@ ul.pairs>li{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:0}
 .ba.good::before{content:"후"; background:var(--green)}
 .ba p{margin:0}
 /* 각주는 원고 옆에 붉은 먹으로 적어 둔 말이다 — 주묵이 여기 온다. */
+/* 본문과 같은 글이라 줄 길이를 제한한다. 제한이 없어 1040px 를 그대로 흘렀다 —
+   한 줄에 한글 예순 자가 넘어가면 눈이 다음 줄 머리를 못 찾는다. */
 .note{margin:14px 0 0; padding:11px 14px; border-left:3px solid var(--red);
-  background:var(--red-bg); border-radius:0 8px 8px 0; font-size:13.5px; color:var(--ink2)}
+  background:var(--red-bg); border-radius:0 8px 8px 0; font-size:13.5px; color:var(--ink2);
+  max-width:78ch}
 .note b{color:var(--red)}
 
 /* ── 표 ──────────────────────────────────── */
 .scroll{overflow-x:auto; -webkit-overflow-scrolling:touch; margin:0 0 10px;
   border:1px solid var(--line); border-radius:12px; background:var(--paper)}
+/* 폰에서 네 칸짜리 표가 두 칸 반만 보이는데 밀 수 있다는 표시가 없었다.
+   배경으로 그린 그늘은 안 보인다 — 표 칸에 저마다 배경색이 있어 덮인다.
+   그래서 요소째 마스크로 오른쪽 끝을 흐린다. 끝까지 밀면 아래 스크립트가
+   클래스를 떼어 표시가 사라진다 — 늘 흐려 두면 「더 있다」가 거짓말이 된다. */
+.scroll.more{-webkit-mask-image:linear-gradient(to right,#000 calc(100% - 34px),transparent);
+  mask-image:linear-gradient(to right,#000 calc(100% - 34px),transparent)}
 table{border-collapse:collapse; width:100%; min-width:580px; font-size:13.5px}
 th,td{border-bottom:1px solid var(--line2); padding:9px 14px; text-align:left; vertical-align:top}
 thead th{background:#FAFCF9; border-bottom:2px solid var(--line); font-size:12.5px;
@@ -973,7 +985,7 @@ warn = ["절단형 의심"]</code>
     <thead><tr><th>단계</th><th>받는 것</th><th>준비</th><th>고르는 기준</th></tr></thead>
     <tbody>
       <tr><td><b>1</b></td><td><code>assets/doc-style-check.py</code> 파일 하나 · 70KB 안팎</td>
-        <td><b>파이썬 3.11 이상</b> · 설치할 라이브러리 0</td><td>대부분 1단계로 충분</td></tr>
+        <td><b>파이썬 3.11 이상</b> · 설치할 라이브러리 0</td><td>검사만 돌리면 될 때</td></tr>
       <tr><td>2</td><td>스킬 폴더 · 13개 파일 · 154KB</td><td>Claude Code · <code>python install.py</code></td>
         <td>표현 교정까지 맡기고 싶을 때 · YAML 검사할 때만 <code>pyyaml</code></td></tr>
       <tr><td>3</td><td>위 + 훅 셋</td><td><code>python install.py --hooks</code></td>
@@ -986,17 +998,6 @@ warn = ["절단형 의심"]</code>
      단계마다 나와야 하는 값이 붙어 있다. 주소만 던지면 설치까지 간다.</p>
 
   <dl class="src">
-    <dt>산문 문서</dt>
-    <dd>머리말에 <code>form: prose</code> 한 줄 · <b>개조식을 전제한 아홉 갈래가 통째로 꺼짐</b>
-        (서술형 종결 · 서술형 문단 · 제목 셋 · 진입점 넷) ·
-        발표 대본·소개 글·설명문은 흐르는 문장이 정상이라 그 갈래가 걸리면 안 됨</dd>
-    <dt>갈래 골라 쓰기</dt>
-    <dd>조직마다 문서 관행이 다름 — 표 머리 「비고」는 공문서 표준 관례이고 발표 대본은 산문이 정상 ·
-        <code>korean-qa.toml</code> 로 <b>26갈래</b>를 끄거나 severity 를 바꿈 ·
-        <b>끈 것은 결과 맨 위와 합계에 찍힘</b>(안 보이면 통과인지 안 본 것인지 갈리지 않음)</dd>
-    <dt>어색한 문장을 보내는 곳</dt>
-    <dd>GitHub 이슈 서식 둘 — 「안 잡히는 표현」·「멀쩡한데 잡힌 표현」 ·
-        <b>보낸 문장이 회귀 시료로 박혀</b> 규칙이 바뀔 때마다 다시 돌아감</dd>
     <dt>자동으로 도는 경우</dt>
     <dd>3단계까지 넣으면 Claude Code와 Codex가 한글 문서를 쓰거나 고칠 때 같은 훅이 걸림 ·
         <b>지적만 보여 주고 저장과 발행은 막지 않음</b></dd>
@@ -1069,6 +1070,17 @@ warn = ["절단형 의심"]</code>
     }
     requestAnimationFrame(step);
   }
+  // 옆으로 밀 것이 남았을 때만 오른쪽 끝을 흐린다.
+  Array.prototype.forEach.call(document.querySelectorAll('.scroll'), function (box) {
+    function mark() {
+      var left = box.scrollWidth - box.clientWidth - box.scrollLeft;
+      box.classList.toggle('more', left > 2);
+    }
+    box.addEventListener('scroll', mark, { passive: true });
+    window.addEventListener('resize', mark);
+    mark();
+  });
+
   var targets = document.querySelectorAll('.reveal, .rank');
   if (!('IntersectionObserver' in window)) {
     Array.prototype.forEach.call(targets, function (n) { n.classList.add('seen'); });
