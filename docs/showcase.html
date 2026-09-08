@@ -151,7 +151,7 @@ h3{font-size:17px; font-weight:700; letter-spacing:-.015em; margin:0}
 .fig.warn .n{color:var(--red)}
 .fig p:last-child{margin:6px 0 0; font-size:13.5px; color:var(--ink2); line-height:1.6}
 .rank{list-style:none; margin:0; padding:0; display:grid; gap:8px; max-width:580px}
-.rank li{margin:0; display:grid; grid-template-columns:140px 1fr 56px; gap:12px; align-items:center;
+.rank li{margin:0; display:grid; grid-template-columns:205px 1fr 56px; gap:12px; align-items:center;
   font-size:13.5px}
 .rank .bar{height:9px; border-radius:5px; background:var(--line2); overflow:hidden}
 .rank .bar i{display:block; height:100%; background:var(--red); border-radius:5px; width:0;
@@ -170,6 +170,10 @@ h3{font-size:17px; font-weight:700; letter-spacing:-.015em; margin:0}
 .pill.err{background:var(--red-bg); color:var(--red); border:1px solid var(--red-line)}
 .pill.warn{background:var(--amber-bg); color:var(--amber); border:1px solid var(--amber-line)}
 .pill.human{background:var(--green-bg); color:var(--green); border:1px solid var(--green-line)}
+/* 조건 알림 — 오류·주의 같은 무게가 아니라 「어떤 문서에서 걸리나」다.
+   무게 알림과 헷갈리면 안 되므로 채우지 않고 점선 테두리만 둔다. */
+.pill.cond{background:transparent; color:var(--ink3); border:1px dashed var(--ink3); font-weight:600}
+.rank .pill.cond, td .pill.cond{margin-left:6px; white-space:nowrap}
 .count{margin-left:auto; font-size:12.5px; color:var(--ink3)}
 .count b{color:var(--ink); font-size:16px; font-family:var(--mono); font-variant-numeric:tabular-nums; margin:0 2px}
 dl.meta{display:grid; grid-template-columns:max-content 1fr; gap:5px 16px; margin:0 0 15px}
@@ -277,7 +281,8 @@ footer .in{padding:0; display:flex; gap:18px; flex-wrap:wrap; align-items:baseli
             <li class="bad"><p>「대체하지 않는다」</p></li>
             <li class="good"><p>「대체 아님 · 별도 추가」</p></li>
           </ul>
-          <p class="why"><b>서술형 종결</b> — 값 칸을 문장으로 끝냈다. 보고서 지적의 59%가 이 갈래다.</p>
+          <p class="why"><b>서술형 종결</b> — 값 칸을 문장으로 끝냈다.
+             <b>개조식 문서에서만 걸리는 갈래</b>고, 산문이면 머리말 한 줄로 통째로 꺼진다.</p>
         </div>
         <div class="slide">
           <ul class="pair">
@@ -294,8 +299,8 @@ footer .in{padding:0; display:flex; gap:18px; flex-wrap:wrap; align-items:baseli
 
     <div class="stats">
       <div class="stat"><p class="k">검사한 업무 보고서</p><p class="v">600여</p><p class="u">개 · 2초 안팎</p></div>
-      <div class="stat"><p class="k">오류가 있던 문서</p><p class="v">33%</p><p class="u">세 편에 한 편꼴</p></div>
-      <div class="stat"><p class="k">지적이 있던 문서</p><p class="v">50%</p><p class="u">두 편에 한 편꼴</p></div>
+      <div class="stat"><p class="k">형식과 무관한 오류</p><p class="v">8%</p><p class="u">열두 편에 한 편꼴</p></div>
+      <div class="stat"><p class="k">개조식 규약 포함</p><p class="v">33%</p><p class="u">규약은 한 줄로 끔</p></div>
       <div class="stat"><p class="k">기계가 보는 갈래</p><p class="v">26</p><p class="u">종 · 사람 판단은 별도</p></div>
     </div>
 
@@ -319,17 +324,23 @@ footer .in{padding:0; display:flex; gap:18px; flex-wrap:wrap; align-items:baseli
   <p class="sub">사내 분석·진행 보고 <b>600여 개</b>를 그대로 통과시켰다. 문서는 손대지 않고 검사만 돌렸다.</p>
 
   <div class="figures reveal">
-    <div class="fig warn"><p class="n" data-to="33" data-suffix="%">0</p><p>오류가 있던 문서 — 세 편에 한 편꼴</p></div>
-    <div class="fig warn"><p class="n" data-to="50" data-suffix="%">0</p><p>지적이 하나라도 있던 문서 — 절반</p></div>
-    <div class="fig"><p class="n" data-to="59" data-suffix="%">0</p><p>지적의 절반 넘게가 한 갈래 — 서술형 종결</p></div>
+    <div class="fig warn"><p class="n" data-to="8" data-suffix="%">0</p><p>형식과 무관하게 틀린 것이 있던 문서 — 열두 편에 한 편꼴</p></div>
+    <div class="fig warn"><p class="n" data-to="33" data-suffix="%">0</p><p>개조식 규약까지 켰을 때 — 세 편에 한 편꼴</p></div>
+    <div class="fig"><p class="n" data-to="70" data-suffix="%">0</p><p>지적의 대부분이 그 규약 — 아홉 갈래가 한 줄로 꺼짐</p></div>
     <div class="fig"><p class="n">2초</p><p>600여 개를 다 보는 데 걸린 시간</p></div>
   </div>
 
-  <p class="sub">가장 많이 걸린 여섯 갈래 — 상위 둘이 지적의 68%</p>
+  <p class="note reveal"><b>두 숫자를 갈라 놓은 까닭</b> — 「값 칸을 문장으로 끝내지 않는다」는
+     한국어 규칙이 아니라 <b>문서 형식 규약</b>이다. 개조식(라벨: 값)으로 쓰는 곳에서만 어긋나고,
+     산문이 정상인 문서에서는 걸리면 안 된다. 그래서 이 검사기는 그 아홉 갈래를 <b>켜고 끄는 것</b>으로 둔다 —
+     머리말에 <code>form: prose</code> 한 줄이면 통째로 빠진다.
+     <b>개조식을 안 쓰는 곳에서 나오는 숫자가 8%다.</b></p>
+
+  <p class="sub">가장 많이 걸린 여섯 갈래 — 개조식 규약인 것은 표시했다</p>
   <ul class="rank" id="rank">
-    <li><span>서술형 종결</span><span class="bar"><i style="--w:100%"></i></span><span class="c">59%</span></li>
+    <li><span>서술형 종결 <span class="pill cond">개조식 전용</span></span><span class="bar"><i style="--w:100%"></i></span><span class="c">59%</span></li>
     <li><span>스캔 가치 없는 라벨</span><span class="bar"><i style="--w:16%"></i></span><span class="c">9%</span></li>
-    <li><span>서술형 문단</span><span class="bar"><i style="--w:12%"></i></span><span class="c">7%</span></li>
+    <li><span>서술형 문단 <span class="pill cond">개조식 전용</span></span><span class="bar"><i style="--w:12%"></i></span><span class="c">7%</span></li>
     <li><span>절단형 의심</span><span class="bar"><i style="--w:11%"></i></span><span class="c">6%</span></li>
     <li><span>해설을 인용 부호로 씀</span><span class="bar"><i style="--w:6%"></i></span><span class="c">4%</span></li>
     <li><span>모호한 지칭</span><span class="bar"><i style="--w:5%"></i></span><span class="c">3%</span></li>
@@ -478,13 +489,16 @@ footer .in{padding:0; display:flex; gap:18px; flex-wrap:wrap; align-items:baseli
 
   <div class="grouphead"><span class="tag">A</span><h3>문장과 낱말</h3>
     <span class="count">글자만 보고 갈림 · 8갈래</span></div>
-  <p class="sub">한국어 자체가 어긋난 갈래.</p>
+  <p class="sub">글자만 보고 갈리는 갈래. <b>서술형 종결만 성격이 다르다</b> — 한국어가 틀린 것이 아니라
+     <b>개조식 문서의 규약</b>이라 켜고 끈다. 나머지는 문서 형식과 무관하게 어긋난 한국어다.</p>
 
   <article class="rule reveal">
-    <div class="rule-head"><h3>서술형 종결</h3><span class="pill err">오류</span>
+    <div class="rule-head"><h3>서술형 종결</h3><span class="pill err">오류</span><span class="pill cond">개조식 전용</span>
       <span class="count">보고서 지적의 <b>59%</b></span></div>
     <dl class="meta">
       <dt>무엇</dt><dd>값 칸·목록·표 칸을 완전한 문장으로 끝냄</dd>
+      <dt>적용 조건</dt><dd>개조식(라벨: 값)으로 쓰는 문서 · <b>한국어 규칙이 아니라 문서 형식 규약</b> —
+          「대체하지 않는다」는 문장으로는 멀쩡함</dd>
       <dt>고치는 법</dt><dd>명사형(~음·~함·~임)이나 체언으로 끝냄 · 두 사실은 가운뎃점으로 이음</dd>
       <dt>지적 제외</dt><dd>산문형 문서 전체(머리말에 「form: prose」) · 근거를 설명하는 문장</dd>
     </dl>
@@ -627,7 +641,7 @@ footer .in{padding:0; display:flex; gap:18px; flex-wrap:wrap; align-items:baseli
   <p class="sub">문장은 멀쩡한데 값을 찾는 데 문장을 끝까지 읽어야 하는 갈래.</p>
 
   <article class="rule reveal">
-    <div class="rule-head"><h3>제목 서술형 · 제목 명사형 위반</h3><span class="pill err">오류</span>
+    <div class="rule-head"><h3>제목 서술형 · 제목 명사형 위반</h3><span class="pill err">오류</span><span class="pill cond">개조식 전용</span>
       <span class="count">보고서 지적의 <b>3%</b></span></div>
     <dl class="meta">
       <dt>무엇</dt><dd>제목을 문장으로 끝내거나 물음으로 씀</dd>
@@ -645,7 +659,7 @@ footer .in{padding:0; display:flex; gap:18px; flex-wrap:wrap; align-items:baseli
   </article>
 
   <article class="rule reveal">
-    <div class="rule-head"><h3>진입점</h3><span class="pill err">오류</span>
+    <div class="rule-head"><h3>진입점</h3><span class="pill err">오류</span><span class="pill cond">개조식 전용</span>
       <span class="count">보고서 <b>1%</b> · 규칙·기록 <b>4%</b></span></div>
     <dl class="meta">
       <dt>무엇</dt><dd>첫 줄에 「이 문서를 읽고 무엇을 하게 되나」가 없거나 서술 문장으로 씀</dd>
@@ -850,19 +864,19 @@ footer .in{padding:0; display:flex; gap:18px; flex-wrap:wrap; align-items:baseli
   <table>
     <thead><tr><th>갈래</th><th>무게</th><th class="n">업무 보고서</th><th class="n">규칙·기록</th></tr></thead>
     <tbody>
-      <tr><td><span class="dot e"></span>서술형 종결</td><td>오류</td><td class="n">59%</td><td class="n">58%</td></tr>
+      <tr><td><span class="dot e"></span>서술형 종결 <span class="pill cond">개조식 전용</span></td><td>오류</td><td class="n">59%</td><td class="n">58%</td></tr>
       <tr><td><span class="dot w"></span>스캔 가치 없는 라벨</td><td>주의</td><td class="n">9%</td><td class="n">&lt;1%</td></tr>
       <tr><td><span class="dot w"></span>절단형 의심</td><td>주의</td><td class="n">6%</td><td class="n">4%</td></tr>
-      <tr><td><span class="dot w"></span>서술형 문단</td><td>주의</td><td class="n">7%</td><td class="n">&lt;1%</td></tr>
+      <tr><td><span class="dot w"></span>서술형 문단 <span class="pill cond">개조식 전용</span></td><td>주의</td><td class="n">7%</td><td class="n">&lt;1%</td></tr>
       <tr><td><span class="dot w"></span>해설을 인용 부호로 씀</td><td>주의</td><td class="n">4%</td><td class="n">4%</td></tr>
       <tr><td><span class="dot w"></span>형식 미표기</td><td>주의</td><td class="n">2%</td><td class="n">5%</td></tr>
       <tr><td><span class="dot w"></span>반복 블록 라벨 불일치</td><td>주의</td><td class="n">2%</td><td class="n">5%</td></tr>
       <tr><td><span class="dot e"></span>모호한 지칭</td><td>오류</td><td class="n">3%</td><td class="n">2%</td></tr>
-      <tr><td><span class="dot e"></span>제목 서술형</td><td>오류</td><td class="n">2%</td><td class="n">3%</td></tr>
-      <tr><td><span class="dot e"></span>진입점 서술형</td><td>오류</td><td class="n">1%</td><td class="n">5%</td></tr>
-      <tr><td><span class="dot e"></span>진입점 없음</td><td>오류</td><td class="n zero">0</td><td class="n">4%</td></tr>
+      <tr><td><span class="dot e"></span>제목 서술형 <span class="pill cond">개조식 전용</span></td><td>오류</td><td class="n">2%</td><td class="n">3%</td></tr>
+      <tr><td><span class="dot e"></span>진입점 서술형 <span class="pill cond">개조식 전용</span></td><td>오류</td><td class="n">1%</td><td class="n">5%</td></tr>
+      <tr><td><span class="dot e"></span>진입점 없음 <span class="pill cond">개조식 전용</span></td><td>오류</td><td class="n zero">0</td><td class="n">4%</td></tr>
       <tr><td><span class="dot e"></span>절단형 종결</td><td>오류</td><td class="n">2%</td><td class="n">2%</td></tr>
-      <tr><td><span class="dot e"></span>제목 명사형 위반</td><td>오류</td><td class="n">1%</td><td class="n">1%</td></tr>
+      <tr><td><span class="dot e"></span>제목 명사형 위반 <span class="pill cond">개조식 전용</span></td><td>오류</td><td class="n">1%</td><td class="n">1%</td></tr>
       <tr><td><span class="dot w"></span>지어낸 명사구</td><td>주의</td><td class="n zero">0</td><td class="n">2%</td></tr>
       <tr><td><span class="dot w"></span>「~하는 자리」 의심</td><td>주의</td><td class="n zero">0</td><td class="n">1%</td></tr>
       <tr><td><span class="dot w"></span>평가 수식어</td><td>주의</td><td class="n">1%</td><td class="n">1%</td></tr>
@@ -870,15 +884,17 @@ footer .in{padding:0; display:flex; gap:18px; flex-wrap:wrap; align-items:baseli
       <tr><td><span class="dot e"></span>이중 피동</td><td>오류</td><td class="n zero">0</td><td class="n">&lt;1%</td></tr>
       <tr><td><span class="dot e"></span>「회기」</td><td>오류</td><td class="n zero">0</td><td class="n">&lt;1%</td></tr>
       <tr><td><span class="dot e"></span>은유 「자리」</td><td>오류</td><td class="n zero">0</td><td class="n">&lt;1%</td></tr>
-      <tr><td><span class="dot e"></span>진입점 명사형 위반</td><td>오류</td><td class="n">&lt;1%</td><td class="n zero">0</td></tr>
-      <tr><td><span class="dot w"></span>제목 형태 확인</td><td>주의</td><td class="n">&lt;1%</td><td class="n">&lt;1%</td></tr>
-      <tr><td><span class="dot w"></span>진입점 형태 확인</td><td>주의</td><td class="n zero">0</td><td class="n zero">0</td></tr>
+      <tr><td><span class="dot e"></span>진입점 명사형 위반 <span class="pill cond">개조식 전용</span></td><td>오류</td><td class="n">&lt;1%</td><td class="n zero">0</td></tr>
+      <tr><td><span class="dot w"></span>제목 형태 확인 <span class="pill cond">개조식 전용</span></td><td>주의</td><td class="n">&lt;1%</td><td class="n">&lt;1%</td></tr>
+      <tr><td><span class="dot w"></span>진입점 형태 확인 <span class="pill cond">개조식 전용</span></td><td>주의</td><td class="n zero">0</td><td class="n zero">0</td></tr>
       <tr><td><span class="dot w"></span>지시어 확인</td><td>주의</td><td class="n">&lt;1%</td><td class="n">&lt;1%</td></tr>
       <tr><td><span class="dot w"></span>번역투 「그녀」</td><td>주의</td><td class="n zero">0</td><td class="n">&lt;1%</td></tr>
       <tr><td><span class="dot w"></span>결론 라벨 없는 설명</td><td>주의</td><td class="n zero">0</td><td class="n zero">0</td></tr>
     </tbody>
   </table>
   </div>
+  <p class="note"><b>「개조식 전용」이 붙은 아홉 갈래</b> — 문서가 개조식일 때만 걸림 ·
+     머리말 <code>form: prose</code> 한 줄로 통째로 빠짐 · 이 뭉치 지적의 70%가 그 아홉이다.</p>
   <p class="note"><b>0건이어도 규칙은 돎</b> — 「이 뭉치에 안 나왔다」와 「규칙이 없다」는 다르다. 이중 피동은 두 뭉치 모두 0건인데, 만들어 넣은 시료에서는 잡힌다.</p>
 </div></div>
 
@@ -974,6 +990,10 @@ footer .in{padding:0; display:flex; gap:18px; flex-wrap:wrap; align-items:baseli
      단계마다 나와야 하는 값이 붙어 있다. 주소만 던지면 설치까지 간다.</p>
 
   <dl class="src">
+    <dt>산문 문서</dt>
+    <dd>머리말에 <code>form: prose</code> 한 줄 · <b>개조식을 전제한 아홉 갈래가 통째로 꺼짐</b>
+        (서술형 종결 · 서술형 문단 · 제목 셋 · 진입점 넷) ·
+        발표 대본·소개 글·설명문은 흐르는 문장이 정상이라 그 갈래가 걸리면 안 됨</dd>
     <dt>갈래 골라 쓰기</dt>
     <dd>조직마다 문서 관행이 다름 — 표 머리 「비고」는 공문서 표준 관례이고 발표 대본은 산문이 정상 ·
         <code>korean-qa.toml</code> 로 <b>26갈래</b>를 끄거나 severity 를 바꿈 ·
@@ -1003,7 +1023,7 @@ footer .in{padding:0; display:flex; gap:18px; flex-wrap:wrap; align-items:baseli
 </div></div>
 
 <footer><div class="in">
-  <span>실측 2026-09-07</span>
+  <span>실측 2026-09-08</span>
   <span>검사기 <code>doc-style-check.py</code></span>
   <span>사례는 모두 실제 문서와 사람이 확정한 교정에서 가져왔다.</span>
   <span>이 페이지도 같은 검사기를 통과했다 — 오류 0.</span>
