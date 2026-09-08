@@ -136,6 +136,9 @@ h2{font-size:clamp(24px,3.3vw,32px); font-weight:800; letter-spacing:-.032em; ma
   line-height:1.3; text-wrap:balance}
 .sub{color:var(--ink2); margin:0 0 30px; font-size:15.5px; max-width:64ch; line-height:1.75}
 h3{font-size:17px; font-weight:700; letter-spacing:-.015em; margin:0}
+/* 규칙 카드 제목은 묶음 이름의 아래 층이다. 둘 다 h3 이면 개요에서 형제로
+   읽히고, 크기도 같아 눈으로도 안 갈린다. */
+h4{font-size:17px; font-weight:700; letter-spacing:-.015em; margin:0}
 .reveal{opacity:0; transform:translateY(14px); transition:opacity .55s, transform .55s}
 .reveal.seen{opacity:1; transform:none}
 @media (prefers-reduced-motion:reduce){
@@ -164,6 +167,7 @@ h3{font-size:17px; font-weight:700; letter-spacing:-.015em; margin:0}
 
 /* ── 규칙 카드 ───────────────────────────── */
 .grouphead{display:flex; align-items:baseline; gap:14px; margin:0 0 6px; flex-wrap:wrap}
+.grouphead h3{font-size:20px; letter-spacing:-.022em}
 .grouphead .tag{font-size:12px; font-weight:700; color:#fff; background:var(--ink);
   border-radius:5px; padding:3px 10px}
 .rule{background:var(--paper); border:1px solid var(--line); border-radius:13px;
@@ -491,15 +495,16 @@ footer .in{padding:0; display:flex; gap:18px; flex-wrap:wrap; align-items:baseli
   <p class="snum">04</p>
   <h2>갈래별 사례</h2>
   <p class="sub"><b>A·B는 결정 규칙</b>이 글자만 보고 전수로 잡고, <b>C는 읽는 판단</b> 소관이다 —
-     문맥을 읽는 층이 후보를 내고 사람이 확정한다. 사례는 모두 실제 문서와 사람이 확정한 교정에서 가져왔다.</p>
+     문맥을 읽는 층이 후보를 내고 사람이 확정한다. 가까운 갈래는 한 장에 묶었고,
+     사례는 모두 실제 문서와 사람이 확정한 교정에서 가져왔다.</p>
 
   <div class="grouphead"><span class="tag">A</span><h3>문장과 낱말</h3>
-    <span class="count">글자만 보고 갈림 · 8갈래</span></div>
+    <span class="count">글자만 보고 갈림 · 카드 8장</span></div>
   <p class="sub">글자만 보고 갈리는 갈래. <b>서술형 종결만 성격이 다르다</b> — 한국어가 틀린 것이 아니라
      <b>개조식 문서의 규약</b>이라 켜고 끈다. 나머지는 문서 형식과 무관하게 어긋난 한국어다.</p>
 
   <article class="rule reveal">
-    <div class="rule-head"><h3>서술형 종결</h3><span class="pill err">오류</span><span class="pill cond">개조식 전용</span>
+    <div class="rule-head"><h4>서술형 종결</h4><span class="pill err">오류</span><span class="pill cond">개조식 전용</span>
       <span class="count">보고서 지적의 <b>59%</b></span></div>
     <dl class="meta">
       <dt>무엇</dt><dd>값 칸·목록·표 칸을 완전한 문장으로 끝냄</dd>
@@ -523,7 +528,7 @@ footer .in{padding:0; display:flex; gap:18px; flex-wrap:wrap; align-items:baseli
   </article>
 
   <article class="rule reveal">
-    <div class="rule-head"><h3>절단형 종결 — 조사에서 끊김</h3><span class="pill err">오류</span><span class="pill warn">주의</span>
+    <div class="rule-head"><h4>절단형 종결 — 조사에서 끊김</h4><span class="pill err">오류</span><span class="pill warn">주의</span>
       <span class="count">보고서 지적의 <b>8%</b></span></div>
     <dl class="meta">
       <dt>무엇</dt><dd>서술어를 날린 채 조사로 끝내 미완성으로 읽힘</dd>
@@ -545,7 +550,7 @@ footer .in{padding:0; display:flex; gap:18px; flex-wrap:wrap; align-items:baseli
   </article>
 
   <article class="rule reveal">
-    <div class="rule-head"><h3>의문문 라벨</h3><span class="pill err">오류</span>
+    <div class="rule-head"><h4>의문문 라벨</h4><span class="pill err">오류</span>
       <span class="count">보고서 지적의 <b>2%</b> 안</span></div>
     <dl class="meta">
       <dt>무엇</dt><dd>표 머리·소제목을 물음으로 씀 — 질문도 값도 아닌 어중간한 형태</dd>
@@ -560,7 +565,7 @@ footer .in{padding:0; display:flex; gap:18px; flex-wrap:wrap; align-items:baseli
   </article>
 
   <article class="rule reveal">
-    <div class="rule-head"><h3>모호한 지칭</h3><span class="pill err">오류</span>
+    <div class="rule-head"><h4>모호한 지칭</h4><span class="pill err">오류</span>
       <span class="count">보고서 지적의 <b>3%</b> · 「우리」가 가장 잦음</span></div>
     <dl class="meta">
       <dt>무엇</dt><dd>「우리·이들·저쪽·여기」가 읽는 사람마다 다른 것을 가리킴</dd>
@@ -578,7 +583,7 @@ footer .in{padding:0; display:flex; gap:18px; flex-wrap:wrap; align-items:baseli
   </article>
 
   <article class="rule reveal">
-    <div class="rule-head"><h3>은유 「자리」</h3><span class="pill err">오류</span><span class="pill warn">주의</span>
+    <div class="rule-head"><h4>은유 「자리」</h4><span class="pill err">오류</span><span class="pill warn">주의</span>
       <span class="count">규칙·기록 지적의 <b>1%</b></span></div>
     <dl class="meta">
       <dt>무엇</dt><dd>글·코드·절차의 지점을 「자리」로 부름 — 문장인지 항목인지 단계인지 사라짐</dd>
@@ -597,7 +602,7 @@ footer .in{padding:0; display:flex; gap:18px; flex-wrap:wrap; align-items:baseli
   </article>
 
   <article class="rule reveal">
-    <div class="rule-head"><h3>지어낸 명사구 — 판·창·결</h3><span class="pill warn">주의</span>
+    <div class="rule-head"><h4>지어낸 명사구 — 판·창·결</h4><span class="pill warn">주의</span>
       <span class="count">규칙·기록 지적의 <b>2%</b></span></div>
     <dl class="meta">
       <dt>무엇</dt><dd>관형형 어미 뒤에 뜻이 옅은 명사를 붙여 새 말을 만듦 · 사람이 쓴 한국어에는 안 나오는 형태</dd>
@@ -613,7 +618,7 @@ footer .in{padding:0; display:flex; gap:18px; flex-wrap:wrap; align-items:baseli
   </article>
 
   <article class="rule reveal">
-    <div class="rule-head"><h3>「회기」</h3><span class="pill err">오류</span>
+    <div class="rule-head"><h4>「회기」</h4><span class="pill err">오류</span>
       <span class="count">규칙·기록 지적의 <b>&lt;1%</b></span></div>
     <dl class="meta">
       <dt>무엇</dt><dd>「회귀(regression)」의 오타 · 또는 「세션」을 뜻하는 잘못된 말</dd>
@@ -628,7 +633,7 @@ footer .in{padding:0; display:flex; gap:18px; flex-wrap:wrap; align-items:baseli
   </article>
 
   <article class="rule reveal">
-    <div class="rule-head"><h3>이중 피동 · 번역투 이중 조사</h3><span class="pill err">오류</span><span class="pill warn">주의</span>
+    <div class="rule-head"><h4>이중 피동 · 번역투 이중 조사</h4><span class="pill err">오류</span><span class="pill warn">주의</span>
       <span class="count">보고서 지적의 <b>&lt;1%</b> · 피동은 보고서 0건</span></div>
     <dl class="meta">
       <dt>무엇</dt><dd>피동을 두 번 겹침(「되어진」·「불려진」) · 조사를 두 개 겹침(「~로의」·「~에서의」)</dd>
@@ -643,11 +648,11 @@ footer .in{padding:0; display:flex; gap:18px; flex-wrap:wrap; align-items:baseli
   </article>
 
   <div class="grouphead"><span class="tag">B</span><h3>문서 구조</h3>
-    <span class="count">찾아 읽기가 안 됨 · 6갈래</span></div>
+    <span class="count">찾아 읽기가 안 됨 · 카드 6장</span></div>
   <p class="sub">문장은 멀쩡한데 값을 찾는 데 문장을 끝까지 읽어야 하는 갈래.</p>
 
   <article class="rule reveal">
-    <div class="rule-head"><h3>제목 서술형 · 제목 명사형 위반</h3><span class="pill err">오류</span><span class="pill cond">개조식 전용</span>
+    <div class="rule-head"><h4>제목 서술형 · 제목 명사형 위반</h4><span class="pill err">오류</span><span class="pill cond">개조식 전용</span>
       <span class="count">보고서 지적의 <b>3%</b></span></div>
     <dl class="meta">
       <dt>무엇</dt><dd>제목을 문장으로 끝내거나 물음으로 씀</dd>
@@ -665,7 +670,7 @@ footer .in{padding:0; display:flex; gap:18px; flex-wrap:wrap; align-items:baseli
   </article>
 
   <article class="rule reveal">
-    <div class="rule-head"><h3>진입점</h3><span class="pill err">오류</span><span class="pill cond">개조식 전용</span>
+    <div class="rule-head"><h4>진입점</h4><span class="pill err">오류</span><span class="pill cond">개조식 전용</span>
       <span class="count">보고서 <b>1%</b> · 규칙·기록 <b>4%</b></span></div>
     <dl class="meta">
       <dt>무엇</dt><dd>첫 줄에 「이 문서를 읽고 무엇을 하게 되나」가 없거나 서술 문장으로 씀</dd>
@@ -683,7 +688,7 @@ footer .in{padding:0; display:flex; gap:18px; flex-wrap:wrap; align-items:baseli
   </article>
 
   <article class="rule reveal">
-    <div class="rule-head"><h3>스캔 가치 없는 라벨</h3><span class="pill warn">주의</span>
+    <div class="rule-head"><h4>스캔 가치 없는 라벨</h4><span class="pill warn">주의</span>
       <span class="count">보고서 지적의 <b>9%</b> · 「비고」가 가장 잦음</span></div>
     <dl class="meta">
       <dt>무엇</dt><dd>열 이름만 봐서 안에 무엇이 있는지 모름 — 비고·설명·내용·메모·참고·기타</dd>
@@ -699,7 +704,7 @@ footer .in{padding:0; display:flex; gap:18px; flex-wrap:wrap; align-items:baseli
   </article>
 
   <article class="rule reveal">
-    <div class="rule-head"><h3>해설을 인용 부호로 씀</h3><span class="pill warn">주의</span>
+    <div class="rule-head"><h4>해설을 인용 부호로 씀</h4><span class="pill warn">주의</span>
       <span class="count">보고서 지적의 <b>4%</b></span></div>
     <dl class="meta">
       <dt>무엇</dt><dd>인용 부호를 강조 상자로 씀 — 남의 말이 아니라 내가 쓴 문장</dd>
@@ -715,7 +720,7 @@ footer .in{padding:0; display:flex; gap:18px; flex-wrap:wrap; align-items:baseli
   </article>
 
   <article class="rule reveal">
-    <div class="rule-head"><h3>형식 미표기</h3><span class="pill warn">주의</span>
+    <div class="rule-head"><h4>형식 미표기</h4><span class="pill warn">주의</span>
       <span class="count">규칙·기록 지적의 <b>5%</b></span></div>
     <dl class="meta">
       <dt>무엇</dt><dd>흐르는 문장이 뼈대인 산문 문서인데 형식을 안 적어 개조식 검사가 잘못 걸림</dd>
@@ -726,7 +731,7 @@ footer .in{padding:0; display:flex; gap:18px; flex-wrap:wrap; align-items:baseli
   </article>
 
   <article class="rule reveal">
-    <div class="rule-head"><h3>평가 수식어</h3><span class="pill warn">주의</span>
+    <div class="rule-head"><h4>평가 수식어</h4><span class="pill warn">주의</span>
       <span class="count">보고서 지적의 <b>1%</b></span></div>
     <dl class="meta">
       <dt>무엇</dt><dd>평가가 섞인 형용사를 이름처럼 붙임 — 사실은 안 남고 자평만 남음</dd>
@@ -742,12 +747,12 @@ footer .in{padding:0; display:flex; gap:18px; flex-wrap:wrap; align-items:baseli
   </article>
 
   <div class="grouphead"><span class="tag">C</span><h3>사람이 읽어야 갈리는 것</h3>
-    <span class="count">문맥을 봐야 판정됨 · 6갈래</span></div>
+    <span class="count">문맥을 봐야 판정됨 · 카드 6장</span></div>
   <p class="sub">줄만 봐서는 안 갈리는 갈래. <b>읽는 층이 후보를 내고 사람이 확정한다</b> —
      그 판정이 다시 결정 규칙의 예외로 들어간다. 사례는 모두 사람이 확정한 교정이다.</p>
 
   <article class="rule reveal">
-    <div class="rule-head"><h3>불필요한 영어</h3><span class="pill human">사람 판단</span>
+    <div class="rule-head"><h4>불필요한 영어</h4><span class="pill human">사람 판단</span>
       <span class="count">확정 교정 <b>14</b>건 · 가장 잦음</span></div>
     <dl class="meta">
       <dt>무엇</dt><dd>같은 뜻의 한국어가 이미 굳었는데 영문·음차를 씀 · 한글 뒤에 원문 괄호를 매번 붙임</dd>
@@ -769,7 +774,7 @@ footer .in{padding:0; display:flex; gap:18px; flex-wrap:wrap; align-items:baseli
   </article>
 
   <article class="rule reveal">
-    <div class="rule-head"><h3>명사화 · 조사 없는 명사 나열</h3><span class="pill human">사람 판단</span>
+    <div class="rule-head"><h4>명사화 · 조사 없는 명사 나열</h4><span class="pill human">사람 판단</span>
       <span class="count">확정 교정 <b>4</b>건 + 새 갈래 1</span></div>
     <dl class="meta">
       <dt>무엇</dt><dd>동사를 명사로 굳혀 누가 무엇을 하는지 사라짐 · 조사 없이 명사만 이어 붙임</dd>
@@ -788,7 +793,7 @@ footer .in{padding:0; display:flex; gap:18px; flex-wrap:wrap; align-items:baseli
   </article>
 
   <article class="rule reveal">
-    <div class="rule-head"><h3>번역투</h3><span class="pill human">사람 판단</span>
+    <div class="rule-head"><h4>번역투</h4><span class="pill human">사람 판단</span>
       <span class="count">확정 교정 <b>2</b>건</span></div>
     <dl class="meta">
       <dt>무엇</dt><dd>「~를 통해」·「~에 대한」·불필요한 피동·영어식 명사 나열</dd>
@@ -802,7 +807,7 @@ footer .in{padding:0; display:flex; gap:18px; flex-wrap:wrap; align-items:baseli
   </article>
 
   <article class="rule reveal">
-    <div class="rule-head"><h3>압축한 명사구 · 넓은 뜻의 동사</h3><span class="pill human">사람 판단</span>
+    <div class="rule-head"><h4>압축한 명사구 · 넓은 뜻의 동사</h4><span class="pill human">사람 판단</span>
       <span class="count">발표자 노트 확정 교정 <b>6</b>건</span></div>
     <dl class="meta">
       <dt>무엇</dt><dd>「곳·구간·부분·갈래·뒤의 것」이 실제 대상을 숨김 · 「풉니다·돕습니다」가 실제 행위를 가림</dd>
@@ -824,7 +829,7 @@ footer .in{padding:0; display:flex; gap:18px; flex-wrap:wrap; align-items:baseli
   </article>
 
   <article class="rule reveal">
-    <div class="rule-head"><h3>자평과 강조 소음</h3><span class="pill human">사람 판단</span>
+    <div class="rule-head"><h4>자평과 강조 소음</h4><span class="pill human">사람 판단</span>
       <span class="count">확정 교정 <b>8</b>건</span></div>
     <dl class="meta">
       <dt>무엇</dt><dd>측정값으로 바꿀 수 없는 자평 · 뜻 없는 굵게와 이모지</dd>
@@ -842,7 +847,7 @@ footer .in{padding:0; display:flex; gap:18px; flex-wrap:wrap; align-items:baseli
   </article>
 
   <article class="rule reveal">
-    <div class="rule-head"><h3>뜻이 여럿인 말 · 뜻풀이 없는 용어</h3><span class="pill human">사람 판단</span>
+    <div class="rule-head"><h4>뜻이 여럿인 말 · 뜻풀이 없는 용어</h4><span class="pill human">사람 판단</span>
       <span class="count">사용자가 잡은 미탐 <b>4</b>건</span></div>
     <dl class="meta">
       <dt>무엇</dt><dd>다른 뜻으로 읽힐 수 있는 한자말 · 한 일이 숨는 말 · 처음 나온 내부 용어에 뜻풀이 없음</dd>
