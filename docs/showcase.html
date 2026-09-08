@@ -61,6 +61,29 @@ code,.mono{font-family:var(--mono); font-variant-numeric:tabular-nums}
 .band.paper{background:var(--paper); border-block:1px solid var(--line)}
 .in{max-width:1040px; margin:0 auto; padding:clamp(46px, 6.4vw, 74px) 0}
 
+/* ── 위 띠 — 여기서 나가는 길 ────────────────
+   **이 장만 막다른 길이었다**(2026-09-08 사용자). 첫 화면이 이리로 보내는데
+   돌아가는 링크가 없어 브라우저의 뒤로 가기 말고는 나갈 데가 없었다. 형제 두 장
+   (`/dispatch/`·`/mycelium/`)이 이미 이 모양이라 그것을 따른다.
+   단추 색만 이 장의 것(--red)을 쓴다 — 마이셀리움이 제 초록을 쓰는 것과 같다. */
+.topbar{max-width:1040px; margin:0 auto; display:flex; align-items:center;
+  justify-content:space-between; gap:16px; padding-block:12px;
+  border-bottom:1px solid var(--line); position:relative; z-index:1}
+/* ⚠️ **이름이 `mark` 가 아니다** — 첫 줄의 강조 글자가 이미 그 이름을 쓴다
+   (`h1 .mark`). 같은 이름으로 두면 그 글자가 15px 회색으로 주저앉는다. */
+.brandmark{display:flex; align-items:center; gap:8px; min-height:44px;
+  font-size:15px; font-weight:800; letter-spacing:-.02em;
+  color:var(--ink2); text-decoration:none}
+.brandmark svg{display:block; flex:0 0 auto}
+.brandmark:hover{color:var(--ink)}
+.topbar nav{display:flex; gap:4px}
+/* 손가락으로 누르는 것이라 44px — 글자만 줄이면 높이가 같이 준다. */
+.topbar nav a{display:inline-flex; align-items:center; min-height:44px;
+  padding-inline:15px; border-radius:999px; font-size:15px; font-weight:700;
+  text-decoration:none; background:var(--red); color:#FFFFFF}
+.topbar nav a:hover{background:var(--ink)}
+@media print{.topbar{display:none}}
+
 /* ── 첫 화면 ─────────────────────────────── */
 .hero{background:var(--paper); background-image:var(--grid); background-size:26px 26px;
   background-position:-1px -1px; border-bottom:1px solid var(--line);
@@ -68,7 +91,8 @@ code,.mono{font-family:var(--mono); font-variant-numeric:tabular-nums}
   position:relative; overflow:hidden}
 .hero::after{content:""; position:absolute; inset:auto 0 0 0; height:130px;
   background:linear-gradient(transparent,var(--paper)); pointer-events:none}
-.hero-in{max-width:1040px; margin:0 auto; padding:clamp(48px, 6.6vw, 76px) 0 clamp(40px, 5.4vw, 62px); position:relative; z-index:1}
+/* 위 띠가 68px 을 쓰므로 그만큼 덜어 낸다 — 안 덜면 첫 화면이 통째로 내려앉는다. */
+.hero-in{max-width:1040px; margin:0 auto; padding:clamp(34px, 4.6vw, 54px) 0 clamp(40px, 5.4vw, 62px); position:relative; z-index:1}
 .eyebrow{font-size:13px; color:var(--red); font-weight:700; margin:0 0 16px;
   display:flex; align-items:center; gap:9px}
 .eyebrow::before{content:""; width:26px; height:2px; background:var(--red); display:inline-block}
@@ -265,12 +289,41 @@ dl.src dd .m{font-family:var(--mono); font-size:12.5px; color:var(--ink3)}
   font-family:var(--mono); font-size:13px; overflow-x:auto; margin:0 0 14px; white-space:pre}
 footer{border-top:1px solid var(--line); padding:26px 20px 64px; font-size:12.5px; color:var(--ink3)}
 footer .in{padding:0; display:flex; gap:18px; flex-wrap:wrap; align-items:baseline}
+/* 바닥에서도 나갈 수 있게 — 위 띠는 「첫 화면」 하나뿐이라 형제 두 장과 저장소는
+   여기서 잇는다. 다 읽고 난 사람이 다음으로 갈 곳이 이 줄이다. */
+/* ⚠️ **알약 모양으로 안 만든다** — 안쪽 여백을 주면 줄이 바뀔 때 둘째 줄 첫 칸이
+   12px 밀려 아래 줄과 왼쪽이 안 맞는다(폰에서 실제로 그랬다). 여백 대신 사이(`gap`)
+   로 띄우면 어느 줄이든 왼쪽이 같은 자리에 선다. 누르는 높이 44px 은 그대로다. */
+.fnav{max-width:1040px; margin:0 auto 14px; display:flex; flex-wrap:wrap;
+  gap:0 20px; font-size:13.5px; font-weight:700}
+.fnav a{display:inline-flex; align-items:center; min-height:44px;
+  color:var(--ink2); text-decoration:none}
+.fnav a:hover{color:var(--red); text-decoration:underline; text-underline-offset:4px}
+.fnav code{font-size:12.5px}
+@media print{.fnav{display:none}}
+/* ⚠️ **글 속 링크를 안 쓴다** — 화면 검사가 `a` 를 하나도 안 빼고 44px 로 재서,
+   문단 안에 링크를 두면 발행이 막힌다. 나가는 링크는 전부 단추 모양이다. */
+.gorow{margin:0 0 14px}
+.gobtn{display:inline-flex; align-items:center; min-height:44px;
+  padding-inline:18px; border-radius:999px; font-size:14px; font-weight:700;
+  text-decoration:none; background:var(--red); color:#FFFFFF}
+.gobtn:hover{background:var(--ink)}
+@media print{.gorow{display:none}}
 </style>
 </head>
 <body>
 
 <!-- ═══ 첫 화면 ═══ -->
 <div class="hero">
+  <div class="topbar">
+    <a class="brandmark" href="/">
+      <svg width="20" height="20" viewBox="0 0 32 32" aria-hidden="true">
+        <rect width="32" height="32" rx="7" fill="#1F1D19"/>
+        <path d="M8,7 H16 A9,9 0 0 1 16,25 H8 Z" fill="#F5F1EA"/>
+        <path d="M13.5,11.5 H16 A4.5,4.5 0 0 1 16,20.5 H13.5 Z" fill="#E5983C"/>
+      </svg>Dispatch</a>
+    <nav><a href="/">첫 화면</a></nav>
+  </div>
   <div class="hero-in">
     <p class="eyebrow">Vermilion · 한글 문서 검사기</p>
     <h1>보내기 전에 <span class="mark">한 번</span> 읽어 주는 검사기</h1>
@@ -980,6 +1033,7 @@ warn = ["절단형 의심"]</code>
   <p class="sub"><b>MIT</b> — 받아서 고쳐 쓰고 다시 나눠 줘도 됨 · 전부 공개</p>
 
   <code class="cmd">git clone https://github.com/kkhfiles/korean-writing-qa.git</code>
+  <p class="gorow"><a class="gobtn" href="https://github.com/kkhfiles/korean-writing-qa">저장소 열기</a></p>
 
   <p class="sub"><b>1단계면 대부분 충분합니다</b> — 파일 하나에 파이썬만 있으면 되고,
      지금까지 본 지적의 대부분을 그 파일 하나가 냅니다.</p>
@@ -1023,12 +1077,20 @@ warn = ["절단형 의심"]</code>
      실행 기록 25개 · 규칙마다 왜 그렇게 정했는지의 실측 근거. 이 페이지의 숫자는 전부 그 기록에서 나옵니다.</p>
 </div></div>
 
-<footer><div class="in">
+<footer>
+  <nav class="fnav">
+    <a href="/">첫 화면</a>
+    <a href="/dispatch/">Dispatch</a>
+    <a href="/mycelium/">Mycelium</a>
+    <a href="/#contact">문의</a>
+    <a href="https://github.com/kkhfiles/korean-writing-qa"><code>github.com/kkhfiles/korean-writing-qa</code></a>
+  </nav>
+  <div class="in">
   <span>실측 2026-09-08</span>
   <span>검사기 <code>doc-style-check.py</code></span>
   <span>사례는 모두 실제 문서와 사람이 확정한 교정에서 가져왔습니다.</span>
   <span>이 페이지도 같은 검사기를 통과했습니다 — 오류 0.</span>
-  <span>Vermilion · MIT · <code>github.com/kkhfiles/korean-writing-qa</code></span>
+  <span>Vermilion · MIT</span>
 </div></footer>
 
 <script>
