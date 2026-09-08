@@ -244,8 +244,9 @@ dl.src{display:grid; grid-template-columns:max-content 1fr; gap:13px 22px; margi
 dl.src dt{font-size:13.5px; font-weight:700; white-space:nowrap}
 dl.src dd{margin:0; font-size:14px; color:var(--ink2)}
 dl.src dd .m{font-family:var(--mono); font-size:12.5px; color:var(--ink3)}
+/* 여러 줄 설정 예시를 담으므로 줄바꿈을 보존한다 — 넘치는 줄은 가로로 넘긴다. */
 .cmd{display:block; background:var(--ink); color:#E8EFEA; border-radius:9px; padding:14px 17px;
-  font-family:var(--mono); font-size:13px; overflow-x:auto; margin:0 0 14px}
+  font-family:var(--mono); font-size:13px; overflow-x:auto; margin:0 0 14px; white-space:pre}
 footer{border-top:1px solid var(--line); padding:26px 20px 64px; font-size:12.5px; color:var(--ink3)}
 footer .in{padding:0; display:flex; gap:18px; flex-wrap:wrap; align-items:baseline}
 </style>
@@ -310,8 +311,8 @@ footer .in{padding:0; display:flex; gap:18px; flex-wrap:wrap; align-items:baseli
       <li><a href="#exempt">건드리지 않는 문장</a></li>
       <li><a href="#catalog">갈래별 사례</a></li>
       <li><a href="#counts">갈래별 건수</a></li>
-      <li><a href="#flip">사람이 뒤집은 지적</a></li>
-      <li><a href="#src">참고한 자료</a></li>
+      <li><a href="#fit">조직 관행에 맞추기</a></li>
+      <li><a href="#src">규칙을 만든 근거</a></li>
       <li><a href="#run">받는 법</a></li>
     </ul>
   </div>
@@ -321,7 +322,7 @@ footer .in{padding:0; display:flex; gap:18px; flex-wrap:wrap; align-items:baseli
 <div class="band paper"><div class="in" id="scale">
   <p class="snum">01</p>
   <h2>문제의 크기</h2>
-  <p class="sub">사내 분석·진행 보고 <b>600여 개</b>를 그대로 통과시켰다. 문서는 손대지 않고 검사만 돌렸다.</p>
+  <p class="sub"><b>사내 분석·진행 보고 600여 개</b> — 문서는 손대지 않고 검사만 돌린 결과</p>
 
   <div class="figures reveal">
     <div class="fig warn"><p class="n" data-to="8" data-suffix="%">0</p><p>형식과 무관하게 틀린 것이 있던 문서 — 열두 편에 한 편꼴</p></div>
@@ -352,8 +353,8 @@ footer .in{padding:0; display:flex; gap:18px; flex-wrap:wrap; align-items:baseli
 <div class="band"><div class="in" id="doc">
   <p class="snum">02</p>
   <h2>보고서 한 편 전체</h2>
-  <p class="sub">AI가 쓸 법한 도입 검토 보고서 한 편. 사람이 손대기 전과 검사 지적을 다 반영한 뒤를 나란히 놓았다.
-     걸린 낱말에는 「」 표시를 해 두었다.</p>
+  <p class="sub"><b>AI가 쓸 법한 도입 검토 보고서 한 편</b> — 사람이 손대기 전과 지적을 다 반영한 뒤를 나란히 놓음 ·
+     걸린 낱말은 「」 표시</p>
 
   <div class="figures reveal">
     <div class="fig warn"><p class="n" data-to="17">0</p><p>손대기 전 오류 — 30줄짜리 문서 한 편에서</p></div>
@@ -448,9 +449,8 @@ footer .in{padding:0; display:flex; gap:18px; flex-wrap:wrap; align-items:baseli
 <div class="band paper"><div class="in" id="exempt">
   <p class="snum">03</p>
   <h2>건드리지 않는 문장</h2>
-  <p class="sub">받아 보는 사람이 가장 먼저 묻는 것 — <b>내 문서를 통째로 빨갛게 칠하는 것 아닌가</b>.
-     겉모습이 같은데 한쪽은 정당하고 한쪽은 위반인 짝을 만들어 함께 돌린다.
-     <b>위반을 잡는 능력만 재면 「전부 지적」이 만점</b>이 되기 때문이다.</p>
+  <p class="sub"><b>「내 문서를 통째로 빨갛게 칠하는 것 아닌가」</b> — 겉모습이 같아도 정당한 쓰임은 안 건드린다.
+     다섯 짝이 그 경계다.</p>
   <div class="scroll reveal">
     <table>
       <colgroup><col style="width:13%"><col style="width:29%"><col style="width:26%"><col style="width:32%"></colgroup>
@@ -464,28 +464,22 @@ footer .in{padding:0; display:flex; gap:18px; flex-wrap:wrap; align-items:baseli
             <td class="flag">「-4.9pp 회기」</td><td>국회·시의회가 여는 기간</td></tr>
         <tr><td><b>「~다」 종결</b></td><td class="pass">규칙 이름 「같은 함정에 두 번 넘어가면 기계로 옮긴다」</td>
             <td class="flag">값 칸의 「대체하지 않는다」</td><td>정본과 글자가 같아야 하는 이름</td></tr>
-        <tr><td><b>인용 부호</b></td><td class="pass">출처가 붙은 남의 말 — 「[실장 8/5] …」</td>
+        <tr><td><b>인용 부호</b></td><td class="pass">출처가 붙은 남의 말 — 「(8/5 회의) …」</td>
             <td class="flag">출처 없이 감싼 내 해설</td><td>고칠 수 없는 남의 원문</td></tr>
       </tbody>
     </table>
   </div>
-  <p class="note reveal"><b>규칙을 고칠 때마다 다시 측정</b> — 위와 같은 짝을 정당한 표기 20종 · 같은 모양의 위반 15종으로 모아
-     회귀 시험에 넣어 두었다. 지금 정당한 쪽 <b>지적 0건</b> · 위반 쪽 <b>15건 전부 제 갈래로 잡음</b>.
-     규칙을 넓히다 정당한 쪽이 하나라도 걸리면 시험이 깨져 바로 드러난다.</p>
-  <p class="note reveal"><b>검사기 자신의 빈 곳</b>(2026-09-04에 찾음) — HTML 문단 검사가 이름은 「서술형 문단」인데
-     <b>길이만 재고 있었다</b>. 같은 내용을 마크다운과 HTML 에 넣어 보니 마크다운은 오류 2, HTML 은 오류 0 · 주의 0 이었다.
-     짧은 서술 문단을 통째로 못 본 것이다. 고치고 나서야 이 페이지의 굵은 결론 여섯이 서술형이라는 것이 드러났다.
-     <b>「검사 불가」와 「합격」은 다르다</b> — 조용한 검사기는 통과를 뜻하지 않는다.</p>
+  <p class="note reveal"><b>정당한 쪽 지적 0건</b> — 위와 같은 짝을 정당한 표기 20종 ·
+     같은 모양의 위반 15종으로 모아 회귀 시험에 넣어 두었다. 규칙을 넓히다 정당한 쪽이 하나라도 걸리면
+     시험이 깨져 바로 드러난다. <b>위반을 잡는 능력만 재면 「전부 지적」이 만점</b>이 되므로 양쪽을 함께 잰다.</p>
 </div></div>
 
 <!-- ═══ 04 갈래별 사례 ═══ -->
 <div class="band"><div class="in" id="catalog">
   <p class="snum">04</p>
   <h2>갈래별 사례</h2>
-  <p class="sub">세 묶음으로 나눈다. <b>A·B는 결정 규칙</b>이 글자만 보고 전수로 잡고,
-     <b>C는 읽는 판단</b> 소관이다 — 문맥을 읽는 층(사람이나 모델)이 후보를 내고 사람이 확정한다.
-     카드는 20장이고 갈래는 24종이다 — 가까운 갈래는 한 장에 묶었다.
-     사례는 모두 실제 문서나 사용자가 확정한 교정에서 가져왔다.</p>
+  <p class="sub"><b>A·B는 결정 규칙</b>이 글자만 보고 전수로 잡고, <b>C는 읽는 판단</b> 소관이다 —
+     문맥을 읽는 층이 후보를 내고 사람이 확정한다. 사례는 모두 실제 문서와 사람이 확정한 교정에서 가져왔다.</p>
 
   <div class="grouphead"><span class="tag">A</span><h3>문장과 낱말</h3>
     <span class="count">글자만 보고 갈림 · 8갈래</span></div>
@@ -698,7 +692,7 @@ footer .in{padding:0; display:flex; gap:18px; flex-wrap:wrap; align-items:baseli
     <dl class="meta">
       <dt>무엇</dt><dd>인용 부호를 강조 상자로 씀 — 남의 말이 아니라 내가 쓴 문장</dd>
       <dt>고치는 법</dt><dd>라벨:값으로 바꿈 · 강조는 굵게 · 경고는 경고 기호</dd>
-      <dt>지적 제외</dt><dd>출처가 붙은 남의 말 원문 — 「[실장 8/5]」·「(7/30 회의)」 · 원문은 글자가 같아야 하므로 개조식으로 고칠 수 없음</dd>
+      <dt>지적 제외</dt><dd>출처가 붙은 남의 말 원문 — 「(8/5 회의)」·「[검토 의견 7/30]」 · 원문은 글자가 같아야 하므로 개조식으로 고칠 수 없음</dd>
     </dl>
     <ul class="pairs">
       <li><div class="ba bad"><p>「이 문서는 설계 전용이다」 · 「코드 실행은 재컨펌 후 별도 진행」</p></div>
@@ -737,8 +731,8 @@ footer .in{padding:0; display:flex; gap:18px; flex-wrap:wrap; align-items:baseli
 
   <div class="grouphead"><span class="tag">C</span><h3>사람이 읽어야 갈리는 것</h3>
     <span class="count">문맥을 봐야 판정됨 · 6갈래</span></div>
-  <p class="sub">줄만 봐서는 안 갈리는 갈래. 읽는 층이 판정하고, 오탐은 결정 규칙으로 되먹인다.
-     검토 세 회차에서 <b>42건</b>을 판정했고, 사례는 모두 사람이 확정한 교정이다.</p>
+  <p class="sub">줄만 봐서는 안 갈리는 갈래. <b>읽는 층이 후보를 내고 사람이 확정한다</b> —
+     그 판정이 다시 결정 규칙의 예외로 들어간다. 사례는 모두 사람이 확정한 교정이다.</p>
 
   <article class="rule reveal">
     <div class="rule-head"><h3>불필요한 영어</h3><span class="pill human">사람 판단</span>
@@ -898,63 +892,65 @@ footer .in{padding:0; display:flex; gap:18px; flex-wrap:wrap; align-items:baseli
   <p class="note"><b>0건이어도 규칙은 돎</b> — 「이 뭉치에 안 나왔다」와 「규칙이 없다」는 다르다. 이중 피동은 두 뭉치 모두 0건인데, 만들어 넣은 시료에서는 잡힌다.</p>
 </div></div>
 
-<!-- ═══ 06 사람이 뒤집은 것 ═══ -->
-<div class="band"><div class="in" id="flip">
+<!-- ═══ 06 조직 관행에 맞추기 ═══ -->
+<div class="band"><div class="in" id="fit">
   <p class="snum">06</p>
-  <h2>사람이 뒤집은 지적</h2>
-  <p class="sub">읽는 층이 낸 지적을 사람이 검토해 오탐으로 판정한 것들. 판정은 그때 한 번으로 끝나지 않고 규칙 문서에 예외로 박힌다.</p>
-  <div class="scroll">
+  <h2>조직 관행에 맞추기</h2>
+  <p class="sub"><b>문서 관행은 조직마다 다르다.</b> 표 머리 「비고」는 공문서의 표준 관례이고,
+     발표 대본은 산문이 정상이다. 받아서 그대로 쓰는 것이 아니라 <b>켜고 끄고 등급을 바꿔서</b> 쓴다.</p>
+
+  <div class="scroll reveal">
   <table>
-    <thead><tr><th>지적한 것</th><th>제안한 고침</th><th>판정 근거</th><th>규칙에 반영한 것</th></tr></thead>
+    <colgroup><col style="width:22%"><col style="width:34%"><col style="width:44%"></colgroup>
+    <thead><tr><th>바꾸는 것</th><th>적는 법</th><th>쓰는 곳</th></tr></thead>
     <tbody>
-      <tr><td>「에이전틱」</td><td>「자율 수행」</td><td>두 말이 가리키는 범위가 다름</td>
-        <td>「뜻이 같은 대체어가 없는 말」 예외 신설 · 대체어를 먼저 정하고 원어와 같은 것을 가리키는지 확인한 뒤에 지적</td></tr>
-      <tr><td>「라인으로 포지셔닝」</td><td>「제품군으로 자리매김」</td><td>업계에서 많이 쓰는 말</td>
-        <td>「업계에 굳은 외래어」 예외 신설 · 판정 기준은 사전 등재가 아니라 그 문서의 독자가 그 말로 소통하는지</td></tr>
-      <tr><td>「플랫폼 기능 고도화 발표」</td><td>「플랫폼 기능을 확장한다고 발표」</td><td>발표 자료에서는 적절 · 문장으로 쓸 때만 고칠 것</td>
-        <td>문서 종류로 갈라 적용</td></tr>
-      <tr><td>「~에 있어」 8건</td><td>결정 규칙으로 전수 지적</td><td>8건 <b>전부</b> 정당한 쓰임</td>
-        <td>결정 규칙에서 뺌 · 판단 층 소관으로 옮김</td></tr>
-      <tr><td>모임 뜻 「자리」</td><td>예외로 두어 통과</td><td>회의·세미나로 쓰는 편이 나음</td>
-        <td>예외에서 어간 10개 삭제 · 그 예외가 은유 7건까지 통과시키고 있었음</td></tr>
-      <tr><td>「최초 실행 보고서로 재평가 대상 항목 없음」</td><td>「최초 보고서 · 재평가 대상 없음」</td><td>줄이면 맥락이 완전히 남지 않음 · 애매함</td>
-        <td>보류 — 확정 규칙에 넣지 않음</td></tr>
+      <tr><td><b>갈래 끄기</b></td><td><span class="m">off&nbsp;=&nbsp;["스캔 가치 없는 라벨"]</span></td>
+          <td>표 머리 「비고」를 쓰는 조직</td></tr>
+      <tr><td><b>등급 낮추기</b></td><td><span class="m">warn&nbsp;=&nbsp;["절단형 의심"]</span></td>
+          <td>발행은 막지 않고 참고만 받을 때</td></tr>
+      <tr><td><b>묶음째 끄기</b></td><td><span class="m">off&nbsp;=&nbsp;["구조"]</span></td>
+          <td>제목·진입점 형식을 자유로 두는 조직</td></tr>
+      <tr><td><b>산문 문서</b></td><td>머리말에 <span class="m">form: prose</span> 한 줄</td>
+          <td>소개 글·발표 대본·설명문 · 개조식 전제 아홉 갈래가 통째로 빠짐</td></tr>
+      <tr><td><b>새 규칙 넣기</b></td><td>어색한 문장을 이슈로 보냄</td>
+          <td>보낸 문장이 회귀 시료로 박혀 규칙이 바뀔 때마다 다시 돌아감</td></tr>
     </tbody>
   </table>
   </div>
-  <p class="note"><b>애매한 것을 다루는 세 갈래</b> — 아무도 안 거르는 자동 보고는 <b>침묵</b>이 맞고, 사람이 읽는 검사는 지적을 지우지 말고 <b>오류에서 주의로</b> 내리며, 넓은 문맥이 필요한 것은 <b>판단 층으로 옮긴다</b>. 옮길 곳을 안 적으면 그 순간부터 놓치는 것이 된다.</p>
+
+  <p class="sub">설정 파일 하나면 된다 — 검사 대상에서 위로 올라가며 <code>korean-qa.toml</code> 을 찾는다.</p>
+  <code class="cmd">[rules]
+off  = ["스캔 가치 없는 라벨", "구조"]
+warn = ["절단형 의심"]</code>
+
+  <p class="note reveal"><b>끈 것은 결과 맨 위와 합계에 찍힘</b> — 조용히 끄면 「오류 0」이 통과인지
+     안 본 것인지 갈리지 않는다. 갈래 이름은 지적에 찍히는 이름 그대로이고,
+     <span class="m">--list-rules</span> 로 <b>26갈래</b>를 전부 볼 수 있다.</p>
+  <p class="note reveal"><b>오탐은 규칙의 예외로 들어감</b> — 줄만 봐서 안 갈리는 것은 읽는 층이 후보로 내고
+     사람이 확정한다. 사람이 「이건 정당하다」고 판정하면 그때 한 번으로 끝나지 않고
+     <b>규칙의 예외와 회귀 시료로 함께 박힌다.</b></p>
 </div></div>
 
-<!-- ═══ 07 참고한 자료 ═══ -->
+<!-- ═══ 07 규칙을 만든 근거 ═══ -->
 <div class="band paper"><div class="in" id="src">
   <p class="snum">07</p>
-  <h2>참고한 자료</h2>
-  <p class="sub">규칙의 출처와 실측에 쓴 문서 뭉치. 외부 저장소는 확인한 커밋과 라이선스를 함께 적었고, <b>가져오지 않은 원칙도 근거와 함께</b> 남겼다.</p>
+  <h2>규칙을 만든 근거</h2>
+  <p class="sub"><b>짐작으로 넣은 갈래는 없다.</b> 규칙 후보마다 실문서에서 몇 건 나오는지 세고,
+     정당한 쓰임이 섞이면 결정 규칙에서 뺐다. 넣은 근거와 <b>빼기로 한 근거를 함께</b> 남겼다.</p>
   <dl class="src">
     <dt>글쓰기 원칙</dt>
-    <dd>유시민 「유시민의 글쓰기 특강」 4장 「못난 글을 피하는 법」·5장 「압축 기술」 요약 자료 —
-        군더더기 판정(지워 보고 뜻이 통하면 군더더기) · 단문 우선 · 같은 말 두 번 하지 않기 ·
-        어려운 말 안 쓰기 · 다 쓴 뒤 소리 내어 읽기</dd>
-    <dt>외부 저장소 ①</dt>
-    <dd><b>korean-report-skills</b> · Apache-2.0 · 커밋 <span class="m">d35f47e1</span> · 2026-08-24 확인<br>
-        <b>가져온 것</b> — 동사 하나를 금지하지 않고 주어와 술어의 결합을 봄 · 실제 식별자와 일반 설명을 구분<br>
-        <b>안 가져온 것</b> — 격식 어미 일괄 치환(마크다운 30개 실측에서 16건 · 자연스러움 개선 근거 없음) ·
-        「엔드포인트」를 영문으로 되돌리기(3건 모두 API 식별자가 아닌 일반 명사) · 엠대시 전역 억제</dd>
-    <dt>외부 저장소 ②</dt>
-    <dd><b>fluent-korean</b> · MIT · 커밋 <span class="m">ce8683f0</span> · 2026-08-24 확인<br>
-        <b>가져온 것</b> — 생략된 문장 성분 복원 · 분야에서 굳지 않은 비유를 실제 행위로<br>
-        <b>안 가져온 것</b> — 모든 본문의 완전한 문장화(제목·목록·값 칸과 충돌)</dd>
-    <dt>사내 스킬</dt>
-    <dd><b>humanize-korean</b> — 내용·수치·인용·장르를 보존하고 번역투·영어 과다·기계적 병렬·균일한 리듬을 문맥으로 판단</dd>
-    <dt>사용자 확정 교정</dt>
-    <dd>확정 규칙 <b>8</b>건(적용 조건 포함) · 대표 수정 표 <b>14</b>행 · 사람 판정 <b>42</b>건 ·
-        판정 내역은 확정 16 · 수정 13 · 오탐 3 · 통과 1 · 보류 1, 별도 낱말 판정 8건(오탐 1 · 보류 1 · 미탐 6)</dd>
+    <dd>국어 글쓰기 원칙서들이 공통으로 드는 것 — 군더더기 판정(지워 보고 뜻이 통하면 군더더기) ·
+        단문 우선 · 같은 말 두 번 하지 않기 · 어려운 말 안 쓰기 · 다 쓴 뒤 소리 내어 읽기</dd>
+    <dt>공개 한국어 문체 도구</dt>
+    <dd>여러 공개 저장소의 규칙을 하나씩 대조 · <b>가져온 것과 안 가져온 것을 근거와 함께 기록</b> ·
+        실측에서 개선이 확인되지 않은 규칙은 안 넣음</dd>
     <dt>실문서 뭉치</dt>
-    <dd><b>규칙 출처 1,700여 개</b> — 플러그인 규칙·스킬·프로젝트 메모리<br>
-        <b>검사 대상 600여 개</b> — 사내 분석·진행 보고<br>
-        <b>규칙·기록 900여 개</b> — 작업 규칙과 진행 기록<br>
-        <b>낱말 재측정 1,100여 개</b> — 판·창·결·값·축·층 여섯을 따로 셈<br>
-        <b>비유 재점검 400여 개</b> — 「자리」의 은유 용언 목록 확정</dd>
+    <dd><b>규칙 출처 1,700여 개</b> · <b>검사 대상 600여 개</b> · <b>규칙·기록 900여 개</b> ·
+        <b>낱말 재측정 1,100여 개</b> · <b>비유 재점검 400여 개</b> —
+        갈래마다 몇 건 나오는지 세어 보고 넣을지 정함</dd>
+    <dt>사람이 확정한 교정</dt>
+    <dd>사람 판정 <b>42</b>건 · 확정 규칙 <b>8</b>건 · 오탐 판정은 그때 한 번으로 끝나지 않고
+        규칙의 예외로 되먹임</dd>
     <dt>회귀 시험</dt>
     <dd>시험 <b>300여</b> 건 · 회귀 시료 <b>68</b>건(양성·정상·경계) ·
         규칙을 일부러 망가뜨려 잡히는지 보는 확인 <b>86</b>회 전부 잡힘</dd>
@@ -965,11 +961,11 @@ footer .in{padding:0; display:flex; gap:18px; flex-wrap:wrap; align-items:baseli
 <div class="band"><div class="in" id="run">
   <p class="snum">08</p>
   <h2>받는 법</h2>
-  <p class="sub">전부 공개돼 있다. <b>MIT</b> 라 받아서 고쳐 쓰고 다시 나눠 줘도 된다.</p>
+  <p class="sub"><b>MIT</b> — 받아서 고쳐 쓰고 다시 나눠 줘도 됨 · 전부 공개</p>
 
   <code class="cmd">git clone https://github.com/kkhfiles/korean-writing-qa.git</code>
 
-  <p class="sub">깊이를 셋 중에 고른다. <b>1단계면 대부분 충분하다</b> — 파일 하나에 파이썬만 있으면 되고,
+  <p class="sub"><b>1단계면 대부분 충분하다</b> — 파일 하나에 파이썬만 있으면 되고,
      지금까지 본 지적의 대부분을 그 파일 하나가 낸다.</p>
   <div class="scroll">
   <table>
