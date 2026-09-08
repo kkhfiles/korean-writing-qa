@@ -29,6 +29,8 @@ sys.stdout.reconfigure(encoding='utf-8')
 NARRATIVE = re.compile(r'[가-힣]다\.?$')
 # 「아니다」는 빼지 않는다 — 규칙 §1이 ❌"대체하지 않는다" → ✅"대체 아님"으로 든 바로 그 형태다
 NOT_NARRATIVE = re.compile(r'(보다|마다|최다|과다)\.?$')
+# 존댓말 종결 — 「니다」 계열과 「요」 계열. 이 밖의 서술형 종결이 반말이다.
+POLITE = re.compile(r'(?:니다|니까|세요|셔요|어요|아요|여요|에요|예요|시오|ㅂ시다)$')
 LIST_HEAD = re.compile(r'^(?:[-*]\s+|\d+[.)]\s+)')   # 불릿과 번호 목록은 같은 값 슬롯이다
 CONCL_HEAD = re.compile(r'^[→⇒]\s*')                 # 「→」 결론줄도 값이다(문단이 아니다)
 # 문단 검사에서 빼는 줄 — 값이 없는 줄이라 판정 대상이 아니다
@@ -327,6 +329,20 @@ def is_narrative(sent):
     return bool(NARRATIVE.search(probe)) and not NOT_NARRATIVE.search(probe)
 
 
+def is_plain_speech(sent):
+    """서술 문장이 반말인가 — 「니다」·「요」 계열이 아니면 반말이다.
+
+    **서술형인지부터 본다.** 명사로 끝나는 개조식 값은 대상이 아니다. 「~습니다」도
+    「다」로 끝나므로 `is_narrative` 는 존댓말까지 참을 낸다 — 그 안에서 다시 가른다.
+
+    **왜 갈래를 따로 두나.** 반말 자체는 잘못이 아니다. 실측(2026-09-08)으로
+    작업 기록과 규칙 문서는 서술 문장의 90%가, 업무 보고서는 63%가 반말이고 그게
+    정상이다. **사람에게 내보이는 홍보·안내 자료에서만** 잘못이라 기본으로 꺼 둔다.
+    """
+    probe = drop_tail(QUOTE_SPAN.sub(' ', sent)).rstrip('.!?… ')
+    return is_narrative(sent) and not POLITE.search(probe)
+
+
 def sentences(t):
     """값 하나를 문장 단위로 쪼갠다 — 마지막 문장만 보면 앞 문장의 서술형을 놓친다."""
     if all_quoted(t):
@@ -524,6 +540,23 @@ def scan_html(path, relaxed=False, form=None, rules=None):
             if is_narrative(sent):
                 err.append(('서술형 문단', sent[:58]))
 
+    # 4c. 반말 서술형 — 사람에게 내보이는 자료의 말투. **기본으로 꺼져 있다.**
+    #
+    #   위 4번과 대상이 다르다 — 여기서는 `lede`·`sub` 도 보고, 「굵은 결론 —
+    #   근거 문장」의 **근거 문장까지** 본다. 4번은 개조식이냐를 묻고 여기서는
+    #   말투를 묻기 때문이다. 근거 문장은 개조식일 필요가 없지만 존댓말이어야 한다.
+    #
+    #   ⛔ 한국어 제품 홍보 쪽에 반말은 안 쓴다. 같이 만든 소개 쪽 셋은 서술 문장이
+    #      100% 존댓말인데 사례집 하나만 67건이 반말이었다(2026-09-08 실측) —
+    #      만든 사람의 작업 문서 말투가 그대로 나간 것이다.
+    for p in re.findall(r'<p(?![a-zA-Z])[^>]*>(.*?)</p>', body, re.S):
+        t = strip(p)
+        if not t or is_example(t):
+            continue
+        for sent in sentences(t):
+            if is_plain_speech(sent):
+                err.append(('반말 서술형', f'{sent[:52]} — 존댓말로 쓸 것'))
+
     # 4b. 제목 — 마크다운과 같은 규칙을 HTML 에도 건다.
     #     규칙(§1 개조식)은 진작 있었는데 이 경로에만 안 걸려 있었다. 그래서 값은
     #     전부 개조식인 아티팩트가 **제목만 서술 문장인 채로** 오류 0 을 받았다
@@ -594,6 +627,7 @@ def scan_html(path, relaxed=False, form=None, rules=None):
     # 기억해야 하는 구조는 실패한다 — `<meta name="form" content="prose">` 로 파일이
     # 자기 형식을 들고 있게 한다. 플래그가 오면 그쪽이 이긴다(그 자리에서 뒤집어 봄).
     err, warn = apply_form(err, warn, form or declared_form(raw))
+    err, warn = apply_default_off(err, warn, rules)
     err, warn = apply_selection(err, warn, rules) if rules else (err, warn)
     return err, warn, slots
 
@@ -693,7 +727,7 @@ RULE_GROUPS = {
     #    산문 문서에 이 갈래를 켜 두고 「우리 글이 틀렸구나」로 읽는다.
     '문장': ('문장 끝맺음 — 절단형은 서술어가 빠진 것 · 서술형은 개조식 문서 규약', [
         '서술형 종결', '서술형 문단', '절단형 종결', '절단형 의심',
-        '결론 라벨 없는 설명',
+        '결론 라벨 없는 설명', '반말 서술형',
     ]),
     '낱말': ('낱말 선택 — 지어낸 말과 뜻이 흐려지는 말', [
         '「~하는 자리」', '「~하는 자리」 의심', '지어낸 명사구', '평가 수식어',
@@ -714,19 +748,35 @@ RULE_GROUPS = {
 ALL_KINDS = {k: g for g, (_, kinds) in RULE_GROUPS.items() for k in kinds}
 RULES_FILENAME = 'korean-qa.toml'
 
+#: 기본으로 꺼진 갈래 — 설정에 `on` 으로 적거나 `--no-rules` 로 켠다.
+#
+#  ⚠️ **꺼 두는 것이 맞는 갈래가 있다.** 반말은 그 자체가 잘못이 아니다 —
+#     실측(2026-09-08)으로 작업 기록과 규칙 문서는 서술 문장의 90%가, 업무
+#     보고서는 63%가 반말이고 그게 정상이다. 기본으로 켜면 정당한 글 수천 줄이
+#     지적으로 쏟아져 정작 봐야 할 것을 덮는다(이 검사기가 서식 검사에서 이미
+#     겪은 실패다 — 주의 2,546건 중 2,239건이 서식이었다).
+#
+#     그런데 **사람에게 내보이는 홍보·안내 자료에서는 반말을 안 쓴다.** 같이
+#     만든 소개 쪽 셋은 서술 문장이 100% 존댓말인데 사례집 하나만 67건이
+#     반말이었다. 그 자리에서만 켜라고 이 목록을 둔다.
+DEFAULT_OFF = {'반말 서술형'}
+
 
 class Selection:
-    """어느 갈래를 볼 것인가. `source` 가 None 이면 전부 본다."""
+    """어느 갈래를 볼 것인가. `source` 가 None 이면 기본 갈래를 전부 본다."""
 
-    def __init__(self, off=(), warn=(), err=(), source=None):
+    def __init__(self, off=(), warn=(), err=(), on=(), source=None):
         self.off, self.warn, self.err = set(off), set(warn), set(err)
+        self.on = set(on)
         self.source = source
 
     def __bool__(self):
-        return bool(self.off or self.warn or self.err)
+        return bool(self.off or self.warn or self.err or self.on)
 
     def summary(self):
         bits = []
+        if self.on:
+            bits.append(f'켬 {len(self.on)}종')
         if self.off:
             bits.append(f'끔 {len(self.off)}종')
         if self.warn:
@@ -760,6 +810,7 @@ def load_rules(path):
         off=_expand(rules.get('off', []), f'{path} 의 off'),
         warn=_expand(rules.get('warn', []), f'{path} 의 warn'),
         err=_expand(rules.get('err', []), f'{path} 의 err'),
+        on=_expand(rules.get('on', []), f'{path} 의 on'),
         source=path,
     )
 
@@ -788,6 +839,21 @@ def find_rules(targets):
     return None
 
 
+def apply_default_off(err, warn, sel):
+    """기본으로 꺼진 갈래를 떨군다 — 설정에 `on` 으로 적은 것만 남긴다.
+
+    ⚠️ **설정이 없어도 떨군다.** 켜는 쪽을 기본으로 두면 받아 쓰는 사람이 첫
+    실행에서 정당한 반말 수천 줄을 지적으로 받는다. 그때 사람은 갈래를 끄는
+    것이 아니라 검사기를 끈다.
+    """
+    keep = sel.on if sel else set()
+    drop = DEFAULT_OFF - keep
+    if not drop:
+        return err, warn
+    pick = lambda items: [i for i in items if (i[1] if len(i) == 3 else i[0]) not in drop]
+    return pick(err), pick(warn)
+
+
 def apply_selection(err, warn, sel):
     """끄고 · 낮추고 · 올린다. 순서는 끄기가 먼저다."""
     if not sel:
@@ -807,8 +873,14 @@ def list_rules():
     for group, (why, kinds) in RULE_GROUPS.items():
         print(f'[{group}] {why}')
         for k in kinds:
-            print(f'    {k}')
+            print(f'    {k}' + ('   ← 기본으로 꺼짐' if k in DEFAULT_OFF else ''))
         print()
+    print('기본으로 꺼진 갈래를 켜려면 — 사람에게 내보이는 홍보·안내 자료에 쓴다\n')
+    print('    [rules]')
+    print('    on = ["반말 서술형"]')
+    print('\n반말은 그 자체가 잘못이 아니다 — 작업 기록과 규칙 문서는 서술 문장의 90%가,')
+    print('업무 보고서는 63%가 반말이고 그게 정상이다(실측 2026-09-08). 다만 사람에게')
+    print('내보이는 자료에는 안 쓴다.\n')
     print('보기 — 표 머리 「비고」를 쓰는 조직, 제목 형식은 자유로 두는 조직\n')
     print('    [rules]')
     print('    off  = ["스캔 가치 없는 라벨", "구조"]')
@@ -958,6 +1030,12 @@ def scan_md(path, relaxed=False, form=None, rules=None):
             # 뒤 근거 문장은 그대로 둔다. 결론이 없으면 문단 전체가 라벨 없는 설명이다.
             vals, has_head = split_value(s)
             parts = [vals]
+            # 반말 서술형 — 문단의 말투를 본다. **기본으로 꺼져 있다.**
+            # 개조식이냐를 묻는 위 검사와 별개라 근거 문장까지 본다 — 근거 문장은
+            # 개조식일 필요가 없지만 사람에게 내보이는 자료라면 존댓말이어야 한다.
+            for sent in sentences(strip(s).replace('**', '')):
+                if is_plain_speech(sent):
+                    err.append((n, '반말 서술형', f'{sent[:52]} — 존댓말로 쓸 것'))
         prev_is_table = s.startswith('|')
         for cell in parts:
             for v in cell:
@@ -1145,6 +1223,7 @@ def scan_md(path, relaxed=False, form=None, rules=None):
             '개조식 검사를 빼고 본다. 개조식이 맞다면 `form: structured` 를 적는다.',
         ))
     err, warn = apply_form(err, warn, resolved)
+    err, warn = apply_default_off(err, warn, rules)
     err, warn = apply_selection(err, warn, rules) if rules else (err, warn)
     return err, warn, slots
 
@@ -1198,7 +1277,11 @@ def main():
 
     # 갈래 설정 — 명시한 것이 먼저, 없으면 대상에서 위로 올라가며 찾는다.
     # `--no-rules` 는 발행 게이트용이다. 설정이 무엇을 끄든 전부 보게 한다.
+    # 「전부」에는 기본으로 꺼진 갈래도 든다 — 안 그러면 발행 게이트가 그 갈래를
+    # 영영 못 본다. 켰다는 사실은 아래에서 결과 맨 위에 찍힌다.
     rules = None
+    if '--no-rules' in argv:
+        rules = Selection(on=DEFAULT_OFF, source='--no-rules')
     if '--no-rules' not in argv:
         found = rules_path or find_rules(args)
         if found:
