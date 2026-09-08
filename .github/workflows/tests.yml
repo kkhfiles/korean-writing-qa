@@ -40,3 +40,9 @@ jobs:
       - name: 공유 자료는 오류 0
         # 사례집은 발행물이다. 규칙을 고치다 이 페이지가 깨지면 여기서 걸린다.
         run: python assets/doc-style-check.py docs/showcase.html --no-rules
+
+      - name: 나가면 안 되는 것
+        # 공개 직전에 사람이 한 번 훑었지만 그 뒤 커밋은 아무도 안 봤다. 실제로
+        # 실행 기록에 작성자 기계의 홈 경로가 박힌 채 올라갔다(2026-09-08).
+        # 사람 이름·고객사 이름은 이 검사가 못 본다 — 그건 리뷰가 본다.
+        run: python -X utf8 scripts/check_publish_safety.py
