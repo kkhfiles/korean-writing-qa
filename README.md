@@ -125,7 +125,7 @@ err  = []                                 # 주의에서 오류로 올린다
 |---|---|
 | `assets/doc-style-check.py` | 1층 검사기 정본 |
 | `skills/finalize-korean-document/` | 2층 스킬 정본 |
-| `hooks/` | 발행 직전 검사 · 겹 역슬래시 차단 · 매일 건강 검사 |
+| `hooks/` | 발행 직전 검사 · 겹 역슬래시 차단 · 매일 건강 검사와 GitHub 반영 확인 |
 | `install.py` · `repo_paths.py` | 설치와 경로 해석 |
 | `scripts/check_publish_safety.py` | 공개하면 안 되는 것이 섞였는지 · CI 가 같이 돎 |
 | `tests/` | 시험 파일 49개 · 시험 300여 건 |
@@ -134,6 +134,8 @@ err  = []                                 # 주의에서 오류로 올린다
 | `runs/` | 실행별 입력·결과·요약 |
 
 **정본이 여기 있음** — 예전에는 `~/.claude/` 가 정본이고 이 저장소가 그것을 불러다 썼습니다. 저장소만 받으신 분이 아무것도 못 돌려서 방향을 뒤집었습니다. 설치본을 직접 고치면 `tests/test_installed_copy_matches.py` 가 잡습니다.
+
+**고친 것이 GitHub 까지 가는지도 봅니다** — 「설치본과 정본이 같다」와 「저장소가 GitHub 과 같다」는 다른 말입니다. 하루 첫 세션에 도는 점검이 정본 미커밋과 안 밀린 커밋을 함께 봅니다(`hooks/korean-gate-daily-check.py`). 깨끗하면 아무 말도 안 합니다.
 
 ## 라이선스
 
