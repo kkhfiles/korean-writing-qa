@@ -22,8 +22,13 @@ GitHub 과 같다」는 **다른 말인데**, 뒤엣것을 보는 곳이 저장�
 **설계**
 - **하루 한 번**(첫 세션)만 돌린다. 그날 이미 봤으면 즉시 끝난다.
 - **초록이면 아무 말도 안 한다.** 조용한 날에는 화면에 아무것도 안 나온다.
-- **판단 불가면 침묵**(저장소 없음·pytest 없음·git 없음). 그날을 「봤다」로 적지
-  않고, 다만 6시간 안에는 다시 시도하지 않는다 — 세션마다 재시도하면 그게 소음이다.
+- **판단 불가면 침묵**(저장소 없음·git 없음). 그날을 「봤다」로 적지 않고, 다만
+  6시간 안에는 다시 시도하지 않는다 — 세션마다 재시도하면 그게 소음이다.
+- **바깥 라이브러리를 안 쓴다.** 시험은 `unittest`(파이썬 기본)로 돌린다. 예전에는
+  `pytest` 를 불렀는데 어디에도 안 적혀 있어 **CI 에조차 없었고**, 없는 기계에서는
+  이 점검이 판단 불가로 조용히 멈춘 채였다(2026-09-09 확인).
+- **★ git 확인은 시험과 따로 선다.** 처음 붙일 때는 시험이 판단 불가면 곧장
+  돌아가서, 시험을 못 돌리는 기계에서는 git 확인도 **한 번도 안 돌았다.**
 - **★ 판단 불가가 사흘 이어지면 그때는 말한다.** 하루치 침묵은 잠깐 못 본 것이고,
   사흘치 침묵은 **감시가 죽은 것**이다. 둘을 같이 묻으면 자산이 바뀌어도 아무도
   안 본다 — 이 저장소가 이미 한 번 겪고 닫은 결론이다(판단 A, 2026-09-03).
@@ -108,18 +113,27 @@ def due(state: dict, now: datetime) -> bool:
 
 
 def run_suite():
-    """(통과 여부, 사람이 읽을 요약). 못 돌렸으면 (None, 까닭)."""
+    """(통과 여부, 사람이 읽을 요약). 못 돌렸으면 (None, 까닭).
+
+    **`unittest` 로 돌린다 — 예전에는 `pytest` 였다.** 이 꾸러미가 파는 것이
+    「의존성 0」인데 감시가 바깥 라이브러리를 몰래 요구하고 있었다. 어디에도
+    적혀 있지 않아 CI 에서도 없었고(2026-09-09 확인), 없는 기계에서는 이 점검이
+    **판단 불가로 조용히 멈춘 채였다.**
+
+    ⚠️ `unittest` 는 결과를 **stderr** 로 낸다. stdout 만 읽으면 요약이 빈다.
+    """
     if not (REPO / "tests").is_dir():
         return None, f"시험 저장소가 없다 ({REPO})"
     try:
         done = subprocess.run(
-            [sys.executable, "-X", "utf8", "-m", "pytest", "tests/", "-q", "--no-header"],
+            [sys.executable, "-X", "utf8", "-m", "unittest", "discover", "-s", "tests"],
             cwd=str(REPO), capture_output=True, text=True,
             encoding="utf-8", errors="replace", timeout=TIMEOUT,
         )
     except (OSError, subprocess.SubprocessError) as exc:
         return None, f"시험을 돌리지 못했다 ({exc})"
-    tail = [line for line in (done.stdout or "").splitlines() if line.strip()]
+    spoken = (done.stderr or "") + (done.stdout or "")
+    tail = [line for line in spoken.splitlines() if line.strip()]
     return done.returncode == 0, "\n".join(tail[-12:])
 
 
@@ -209,7 +223,7 @@ def render(summary: str) -> str:
         "",
         summary,
         "",
-        f"다시 보려면: `cd {REPO.as_posix()} && python -X utf8 -m pytest tests/ -q`",
+        f"다시 보려면: `cd {REPO.as_posix()} && python -X utf8 -m unittest discover -s tests`",
     ])
 
 
@@ -279,25 +293,31 @@ def main() -> int:
         return 0
 
     passed, summary = run_suite()
+
+    # ★ git 확인은 시험과 따로 선다. 예전에는 시험이 판단 불가면 여기서 곧장
+    #   돌아가서, 시험을 못 돌리는 기계에서는 git 확인도 **한 번도 안 돌았다.**
+    notes = []
+    behind = check_git(REPO)
+    if behind:
+        notes.append(render_git(behind, REPO))
+
     if passed is None:
         # 판단 불가 — 그날을 「봤다」로 적지 않는다
         days = stale_days(state, now)
         state["last_attempt_at"] = now.isoformat(timespec="seconds")
         write_state(state)
         if days is not None and days >= STALE_DAYS:
-            emit(render_dead(days, summary))
+            notes.append(render_dead(days, summary))
+        if notes:
+            emit("\n\n".join(notes))
         return 0
 
     state["last_checked_date"] = now.date().isoformat()
     state.pop("last_attempt_at", None)
     write_state(state)
 
-    notes = []
     if not passed:
-        notes.append(render(summary))
-    behind = check_git(REPO)
-    if behind:
-        notes.append(render_git(behind, REPO))
+        notes.insert(0, render(summary))
     if notes:
         emit("\n\n".join(notes))
     return 0

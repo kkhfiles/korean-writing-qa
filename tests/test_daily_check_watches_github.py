@@ -190,19 +190,54 @@ class GitCheckTests(unittest.TestCase):
 
     def test_the_github_notice_actually_reaches_the_screen(self) -> None:
         """`check_git` 이 문제를 찾아도 `main()` 이 안 부르면 화면에 안 뜬다."""
-        if not self._has_pytest():
-            self.skipTest("pytest 가 없습니다 — 훅이 시험을 못 돌립니다")
         with tempfile.TemporaryDirectory() as tmp:
             repo = self._fresh_repo(Path(tmp), with_remote=True, runnable=True)
             (repo / "assets" / "doc-style-check.py").write_text("고침\n", encoding="utf-8")
             state = Path(tmp) / "state.json"
             out = self._run_hook(repo=repo, state=state)
             self.assertIn("GitHub 에 안 갔다", out)
-            self.assertIn("doc-style-check.py", out)
+            self.assertIn("assets/doc-style-check.py", out)
 
-    @staticmethod
-    def _has_pytest() -> bool:
-        return importlib.util.find_spec("pytest") is not None
+    def test_the_git_check_runs_even_when_the_suite_cannot(self) -> None:
+        """시험을 못 돌리는 기계에서도 GitHub 반영은 봐야 한다.
+
+        처음 붙일 때는 시험이 판단 불가면 `main()` 이 곧장 돌아가서, **그런 기계
+        에서는 git 확인이 한 번도 안 돌았다.** CI 가 그 상태였다(pytest 없음).
+        """
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = self._fresh_repo(Path(tmp), with_remote=True)   # `tests/` 없음
+            (repo / "assets" / "doc-style-check.py").write_text("고침\n", encoding="utf-8")
+            out = self._run_hook(repo=repo, state=Path(tmp) / "state.json")
+            self.assertIn("GitHub 에 안 갔다", out)
+
+    def test_it_leans_on_nothing_outside_the_standard_library(self) -> None:
+        """감시가 바깥 라이브러리를 몰래 요구하면 없는 기계에서 조용히 멈춘다.
+
+        이 꾸러미가 파는 것이 「의존성 0」인데 훅이 `pytest` 를 부르고 있었고,
+        어디에도 안 적혀 있어 CI 에조차 없었다(2026-09-09).
+        """
+        source = CHECK.read_text(encoding="utf-8")
+        run_suite = source.split("def run_suite")[1].split("\ndef ")[0]
+        self.assertIn('"unittest", "discover"', run_suite)
+        for outsider in ("pytest", "nose", "tox"):
+            self.assertNotIn(f'"{outsider}"', run_suite,
+                             f"훅이 {outsider} 를 요구합니다 — 기본 모듈로 도십시오")
+
+    def test_it_reads_the_stream_unittest_actually_writes_to(self) -> None:
+        """`unittest` 는 결과를 stderr 로 낸다 — stdout 만 읽으면 요약이 빈다."""
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = self._fresh_repo(Path(tmp), with_remote=True, runnable=True)
+            (repo / "tests" / "test_ok.py").write_text(
+                "import unittest\n\n\n"
+                "class Broken(unittest.TestCase):\n"
+                "    def test_broken(self):\n        self.fail('일부러 깨뜨림')\n",
+                encoding="utf-8")
+            git(repo, "add", "-A")
+            git(repo, "commit", "-q", "-m", "깨뜨림", "--no-gpg-sign")
+            git(repo, "push", "-q", "origin", "main")
+            out = self._run_hook(repo=repo, state=Path(tmp) / "state.json")
+            self.assertIn("회귀 실패", out)
+            self.assertIn("FAILED", out, "시험 요약이 비었습니다 — stderr 를 안 읽습니다")
 
     def _run_hook(self, repo: Path, state: Path) -> str:
         """훅을 그대로 돌려 화면에 나온 글을 낸다 — 아무 말도 없으면 빈 문자열."""
@@ -234,9 +269,13 @@ class GitCheckTests(unittest.TestCase):
         (repo / "docs").mkdir()
         (repo / "docs" / "메모.md").write_text("원본\n", encoding="utf-8")
         if runnable:
+            # `unittest` 는 맨 함수를 안 찾는다 — TestCase 여야 한다(pytest 와 다름).
             (repo / "tests").mkdir()
             (repo / "tests" / "test_ok.py").write_text(
-                "def test_ok():\n    assert True\n", encoding="utf-8")
+                "import unittest\n\n\n"
+                "class Ok(unittest.TestCase):\n"
+                "    def test_ok(self):\n        self.assertTrue(True)\n",
+                encoding="utf-8")
         env = {**os.environ, "GIT_CONFIG_GLOBAL": str(root / "gitconfig")}
         subprocess.run(["git", "init", "-q", "-b", "main", str(repo)], check=True, env=env)
         for key, value in (("user.email", "t@t"), ("user.name", "시험"),
