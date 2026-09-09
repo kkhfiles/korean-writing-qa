@@ -6,7 +6,7 @@
 | 시료 | 무엇이 들었나 | 기대 |
 |---|---|---|
 | `exempt-fixture.md` | 위반과 겉모습이 같은 **정당한** 표기 20종 | 지적 0 |
-| `violation-fixture.md` | 같은 모양의 **진짜** 위반 15종 | 15건 전부 · 제 갈래로 |
+| `violation-fixture.md` | 같은 모양의 **진짜** 위반 | 17건 전부 · 제 갈래로 |
 
 **정당한 쪽이 하나라도 걸리면 규칙이 너무 넓다.** 그것이 이 시험의 본체이고,
 위반 쪽 수는 규칙이 조용히 사라지지 않았는지 보는 보조 확인이다.
@@ -35,7 +35,7 @@ VIOLATION = PAIRED / "violation-fixture.md"
 EXPECTED_KINDS = {
     "서술형 종결", "절단형 종결", "절단형 의심", "「~하는 자리」", "모호한 지칭",
     "「회기」", "이중 피동", "번역투 이중 조사", "지어낸 명사구", "평가 수식어",
-    "스캔 가치 없는 라벨",
+    "스캔 가치 없는 라벨", "업무 글에 없는 말",
 }
 
 
@@ -66,10 +66,15 @@ class PairedFixtureTests(unittest.TestCase):
         self.assertEqual([], warn, f"정당한 표기가 주의로 걸렸습니다: {warn}")
 
     def test_violation_fixture_catches_everything(self) -> None:
-        """위반 쪽 수가 줄면 규칙 하나가 조용히 사라진 것이다."""
+        """위반 쪽 수가 줄면 규칙 하나가 조용히 사라진 것이다.
+
+        2026-09-09 에 15 → 17. 같은 줄(「앞 판에서 잰 값 · 무르는 창」)을 규칙 둘이
+        새로 잡는다 — 「무르는 창」을 좁힌 지어낸 명사구가, 「잰 값」을 업무 글에
+        없는 말이. 시료를 안 고쳤고 **규칙이 늘어난 만큼만 늘었다.**
+        """
         err, warn, slots = self.scan(VIOLATION)
         self.assertGreater(slots, 20)
-        self.assertEqual(15, len(err) + len(warn), f"오류 {err}\n주의 {warn}")
+        self.assertEqual(17, len(err) + len(warn), f"오류 {err}\n주의 {warn}")
 
     def test_every_expected_kind_still_fires(self) -> None:
         """수만 맞고 갈래가 바뀌었으면 규칙 하나가 다른 규칙에 가려진 것이다."""
