@@ -73,15 +73,41 @@ class TheCheckerStaysInScopeTests(unittest.TestCase):
             with self.subTest(term=term):
                 self.assertNotIn(term, self.source.lower())
 
-    def test_the_empty_noun_rule_was_not_added(self) -> None:
-        """응답에서만 나는 문제라 검사기에 안 넣기로 했다.
+    def test_the_broad_empty_noun_rule_was_not_added(self) -> None:
+        """넓은 판정은 여전히 안 넣는다 — 좁힌 것만 들어왔다.
 
-        넣으면 「계산하는 값」·「튀는 값」 같은 정상 한국어를 잡는다 —
+        넓게 넣으면 「계산하는 값」·「튀는 값」 같은 정상 한국어를 잡는다 —
         세 뭉치 실측 11건이 전부 정당한 쓰임이었다.
+
+        2026-09-09 에 **용언으로 자른 좁은 판정**이 들어왔다(닿는·버는·무르는 +
+        값·축·판·창·층). 목적어가 못 되는 용언만 모은 것이라 위 표현은 그대로 통과한다.
+
+        ⚠️ **글자 대조를 동작 대조로 바꿨다** — 규칙 설명에 「빈 명사」가 스치기만 해도
+        깨지던 시험이었다. 지켜야 하는 것은 낱말이 아니라 **정상 표현이 조용한 것**이다.
         """
-        for kind in ("빈 명사", "판창값", "판·창·값"):
+        checker = load_checker()
+
+        def kinds(items):
+            return [i[1] if len(i) == 3 else i[0] for i in items]
+
+        for kind in ("판창값", "판·창·값"):
             with self.subTest(kind=kind):
                 self.assertNotIn(kind, self.source)
+
+        for phrase in ("계산하는 값", "튀는 값", "얻은 값", "감싸는 층", "올리는 축"):
+            with self.subTest(phrase=phrase):
+                with tempfile.TemporaryDirectory() as directory:
+                    path = Path(directory) / "doc.md"
+                    path.write_text(
+                        "---\nform: structured\n---\n"
+                        "# 점검 결과\n\n"
+                        "**점검 대상 · 결과** — 한 장 조망\n\n"
+                        f"- **문제 지점**: {phrase}\n",
+                        encoding="utf-8")
+                    errors, warnings, _ = checker.scan_md(str(path))
+                hit = [k for k in kinds(errors) + kinds(warnings)
+                       if "명사구" in k]
+                self.assertFalse(hit, f"「{phrase}」는 정상 한국어입니다: {hit}")
 
     def test_the_jari_rule_still_fires(self) -> None:
         """빼는 쪽만 시험하면 검사기를 통째로 비워도 통과한다.
