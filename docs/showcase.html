@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light">
-<meta name="description" content="Vermilion — 사람에게 나갈 한글 문서를 보내기 전에 기계가 한 번 읽는다. 사내 보고서 600여 개 실측 · 갈래별 수정 전후 74쌍 · 조직 관행에 맞춰 갈래를 끄고 켠다.">
+<meta name="description" content="Vermilion — 사람에게 나갈 한글 문서를 보내기 전에 기계가 한 번 읽는다. 사내 보고서 600여 개 실측 · 유형별 수정 전후 74쌍 · 조직 관행에 맞춰 유형를 끄고 켠다.">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
 <link rel="apple-touch-icon" href="/favicon-180.png">
@@ -327,7 +327,7 @@ footer .in{padding:0; display:flex; gap:18px; flex-wrap:wrap; align-items:baseli
   <div class="hero-in">
     <p class="eyebrow">Vermilion · 한글 문서 검사기</p>
     <h1>보내기 전에 <span class="mark">한 번</span> 읽어 주는 검사기</h1>
-    <p class="lede">사람에게 나갈 한글 문서의 표현 검사 — 걸린 문장과 고친 문장을 갈래별로 모은 사례집</p>
+    <p class="lede">사람에게 나갈 한글 문서의 표현 검사 — 걸린 문장과 고친 문장을 유형별로 모은 사례집</p>
 
     <div class="demo">
       <p class="demo-head">실제로 걸린 문장 넷<span class="demo-dots" id="dots"><i class="on"></i><i></i><i></i><i></i></span></p>
@@ -352,7 +352,7 @@ footer .in{padding:0; display:flex; gap:18px; flex-wrap:wrap; align-items:baseli
             <li class="good"><p>「대체 아님 · 별도 추가」</p></li>
           </ul>
           <p class="why"><b>서술형 종결</b> — 값 칸을 문장으로 끝냈습니다.
-             <b>개조식 문서에서만 걸리는 갈래</b>라 산문이면 머리말 한 줄로 통째로 꺼집니다.</p>
+             <b>개조식 문서에서만 걸리는 유형</b>라 산문이면 머리말 한 줄로 통째로 꺼집니다.</p>
         </div>
         <div class="slide">
           <ul class="pair">
@@ -371,7 +371,7 @@ footer .in{padding:0; display:flex; gap:18px; flex-wrap:wrap; align-items:baseli
       <div class="stat"><p class="k">검사한 업무 보고서</p><p class="v">600여</p><p class="u">개 · 2초 안팎</p></div>
       <div class="stat"><p class="k">형식과 무관한 오류</p><p class="v">8%</p><p class="u">열두 편에 한 편꼴</p></div>
       <div class="stat"><p class="k">개조식 규약 포함</p><p class="v">33%</p><p class="u">규약은 한 줄로 끔</p></div>
-      <div class="stat"><p class="k">기계가 보는 갈래</p><p class="v">27</p><p class="u">종 · 사람 판단은 별도</p></div>
+      <div class="stat"><p class="k">기계가 보는 유형</p><p class="v">27</p><p class="u">종 · 사람 판단은 별도</p></div>
     </div>
 
     <ul class="toc">
@@ -380,7 +380,7 @@ footer .in{padding:0; display:flex; gap:18px; flex-wrap:wrap; align-items:baseli
       <li><a href="#fit">조직 관행에 맞추기</a></li>
       <li><a href="#scale">문제의 크기</a></li>
       <li><a href="#catalog">걸리는 표현과 고친 표현</a></li>
-      <li><a href="#counts">갈래별 비중</a></li>
+      <li><a href="#counts">유형별 비중</a></li>
       <li><a href="#src">규칙을 만든 근거</a></li>
       <li><a href="#run">받는 법</a></li>
     </ul>
@@ -523,14 +523,14 @@ footer .in{padding:0; display:flex; gap:18px; flex-wrap:wrap; align-items:baseli
     <colgroup><col style="width:22%"><col style="width:34%"><col style="width:44%"></colgroup>
     <thead><tr><th>바꾸는 것</th><th>적는 법</th><th>쓰는 곳</th></tr></thead>
     <tbody>
-      <tr><td><b>갈래 끄기</b></td><td><span class="m">off&nbsp;=&nbsp;["스캔 가치 없는 라벨"]</span></td>
+      <tr><td><b>유형 끄기</b></td><td><span class="m">off&nbsp;=&nbsp;["스캔 가치 없는 라벨"]</span></td>
           <td>표 머리 「비고」를 쓰는 조직</td></tr>
       <tr><td><b>등급 낮추기</b></td><td><span class="m">warn&nbsp;=&nbsp;["절단형 의심"]</span></td>
           <td>발행은 막지 않고 참고만 받을 때</td></tr>
       <tr><td><b>묶음째 끄기</b></td><td><span class="m">off&nbsp;=&nbsp;["구조"]</span></td>
           <td>제목·진입점 형식을 자유로 두는 조직</td></tr>
       <tr><td><b>산문 문서</b></td><td>머리말에 <span class="m">form: prose</span> 한 줄</td>
-          <td>소개 글·발표 대본·설명문 · 개조식 전제 아홉 갈래가 통째로 빠짐</td></tr>
+          <td>소개 글·발표 대본·설명문 · 개조식 전제 아홉 가지가 통째로 빠짐</td></tr>
       <tr><td><b>새 규칙 넣기</b></td><td>어색한 문장을 이슈로 보냄</td>
           <td>보낸 문장이 회귀 시료로 박혀 규칙이 바뀔 때마다 다시 돌아감</td></tr>
     </tbody>
@@ -543,8 +543,8 @@ off  = ["스캔 가치 없는 라벨", "구조"]
 warn = ["절단형 의심"]</code>
 
   <p class="note reveal"><b>끈 것은 결과 맨 위와 합계에 찍힘</b> — 조용히 끄면 「오류 0」이 통과인지
-     안 본 것인지 갈리지 않습니다. 갈래 이름은 지적에 찍히는 이름 그대로이고,
-     <span class="m">--list-rules</span> 로 <b>27갈래</b>를 전부 볼 수 있습니다.</p>
+     안 본 것인지 갈리지 않습니다. 유형 이름은 지적에 찍히는 이름 그대로이고,
+     <span class="m">--list-rules</span> 로 <b>27가지</b>를 전부 볼 수 있습니다.</p>
   <p class="note reveal"><b>오탐은 규칙의 예외로 들어감</b> — 줄만 봐서 안 갈리는 것은 읽는 층이 후보로 내고
      사람이 확정합니다. 사람이 「이건 정당하다」고 판정하면 그때 한 번으로 끝나지 않고
      <b>규칙의 예외와 회귀 시료로 함께 박힙니다.</b></p>
@@ -560,17 +560,17 @@ warn = ["절단형 의심"]</code>
   <div class="figures reveal">
     <div class="fig warn"><p class="n" data-to="8" data-suffix="%">0</p><p>형식과 무관하게 틀린 것이 있던 문서 — 열두 편에 한 편꼴</p></div>
     <div class="fig warn"><p class="n" data-to="33" data-suffix="%">0</p><p>개조식 규약까지 켰을 때 — 세 편에 한 편꼴</p></div>
-    <div class="fig"><p class="n" data-to="70" data-suffix="%">0</p><p>지적의 대부분이 그 규약 — 아홉 갈래가 한 줄로 꺼짐</p></div>
+    <div class="fig"><p class="n" data-to="70" data-suffix="%">0</p><p>지적의 대부분이 그 규약 — 아홉 가지가 한 줄로 꺼짐</p></div>
     <div class="fig"><p class="n">2초</p><p>600여 개를 다 보는 데 걸린 시간</p></div>
   </div>
 
   <p class="note reveal"><b>두 숫자를 갈라 놓은 이유</b> — 「값 칸을 문장으로 끝내지 않는다」는
      한국어 규칙이 아니라 <b>문서 형식 규약</b>입니다. 개조식(라벨: 값)으로 쓰는 곳에서만 어긋나고,
-     산문이 정상인 문서에서는 걸리면 안 됩니다. 그래서 이 검사기는 그 아홉 갈래를 <b>켜고 끄는 것</b>으로 둡니다 —
+     산문이 정상인 문서에서는 걸리면 안 됩니다. 그래서 이 검사기는 그 아홉 가지를 <b>켜고 끄는 것</b>으로 둡니다 —
      머리말에 <code>form: prose</code> 한 줄이면 통째로 빠집니다.
      <b>개조식을 안 쓰는 곳에서 나오는 숫자가 8%입니다.</b></p>
 
-  <p class="sub">가장 많이 걸린 여섯 갈래 — 개조식 규약인 것은 표시했습니다</p>
+  <p class="sub">가장 많이 걸린 여섯 가지 — 개조식 규약인 것은 표시했습니다</p>
   <ul class="rank" id="rank">
     <li><span>서술형 종결 <span class="pill cond">개조식 전용</span></span><span class="bar"><i style="--w:100%"></i></span><span class="c">59%</span></li>
     <li><span>스캔 가치 없는 라벨</span><span class="bar"><i style="--w:16%"></i></span><span class="c">9%</span></li>
@@ -588,12 +588,12 @@ warn = ["절단형 의심"]</code>
   <h2>걸리는 표현과 고친 표현</h2>
   <p class="sub"><b>깔기 전에 무엇이 걸릴지 다 보고 정하시면 됩니다.</b>
      <b>A·B는 결정 규칙</b>이 글자만 보고 전수로 잡고, <b>C는 읽는 판단</b> 소관입니다 —
-     문맥을 읽는 층이 후보를 내고 사람이 확정합니다. 가까운 갈래는 한 장에 묶었고,
+     문맥을 읽는 층이 후보를 내고 사람이 확정합니다. 가까운 유형는 한 장에 묶었고,
      사례는 모두 실제 문서와 사람이 확정한 교정에서 가져왔습니다.</p>
 
   <div class="grouphead"><span class="tag">A</span><h3>문장과 낱말</h3>
     <span class="count">글자만 보고 갈림 · 카드 8장</span></div>
-  <p class="sub">글자만 보고 갈리는 갈래입니다. <b>서술형 종결만 성격이 다릅니다</b> — 한국어가 틀린 것이 아니라
+  <p class="sub">글자만 보고 갈리는 유형입니다. <b>서술형 종결만 성격이 다릅니다</b> — 한국어가 틀린 것이 아니라
      <b>개조식 문서의 규약</b>이라 켜고 끕니다. 나머지는 문서 형식과 무관하게 어긋난 한국어입니다.</p>
 
   <article class="rule reveal">
@@ -742,7 +742,7 @@ warn = ["절단형 의심"]</code>
 
   <div class="grouphead"><span class="tag">B</span><h3>문서 구조</h3>
     <span class="count">찾아 읽기가 안 됨 · 카드 6장</span></div>
-  <p class="sub">문장은 멀쩡한데 값을 찾는 데 문장을 끝까지 읽어야 하는 갈래.</p>
+  <p class="sub">문장은 멀쩡한데 값을 찾는 데 문장을 끝까지 읽어야 하는 유형.</p>
 
   <article class="rule reveal">
     <div class="rule-head"><h4>제목 서술형 · 제목 명사형 위반</h4><span class="pill err">오류</span><span class="pill cond">개조식 전용</span>
@@ -768,7 +768,7 @@ warn = ["절단형 의심"]</code>
     <dl class="meta">
       <dt>무엇</dt><dd>첫 줄에 「이 문서를 읽고 무엇을 하게 되나」가 없거나 서술 문장으로 씀</dd>
       <dt>고치는 법</dt><dd>독자가 품는 질문을 개조식으로 · 주어를 「이 문서」로 잡지 않음</dd>
-      <dt>누락 시 영향</dt><dd>독자가 라벨 스무 개를 스스로 조립 — 찾기는 빨라지고 이해는 느려진 문서</dd>
+      <dt>누락 시 영향</dt><dd>독자가 라벨 스무 개를 자동으로 조립 — 찾기는 빨라지고 이해는 느려진 문서</dd>
     </dl>
     <ul class="pairs">
       <li><div class="ba bad"><p>「이 문서는 사내 문서 검사 도구 세 종을 비교하여 도입 여부를 정리한 것입니다.」</p></div>
@@ -841,7 +841,7 @@ warn = ["절단형 의심"]</code>
 
   <div class="grouphead"><span class="tag">C</span><h3>사람이 읽어야 갈리는 것</h3>
     <span class="count">문맥을 봐야 판정됨 · 카드 6장</span></div>
-  <p class="sub">줄만 봐서는 안 갈리는 갈래입니다. <b>읽는 층이 후보를 내고 사람이 확정합니다</b> —
+  <p class="sub">줄만 봐서는 안 갈리는 유형입니다. <b>읽는 층이 후보를 내고 사람이 확정합니다</b> —
      그 판정이 다시 결정 규칙의 예외로 들어갑니다. 사례는 모두 사람이 확정한 교정입니다.</p>
 
   <article class="rule reveal">
@@ -868,7 +868,7 @@ warn = ["절단형 의심"]</code>
 
   <article class="rule reveal">
     <div class="rule-head"><h4>명사화 · 조사 없는 명사 나열</h4><span class="pill human">사람 판단</span>
-      <span class="count">확정 교정 <b>4</b>건 + 새 갈래 1</span></div>
+      <span class="count">확정 교정 <b>4</b>건 + 새 유형 1</span></div>
     <dl class="meta">
       <dt>무엇</dt><dd>동사를 명사로 굳혀 누가 무엇을 하는지 사라짐 · 조사 없이 명사만 이어 붙임</dd>
       <dt>고치는 법</dt><dd>동사로 되돌려 주어와 목적어를 살림</dd>
@@ -882,7 +882,7 @@ warn = ["절단형 의심"]</code>
           <div class="ba good"><p>「가변 추론 기능을 도입해 작업 난이도에 따라 추론 깊이를 조절.」</p></div></li>
       <li><div class="ba bad"><p>「사용자 인터페이스 고도화」</p></div><div class="ba good"><p>「사용자 인터페이스 개선」</p></div></li>
     </ul>
-    <p class="note"><b>사용자가 잡아낸 미탐</b> — 「로컬 실행 환경 구축 기능 추가」는 검사기도 읽는 층도 못 잡았습니다. 판정 근거는 <b>조사가 하나도 없다</b>는 것이었고, 이 지적으로 새 갈래가 생겼습니다.</p>
+    <p class="note"><b>사용자가 잡아낸 미탐</b> — 「로컬 실행 환경 구축 기능 추가」는 검사기도 읽는 층도 못 잡았습니다. 판정 근거는 <b>조사가 하나도 없다</b>는 것이었고, 이 지적으로 새 유형가 생겼습니다.</p>
   </article>
 
   <article class="rule reveal">
@@ -903,17 +903,17 @@ warn = ["절단형 의심"]</code>
     <div class="rule-head"><h4>압축한 명사구 · 넓은 뜻의 동사</h4><span class="pill human">사람 판단</span>
       <span class="count">발표자 노트 확정 교정 <b>6</b>건</span></div>
     <dl class="meta">
-      <dt>무엇</dt><dd>「곳·구간·부분·갈래·뒤의 것」이 실제 대상을 숨김 · 「풉니다·돕습니다」가 실제 행위를 가림</dd>
+      <dt>무엇</dt><dd>「곳·구간·부분·유형·뒤의 것」이 실제 대상을 숨김 · 「풉니다·돕습니다」가 실제 행위를 가림</dd>
       <dt>고치는 법</dt><dd>과정·단계·테스트 유형처럼 실제 대상을 드러냄 · 설계·개발·검증처럼 실제 행위로 바꿈</dd>
       <dt>지적 제외</dt><dd>문맥이 없으면 추측하지 않음 — 원문에 근거가 있을 때만 고침</dd>
     </dl>
     <ul class="pairs">
       <li><div class="ba bad"><p>「검증에서 사람이 가장 많이 붙는 곳이 테스트를 만드는 구간이고, 여기를 AI로 풉니다」</p></div>
           <div class="ba good"><p>「단위 통합 검증에서 공수가 많이 필요한 과정이 테스트를 설계하는 것입니다」</p></div></li>
-      <li><div class="ba bad"><p>「갈래는 둘, 요구사항에서 도출하는 것과 코드 구조를 훑어 커버리지를 채우는 것입니다」</p></div>
+      <li><div class="ba bad"><p>「유형는 둘, 요구사항에서 도출하는 것과 코드 구조를 훑어 커버리지를 채우는 것입니다」</p></div>
           <div class="ba good"><p>「크게 두 가지로 나뉘는데, 요구사항 기반 테스트와 구조 기반 테스트입니다」</p></div></li>
       <li><div class="ba bad"><p>「에이전트가 자체적으로 돌 수 있도록」</p></div>
-          <div class="ba good"><p>「에이전트가 스스로 실행할 수 있도록」</p></div></li>
+          <div class="ba good"><p>「에이전트가 자동으로 실행할 수 있도록」</p></div></li>
       <li><div class="ba bad"><p>「막대가 상반기 실측입니다」</p></div>
           <div class="ba good"><p>「현재 보여드리는 내용이 상반기 결과이며」</p></div></li>
       <li><div class="ba bad"><p>「제품화 경로」</p></div><div class="ba good"><p>「제품화 단계」</p></div></li>
@@ -958,16 +958,16 @@ warn = ["절단형 의심"]</code>
   </article>
 </div></div>
 
-<!-- ═══ 06 갈래별 비중 ═══ -->
+<!-- ═══ 06 가지별 비중 ═══ -->
 <div class="band"><div class="in" id="counts">
   <p class="snum">06</p>
-  <h2>갈래별 비중</h2>
-  <p class="sub"><b>어느 갈래가 가장 많이 나올지 미리 가늠하실 수 있습니다.</b>
+  <h2>유형별 비중</h2>
+  <p class="sub"><b>어느 유형가 가장 많이 나올지 미리 가늠하실 수 있습니다.</b>
      두 뭉치에 같은 검사기를 돌린 실측입니다(2026-09-08). <b>업무 보고서</b>는 사내 분석·진행 보고 600여 개,
      <b>규칙·기록 문서</b>는 작업 규칙과 진행 기록 900여 개입니다. 값은 그 뭉치 지적에서 차지하는 비중입니다.</p>
   <div class="scroll">
   <table>
-    <thead><tr><th>갈래</th><th>무게</th><th class="n">업무 보고서</th><th class="n">규칙·기록</th></tr></thead>
+    <thead><tr><th>유형</th><th>무게</th><th class="n">업무 보고서</th><th class="n">규칙·기록</th></tr></thead>
     <tbody>
       <tr><td><span class="dot e"></span>서술형 종결 <span class="pill cond">개조식 전용</span></td><td>오류</td><td class="n">59%</td><td class="n">58%</td></tr>
       <tr><td><span class="dot w"></span>스캔 가치 없는 라벨</td><td>주의</td><td class="n">9%</td><td class="n">&lt;1%</td></tr>
@@ -998,7 +998,7 @@ warn = ["절단형 의심"]</code>
     </tbody>
   </table>
   </div>
-  <p class="note"><b>「개조식 전용」이 붙은 아홉 갈래</b> — 문서가 개조식일 때만 걸림 ·
+  <p class="note"><b>「개조식 전용」이 붙은 아홉 가지</b> — 문서가 개조식일 때만 걸림 ·
      머리말 <code>form: prose</code> 한 줄로 통째로 빠짐 · 이 뭉치 지적의 70%가 그 아홉입니다.</p>
   <p class="note"><b>0건이어도 규칙은 돎</b> — 「이 뭉치에 안 나왔다」와 「규칙이 없다」는 다릅니다. 이중 피동은 두 뭉치 모두 0건인데, 만들어 넣은 시료에서는 잡힙니다.</p>
 </div></div>
@@ -1007,7 +1007,7 @@ warn = ["절단형 의심"]</code>
 <div class="band paper"><div class="in" id="src">
   <p class="snum">07</p>
   <h2>규칙을 만든 근거</h2>
-  <p class="sub"><b>짐작으로 넣은 갈래는 없습니다.</b> 규칙 후보마다 실문서에서 몇 건 나오는지 세고,
+  <p class="sub"><b>짐작으로 넣은 유형는 없습니다.</b> 규칙 후보마다 실문서에서 몇 건 나오는지 세고,
      정당한 쓰임이 섞이면 결정 규칙에서 뺐습니다. 넣은 근거와 <b>빼기로 한 근거를 함께</b> 남겼습니다.</p>
   <dl class="src">
     <dt>글쓰기 원칙</dt>
@@ -1019,7 +1019,7 @@ warn = ["절단형 의심"]</code>
     <dt>실문서 뭉치</dt>
     <dd><b>규칙 출처 1,700여 개</b> · <b>검사 대상 600여 개</b> · <b>규칙·기록 900여 개</b> ·
         <b>낱말 재측정 1,100여 개</b> · <b>비유 재점검 400여 개</b> —
-        갈래마다 몇 건 나오는지 세어 보고 넣을지 정함</dd>
+        유형마다 몇 건 나오는지 세어 보고 넣을지 정함</dd>
     <dt>사람이 확정한 교정</dt>
     <dd>사람 판정 <b>42</b>건 · 확정 규칙 <b>8</b>건 · 오탐 판정은 그때 한 번으로 끝나지 않고
         규칙의 예외로 되먹임</dd>
@@ -1064,7 +1064,7 @@ warn = ["절단형 의심"]</code>
         <b>지적만 보여 주고 저장과 발행은 막지 않음</b></dd>
     <dt>명령 선택지</dt>
     <dd><span class="m">--form prose</span> 산문형으로 검사 · <span class="m">-v</span> 주의 전부 보기 ·
-        <span class="m">--list-rules</span> 갈래 목록 · <span class="m">--no-rules</span> 설정 무시 ·
+        <span class="m">--list-rules</span> 유형 목록 · <span class="m">--no-rules</span> 설정 무시 ·
         모르는 플래그는 조용히 무시하지 않고 멈춤</dd>
     <dt>파일 형식</dt>
     <dd>마크다운 · HTML · 텍스트 · JSON · JSONL · YAML · properties ·
@@ -1076,7 +1076,7 @@ warn = ["절단형 의심"]</code>
         마지막은 합격이 아니라 <b>안 본 것</b></dd>
   </dl>
 
-  <p class="note reveal"><b>저장소에 함께 있는 것</b> — 시험 300여 건 · 갈래별 회귀 시료 ·
+  <p class="note reveal"><b>저장소에 함께 있는 것</b> — 시험 300여 건 · 유형별 회귀 시료 ·
      실행 기록 25개 · 규칙마다 왜 그렇게 정했는지의 실측 근거. 이 페이지의 숫자는 전부 그 기록에서 나옵니다.</p>
 </div></div>
 
