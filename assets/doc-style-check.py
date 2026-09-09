@@ -31,6 +31,29 @@ NARRATIVE = re.compile(r'[가-힣]다\.?$')
 NOT_NARRATIVE = re.compile(r'(보다|마다|최다|과다)\.?$')
 # 존댓말 종결 — 「니다」 계열과 「요」 계열. 이 밖의 서술형 종결이 반말이다.
 POLITE = re.compile(r'(?:니다|니까|세요|셔요|어요|아요|여요|에요|예요|시오|ㅂ시다)$')
+
+
+def is_polite(probe):
+    """존댓말 종결인가 — 「니다」는 앞 글자에 ㅂ 받침이 있을 때만이다.
+
+    ⛔ **「아니다」·「지니다」·「다니다」가 존댓말로 잡히고 있었다** (2026-09-09).
+    정규식이 「니다」를 통째로 받아서다. 존댓말 「~ㅂ니다」는 앞 글자가 **반드시**
+    ㅂ 받침으로 끝난다 — 합니다·됩니다·입니다·습니다·드립니다. 「아니다」의 「아」에는
+    받침이 없다.
+
+    「반말 서술형」 갈래가 기본으로 꺼져 있어 이 버그가 안 드러나 있었다. 말투
+    섞임을 켜면서 저장소 문서에서 「…가 아니다」가 **존댓말 소수**로 튀어 나왔다.
+    """
+    m = POLITE.search(probe)
+    if not m:
+        return False
+    if not m.group(0).startswith('니다'):
+        return True
+    i = m.start()
+    if i == 0:
+        return False
+    ch = probe[i - 1]
+    return '가' <= ch <= '힣' and (ord(ch) - 0xAC00) % 28 == 17   # 받침 ㅂ
 LIST_HEAD = re.compile(r'^(?:[-*]\s+|\d+[.)]\s+)')   # 불릿과 번호 목록은 같은 값 슬롯이다
 CONCL_HEAD = re.compile(r'^[→⇒]\s*')                 # 「→」 결론줄도 값이다(문단이 아니다)
 # 문단 검사에서 빼는 줄 — 값이 없는 줄이라 판정 대상이 아니다
@@ -399,7 +422,42 @@ def is_plain_speech(sent):
     정상이다. **사람에게 내보이는 홍보·안내 자료에서만** 잘못이라 기본으로 꺼 둔다.
     """
     probe = drop_tail(QUOTE_SPAN.sub(' ', sent)).rstrip('.!?… ')
-    return is_narrative(sent) and not POLITE.search(probe)
+    return is_narrative(sent) and not is_polite(probe)
+
+
+# 말투 섞임 — 한 문서 안에서 존댓말과 반말이 함께 나오나.
+#   **반말 자체는 잘못이 아니다** — 작업 기록과 규칙 문서는 서술 문장의 90%가,
+#   업무 보고서는 63%가 반말이고 그게 정상이다(2026-09-08 실측). 그래서 「반말
+#   서술형」 갈래는 기본으로 꺼 둔다.
+#   잘못은 **한 문서 안에서 섞이는 것**이다 — 존댓말로 쓰다 한 줄만 반말로 빠지면
+#   읽는 사람이 거기서 걸린다(2026-09-09 사용자 — 「갑자기 반말로」).
+#   기존 갈래로는 이것을 표현할 수 없었다. 켜면 정당한 반말 수천 줄을 잡고 끄면
+#   하나도 안 잡는다. 그래서 **소수 쪽만** 내는 갈래를 따로 둔다.
+#
+#   ⚠️ 실측 2026-09-09 — 섞임은 드물다. 사용자 메일 796건 중 12 · 노션 3,000건 중
+#   27 · 공개 소개 쪽 9건 중 0. 소음이 되지 않는다.
+#   ⚠️ **주의로만 낸다** — 남의 말을 그대로 옮긴 인용과 대조 예시가 섞여 있어
+#   기계가 마지막까지 못 가른다.
+MIX_MIN = 12          # 서술 문장이 이보다 적으면 판단하지 않는다
+MIX_SHARE = 0.25      # 소수 쪽이 이보다 크면 「섞임」이 아니라 두 말투를 쓴 문서다
+
+
+def register_mix(sents):
+    """존댓말과 반말이 섞였으면 **소수 쪽** 문장을 낸다."""
+    polite, plain = [], []
+    for s in sents:
+        if is_plain_speech(s):
+            plain.append(s)
+        elif is_narrative(s):
+            polite.append(s)
+    total = len(polite) + len(plain)
+    if total < MIX_MIN or not polite or not plain:
+        return []
+    minor = polite if len(polite) < len(plain) else plain
+    if len(minor) / total >= MIX_SHARE:
+        return []
+    side = '존댓말' if minor is polite else '반말'
+    return [(s, side, len(polite), len(plain)) for s in minor]
 
 
 def sentences(t):
@@ -623,6 +681,7 @@ def scan_html(path, relaxed=False, form=None, rules=None):
     #      꼬리말은 사람이 보는 글이므로 함께 본다.
     chunks = re.findall(r'<p(?![a-zA-Z])[^>]*>(.*?)</p>', body, re.S)
     chunks += re.findall(r'<footer[^>]*>(.*?)</footer>', body, re.S)
+    mix_sents = []
     for p in chunks:
         t = strip(p)
         if not t or is_example(t):
@@ -631,10 +690,15 @@ def scan_html(path, relaxed=False, form=None, rules=None):
         # 대시 앞에 있으면 문장의 끝이 아니라서 통째로 빠진다(2026-09-08 실측).
         # 개조식 결론 머리(「대체 아님 — …」)는 서술형이 아니라 그대로 지나간다.
         for sent in sentences(t):
+            mix_sents.append(sent)
             for part in re.split(r'\s+[—–]\s+', sent):
                 if is_plain_speech(part):
                     err.append(('반말 서술형', f'{part[:52]} — 존댓말로 쓸 것'))
                     break
+    for sent, side, np, nq in register_mix(mix_sents):
+        warn.append(('말투 섞임',
+                     f'{sent[:50]} — 이 문서는 존댓말 {np} · 반말 {nq} 이라 '
+                     f'{side} 한 줄이 튄다'))
 
     # 4b. 제목 — 마크다운과 같은 규칙을 HTML 에도 건다.
     #     규칙(§1 개조식)은 진작 있었는데 이 경로에만 안 걸려 있었다. 그래서 값은
@@ -811,6 +875,7 @@ RULE_GROUPS = {
     '낱말': ('낱말 선택 — 지어낸 말과 뜻이 흐려지는 말', [
         '「~하는 자리」', '「~하는 자리」 의심', '지어낸 명사구', '평가 수식어',
         '모호한 지칭', '지시어 확인', '「회기」', '업무 글에 없는 말',
+        '말투 섞임',
     ]),
     '번역투': ('번역에서 옮아온 문형', [
         '이중 피동', '번역투 이중 조사', '번역투 그녀',
@@ -1065,6 +1130,7 @@ def scan_md(path, relaxed=False, form=None, rules=None):
                 break
 
     # 1. 값·목록·표 칸·본문 문단의 서술형 종결
+    md_mix = []          # 말투 섞임은 문서 전체를 봐야 해서 모았다가 끝에 판정한다
     wrapped = wrapped_lines(body)
     prev_is_table = contrast_table = False
     for n, line in body:
@@ -1131,6 +1197,7 @@ def scan_md(path, relaxed=False, form=None, rules=None):
                 elif fw:
                     warn.append((n, '절단형 의심', f'{v.strip()[:38]} — {fw}'))
                 for t in sentences(v):
+                    md_mix.append((n, t))
                     if is_narrative(t):
                         # 머리 없이 마침표로 끝나는 항목 = 결론 라벨이 빠진 설명 문장.
                         # 규칙 §형식 「왜·근거는 문장 — 단 결론을 라벨 한 줄로 먼저」 위반이다.
@@ -1142,6 +1209,12 @@ def scan_md(path, relaxed=False, form=None, rules=None):
                             err.append((n, '서술형 종결', msg + ' — 결론 라벨을 앞에 두거나 개조식으로 고칠 것'))
                         else:
                             err.append((n, '서술형 종결', msg))
+
+    _mix_where = {t: n for n, t in md_mix}
+    for sent, side, np, nq in register_mix([t for _n, t in md_mix]):
+        warn.append((_mix_where.get(sent, 0), '말투 섞임',
+                     f'{sent[:50]} — 이 문서는 존댓말 {np} · 반말 {nq} 이라 '
+                     f'{side} 한 줄이 튄다'))
 
     # 2. 모호한 지칭 / 평가 수식어 — 코드·인용 구간과 대조 예시 줄은 뺀다
     for n, line in body:
