@@ -53,3 +53,7 @@
 {"case_id": "C-053", "expect": "clean", "form": "prose", "kind": null, "source": "사용자 지적 2026-09-10 · model-routing.md", "status": "pinned", "text": "돌연변이를 넣으면 시험이 깨진다", "why": "이 저장소가 늘 쓰는 말 · 기준선 621건 · 규칙에 안 넣기로 한 것"}
 {"case_id": "C-054", "expect": "clean", "form": "prose", "kind": null, "source": "사용자 지적 2026-09-10 · model-routing.md", "status": "pinned", "text": "원인 특정이 막히면 조건 제거로 우회한다", "why": "기준선 122건이고 정당한 쓰임이 섞임 · 규칙에 안 넣고 사람이 봄"}
 {"case_id": "C-055", "expect": "clean", "form": "prose", "kind": null, "source": "사용자 지적 2026-09-10 · model-routing.md", "status": "pinned", "text": "점심을 먹고 회의에 들어갔다", "why": "「먹다」의 본뜻 · 한도·쿼터와 짝지어야만 걸려야 함"}
+{"case_id": "C-056", "expect": "clean", "form": "prose", "kind": null, "source": "적대 시험 2026-09-10 · 오탐 둘", "status": "pinned", "text": "psutil tree-kill 로 자식 프로세스를 죽인다", "why": "★ 일부러 끝내는 것은 표준 기술 한국어 · 우리 운영 문서에도 「부모만 죽이면 손자가 남는다」가 있음 · 가르는 것은 조사(가 죽다 대 를 죽이다)"}
+{"case_id": "C-057", "expect": "clean", "form": "prose", "kind": null, "source": "적대 시험 2026-09-10 · 오탐 둘", "status": "pinned", "text": "배치가 끝나면 워커를 죽이고 로그를 남긴다", "why": "위와 같은 타동 쓰임 · 「죽인다」는 이+ㄴ다 결합이라 「죽이」를 안 품음(음절 결합에 두 번째로 걸린 곳)"}
+{"case_id": "C-058", "expect": "clean", "form": "prose", "kind": null, "source": "적대 시험 2026-09-10 · 오탐 둘", "status": "pinned", "text": "한도 초과로 먹통이 됐다", "why": "「먹통」은 「먹다」와 다른 말 · 한도와 가까이 있어도 안 걸려야 함"}
+{"case_id": "C-059", "expect": "finding", "form": "prose", "kind": "업무 글에 없는 말", "source": "적대 시험 2026-09-10 · 오탐 둘", "status": "pinned", "text": "배치의 죽음이 조용하다", "why": "「죽음」은 죽+음이라 타동 제외(이·인·일·임·여·였)에 안 걸림 · 여전히 잡혀야 함"}
