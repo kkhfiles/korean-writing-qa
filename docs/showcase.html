@@ -696,18 +696,22 @@ warn = ["절단형 의심"]</code>
   </article>
 
   <article class="rule reveal">
-    <div class="rule-head"><h4>지어낸 명사구 — 판·창·결</h4><span class="pill warn">주의</span>
+    <div class="rule-head"><h4>지어낸 명사구 — 판·창·결·때</h4><span class="pill warn">주의</span><span class="pill err">오류</span>
       <span class="count">규칙·기록 지적의 <b>2%</b></span></div>
     <dl class="meta">
       <dt>무엇</dt><dd>관형형 어미 뒤에 뜻이 옅은 명사를 붙여 새 말을 만듦 · 사람이 쓴 한국어에는 안 나오는 형태</dd>
       <dt>고치는 법</dt><dd>그 명사가 <b>혼자 서는지</b> 봄 — 「판」만 떼어 무엇인지 말할 수 없으면 지어낸 것</dd>
-      <dt>지적 제외</dt><dd>굳은 합성어와 실물 — 편집창·바둑판·대화창 · 「같은 결」·「뜨는 창」</dd>
+      <dt>등급 둘</dt><dd>「판」·「창」·「결」은 <b>주의</b> · 목적어가 못 되는 용언 뒤(「닿는 값」·「가르는 축」)와 「~는 때」는 <b>오류</b> — 정당한 쓰임이 실측 0건</dd>
+      <dt>지적 제외</dt><dd>굳은 합성어와 실물 — 편집창·바둑판·대화창 · 「같은 결」·「뜨는 창」 · 부사절 「~ㄹ 때」(할 때 · 찾을 때마다)</dd>
     </dl>
     <ul class="pairs">
       <li><div class="ba bad"><p>「1판·2판」</p></div><div class="ba good"><p>「1차·2차」 · 「첫 시도·두 번째 시도」</p></div></li>
       <li><div class="ba bad"><p>「모으는 창」·「무르는 창」</p></div><div class="ba good"><p>「모으는 시간」·「무를 수 있는 시간」</p></div></li>
       <li><div class="ba bad"><p>「앞 판에서」</p></div><div class="ba good"><p>「앞 실험에서」 · 「먼저 잰 것에서」로 바꿈</p></div></li>
+      <li><div class="ba bad"><p>「묻는 때」·「다루는 때」</p></div><div class="ba good"><p>「질문 시점」·「다루는 시점」</p></div></li>
+      <li><div class="ba bad"><p>「모델에 드는 값」</p></div><div class="ba good"><p>「모델 사용 비용」</p></div></li>
     </ul>
+    <p class="note"><b>「~는 때」는 관형형이 가름</b>(2026-09-10 추가) — 「때」를 통째로 넣으면 못 씁니다. 부사절 「~ㄹ 때」는 사내 보고서 613개에 67건 나오는 정상이고, 같은 뭉치에서 <b>「~는 때」는 0건</b>입니다. 50.8억 자를 훑어 나온 15종이 <b>전부 표 머리 라벨</b>이었고 정당한 쓰임은 하나도 없었습니다.</p>
     <p class="note"><b>여섯 낱말 중 셋만 넣음</b> — 실문서 1,100여 개로 따로 재니 「판·창」 0건 · 「결」 1건이라 넣고, 「값」 9건 · 「축」 4건 · 「층」 2건은 그 명사가 이 분야에서 혼자 서므로(계산하는 값 · 못 보는 축 · 읽는 층) 뺐습니다. <b>빈도가 아니라 정밀도로 잘랐습니다.</b> 여섯을 한 덩어리로 셌을 때는 「전부 정상」이 나와 규칙을 통째로 접어 두었습니다.</p>
   </article>
 
@@ -996,12 +1000,16 @@ warn = ["절단형 의심"]</code>
       <tr><td><span class="dot w"></span>지시어 확인</td><td>주의</td><td class="n">&lt;1%</td><td class="n">&lt;1%</td></tr>
       <tr><td><span class="dot w"></span>번역투 「그녀」</td><td>주의</td><td class="n zero">0</td><td class="n">&lt;1%</td></tr>
       <tr><td><span class="dot w"></span>결론 라벨 없는 설명</td><td>주의</td><td class="n zero">0</td><td class="n zero">0</td></tr>
+      <tr><td><span class="dot e"></span>업무 글에 없는 말</td><td>오류</td><td class="n zero">측정 전</td><td class="n zero">측정 전</td></tr>
+      <tr><td><span class="dot w"></span>말투 섞임</td><td>주의</td><td class="n zero">측정 전</td><td class="n zero">측정 전</td></tr>
+      <tr><td><span class="dot w"></span>반말 서술형 <span class="pill cond">기본 꺼짐</span></td><td>주의</td><td class="n zero">측정 전</td><td class="n zero">측정 전</td></tr>
     </tbody>
   </table>
   </div>
   <p class="note"><b>「개조식 전용」이 붙은 아홉 가지</b> — 문서가 개조식일 때만 걸림 ·
      머리말 <code>form: prose</code> 한 줄로 통째로 빠짐 · 이 뭉치 지적의 70%가 그 아홉입니다.</p>
   <p class="note"><b>0건이어도 규칙은 돎</b> — 「이 뭉치에 안 나왔다」와 「규칙이 없다」는 다릅니다. 이중 피동은 두 뭉치 모두 0건인데, 만들어 넣은 시료에서는 잡힙니다.</p>
+  <p class="note"><b>「측정 전」 셋</b> — 2026-09-08 측정 뒤에 들어온 유형입니다. 비중을 지어내지 않고 「측정 전」으로 적었습니다 — <b>0건과 미측정은 다릅니다.</b></p>
 </div></div>
 
 <!-- ═══ 07 규칙을 만든 근거 ═══ -->
