@@ -4,7 +4,7 @@ form: structured
 
 # dispatchflow.cc 에 올릴 준비물
 
-**Vermilion 사례집을 dispatchflow.cc 에 붙일 때 손댈 곳 셋** — 다른 세션이 두 저장소를 쓰고 있어 **사용자 신호까지 대기** · 아래 값은 2026-09-07 에 실제 파일을 읽어 맞춘 것
+**사례집을 dispatchflow.cc 에 붙일 때 손댈 곳 셋** — **2026-09-07 에 올라가 지금 돌고 있음**(`/vermilion/`) · 아래는 그때 맞춘 값에 새 이름을 반영한 것
 
 ## 이미 끝난 것
 
@@ -24,8 +24,8 @@ form: structured
 ```json
 {
   "to": "vermilion/index.html",
-  "title": "Vermilion — 보내기 전에 한 번 읽는 한글 검사기",
-  "note": "사람에게 나갈 한글 문서를 기계가 먼저 읽는다 · 갈래별 수정 전후 사례",
+  "title": "AI 한글 교정기 — 보내기 전 마지막 한 번",
+  "note": "AI가 쓴 한글을 업무에서 낼 수 있는 글로 · 유형별 수정 전후 사례",
   "from": "P:/github/korean-writing-qa/docs/showcase.html",
   "lang": "ko",
   "group": "vermilion"
@@ -52,9 +52,9 @@ form: structured
 
 ```js
 vermilion: {
-  type: 'SoftwareApplication', name: 'Vermilion',
+  type: 'SoftwareApplication', name: 'AI 한글 교정기',
   category: 'BusinessApplication',
-  crumb: { ko: 'Vermilion', en: 'Vermilion' },
+  crumb: { ko: 'AI 한글 교정기', en: 'Korean QA' },
 },
 ```
 
@@ -79,7 +79,7 @@ vermilion: {
 ```html
 <article>
   <p class="eyebrow">셋째 도구 · 주묵(朱墨)</p>
-  <h3>Vermilion</h3>
+  <h3>AI 한글 교정기</h3>
   <p class="lede">사람에게 나갈 한글 문서를 <b>보내기 전에</b> 기계가 한 번 읽습니다.
     어색한 표기를 갈래로 짚고, 고친 문장을 함께 보여 줍니다.</p>
   <dl class="facts">
@@ -94,7 +94,7 @@ vermilion: {
     <div class="fig"><span class="v">2,174건</span><span class="k">그 안에서 나온 지적</span></div>
     <div class="fig"><span class="v">2.2초</span><span class="k">603개를 다 보는 데 걸린 시간</span></div>
   </div>
-  <a class="golink" href="/vermilion/">Vermilion 자세히 보기 →</a>
+  <a class="golink" href="/vermilion/">AI 한글 교정기 자세히 보기 →</a>
 </article>
 ```
 
@@ -107,7 +107,7 @@ vermilion: {
 | 무엇 | 선택지 |
 |---|---|
 | **사이트 이름** | 지금은 「Dispatch & Mycelium」 · 구조화 자료·breadcrumb·`llms.txt` 가 다 이 글자를 씀 · 셋째 도구가 붙으면 낡음 → 바꿀지 · 그대로 둘지 |
-| **「두 도구 비교」 표** | 셋으로 늘릴지 · 둘만 두고 Vermilion 은 카드로만 소개할지 |
+| **「두 도구 비교」 표** | 셋으로 늘릴지 · 둘만 두고 교정기는 카드로만 소개할지 |
 | **경로** | 위 제안은 `/vermilion/` |
 
 ## 올린 뒤에 할 것

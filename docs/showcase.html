@@ -4,11 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light">
-<meta name="description" content="Vermilion — 사람에게 나갈 한글 문서를 보내기 전에 기계가 한 번 읽는다. 사내 보고서 600여 개 실측 · 유형별 수정 전후 74쌍 · 조직 관행에 맞춰 유형를 끄고 켠다.">
+<meta name="description" content="AI 한글 교정기 — 사람에게 나갈 한글 문서를 보내기 전에 기계가 한 번 읽는다. 사내 보고서 600여 개 실측 · 유형별 수정 전후 74쌍 · 조직 관행에 맞춰 유형을 끄고 켠다.">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
 <link rel="apple-touch-icon" href="/favicon-180.png">
-<title>Vermilion — 보내기 전에 한 번 읽는 한글 검사기</title>
+<title>AI 한글 교정기 — 보내기 전 마지막 한 번</title>
 <style>
   /* [inline-korean-font] Doc KR — Pretendard 1.3.9 의 KS X 1001 완성형 2,350자 서브셋,
      가변축 wght 45~930. CSP가 폰트 CDN을 막으므로 data URI로 심는다.
@@ -36,7 +36,7 @@
      3.82:1 이라 AA(4.5) 아래였다 — 작은 글자에는 큰 글자 예외가 없다. */
   --ink:#141A16; --ink2:#4E5A53; --ink3:#626C66;
   --line:#DCE2DB; --line2:#EBEFE9;
-  /* 주묵(朱墨) — 이 도구의 이름이자 목소리. 표시하는 손이지 「나쁨」이 아니다. */
+  /* 주묵(朱墨) — 이 페이지의 목소리. 표시하는 손이지 「나쁨」이 아니다. */
   --red:#B3342A; --red-bg:#FCF0EE; --red-line:#E9C5BF;
   /* 원고지 — 바탕과 「고쳐진 상태」. 「후」 배지·통과한 칸·✓ 가 여기 쓴다. */
   --green:#1F6B44; --green-bg:#EDF5F0; --green-line:#BEDCCA;
@@ -325,8 +325,8 @@ footer .in{padding:0; display:flex; gap:18px; flex-wrap:wrap; align-items:baseli
     <nav><a href="/">첫 화면</a></nav>
   </div>
   <div class="hero-in">
-    <p class="eyebrow">Vermilion · 한글 문서 검사기</p>
-    <h1>보내기 전에 <span class="mark">한 번</span> 읽어 주는 검사기</h1>
+    <p class="eyebrow">AI 한글 교정기</p>
+    <h1>보내기 전에 <span class="mark">한 번</span> 읽어 주는 교정기</h1>
     <p class="lede">사람에게 나갈 한글 문서의 표현 검사 — 걸린 문장과 고친 문장을 유형별로 모은 사례집</p>
 
     <div class="demo">
@@ -364,7 +364,7 @@ footer .in{padding:0; display:flex; gap:18px; flex-wrap:wrap; align-items:baseli
       </div>
     </div>
 
-    <p class="whyname"><b>Vermilion</b> — 주묵(朱墨) · 원고를 고칠 때 쓰던 붉은 먹입니다.
+    <p class="whyname"><b>표시 색은 주묵(朱墨)</b> — 원고를 고칠 때 쓰던 붉은 먹입니다.
        <b>이 페이지의 붉은색은 전부 고치는 손</b>이고, 초록은 원고지 바탕이자 고쳐진 뒤입니다.</p>
 
     <div class="stats">
@@ -544,7 +544,7 @@ warn = ["절단형 의심"]</code>
 
   <p class="note reveal"><b>끈 것은 결과 맨 위와 합계에 찍힘</b> — 조용히 끄면 「오류 0」이 통과인지
      안 본 것인지 갈리지 않습니다. 유형 이름은 지적에 찍히는 이름 그대로이고,
-     <span class="m">--list-rules</span> 로 <b>27가지</b>를 전부 볼 수 있습니다.</p>
+     <span class="m">--list-rules</span> 로 <b>29가지</b>를 전부 볼 수 있습니다.</p>
   <p class="note reveal"><b>오탐은 규칙의 예외로 들어감</b> — 줄만 봐서 안 갈리는 것은 읽는 층이 후보로 내고
      사람이 확정합니다. 사람이 「이건 정당하다」고 판정하면 그때 한 번으로 끝나지 않고
      <b>규칙의 예외와 회귀 시료로 함께 박힙니다.</b></p>
@@ -1093,7 +1093,7 @@ warn = ["절단형 의심"]</code>
   <span>검사기 <code>doc-style-check.py</code></span>
   <span>사례는 모두 실제 문서와 사람이 확정한 교정에서 가져왔습니다.</span>
   <span>이 페이지도 같은 검사기를 통과했습니다 — 오류 0.</span>
-  <span>Vermilion · MIT</span>
+  <span>AI 한글 교정기 · MIT</span>
 </div></footer>
 
 <script>
