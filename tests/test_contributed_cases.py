@@ -78,6 +78,17 @@ def make_test(record: dict):
             + (f' ({" · ".join(kinds)})' if kinds else "")
             + f'\n  근거 {record["why"]}',
         )
+        # ★ 갈래까지 본다 (2026-09-10). 판정만 보면 **그 시료가 자기 규칙을 못
+        #   고정한다** — 문장이 다른 규칙에도 걸리면 정작 지키려던 규칙을 통째로
+        #   지워도 시험이 초록이다. 돌연변이로 실제로 그랬다(「한도를 먹」).
+        #   시료 41건에 대 보니 어긋남 0건이라 그대로 켤 수 있었다.
+        if record["expect"] == "finding" and record.get("kind"):
+            self.assertIn(
+                record["kind"], kinds,
+                f'{record["case_id"]} 「{record["text"]}」\n'
+                f'  이 시료가 지키려는 갈래 {record["kind"]} 가 안 나왔습니다'
+                f' · 나온 것 {" · ".join(kinds) or "없음"}',
+            )
     check.__doc__ = f'{record["case_id"]} — {record["text"][:40]}'
     return check if record["status"] == "pinned" else unittest.expectedFailure(check)
 
