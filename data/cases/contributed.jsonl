@@ -63,3 +63,13 @@
 {"case_id": "C-063", "expect": "clean", "form": "prose", "kind": null, "source": "활용형 미탐 시험 2026-09-10", "status": "pinned", "text": "빨래가 말랐다", "why": "「마르다」의 본뜻 · 쿼터·한도·풀과 짝지어야만 걸려야 함"}
 {"case_id": "C-064", "expect": "clean", "form": "prose", "kind": null, "source": "활용형 미탐 시험 2026-09-10", "status": "pinned", "text": "판단력 교육을 마친 담당자가 그 일을 해냈다", "why": "「판단력」은 「판단」과 다른 말 · 넓힌 창에 걸리면 안 됨"}
 {"case_id": "C-065", "expect": "clean", "form": "prose", "kind": null, "source": "돌연변이가 드러낸 빈 시료 2026-09-10", "status": "pinned", "text": "판단력을 길러 해냅니다", "why": "「판단력」은 「판단」과 다른 말 · 창 10자 안에 들어와 예외가 없으면 걸린다. ★ 앞 시료 둘은 거리가 11자라 예외를 **한 번도 시험하지 못했다** — 돌연변이가 그 빈 곳을 드러냈다"}
+{"case_id": "C-066", "expect": "finding", "form": "prose", "kind": "지어낸 명사구", "source": "소개 페이지 2026-09-10", "status": "pinned", "text": "기록이 안 남는 원인은 묻는 때입니다", "why": "시점을 「~는 때」로 지어 가리킴 · 「질문 시점」이 맞음"}
+{"case_id": "C-067", "expect": "finding", "form": "prose", "kind": "지어낸 명사구", "source": "소개 페이지 2026-09-10", "status": "pinned", "text": "Dispatch 와 Mycelium 은 다루는 때가 다릅니다", "why": "표 머리 라벨에 「~는 때」 · 「다루는 시점」이 맞음"}
+{"case_id": "C-068", "expect": "finding", "form": "prose", "kind": "지어낸 명사구", "source": "소개 페이지 2026-09-10", "status": "pinned", "text": "새로 생긴 것만 담는 때", "why": "값 라벨에 「~는 때」 · 「담는 주기」가 맞음"}
+{"case_id": "C-069", "expect": "clean", "form": "prose", "kind": null, "source": "오탐 시험 2026-09-10", "status": "pinned", "text": "필요할 때만 부릅니다", "why": "「~ㄹ 때」는 부사절이라 정상 · 사내 보고서 613건에 67건 나옴"}
+{"case_id": "C-070", "expect": "clean", "form": "prose", "kind": null, "source": "오탐 시험 2026-09-10", "status": "pinned", "text": "한 번 찾을 때마다 창을 여덟 개 엽니다", "why": "「찾을 때마다」 정상 · 관형형이 다름"}
+{"case_id": "C-071", "expect": "clean", "form": "prose", "kind": null, "source": "오탐 시험 2026-09-10", "status": "pinned", "text": "값이 없기 때문에 건너뜁니다", "why": "「때문」은 뒤 글자가 달라 안 걸려야 함"}
+{"case_id": "C-072", "expect": "clean", "form": "prose", "kind": null, "source": "오탐 시험 2026-09-10", "status": "pinned", "text": "판단이 어려웠을 때는 사람이 봅니다", "why": "「~었을 때」 정상"}
+{"case_id": "C-073", "expect": "finding", "form": "prose", "kind": "지어낸 명사구", "source": "소개 페이지 2026-09-10", "status": "pinned", "text": "모델에 드는 값은 월 30달러입니다", "why": "「값이 들다」라 값이 목적어가 못 됨 · 「사용 비용」이 맞음"}
+{"case_id": "C-074", "expect": "clean", "form": "prose", "kind": null, "source": "오탐 시험 2026-09-10", "status": "pinned", "text": "새 배포 층을 만드는 값이 비쌉니다", "why": "★ 「만드는」이 「드는」으로 끝나 통째로 걸린다 — 앞 글자를 막았는지 보는 시료"}
+{"case_id": "C-075", "expect": "clean", "form": "prose", "kind": null, "source": "오탐 시험 2026-09-10", "status": "pinned", "text": "측정한 값을 그대로 씁니다", "why": "값이 목적어라 제 뜻으로 섬 · 기존 판정 기준"}
