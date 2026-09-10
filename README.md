@@ -125,10 +125,11 @@ err  = []                                 # 주의에서 오류로 올린다
 |---|---|
 | `assets/doc-style-check.py` | 1층 검사기 정본 |
 | `skills/finalize-korean-document/` | 2층 스킬 정본 |
+| `skills/fix-korean-finding/` | 지적 하나를 규칙까지 미는 유지보수 스킬 |
 | `hooks/` | 발행 직전 검사 · 겹 역슬래시 차단 · 매일 건강 검사와 GitHub 반영 확인 |
 | `install.py` · `repo_paths.py` | 설치와 경로 해석 |
 | `scripts/check_publish_safety.py` | 공개하면 안 되는 것이 섞였는지 · CI 가 같이 돎 |
-| `tests/` | 시험 파일 49개 · 시험 300여 건 |
+| `tests/` | 시험 파일 50개 · 시험 450여 건 |
 | `docs/` | 설계·결정·조사 기록 |
 | `data/` | 사람 판정 · 회귀 시료 · 받은 사례 |
 | `runs/` | 실행별 입력·결과·요약 |
