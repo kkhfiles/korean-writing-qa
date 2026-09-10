@@ -8,7 +8,7 @@
 | 무엇 | 정본 | 설치본 |
 |---|---|---|
 | 검사기 | `assets/doc-style-check.py` | `~/.claude/assets/` |
-| 스킬 | `skills/finalize-korean-document/` | `~/.claude/skills/` |
+| 스킬 | `skills/` 아래 전부 | `~/.claude/skills/` |
 | 훅 | `hooks/*.py` | `~/.claude/hooks/` |
 
 `python install.py` 가 정본을 설치본으로 복사한다. 둘이 어긋나면
@@ -33,6 +33,10 @@ CHECKER = Path(os.environ.get("KOREAN_QA_CHECKER") or (REPO / "assets" / "doc-st
 
 #: 읽는 판단 층 — 문맥을 읽어야 갈리는 것을 맡는다.
 SKILL = Path(os.environ.get("KOREAN_QA_SKILL") or (REPO / "skills" / "finalize-korean-document"))
+
+#: 스킬 전부가 사는 곳. 설치는 이 아래를 통째로 옮기므로 스킬을 새로 만들면
+#: `install.py` 를 안 고쳐도 따라온다 — 고쳐야 하는 구조는 잊는다.
+SKILLS = REPO / "skills"
 
 HOOKS = REPO / "hooks"
 

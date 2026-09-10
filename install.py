@@ -49,10 +49,11 @@ def pairs() -> list[tuple[Path, Path]]:
     out = [(repo_paths.CHECKER, repo_paths.installed("assets", "doc-style-check.py"))]
     for name in HOOK_FILES:
         out.append((repo_paths.hook(name), repo_paths.installed("hooks", name)))
-    for src in sorted(repo_paths.SKILL.rglob("*")):
+    # `skills/` 아래를 통째로 옮긴다 — 스킬을 새로 만들 때 이 함수를 안 고쳐도 된다.
+    for src in sorted(repo_paths.SKILLS.rglob("*")):
         if src.is_file() and "__pycache__" not in src.parts:
-            rel = src.relative_to(repo_paths.SKILL)
-            out.append((src, repo_paths.installed("skills", "finalize-korean-document", *rel.parts)))
+            rel = src.relative_to(repo_paths.SKILLS)
+            out.append((src, repo_paths.installed("skills", *rel.parts)))
     return out
 
 
