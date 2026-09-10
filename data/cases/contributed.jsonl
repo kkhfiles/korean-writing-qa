@@ -73,3 +73,10 @@
 {"case_id": "C-073", "expect": "finding", "form": "prose", "kind": "지어낸 명사구", "source": "소개 페이지 2026-09-10", "status": "pinned", "text": "모델에 드는 값은 월 30달러입니다", "why": "「값이 들다」라 값이 목적어가 못 됨 · 「사용 비용」이 맞음"}
 {"case_id": "C-074", "expect": "clean", "form": "prose", "kind": null, "source": "오탐 시험 2026-09-10", "status": "pinned", "text": "새 배포 층을 만드는 값이 비쌉니다", "why": "★ 「만드는」이 「드는」으로 끝나 통째로 걸린다 — 앞 글자를 막았는지 보는 시료"}
 {"case_id": "C-075", "expect": "clean", "form": "prose", "kind": null, "source": "오탐 시험 2026-09-10", "status": "pinned", "text": "측정한 값을 그대로 씁니다", "why": "값이 목적어라 제 뜻으로 섬 · 기존 판정 기준"}
+{"case_id": "C-076", "expect": "clean", "form": "prose", "kind": null, "source": "적대 시험 2026-09-10", "status": "pinned", "text": "이제는 때가 됐다", "why": "★ 「는」이 관형형이 아니라 보조사다 — 체언 + 는 + 때. 적대 시험에서만 나왔고 실측 말뭉치는 못 드러냈다"}
+{"case_id": "C-077", "expect": "clean", "form": "prose", "kind": null, "source": "적대 시험 2026-09-10", "status": "pinned", "text": "그는 때때로 확인한다", "why": "체언 「그」 + 보조사 「는」 — 용언 목록이 막는다. 적대 시험에서는 「때때로」가 잘려 걸렸고, 용언 목록을 넣자 없어졌다"}
+{"case_id": "C-078", "expect": "clean", "form": "prose", "kind": null, "source": "적대 시험 2026-09-10", "status": "pinned", "text": "회의는 때에 따라 길어진다", "why": "체언 + 보조사 + 「때에」 — 관형형이 아니다"}
+{"case_id": "C-079", "expect": "clean", "form": "prose", "kind": null, "source": "적대 시험 2026-09-10", "status": "pinned", "text": "마음에 드는 층을 골랐다", "why": "「마음에 드는」은 호감이라 정당하다 — 「드는 값」 규칙이 값에만 붙는지 보는 시료"}
+{"case_id": "C-080", "expect": "finding", "form": "prose", "kind": "지어낸 명사구", "source": "적대 시험 2026-09-10", "status": "pinned", "text": "배포하는 때를 정합니다", "why": "생산적인 「~하는」이 목록에 들어 있는지 보는 시료 — 새 용언마다 목록을 안 늘려도 되는 부분"}
+{"case_id": "C-081", "expect": "clean", "form": "prose", "kind": null, "source": "적대 시험 2026-09-10", "status": "pinned", "text": "관리비가 많이 드는 층은 임대가 어렵습니다", "why": "★ 「드는」을 축·판·창·층까지 넓히면 걸린다 — 값에만 붙였는지 보는 시료"}
+{"case_id": "C-082", "expect": "clean", "form": "prose", "kind": null, "source": "적대 시험 2026-09-10", "status": "pinned", "text": "마음에 드는 값을 고르면 됩니다", "why": "★ 「마음에 드는」은 호감이라 값과 붙어도 정당하다 — 그 예외를 고정하는 시료"}
