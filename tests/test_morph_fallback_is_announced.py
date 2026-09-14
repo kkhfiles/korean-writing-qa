@@ -83,6 +83,24 @@ class MorphFallbackTests(unittest.TestCase):
         self.assertIn("「보내는 때」", out,
                       f"어간이 빠진 채 지적했습니다 — 어느 말인지 안 보입니다:\n{out}")
 
+    def test_the_particle_veto_keeps_everything_without_the_analyzer(self):
+        """★ 베토도 대비책 경로가 있다 — 없으면 **그대로 둔다**.
+
+        「카드는 판」의 「는」이 관형형인지 보조사인지는 형태소로만 갈린다. 분석기가
+        없다고 지적을 통째로 버리면 정당한 지적까지 사라진다 — 좁게 보는 것과
+        아예 안 보는 것은 다르다. 돌연변이가 이 자리를 짚었다.
+        """
+        doc = ("---\nform: prose\n---\n\n# 사례\n\n**검사 대상** — 한 줄\n\n"
+               "- 카드는 판을 다시 그립니다\n"      # 보조사 — 형태소가 있으면 빠진다
+               "- 결과를 모으는 창을 띄웁니다\n")   # 관형형 — 어느 쪽이든 남아야 한다
+        with_morph = run(doc, block=False)
+        without = run(doc, block=True)
+        self.assertIn("모으는 창", with_morph, f"정당한 지적이 사라졌습니다:\n{with_morph}")
+        self.assertIn("모으는 창", without, f"대비책이 지적을 통째로 버렸습니다:\n{without}")
+        self.assertNotIn("카드는 판", with_morph, f"보조사를 못 걸렀습니다:\n{with_morph}")
+        self.assertIn("카드는 판", without,
+                      f"대비책은 못 가르므로 그대로 두어야 합니다:\n{without}")
+
     def test_the_word_list_still_works_on_its_own(self):
         """★ 대비책 경로도 시험한다.
 

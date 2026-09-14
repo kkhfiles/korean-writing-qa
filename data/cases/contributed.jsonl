@@ -88,3 +88,7 @@
 {"case_id": "C-088", "expect": "clean", "form": "prose", "kind": null, "source": "3회차 지적 2026-09-14", "status": "pinned", "text": "눈이 붓는다", "why": "「붓다」의 본뜻 — 옮기는 대상과 짝지어야만 걸려야 함"}
 {"case_id": "C-089", "expect": "clean", "form": "prose", "kind": null, "source": "3회차 지적 2026-09-14", "status": "pinned", "text": "화폭에 붓을 댑니다", "why": "「붓」은 그림 붓이라 다른 낱말"}
 {"case_id": "C-090", "expect": "clean", "form": "prose", "kind": null, "source": "3회차 지적 2026-09-14", "status": "pinned", "text": "컵에 물을 부어 식힙니다", "why": "액체를 붓는 것은 정당한 쓰임"}
+{"case_id": "C-091", "expect": "clean", "form": "prose", "kind": null, "needs": "morph", "source": "형태소 베토 2026-09-14", "status": "pinned", "text": "카드는 판을 다시 그립니다", "why": "★ 「는」이 보조사다 — 관형형이 아니라 체언 뒤 조사 · 형태소가 걷어낸다"}
+{"case_id": "C-092", "expect": "clean", "form": "prose", "kind": null, "needs": "morph", "source": "형태소 베토 2026-09-14", "status": "pinned", "text": "그 사람은 자리를 떴습니다", "why": "★ 「은」이 보조사다 · 실제 좌석이라 「자리」도 정당하다"}
+{"case_id": "C-093", "expect": "finding", "form": "prose", "kind": "지어낸 명사구", "source": "형태소 베토 2026-09-14", "status": "pinned", "text": "결과를 모으는 창을 띄웁니다", "why": "관형형 어미 뒤의 빈 명사 — 베토가 정당한 지적까지 죽이면 안 된다"}
+{"case_id": "C-094", "expect": "finding", "form": "prose", "kind": "지어낸 명사구", "source": "형태소 베토 2026-09-14", "status": "pinned", "text": "다음 판에서 다시 봅니다", "why": "★ 앞이 관형사라 ETM 이 아니다 — 「ETM 이면 남긴다」로 짜면 함께 죽는다"}

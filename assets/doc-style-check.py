@@ -303,6 +303,48 @@ class _Hit:
         return self._t
 
 
+def particle_veto(text, hits):
+    """지적 가운데 **관형형이 아니라 보조사**인 것을 뺀다.
+
+    「모으는 창」의 「는」은 관형형 어미(ETM)지만 「카드는 판」의 「는」은 보조사(JX)다.
+    글자가 같아 정규식으로는 못 가른다 — 실측으로 「것은 판」·「사람은 판」·
+    「봇은 판」처럼 30여 곳이 그렇게 걸리고 있었다.
+
+    ⚠️ **넓히는 데 쓰지 않는다.** 형태소로 후보를 새로 만들면 「낄 자리」·「둔 자리」
+    처럼 정당한 쓰임이 무더기로 들어온다(실측 238종). 여기서는 **이미 나온 지적에서
+    보조사인 것만 뺀다** — 회수율은 그대로 두고 정밀도만 올린다.
+
+    형태소 분석기가 없으면 그대로 둔다(대비책이 좁게 보는 쪽이라 미탐이 아니다).
+    """
+    if not hits:
+        return hits
+    k = morph()
+    if k is None:
+        return hits
+    kept, seen = [], {}
+    for h in hits:
+        line_start = text.rfind('\n', 0, h.start()) + 1
+        line_end = text.find('\n', h.start())
+        line = text[line_start:line_end if line_end >= 0 else len(text)]
+        if len(line) > 600:
+            kept.append(h)
+            continue
+        if line_start not in seen:
+            seen[line_start] = k.tokenize(line)
+        toks = seen[line_start]
+        want = h.end() - 1 - line_start     # 빈 명사의 마지막 글자가 줄 안에서 어디인지
+        drop = False
+        for i, t in enumerate(toks):
+            if t.start <= want < t.start + len(t.form) and t.tag.startswith('NN') and i:
+                # ⛔ 「ETM 이면 남긴다」로 짜면 안 된다 — 「앞 판」·「1판」은 앞이 관형사·
+                #    숫자라 함께 죽는다(실측). **조사라고 확인된 것만** 뺀다.
+                drop = toks[i - 1].tag.startswith('J')
+                break
+        if not drop:
+            kept.append(h)
+    return kept
+
+
 _TIME_MAYBE = re.compile(r'는\s*때')   # 값싼 앞거르개
 
 
@@ -793,13 +835,12 @@ def scan_html(path, relaxed=False, form=None, rules=None):
         return ' '.join(text[max(0, m.start() - 24):m.end() + 8].split())
     for m in JARI.finditer(text):
         err.append(('「~하는 자리」', f'{around(m)[:56]} — 지점·위치·사례·단계·시점 중 맞는 말로 바꿀 것'))
-    for m in JARI_ANY.finditer(text):
-        if JARI.search(m.group(0)) or JARI_OK.search(m.group(0)):
-            continue
+    _jari = [m for m in JARI_ANY.finditer(text)
+             if not (JARI.search(m.group(0)) or JARI_OK.search(m.group(0)))]
+    for m in particle_veto(text, _jari):
         warn.append(('「~하는 자리」 의심', f'{around(m)[:56]} — 사람이 모이는 뜻이 아니면 바꿀 것'))
-    for m in EMPTY_NOUN.finditer(text):
-        if EMPTY_NOUN_OK.search(m.group(0)):
-            continue
+    _empty = [m for m in EMPTY_NOUN.finditer(text) if not EMPTY_NOUN_OK.search(m.group(0))]
+    for m in particle_veto(text, _empty):
         warn.append(('지어낸 명사구',
                      f'{around(m)[:56]} — 그 명사가 혼자 서는지 볼 것 · 아니면 문장을 서술로 펼 것'))
     for m in REACH_NOUN.finditer(text):
@@ -1442,14 +1483,12 @@ def scan_md(path, relaxed=False, form=None, rules=None):
             err.append((n, '「~하는 자리」',
                         f'「{j.group(0)}」 — {strip(line).strip()[:44]}'))
         else:
-            for q in JARI_ANY.finditer(m):
-                if JARI_OK.search(q.group(0)):
-                    continue
+            _j = [q for q in JARI_ANY.finditer(m) if not JARI_OK.search(q.group(0))]
+            for q in particle_veto(m, _j):
                 warn.append((n, '「~하는 자리」 의심',
                              f'「{q.group(0)}」 — {strip(line).strip()[:42]}'))
-        for e in EMPTY_NOUN.finditer(m):
-            if EMPTY_NOUN_OK.search(e.group(0)):
-                continue
+        _e = [e for e in EMPTY_NOUN.finditer(m) if not EMPTY_NOUN_OK.search(e.group(0))]
+        for e in particle_veto(m, _e):
             warn.append((n, '지어낸 명사구',
                          f'「{e.group(0)}」 — 그 명사가 혼자 서는지 볼 것 · '
                          f'{strip(line).strip()[:36]}'))
