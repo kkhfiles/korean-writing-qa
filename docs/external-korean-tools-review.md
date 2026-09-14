@@ -13,8 +13,8 @@
 
 | 저장소 | 역할 | 확인 커밋 | 라이선스 | 현재 사용 |
 |---|---|---|---|---|
-| [`korean-report-skills`](https://github.com/JangHyun-bin/korean-report-skills) | 보고서 작성 지침 · Markdown/HTML 문체 검사 · HTML 렌더링 검사 | `d35f47e1` | Apache-2.0 | 규칙 출처 · 비교 검사기 |
-| [`fluent-korean`](https://github.com/snflkd/fluent-korean) | Claude 출력 단계 한국어 지침 | `ce8683f0` | MIT | 생성 단계 규칙 출처 |
+| [`korean-report-skills`](https://github.com/JangHyun-bin/korean-report-skills) | 보고서 작성 지침 · Markdown/HTML 문체 검사 · HTML 렌더링 검사 | `05ce76d0` (2026-09-14) | Apache-2.0 | 규칙 출처 · 비교 검사기 · **형태소 판정 착상** |
+| [`fluent-korean`](https://github.com/snflkd/fluent-korean) | Claude 출력 단계 한국어 지침 | `ce8683f0` (2026-09-14 재확인 · 그대로) | MIT | 생성 단계 규칙 출처 |
 
 ## `korean-report-skills` 실측
 
@@ -31,6 +31,19 @@
 | 소프트웨어 문서 결합 규칙 | 0 | 양성 표본 추가 필요 |
 
 **실행 기록**: `runs/external-tools-001/korean-report-style-summary.json`
+
+## 다시 본 결과 (2026-09-14)
+
+**상류 변경** — `korean-report-skills` 가 8커밋 움직였고 `morph.py`·`references/morphology.md` 가 새로 들어옴 · 형태소 품사 표지로 판정하는 방식 · 그 문서의 요지는 「어간 목록이 아니라 tag 조합으로 판정하므로 새 형용사를 표에 추가할 일이 없다」
+
+| 항목 | 판정 |
+|---|---|
+| 형태소 품사 표지로 판정 | **채택** — `EXT-RULE-009` · 「~는」이 관형형 어미(ETM)인지 보조사(JX)인지를 가르는 데 씀 |
+| 가져온 것 | **착상만** · 소스 코드 이관 없음 · 구현과 대비책 설계는 이 저장소 것 |
+| 실측 | 문장 25개에서 글자 판정 어긋남 10 · 형태소 어긋남 1 |
+| `fluent-korean` | 커밋 그대로 — 다시 볼 것 없음 |
+
+**`EXT-RULE-001`(주어와 술어의 결합)은 2026-09-09 에 반영 완료** — 갈래 이름 「업무 글에 없는 말」 · 후보 기록이 구현을 안 따라와 이번에 맞춤
 
 ## 가져올 원칙
 
