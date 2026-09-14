@@ -9,7 +9,7 @@ form: structured
 - **표시 색** — 주묵(朱墨) · 원고를 고칠 때 쓰던 붉은 먹
 - **사례집** — [`docs/showcase.html`](docs/showcase.html) · 수정 전후 74쌍 · 브라우저로 열면 됨 · [올릴 준비물](docs/site-listing.md)
 - **사례 보내기** — [`CONTRIBUTING.md`](CONTRIBUTING.md) · 이슈로 문장 하나
-- **필요한 것** — Python 3.11 이상 · 검사기 자체는 의존성 0
+- **필요한 것** — Python 3.11 이상 · 검사기는 파일 하나 · 형태소 판정만 `kiwipiepy`
 
 ## AI 에게 시키는 법
 
@@ -19,7 +19,7 @@ form: structured
 git clone https://github.com/<사용자>/korean-writing-qa.git
 cd korean-writing-qa
 
-# 1) 설치 없이 바로 도는지 확인 — 검사기는 파일 하나이고 의존성이 없다
+# 1) 설치 없이 바로 도는지 확인 — 검사기는 파일 하나이고 없어도 돈다
 python assets/doc-style-check.py tests/fixtures/paired/exempt-fixture.md
 python assets/doc-style-check.py tests/fixtures/paired/violation-fixture.md
 
@@ -53,7 +53,7 @@ python -X utf8 -m unittest discover -s tests
 
 | 갈래 | 되는 일 | 받는 것 |
 |---|---|---|
-| **파일 하나** | 명령줄로 문서 검사 | `assets/doc-style-check.py` 70KB 안팎 · 의존성 0 |
+| **파일 하나** | 명령줄로 문서 검사 | `assets/doc-style-check.py` 70KB 안팎 · 형태소 판정만 `kiwipiepy` |
 | **스킬 포함** | Claude Code 가 문서를 낼 때 문맥까지 읽어 고침 | `python install.py` |
 | **훅 포함** | 발행 직전에 자동으로 걸림 | `python install.py --hooks` |
 
@@ -117,7 +117,8 @@ err  = []                                 # 주의에서 오류로 올린다
 
 - **산문 문서** — 머리말에 `form: prose`(HTML 은 `<meta name="form" content="prose">`) · 개조식 전제 검사가 꺼짐
 - **검사 대상 아님** — PDF·PPTX 같은 변환 산출물. 편집 원본을 검사한다.
-- **YAML 검사에만 의존성** — `python -m pip install -r requirements.txt`
+- **의존성 둘** — `python -m pip install -r requirements.txt` · YAML 검사와 형태소 판정에 씁니다
+- **형태소 판정** — 「보내는 때」(관형형 어미)와 「이제는 때가 됐다」(보조사)는 글자가 같아 품사 표지로만 갈립니다. `kiwipiepy` 가 없으면 그 갈래를 **글자만으로 좁게** 보고 **그 사실을 출력 맨 위와 합계에 적습니다** — 안 적으면 좁게 본 것이 통과로 읽힙니다.
 
 ## 저장소 구성
 

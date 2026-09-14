@@ -68,8 +68,21 @@ class ContributedCaseFileTests(unittest.TestCase):
                 self.assertIn(kind, checker.ALL_KINDS)
 
 
+def _morph_available() -> bool:
+    import importlib.util
+    try:
+        return importlib.util.find_spec("kiwipiepy") is not None
+    except Exception:
+        return False
+
+
 def make_test(record: dict):
     def check(self):
+        # ★ 형태소 분석기가 있어야만 갈리는 시료가 있다(「보내는 때」처럼 용언 목록
+        #   밖의 것). 없는 기계에서 그냥 실패시키면 **규칙이 되돌아간 것과 구분이
+        #   안 된다.** 건너뛰되 무엇을 안 봤는지 적는다 — 조용히 통과시키지 않는다.
+        if record.get("needs") == "morph" and not _morph_available():
+            self.skipTest(f'{record["case_id"]} — 형태소 분석기(kiwipiepy)가 없어 안 봤습니다')
         got, kinds = add_case.verdict(record["text"], record.get("form", "structured"))
         self.assertEqual(
             record["expect"], got,

@@ -229,6 +229,11 @@ COST_NOUN = re.compile(r'(?<!마음에\s)(?<!눈에\s)(?<![가-힣])드는\s*값
 #      돌연변이 시험이 이 예외를 **시료로 고정할 수 없다**고 알려 줘 빼기로 했다 —
 #      시험 못 하는 예외는 그 안의 미탐을 아무도 다시 안 본다(「자리」 규칙과 같은 판단).
 #
+#   ★★★ 2026-09-14 부터 **형태소 분석기가 있으면 그것으로 판정한다**(아래 TIME_HITS).
+#   글자만으로는 「는」이 관형형 어미인지 보조사인지 못 가르고, 용언 목록으로 막으면
+#   목록 밖이 통째로 미탐이다. 실측(문장 22개) — 글자 판정 어긋남 10 · 형태소 1.
+#   아래 목록은 **형태소 분석기가 없을 때 쓰는 대비책**이다.
+#
 #   ★★ 앞말은 **용언 어간만** 받는다 — 「는」이 관형형 어미가 아니라 **보조사**인
 #   경우를 안 그러면 못 가른다. 적대 시험에서 여섯이 한꺼번에 걸렸다:
 #     「이제는 때가 됐다」·「그는 때를 기다린다」·「우리는 때를 놓쳤다」·「나는 때를
@@ -244,6 +249,98 @@ COST_NOUN = re.compile(r'(?<!마음에\s)(?<!눈에\s)(?<![가-힣])드는\s*값
 _TIME_STEM = (r'(?:[가-힣]{1,6}(?:하|되)|묻|담|다루|보|쓰|재|부르|만드'
               r'|바뀌|덮|그리|띄우|넘치|정해지|있)')
 TIME_NOUN = re.compile(_TIME_STEM + r'는\s*때')
+
+# ── 형태소 판정 ────────────────────────────────────────────────────────────
+# 글자만 봐서는 못 가르는 것이 있다. 「~는」이 **관형형 전성 어미(ETM)**인지
+# **보조사(JX)**인지가 그렇다 — 「보내는 때」는 지적이고 「이제는 때가 됐다」는
+# 정상인데 글자는 같다. 형태소 분석기는 tag 로 그것을 가른다.
+#
+#   보내는 때 → 보내/VV + 는/ETM + 때/NNG   → 지적
+#   이제는 때 → 이제/NNG + 는/JX  + 때/NNG   → 통과
+#   필요할 때 → 하/XSA + ᆯ/ETM  + 때/NNG   → 통과 (ETM 이지만 형태가 「는」이 아니다)
+#
+# **tag 만 봐도 안 된다** — 부사절 「~ㄹ 때」의 ㄹ 도 ETM 이다. 어미의 **형태**까지 본다.
+#
+# ⚠️ 없어도 검사는 돈다 — 위 용언 목록으로 좁게 본다. 다만 **조용히 넘어가지 않는다**:
+#    출력 맨 위에 「형태소 분석기 없음」을 적는다. 안 적으면 좁게 본 것이 통과로 읽힌다.
+# ⚠️ 값이 비싸다 — 기동 0.6초 · 33만 자/초. 그래서 **값싼 앞거르개로 먼저 훑고**
+#    걸린 줄만 분석한다. 「는 때」가 없는 문서는 분석기를 아예 안 부른다.
+# ⚠️ **있는지 보는 것**과 **띄우는 것**을 가른다. 하나로 묶었더니 「는 때」가 없는
+#    문서에서도 매번 Kiwi 를 띄워 시험 전체가 27초에서 97초가 됐다(실측).
+_KIWI, _KIWI_TRIED = None, False
+#: 형태소 없이 글자만으로 본 곳이 실제로 있었나. **예측이 아니라 일어난 일**을 적는다.
+#: 예측(`find_spec`)으로 적었더니 명세는 있는데 불러오기가 터지는 환경에서
+#: **안내 없이 좁게 검사**했다 — 막으려던 실패가 그대로 났다(실측).
+FELL_BACK = False
+
+
+def morph():
+    """형태소 분석기를 한 번만 띄운다. 없으면 None."""
+    global _KIWI, _KIWI_TRIED
+    if not _KIWI_TRIED:
+        _KIWI_TRIED = True
+        try:
+            from kiwipiepy import Kiwi
+            _KIWI = Kiwi()
+        except Exception:
+            _KIWI = None
+    return _KIWI
+
+
+class _Hit:
+    """정규식 match 처럼 쓰는 형태소 판정 결과."""
+
+    def __init__(self, start, text):
+        self._s, self._t = start, text
+
+    def start(self):
+        return self._s
+
+    def end(self):
+        return self._s + len(self._t)
+
+    def group(self, _=0):
+        return self._t
+
+
+_TIME_MAYBE = re.compile(r'는\s*때')   # 값싼 앞거르개
+
+
+def time_hits(text):
+    """시점을 「~는 때」로 가리킨 곳을 낸다."""
+    if not _TIME_MAYBE.search(text):
+        return []
+    k = morph()
+    if k is None:
+        global FELL_BACK
+        FELL_BACK = True
+        return list(TIME_NOUN.finditer(text))
+    out = []
+    for base, s in _lines_with(text, _TIME_MAYBE):
+        toks = k.tokenize(s)
+        for i, t in enumerate(toks):
+            if t.form != '때' or not t.tag.startswith('NN') or not i:
+                continue
+            prev = toks[i - 1]
+            if prev.tag != 'ETM' or prev.form != '는':
+                continue
+            # ⛔ 어미가 아니라 **어절 처음**부터 잘라야 사람이 읽을 수 있다.
+            #    어미부터 자르면 「는 때」만 나와 어느 말이 걸렸는지 안 보이고(실측에서
+            #    15종이 한 종으로 뭉개졌다), 토큰 하나만 물러서면 「정해지는」이
+            #    「지는」으로 잘린다(정해/XSV + 지/VX + 는/ETM).
+            head = s.rfind(' ', 0, prev.start) + 1
+            out.append(_Hit(base + head, s[head:t.start + 1]))
+    return out
+
+
+def _lines_with(text, pat):
+    """앞거르개에 걸린 줄만 (문서 안 시작 위치, 줄) 로 낸다."""
+    at = 0
+    for line in text.split('\n'):
+        if pat.search(line):
+            yield at, line
+        at += len(line) + 1
+
 
 # 업무 글에 없는 말 — 낱말이 아니라 **짝**을 본다.
 #   발단 = 공개 소개 페이지의 「진행은 커밋에서 걷습니다」·「한 줄 던지기」·「앞세우는 것」
@@ -704,7 +801,7 @@ def scan_html(path, relaxed=False, form=None, rules=None):
     for m in COST_NOUN.finditer(text):
         err.append(('지어낸 명사구',
                     f'{around(m)[:56]} — 「값이 들다」라 값이 목적어가 못 됨 · 「비용」으로'))
-    for m in TIME_NOUN.finditer(text):
+    for m in time_hits(text):
         err.append(('지어낸 명사구',
                     f'{around(m)[:56]} — 시점을 「~는 때」로 가리킴 · 「시점」·「주기」로 바꿀 것'))
     for _pat, _better in NO_WORK_WORD:
@@ -1357,7 +1454,7 @@ def scan_md(path, relaxed=False, form=None, rules=None):
             err.append((n, '지어낸 명사구',
                         f'「{e.group(0)}」 — 「값이 들다」라 값이 목적어가 못 됨 · '
                         f'「비용」으로 · {strip(line).strip()[:30]}'))
-        for e in TIME_NOUN.finditer(m):
+        for e in time_hits(m):
             err.append((n, '지어낸 명사구',
                         f'「{e.group(0)}」 — 시점을 「~는 때」로 가리킴 · '
                         f'「시점」·「주기」로 바꿀 것 · {strip(line).strip()[:30]}'))
@@ -1615,6 +1712,11 @@ def main():
     # 합계만 잘라 보는 사람이 많다. 설정으로 줄어든 수라는 것을 여기서도 적는다.
     if rules:
         tail += f' · 갈래 설정 적용({rules.summary()})'
+    # ⛔ 좁게 본 것이 통과로 읽히면 안 된다 — 「끈 갈래를 적는다」와 같은 이유다.
+    if FELL_BACK:
+        tail += ' · 형태소 분석기 없이 본 곳 있음'
+        print('\n형태소 분석기 없음 — 「~는 때」를 용언 목록으로만 봤습니다 · 미탐이 섞입니다'
+              '\n   고치려면 python -m pip install kiwipiepy')
     print(f'\n합계 — 오류 {total_e} · 주의 {total_w}{tail}')
     return 1 if total_e else 0
 
