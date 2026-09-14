@@ -303,6 +303,17 @@ class _Hit:
         return self._t
 
 
+#: 마크업 기호를 **같은 길이의 빈칸**으로 바꾼다 — 자리를 안 밀어야 지적과 짝이 맞는다.
+#   ⛔ 기호가 붙어 있으면 분석이 틀어진다. 「**갈리는 자리」의 갈리가 NNP(고유명사)로
+#      읽혀 관형형이 아닌 것으로 판정됐다. 기호를 떼면 VV 로 바로잡힌다(실측).
+#   목록 표시 「- 」도 뺀다 — 「- 의도는 자리」에서 「의도」가 쪼개져 베토가 못 걸렀다.
+_MARKUP = str.maketrans({c: ' ' for c in '*`#~_|>"\'[]()-–—+='})
+
+
+def _plain(line):
+    return line.translate(_MARKUP)
+
+
 def particle_veto(text, hits):
     """지적 가운데 **관형형이 아니라 보조사**인 것을 뺀다.
 
@@ -330,7 +341,7 @@ def particle_veto(text, hits):
             kept.append(h)
             continue
         if line_start not in seen:
-            seen[line_start] = k.tokenize(line)
+            seen[line_start] = k.tokenize(_plain(line))
         toks = seen[line_start]
         want = h.end() - 1 - line_start     # 빈 명사의 마지막 글자가 줄 안에서 어디인지
         drop = False
@@ -339,6 +350,15 @@ def particle_veto(text, hits):
                 # ⛔ 「ETM 이면 남긴다」로 짜면 안 된다 — 「앞 판」·「1판」은 앞이 관형사·
                 #    숫자라 함께 죽는다(실측). **조사라고 확인된 것만** 뺀다.
                 drop = toks[i - 1].tag.startswith('J')
+                # ⛔ 한 음절 일반명사 앞이면 못 믿는다 — 「매일 **도는** 자리」의 「도」가
+                #    도/NNG 로 읽혀 정당한 지적 여섯이 지워졌다(실측). 용언 어간이
+                #    한 음절 명사로 오분석되는 자리다. 「것은」(NNB)·「의도는」(2음절)은
+                #    그대로 뺀다 — 거기서는 오분석이 안 난다.
+                #    「여는 자리」의 「여」는 NP 로 읽히므로 갈래를 셋으로 잡는다.
+                #    의존명사(NNB)는 그대로 뺀다 — 「것은 판」에서는 오분석이 안 난다.
+                if drop and i >= 2 and toks[i - 2].tag in ('NNG', 'NNP', 'NP') \
+                        and len(toks[i - 2].form) == 1:
+                    drop = False
                 break
         if not drop:
             kept.append(h)
@@ -839,7 +859,7 @@ def scan_html(path, relaxed=False, form=None, rules=None):
     # 문제 문장이 사라진다(오류는 뜨는데 어디인지 모르는 상태가 된다).
     def around(m):
         return ' '.join(text[max(0, m.start() - 24):m.end() + 8].split())
-    for m in JARI.finditer(text):
+    for m in particle_veto(text, list(JARI.finditer(text))):
         err.append(('「~하는 자리」', f'{around(m)[:56]} — 지점·위치·사례·단계·시점 중 맞는 말로 바꿀 것'))
     _jari = [m for m in JARI_ANY.finditer(text)
              if not (JARI.search(m.group(0)) or JARI_OK.search(m.group(0)))]
@@ -1484,8 +1504,9 @@ def scan_md(path, relaxed=False, form=None, rules=None):
             err.append((n, '「회기」',
                         f'regression 이면 「회귀」 · 작업 단위면 「세션」·「회차」 — '
                         f'{strip(line).strip()[:40]}'))
-        j = JARI.search(m)
-        if j:
+        _hard = particle_veto(m, list(JARI.finditer(m)))
+        if _hard:
+            j = _hard[0]
             err.append((n, '「~하는 자리」',
                         f'「{j.group(0)}」 — {strip(line).strip()[:44]}'))
         else:

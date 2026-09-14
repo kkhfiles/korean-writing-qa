@@ -98,3 +98,8 @@
 {"case_id": "C-098", "expect": "clean", "form": "prose", "kind": null, "source": "형태소 대조 2026-09-14", "status": "pinned", "text": "진행 단계를 전부 걷어냅니다", "why": "「걷어내다」는 제거라 정당하다 — 창을 넓혀도 예외가 살아 있는지 보는 시료"}
 {"case_id": "C-099", "expect": "clean", "form": "prose", "kind": null, "source": "창 넓히기가 드러낸 미비 2026-09-14", "status": "pinned", "text": "커밋에서 진행을 걷어냅니다", "why": "★ 「걷어냅니다」 — 내 + ㅂ니다 결합형 · 예외 목록에 없어 창을 넓히자 걸렸다"}
 {"case_id": "C-100", "expect": "clean", "form": "prose", "kind": null, "source": "창 넓히기가 드러낸 미비 2026-09-14", "status": "pinned", "text": "로그에서 옛 항목을 걷어냈습니다", "why": "「걷어냈」 결합형 · 같은 예외"}
+{"case_id": "C-101", "expect": "finding", "form": "prose", "kind": "「~하는 자리」", "needs": "morph", "source": "작업 감사 2026-09-14", "status": "pinned", "text": "매 프롬프트마다 도는 자리입니다", "why": "★ 「도」가 도/NNG 로 오분석돼 베토가 정당한 **오류**를 지웠다 — 한 음절 앞말은 못 믿는다"}
+{"case_id": "C-102", "expect": "finding", "form": "prose", "kind": "「~하는 자리」", "needs": "morph", "source": "작업 감사 2026-09-14", "status": "pinned", "text": "**갈리는 자리는 여기 하나입니다**", "why": "★ 굵게 기호가 붙으면 「갈리」가 NNP 로 오분석된다 — 기호를 빈칸으로 바꿔 분석한다"}
+{"case_id": "C-103", "expect": "clean", "form": "prose", "kind": "「~하는 자리」", "needs": "morph", "source": "작업 감사 2026-09-14", "status": "pinned", "text": "의도는 자리를 옮깁니다", "why": "★ 「의도」+보조사인데 「도는」이 용언 목록과 겹쳐 **오류**로 걸렸다 — 두 음절이라 믿고 뺀다"}
+{"case_id": "C-104", "expect": "clean", "form": "prose", "kind": null, "needs": "morph", "source": "작업 감사 2026-09-14", "status": "pinned", "text": "태도는 자리에 남습니다", "why": "같은 갈래 — 체언 끝이 용언 목록과 겹치는 것"}
+{"case_id": "C-105", "expect": "finding", "form": "prose", "kind": "「~하는 자리」", "needs": "morph", "source": "작업 감사 2026-09-14", "status": "pinned", "text": "매일 도는 자리에 둬야 합니다", "why": "★ 「도」가 도/NNG 로 오분석된다 — 한 음절 앞말 보호가 없으면 베토가 이 **오류**를 지운다"}

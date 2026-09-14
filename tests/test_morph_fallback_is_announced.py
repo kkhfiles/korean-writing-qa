@@ -32,10 +32,13 @@ CLEAN = ("---\nform: prose\n---\n\n# 사례\n\n**검사 대상** — 한 줄\n\n
 NOTICE = "형태소 분석기 없음"
 
 
-def run(doc: str, block: bool):
-    """검사기를 돌린다. `block` 이면 형태소 분석기를 못 쓰게 만든다."""
+def run(doc: str, block: bool, suffix: str = ".md"):
+    """검사기를 돌린다. `block` 이면 형태소 분석기를 못 쓰게 만든다.
+
+    ⚠️ 확장자가 길을 가른다 — `.md` 는 값 슬롯 길, 일반 텍스트는 문단 길이다.
+    """
     with tempfile.TemporaryDirectory() as d:
-        path = Path(d) / "t.md"
+        path = Path(d) / ("t" + suffix)
         path.write_text(doc, encoding="utf-8")
         env = dict(os.environ)
         if block:
@@ -100,6 +103,36 @@ class MorphFallbackTests(unittest.TestCase):
         self.assertNotIn("카드는 판", with_morph, f"보조사를 못 걸렀습니다:\n{with_morph}")
         self.assertIn("카드는 판", without,
                       f"대비책은 못 가르므로 그대로 두어야 합니다:\n{without}")
+
+    def test_markup_does_not_break_the_analysis(self):
+        """★ 마크업 기호가 붙으면 분석이 틀어져 **정당한 오류가 지워졌다**.
+
+        「**갈리는 자리」의 「갈리」가 NNP 로, 「- 의도는」의 「의도」가 쪼개져 읽혔다.
+        기호를 같은 길이의 빈칸으로 바꿔 분석한다 — 자리를 밀면 지적과 짝이 안 맞는다.
+        """
+        doc = ("---\nform: prose\n---\n\n# 사례\n\n**검사 대상** — 한 줄\n\n"
+               "- **갈리는 자리는 여기 하나입니다**\n"   # 굵게 기호 · 지적해야 함
+               "- 매 프롬프트마다 도는 자리입니다\n"     # 한 음절 오분석 · 지적해야 함
+               "- 의도는 자리를 옮깁니다\n")            # 체언 + 보조사 · 통과해야 함
+        out = run(doc, block=False)
+        for hit in ("갈리는 자리", "도는 자리"):
+            self.assertIn(hit, out, f"기호·오분석 때문에 「{hit}」를 놓쳤습니다:\n{out}")
+        self.assertNotIn("의도는", out, f"체언 + 보조사를 오류로 냈습니다:\n{out}")
+
+    def test_the_veto_also_guards_the_paragraph_pass(self):
+        """★ 검사기는 값 슬롯과 **문단**을 다른 길로 본다.
+
+        회귀 시료는 전부 목록 항목이라 값 슬롯 길만 탄다. 문단 길의 베토를 지워도
+        시료가 안 깨지는 것을 돌연변이가 짚었다 — 안 쓰는 길은 조용히 썩는다.
+        """
+        out = run("의도는 자리를 옮깁니다. 규칙이 걸리는 자리를 봅니다.\n",
+                  block=False, suffix=".txt")
+        # ⚠️ 지적 줄에는 원문이 함께 실린다. 출력 전체에서 글자를 찾으면 **되비친
+        #    원문**이 걸려 늘 통과한다 — 지적 자체를 세야 한다.
+        self.assertEqual(
+            1, out.count("[「~하는 자리」]"),
+            f"문단 길 지적이 하나여야 합니다 — 없으면 미탐, 둘이면 체언 + 보조사까지 "
+            f"낸 것입니다:\n{out}")
 
     def test_the_word_list_still_works_on_its_own(self):
         """★ 대비책 경로도 시험한다.
