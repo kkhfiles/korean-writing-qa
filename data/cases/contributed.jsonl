@@ -84,3 +84,7 @@
 {"case_id": "C-084", "expect": "finding", "form": "prose", "kind": "지어낸 명사구", "needs": "morph", "source": "형태소 판정 도입 2026-09-14", "status": "pinned", "text": "알림을 받는 때가 다릅니다", "why": "★ 목록 밖 용언 · 형태소로만 갈린다"}
 {"case_id": "C-085", "expect": "clean", "form": "prose", "kind": null, "source": "형태소 판정 도입 2026-09-14", "status": "pinned", "text": "나는 때를 봐서 말합니다", "why": "체언 「나」 + 보조사 「는」 — 형태소가 JX 로 가른다"}
 {"case_id": "C-086", "expect": "clean", "form": "prose", "kind": null, "needs": "morph", "source": "돌연변이가 드러낸 빈 시료 2026-09-14", "status": "pinned", "text": "그는 때가 될 때를 기다립니다", "why": "★ 한 줄에 「는 때」(보조사)와 「ᆯ 때」(부사절)가 같이 있다 — 어미 **형태**까지 안 보면 「될 때」가 걸린다"}
+{"case_id": "C-087", "expect": "finding", "form": "prose", "kind": "업무 글에 없는 말", "source": "3회차 지적 2026-09-14", "status": "pinned", "text": "이슈 트래커에 주간 공수를 그대로 붓습니다", "why": "자료를 옮기는 것을 「붓다」로 씀 — 사람 글에 동사 용례 0건 · 「반영·올림」이 맞음"}
+{"case_id": "C-088", "expect": "clean", "form": "prose", "kind": null, "source": "3회차 지적 2026-09-14", "status": "pinned", "text": "눈이 붓는다", "why": "「붓다」의 본뜻 — 옮기는 대상과 짝지어야만 걸려야 함"}
+{"case_id": "C-089", "expect": "clean", "form": "prose", "kind": null, "source": "3회차 지적 2026-09-14", "status": "pinned", "text": "화폭에 붓을 댑니다", "why": "「붓」은 그림 붓이라 다른 낱말"}
+{"case_id": "C-090", "expect": "clean", "form": "prose", "kind": null, "source": "3회차 지적 2026-09-14", "status": "pinned", "text": "컵에 물을 부어 식힙니다", "why": "액체를 붓는 것은 정당한 쓰임"}
