@@ -92,3 +92,9 @@
 {"case_id": "C-092", "expect": "clean", "form": "prose", "kind": null, "needs": "morph", "source": "형태소 베토 2026-09-14", "status": "pinned", "text": "그 사람은 자리를 떴습니다", "why": "★ 「은」이 보조사다 · 실제 좌석이라 「자리」도 정당하다"}
 {"case_id": "C-093", "expect": "finding", "form": "prose", "kind": "지어낸 명사구", "source": "형태소 베토 2026-09-14", "status": "pinned", "text": "결과를 모으는 창을 띄웁니다", "why": "관형형 어미 뒤의 빈 명사 — 베토가 정당한 지적까지 죽이면 안 된다"}
 {"case_id": "C-094", "expect": "finding", "form": "prose", "kind": "지어낸 명사구", "source": "형태소 베토 2026-09-14", "status": "pinned", "text": "다음 판에서 다시 봅니다", "why": "★ 앞이 관형사라 ETM 이 아니다 — 「ETM 이면 남긴다」로 짜면 함께 죽는다"}
+{"case_id": "C-095", "expect": "finding", "form": "prose", "kind": "업무 글에 없는 말", "source": "형태소 대조 2026-09-14", "status": "pinned", "text": "쿼터가 같은 계정에서 마르면 셋 다 실패합니다", "why": "★ 사이에 관형절이 끼어 6자 창으로는 못 닿았다 — 형태소 대조가 짚어 12자로 넓힘"}
+{"case_id": "C-096", "expect": "finding", "form": "prose", "kind": "업무 글에 없는 말", "source": "형태소 대조 2026-09-14", "status": "pinned", "text": "공수를 부을 때 확인합니다", "why": "★ 「부을」이 활용형 목록에 없었다 — 형태소 대조가 짚음"}
+{"case_id": "C-097", "expect": "finding", "form": "prose", "kind": "업무 글에 없는 말", "source": "형태소 대조 2026-09-14", "status": "pinned", "text": "커밋을 20시에 걷습니다", "why": "★ 사이에 시각이 끼어 6자 창으로는 못 닿았다 — 10자로 넓힘"}
+{"case_id": "C-098", "expect": "clean", "form": "prose", "kind": null, "source": "형태소 대조 2026-09-14", "status": "pinned", "text": "진행 단계를 전부 걷어냅니다", "why": "「걷어내다」는 제거라 정당하다 — 창을 넓혀도 예외가 살아 있는지 보는 시료"}
+{"case_id": "C-099", "expect": "clean", "form": "prose", "kind": null, "source": "창 넓히기가 드러낸 미비 2026-09-14", "status": "pinned", "text": "커밋에서 진행을 걷어냅니다", "why": "★ 「걷어냅니다」 — 내 + ㅂ니다 결합형 · 예외 목록에 없어 창을 넓히자 걸렸다"}
+{"case_id": "C-100", "expect": "clean", "form": "prose", "kind": null, "source": "창 넓히기가 드러낸 미비 2026-09-14", "status": "pinned", "text": "로그에서 옛 항목을 걷어냈습니다", "why": "「걷어냈」 결합형 · 같은 예외"}
