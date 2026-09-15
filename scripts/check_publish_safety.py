@@ -135,10 +135,19 @@ def history_blobs(repo):
         yield f"{rel}@{sha[:8]}", body
 
 
-def scan(patterns, pairs, terms=()):
+#: 이름·회사를 **막는 갈래로 보는** 파일 — 자료 파일이다.
+#   ⛔ 산문·코드에서는 막지 않는다. 실측(artifact-host) — 「네이버 Yeti·다음 Daum·
+#      카카오톡」이 **크롤러 이름 목록**인데 고객사 언급으로 잡혔다. 사람 이름과
+#      회사 이름은 문맥이 있어야 갈리므로, 문맥이 없는 자료 파일에서만 막는다.
+#      나간 사고가 바로 그 모양이었다 — 빈도표(`.json`)의 낱말 하나에 횟수만 붙은 꼴.
+DATA_SUFFIX = {".json", ".jsonl", ".csv", ".tsv", ".yaml", ".yml", ".toml"}
+
+
+def scan(patterns, pairs, terms=(), data_only_terms=True):
     found = []
     for rel, text in pairs:
-        for t in terms:
+        is_data = pathlib.Path(rel.split("@")[0]).suffix.lower() in DATA_SUFFIX
+        for t in terms if (is_data or not data_only_terms) else ():
             for m in re.finditer(re.escape(t), text):
                 line = text[:m.start()].count("\n") + 1
                 found.append(("신원 목록의 이름·회사", rel, line, t,
@@ -209,7 +218,11 @@ def main(argv=None):
         print("   이력은 안 봤습니다 — 공개 저장소는 `--history` 로 함께 봅니다")
 
     if args.all:
-        notes = scan(NOTE, pairs)
+        # 산문·코드 속 이름·회사는 여기서 사람에게 보인다 — 막지는 않는다
+        notes = scan(NOTE, pairs, terms, data_only_terms=False)
+        notes = [n for n in notes
+                 if n[0] != "신원 목록의 이름·회사"
+                 or pathlib.Path(n[1].split("@")[0]).suffix.lower() not in DATA_SUFFIX]
         print(f"\n참고 {len(notes)}건 — 정당한 쓰임이 섞이므로 막지 않는다")
         seen = set()
         for name, rel, line, hit, src, _ in notes:
