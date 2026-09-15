@@ -372,11 +372,17 @@ def main():
     if not files and not korean_files:
         return 0
 
+    # ⛔ **시험 통로.** 상태를 읽지도 쓰지도 않는다 — 「파일당 세션 1회」 때문에
+    #    같은 파일로 두 번 재면 둘째가 조용하고, 그것을 「이 도구를 안 본다」로
+    #    읽게 된다. 2026-09-15 에 그 오독을 **세 번** 했다. 재현 시험이 상태를
+    #    공유하지 않게 이 통로로 부른다.
+    probe = "--probe" in sys.argv
+
     key = str(payload.get("session_id") or "-")
     # 안내는 발행 경로(always)에서도 문서마다 한 번만 내야 하므로 상태가 필요하다.
     # 노션 발행 하나가 수십 번 호출된다(하루 46회 · 문서로는 6.4건).
-    state = load()
-    seen = state.setdefault(key, {}) if mode == "once" else {}
+    state = {} if probe else load()
+    seen = state.setdefault(key, {}) if (mode == "once" and not probe) else {}
 
     blocks = []
     for fp in files:

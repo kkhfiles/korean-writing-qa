@@ -16,10 +16,10 @@
 |---|---|---|
 | `규칙` | 검사기가 잡는다 | 그 문장을 넣으면 실제로 지적이 난다 |
 | `단어 점검` | 단어 점검이 그 말을 집는다 | 단어 점검 목록에 그 낱말의 원형이 오른다 |
-| `사람` | 문맥을 봐야 갈린다 · 기계 밖 | 맡은 스킬 파일이 실제로 있고 그 대목을 적고 있다 |
+| `2층` | 문맥을 봐야 갈린다 · 규칙집을 읽는 모델이나 사람이 본다 | 맡은 스킬 파일이 실제로 있고 그 대목을 적고 있다 |
 | `대기` | 규칙으로 올릴 것 · 아직 안 올림 | 사례집에 `open` 으로 박혀 있다 |
 
-⚠️ **「사람」을 도피처로 쓰지 않는다.** 기계로 못 가른다는 판정에는 근거가 필요하고,
+⚠️ **「2층」을 도피처로 쓰지 않는다.** 기계로 못 가른다는 판정에는 근거가 필요하고,
    그 근거는 스킬에 적혀 있어야 한다. 스킬이 안 적고 있으면 이 시험이 깨진다.
 """
 
@@ -40,7 +40,7 @@ import repo_paths  # noqa: E402
 LEDGER = repo_paths.REPO / "data" / "cases" / "flagged-rounds.jsonl"
 CASES = repo_paths.REPO / "data" / "cases" / "contributed.jsonl"
 SWEEP = repo_paths.REPO / "scripts" / "rare_words.py"
-OWNERS = {"규칙", "단어 점검", "사람", "대기"}
+OWNERS = {"규칙", "단어 점검", "2층", "대기"}
 
 #: 「대기」는 **내려가기만 한다.** 새 지적을 대기로 밀어 넣어 쌓는 것을 막는다.
 #: 올리려면 왜 늘어야 하는지를 사람이 판단해 이 수를 고친다.
@@ -154,34 +154,34 @@ class SweepOwnedTests(unittest.TestCase):
             + "\n".join(f"  {r['flag_id']} 「{r['text']}」 기대 {w}" for r, w in missed))
 
 
-class HumanOwnedTests(unittest.TestCase):
-    """주인이 「사람」이면 그 판단이 스킬에 적혀 있어야 한다.
+class Layer2OwnedTests(unittest.TestCase):
+    """주인이 「2층」이면 그 판단이 스킬에 적혀 있어야 한다.
 
-    ⚠️ 「사람이 본다」는 **아무도 안 본다**로 쉽게 미끄러진다. 맡은 곳을 적게 하고,
+    ⚠️ 「2층이 본다」는 **아무도 안 본다**로 쉽게 미끄러진다. 맡은 곳을 적게 하고,
        그 곳이 실제로 있는지 본다.
     """
 
     def test_the_named_skill_exists_and_covers_it(self) -> None:
-        rows = [r for r in LEDGER_ROWS if r["owner"] == "사람"]
+        rows = [r for r in LEDGER_ROWS if r["owner"] == "2층"]
         if not rows:
-            self.skipTest("사람이 맡은 지적이 없다")
+            self.skipTest("2층이 맡은 지적이 없다")
         for r in rows:
             m = re.search(r"([a-z][a-z0-9-]+)\s*§", r["note"])
             self.assertIsNotNone(
-                m, f"{r['flag_id']}: 「사람」이면 note 에 맡은 스킬을 "
+                m, f"{r['flag_id']}: 「2층」이면 note 에 맡은 스킬을 "
                    f"「finalize-korean-document §8」 꼴로 적어야 합니다 — {r['note']}")
             skill = repo_paths.REPO / "skills" / m.group(1) / "SKILL.md"
             self.assertTrue(skill.is_file(), f"{r['flag_id']}: 스킬이 없습니다 — {skill}")
 
     def test_the_skill_names_the_defect_kinds(self) -> None:
         """스킬 본문이 문맥 결함 갈래를 실제로 적고 있는지."""
-        rows = [r for r in LEDGER_ROWS if r["owner"] == "사람"]
+        rows = [r for r in LEDGER_ROWS if r["owner"] == "2층"]
         if not rows:
-            self.skipTest("사람이 맡은 지적이 없다")
+            self.skipTest("2층이 맡은 지적이 없다")
         text = (repo_paths.REPO / "skills" / "finalize-korean-document"
                 / "SKILL.md").read_text(encoding="utf-8")
         self.assertIn("고치다 논리를 깬 곳", text,
-                      "문맥 층이 논리 결함 갈래를 안 적고 있습니다 — 「사람」이 빈 약속이 됩니다")
+                      "문맥 층이 논리 결함 갈래를 안 적고 있습니다 — 「2층」이 빈 약속이 됩니다")
 
 
 class WaitingOwnedTests(unittest.TestCase):

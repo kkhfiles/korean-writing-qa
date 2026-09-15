@@ -4,7 +4,7 @@
 지시하고, 무엇이 안 잡히는지는 이 표시가 알려 준다. 표시가 낡으면 두 방향으로 틀린다 —
 이미 잡히는 것을 또 보거나, **안 잡히는 것을 잡힌 줄 알고 건너뛴다.** 뒤쪽이 위험하다.
 
-규칙을 `[사람]` 에서 `[스킬]` 로 옮기는 것이 이 프로젝트의 본 작업이므로 표시는 자주
+규칙을 `[2층]` 에서 `[스킬]` 로 옮기는 것이 이 프로젝트의 본 작업이므로 표시는 자주
 바뀐다. 바뀔 때 문서도 함께 고치도록 여기서 막는다.
 """
 
@@ -32,19 +32,19 @@ BODY_LINE = "7행"
 
 # (원칙, 대표 문장, core-rules.md 에 적은 담당)
 CASES = [
-    ("압축한 명사구 풀기", "테스트를 만드는 구간에서 공수가 든다는 뜻", "사람"),
+    ("압축한 명사구 풀기", "테스트를 만드는 구간에서 공수가 든다는 뜻", "2층"),
     ("막연한 비유 — 경로", "제품화 경로를 검토", "스킬"),
     ("막연한 비유 — 자리", "규칙을 넣을 자리를 정함", "전역"),
     ("지어낸 명사구 — 판·창·결", "모으는 창을 하루로 잡음", "전역"),
-    ("지어낸 명사구 — 값·축·층", "코드가 계산하는 값을 그대로 적음", "사람"),
-    ("실무 행위 밝히기", "이 문제를 AI로 푼다는 뜻", "사람"),
-    ("계획과 결과 구분", "커버리지를 더 올린다는 뜻", "사람"),
-    ("번역투", "검증 자동화에 대한 검토 결과", "사람"),
-    ("불필요한 영어", "TEST 자동화 도입 검토", "사람"),
-    ("기계적 병렬", "첫째 항목임. 둘째 항목임. 셋째 항목임", "사람"),
+    ("지어낸 명사구 — 값·축·층", "코드가 계산하는 값을 그대로 적음", "2층"),
+    ("실무 행위 밝히기", "이 문제를 AI로 푼다는 뜻", "2층"),
+    ("계획과 결과 구분", "커버리지를 더 올린다는 뜻", "2층"),
+    ("번역투", "검증 자동화에 대한 검토 결과", "2층"),
+    ("불필요한 영어", "TEST 자동화 도입 검토", "2층"),
+    ("기계적 병렬", "첫째 항목임. 둘째 항목임. 셋째 항목임", "2층"),
     ("장식 — 평가 수식어", "강력한 검증 엔진 도입", "전역"),
-    ("장식 — 뜻 없는 이모지", "🟢 진행 중 · 🟡 검토 중", "사람"),
-    ("군더더기 지우기", "또한 그리고 아울러 검토를 수행함", "사람"),
+    ("장식 — 뜻 없는 이모지", "🟢 진행 중 · 🟡 검토 중", "2층"),
+    ("군더더기 지우기", "또한 그리고 아울러 검토를 수행함", "2층"),
     ("소리 내어 읽기 — 절단형", "산출물은 해당 폴더에", "전역"),
 ]
 
@@ -83,7 +83,7 @@ class CoreRulesMarkerTests(unittest.TestCase):
             )
         if skill_hit:
             return "스킬"
-        return "전역" if global_hit else "사람"
+        return "전역" if global_hit else "2층"
 
     def test_each_marker_matches_the_checkers(self) -> None:
         for name, line, claimed in CASES:
@@ -113,7 +113,7 @@ class CoreRulesMarkerTests(unittest.TestCase):
         section = self.core_rules.split("## 공통 원칙", 1)[1].split("\n## ", 1)[0]
         for line in (l for l in section.split("\n") if l.startswith("- **")):
             with self.subTest(principle=line.split("**")[1]):
-                self.assertRegex(line, r"\[(스킬|전역|사람)")
+                self.assertRegex(line, r"\[(스킬|전역|2층)")
 
     def test_the_english_rule_keeps_its_two_exemptions(self) -> None:
         """오탐 판정에서 나온 예외가 지워지면 같은 오탐이 되돌아온다.
@@ -198,7 +198,7 @@ class CoreRulesMarkerTests(unittest.TestCase):
 
     def test_core_rules_states_who_checks_each_principle(self) -> None:
         """표시 자체가 사라지면 8단계가 근거를 잃는다."""
-        for marker in ("`[사람]`", "`[스킬: 경로]`", "`[전역: 자리]`"):
+        for marker in ("`[2층]`", "`[스킬: 경로]`", "`[전역: 자리]`"):
             with self.subTest(marker=marker):
                 self.assertIn(marker, self.core_rules)
 
