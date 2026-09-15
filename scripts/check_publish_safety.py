@@ -55,10 +55,12 @@ BLOCK = [
      re.compile(rf"(?:[A-Za-z]:[/\\]Users[/\\]|/home/|/Users/)(?!{PLACEHOLDER}\b)"
                 r"[A-Za-z0-9][A-Za-z0-9._-]{1,}"),
      "계정 이름이 드러난다 — `Path.home()` 이나 환경 변수로 바꿀 것"),
-    # ⛔ 꾸러미 판 표기를 메일로 안 본다 — 「claude-agent-sdk@0.3.143」이 걸렸다.
-    #    뒤가 숫자와 점으로만 되어 있으면 판 번호다.
+    # ⛔ 메일이 아닌 둘을 뺀다 — 안 빼면 정당한 지적이 예시에 묻힌다.
+    #    · 꾸러미 판 표기 「claude-agent-sdk@0.3.143」 — 뒤가 숫자와 점뿐이면 판 번호다
+    #    · 대놓고 지어낸 주소 「a@b.co」·「me@example.com」 — 시료가 쓰는 꼴이다
     ("메일 주소",
-     re.compile(r"[\w.+-]+@(?![\d.]+\b)[\w-]+\.[\w.]{2,}"),
+     re.compile(r"(?![a-z]@[a-z]\.[a-z]{2,3}\b)[\w.+-]+@(?![\d.]+\b)"
+                r"(?!example\.(?:com|org|net)\b|invalid\b|localhost\b)[\w-]+\.[\w.]{2,}"),
      "받는 사람이 스팸을 받는다 — 지우거나 역할 이름으로"),
     # ⛔ 안내서의 예시 열쇠를 안 잡는다 — 「xoxb-your-bot-token」이 걸렸다.
     #    진짜 슬랙 열쇠는 숫자와 영문이 섞인 토막이라 「your」·「example」이 안 들어간다.
