@@ -28,6 +28,10 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 TABLE = os.path.join(HERE, "..", "data", "catalog", "work-korean-freq.json")
 KEEP = {"NNG", "VV", "VA", "MAG", "XR"}
 
+#: 빈도표가 담지 않는 구간 — `scripts/scrub_freq_table.py` 의 `FLOOR` 와 같아야 한다.
+#   시험 `tests/test_freq_table_has_no_identity.py` 가 둘을 대조한다.
+FLOOR = 40
+
 # 세지 않는 것 — 드문 것이 정상이라 목록에 있으면 소음이 된다.
 SKIP = re.compile(r"^[A-Za-z0-9]+$")
 
@@ -81,14 +85,21 @@ def main():
               f"기준선 {args.max}회 이하 {len(rare)}종")
         for key, mine, base in rare[:args.top]:
             form, tag = key.rsplit("/", 1)
+            # ⛔ 표에 없는 낱말을 「0회」로 찍으면 **안 쓰는 말이라고 읽힌다.**
+            #    표는 훑개가 안 읽는 구간(문턱 이하·한 글자)을 빼고 담으므로
+            #    없다는 것은 「그 아래」라는 뜻이지 부재가 아니다. 전역 규칙의
+            #    「부정 단정을 네 갈래로」가 그대로 걸린다 — 부재와 미기재를 가른다.
+            shown = f"{base:>4}회" if key in freq else f"≤{FLOOR:<3}회"
             print(f"   {form:>10}/{tag:<3} 이 문서 {mine:>2}회 · 기준선 "
-                  f"{base:>4}회   {where[key]}")
+                  f"{shown}   {where[key]}")
         if len(rare) > args.top:
             print(f"   … 그 밖에 {len(rare)-args.top}종")
         print()
 
     print(f"기준선 — 사람이 쓴 업무 한국어 {data['docs']:,}건 · "
           f"{data['chars']:,}자 · 낱말 {len(freq):,}종")
+    print(f"   표는 {FLOOR}회 이하와 한 글자를 안 담습니다 — 훑개가 그 둘을 "
+          "없는 낱말과 똑같이 다루기 때문입니다(「≤{0}회」가 그 뜻).".format(FLOOR))
     print("⚠️ 드문 것이 곧 틀린 것은 아닙니다 — 볼 곳을 좁혀 줄 뿐입니다.")
 
 
