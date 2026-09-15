@@ -86,6 +86,20 @@ class MorphFallbackTests(unittest.TestCase):
         self.assertIn("「보내는 때」", out,
                       f"어간이 빠진 채 지적했습니다 — 어느 말인지 안 보입니다:\n{out}")
 
+    def test_the_hit_carries_no_markup(self):
+        """★ 지적에 실린 말에 마크업 기호가 딸려 나오면 안 된다.
+
+        어절 처음부터 자르게 고친 까닭이 「어느 말이 걸렸는지 보이게」인데, 기호가
+        붙으면 그 목적이 반만 이뤄진다 — 「**다루는 때」·「[묻는 때」로 나가고 있었다.
+        베토는 진작 기호를 빈칸으로 바꿔 보고 있었고 이쪽만 빠져 있었다(2026-09-14).
+        """
+        doc = ("---\nform: prose\n---\n\n# 사례\n\n**검사 대상** — 한 줄\n\n"
+               "- **다루는 때**가 다릅니다\n"
+               "- [묻는 때](x.md)를 옮겼습니다\n")
+        out = run(doc, block=False)
+        self.assertIn("「다루는 때」", out, f"굵게 기호가 딸려 나왔습니다:\n{out}")
+        self.assertIn("「묻는 때」", out, f"링크 기호가 딸려 나왔습니다:\n{out}")
+
     def test_the_particle_veto_keeps_everything_without_the_analyzer(self):
         """★ 베토도 대비책 경로가 있다 — 없으면 **그대로 둔다**.
 
