@@ -94,14 +94,24 @@ SKIP_SUFFIX = {".woff2", ".woff", ".ttf", ".otf", ".png", ".jpg", ".jpeg",
 
 
 def identity_terms():
-    """저장소 밖 신원 목록. 없으면 빈 집합 — 부른 쪽이 알린다."""
+    """저장소 밖 신원 목록을 절별로 읽는다. 없으면 빈 것 — 부른 쪽이 알린다.
+
+    ★ 사람 이름과 회사 이름은 **막는 세기가 달라야 한다**(2026-09-15 실측).
+    회사 이름은 산문에 정당하게 나온다 — 「네이버 `Yeti`·다음 `Daum`·카카오톡」이
+    크롤러 목록인데 고객사 언급으로 잡혔다. 사람 이름은 그런 쓰임이 없다.
+    """
+    out = {"이름": set(), "회사": set(), "조직": set()}
     if not DENYLIST.exists():
-        return set()
-    out = set()
+        return out
+    section = None
     for line in DENYLIST.read_text(encoding="utf-8").splitlines():
         line = line.split("#")[0].strip()
-        if line and not line.startswith("["):
-            out.add(line)
+        head = re.fullmatch(r"\[(.+)\]", line)
+        if head:
+            section = head.group(1).strip()
+            out.setdefault(section, set())
+        elif line and section:
+            out[section].add(line)
     return out
 
 
@@ -135,24 +145,38 @@ def history_blobs(repo):
         yield f"{rel}@{sha[:8]}", body
 
 
-#: 이름·회사를 **막는 갈래로 보는** 파일 — 자료 파일이다.
-#   ⛔ 산문·코드에서는 막지 않는다. 실측(artifact-host) — 「네이버 Yeti·다음 Daum·
-#      카카오톡」이 **크롤러 이름 목록**인데 고객사 언급으로 잡혔다. 사람 이름과
-#      회사 이름은 문맥이 있어야 갈리므로, 문맥이 없는 자료 파일에서만 막는다.
-#      나간 사고가 바로 그 모양이었다 — 빈도표(`.json`)의 낱말 하나에 횟수만 붙은 꼴.
+#: 회사 이름을 막는 갈래로 보는 파일 — 자료 파일이다.
 DATA_SUFFIX = {".json", ".jsonl", ".csv", ".tsv", ".yaml", ".yml", ".toml"}
 
 
-def scan(patterns, pairs, terms=(), data_only_terms=True):
+def scan(patterns, pairs, deny=None, advisory=False):
+    """`deny` 는 절별 신원 목록. `advisory` 면 막는 쪽에서 뺀 것만 낸다.
+
+    ⛔ **사람 이름은 어느 파일에서든 막는다.** 처음에는 자료 파일로만 좁혔는데,
+       근거가 「이번 사고가 자료 파일 모양이었다」라는 **한 건의 모양**이었다.
+       심어서 재 보니 산문(`.md`)·코드(`.py`)의 실명이 통째로 빠져나갔다
+       (다른 세션이 그 일반화를 짚어 줘서 확인했다).
+    ⚠️ 회사 이름만 자료 파일로 좁힌다 — 산문에 정당하게 나오기 때문이다(크롤러 목록).
+    """
+    deny = deny or {}
     found = []
     for rel, text in pairs:
         is_data = pathlib.Path(rel.split("@")[0]).suffix.lower() in DATA_SUFFIX
-        for t in terms if (is_data or not data_only_terms) else ():
-            for m in re.finditer(re.escape(t), text):
-                line = text[:m.start()].count("\n") + 1
-                found.append(("신원 목록의 이름·회사", rel, line, t,
-                              " ".join(text.splitlines()[line - 1].split())[:96],
-                              "저장소 밖 목록에 적힌 사람·회사다"))
+        buckets = []
+        if not advisory:
+            buckets = [("사람 이름", deny.get("이름", ())),
+                       ("사내 조직", deny.get("조직", ()))]
+            if is_data:
+                buckets.append(("회사·고객사", deny.get("회사", ())))
+        elif not is_data:
+            buckets = [("회사·고객사", deny.get("회사", ()))]
+        for label, terms in buckets:
+            for t in terms:
+                for m in re.finditer(re.escape(t), text):
+                    line = text[:m.start()].count("\n") + 1
+                    found.append((f"신원 목록의 {label}", rel, line, t,
+                                  " ".join(text.splitlines()[line - 1].split())[:96],
+                                  "저장소 밖 목록에 적힌 것이다"))
         for name, pattern, *fix in patterns:
             for m in pattern.finditer(text):
                 line = text[:m.start()].count("\n") + 1
@@ -185,7 +209,7 @@ def main(argv=None):
         print(f"⛔ Git 저장소가 아닙니다: {repo}")
         return 2
 
-    terms = identity_terms()
+    deny = identity_terms()
     files = list(read_files(tracked_files(repo)))
     pairs = list(files)
     if args.history:
@@ -193,10 +217,13 @@ def main(argv=None):
 
     print(f"저장소 {repo} · 추적 파일 {len(files)}개"
           + (f" · 이력 판 {len(pairs) - len(files)}개" if args.history else ""))
-    if not terms:
+    if not any(deny.values()):
         print(f"⚠️ 신원 목록이 없습니다({DENYLIST.name}) — 이름·회사는 안 봅니다")
+    else:
+        print(f"   신원 목록 — 이름 {len(deny['이름'])} · 회사 {len(deny['회사'])}"
+              f" · 조직 {len(deny['조직'])} (사람 이름은 어느 파일에서든 막음)")
 
-    blocked = scan(BLOCK, pairs, terms)
+    blocked = scan(BLOCK, pairs, deny)
     if blocked:
         print(f"\n⛔ 나가면 안 되는 것 {len(blocked)}건\n")
         seen = set()
@@ -211,7 +238,7 @@ def main(argv=None):
         print()
     else:
         print("통과 — 계정 이름·메일·열쇠·사내 주소·지라 키·메신저 아이디 없음"
-              + (" (이름·회사 포함)" if terms else ""))
+              + (" · 목록의 이름·조직 없음" if any(deny.values()) else ""))
 
     print("⚠️ 아직 안 알린 계획은 이 검사가 안 봅니다 — 사람이 읽습니다")
     if not args.history:
@@ -219,10 +246,7 @@ def main(argv=None):
 
     if args.all:
         # 산문·코드 속 이름·회사는 여기서 사람에게 보인다 — 막지는 않는다
-        notes = scan(NOTE, pairs, terms, data_only_terms=False)
-        notes = [n for n in notes
-                 if n[0] != "신원 목록의 이름·회사"
-                 or pathlib.Path(n[1].split("@")[0]).suffix.lower() not in DATA_SUFFIX]
+        notes = scan(NOTE, pairs, deny, advisory=True)
         print(f"\n참고 {len(notes)}건 — 정당한 쓰임이 섞이므로 막지 않는다")
         seen = set()
         for name, rel, line, hit, src, _ in notes:
