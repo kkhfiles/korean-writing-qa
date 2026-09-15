@@ -51,6 +51,19 @@ TABLE = os.path.normpath(os.path.join(HERE, "..", "data", "catalog", "work-korea
 #: 훑개가 실제로 읽는 품사 — 이 밖은 표에 둘 이유가 없다
 KEEP_TAGS = {"NNG", "VV", "VA", "MAG", "XR"}
 
+#: 이 횟수 **이하**는 표에서 뺀다 — 훑개가 없는 낱말과 똑같이 다루기 때문이다.
+#   `rare_words.py` 는 `freq.get(key, 0) <= --max` 로 판정하고 `--max` 기본이 40이다.
+#   그러니 40회 이하 항목은 있으나 없으나 같은 답이 나온다 — 기능은 0을 보태면서
+#   **신원만 나른다.** 2026-09-15 2차 점검에서 항목 11,257 중 7,800이 여기 걸렸고,
+#   그 안에 회사 이름 25종·학교 5종·사람 이름 다수가 있었다.
+#   ⛔ 이 값을 올리면 훑개 판정이 바뀐다 — `rare_words.py` 의 기본 `--max` 와
+#      같아야 하고, `tests/test_freq_table_has_no_identity.py` 가 둘을 대조한다.
+FLOOR = 40
+
+#: 글자 수가 이보다 적으면 뺀다 — 훑개가 `len(tok.form) < 2` 로 건너뛴다.
+#   성씨와 이름 낱자(「박」·「홍」·「욱」·「혜」)가 여기 모여 있었다.
+MIN_LEN = 2
+
 _SURNAME = ("김이박최정강조윤장임한오서신권황안송류전홍고문양손배백허유남심노"
             "하곽성차주우구민진지엄채원천방공함변염여추설마길연위표명기반왕")
 #: 사람 이름 꼴 — 성 한 글자 + 이름 **두 글자**
@@ -108,9 +121,14 @@ def identifying(form: str, proper: set[str]) -> str | None:
         return "회사·고객사"
     if form in PLACE:
         return "주소·조직"
+    if form in NAMES_SEEN:
+        # ⛔ 사람이 적어 준 이름은 **모양을 안 따진다.** 성씨 목록에 없는 성이 있다 —
+        #    2026-09-15 2차 점검에서 옥·나·판으로 시작하는 이름 셋이 모양 판정을
+        #    빠져나가 공개된 표에 그대로 남아 있었다. 목록에 적혔다는 것이 곧 판정이다.
+        return "사람 이름"
     if NAME_TITLE.match(form):
         return "사람 이름"
-    if NAME_SHAPE.match(form) and (form in proper or form in NAMES_SEEN):
+    if NAME_SHAPE.match(form) and form in proper:
         return "사람 이름"
     return None
 
@@ -131,9 +149,10 @@ def main() -> int:
     proper = {k.rsplit("/", 1)[0] for k in freq if k.endswith("/NNP")}
 
     # ① 이름을 먼저 모은다 — 직함이 붙은 꼴을 지우려면 이름 목록이 있어야 한다
+    # 목록에 적힌 이름은 모양을 안 따진다 — 성씨 목록 밖의 성이 있다(옥·나·판).
     found = {form for k in freq
              for form in [k.rsplit("/", 1)[0]]
-             if NAME_SHAPE.match(form) and (form in proper or form in NAMES_SEEN)}
+             if form in NAMES_SEEN or (NAME_SHAPE.match(form) and form in proper)}
 
     # ⛔ 이름 세 글자만 보면 **직함이 붙은 꼴이 살아남는다** — 「<이름>연구원님」·
     #    「<이름>선임」·「<이름>과장」이 NNG 로 남아 있었다(실측). 이름을 품은 말은
@@ -141,12 +160,15 @@ def main() -> int:
     def carries_name(form: str) -> bool:
         return any(nm in form for nm in found)
 
-    dropped_tag, dropped_name = [], []
+    dropped_tag, dropped_name, dropped_floor = [], [], []
     kept = {}
     for key, n in freq.items():
         form, tag = key.rsplit("/", 1)
         if tag not in KEEP_TAGS:
             dropped_tag.append((key, n))
+            continue
+        if n <= FLOOR or len(form) < MIN_LEN:
+            dropped_floor.append((key, n))
             continue
         kind = identifying(form, proper) or ("사람 이름" if carries_name(form) else None)
         if kind:
@@ -157,6 +179,8 @@ def main() -> int:
     print(f"표 {TABLE}")
     print(f"  항목 {before} → {len(kept)}")
     print(f"  품사로 뺌 {len(dropped_tag)}종 (훑개가 안 읽는 품사)")
+    print(f"  {FLOOR}회 이하·{MIN_LEN}글자 미만이라 뺌 {len(dropped_floor)}종 "
+          "(훑개가 안 읽거나 없는 낱말과 똑같이 봄)")
     print(f"  신원으로 뺌 {len(dropped_name)}종 (NNP 에도 있고 신원 꼴인 것)\n")
 
     for kind in ("사람 이름", "회사·고객사", "주소·조직"):

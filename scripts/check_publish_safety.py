@@ -198,7 +198,15 @@ def scan(patterns, pairs, deny=None, advisory=False):
             buckets = [("회사·고객사", deny.get("회사", ()))]
         for label, terms in buckets:
             for t in terms:
-                for m in re.finditer(re.escape(t), text):
+                # ⛔ 이름·조직은 **낱말 머리에서만** 찾는다 — 목록 파일이 스스로
+                #    「낱말 전체가 이것과 같을 때만」이라 적어 뒀는데 검사기는 부분
+                #    문자열로 찾고 있었다. 두 쪽이 어긋나 이름 끝 두 글자를 목록에
+                #    넣으면 그 두 글자를 품은 보통 낱말이 통째로 막힌다.
+                #    ⛔ 여기에 실제 예시를 적지 않는다 — 적는 순간 이 파일이 명단이다.
+                #    앞 글자가 한글이면 다른 낱말의 속이다. 뒤는 안 본다 — 한국어
+                #    이름 뒤에는 조사·직함이 바로 붙는다(「홍길동이」·「홍길동 책임」).
+                pat = re.escape(t) if label == "회사·고객사" else r"(?<![가-힣])" + re.escape(t)
+                for m in re.finditer(pat, text):
                     line = text[:m.start()].count("\n") + 1
                     found.append((f"신원 목록의 {label}", rel, line, t,
                                   " ".join(text.splitlines()[line - 1].split())[:96],
