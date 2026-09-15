@@ -266,15 +266,22 @@ def main(argv=None):
               " — 급하지 않으나 종료 코드는 1이다\n")
     elif blocked:
         print(f"\n⛔ 나가면 안 되는 것 {len(blocked)}건\n")
-        seen = set()
+        seen, folded = set(), 0
         for name, rel, line, hit, src, fix in blocked:
             if (name, rel.split("@")[0], hit) in seen:
+                folded += 1
                 continue
             seen.add((name, rel.split("@")[0], hit))
             print(f"  [{name}] {rel}:{line}  「{hit}」")
             print(f"      {src}")
             if fix:
                 print(f"      → {fix}")
+        # ⛔ **접은 것을 안 적으면 머리글과 목록이 어긋난다.** 「48건」이라 써 놓고 13줄만
+        #    보이면 읽는 사람은 35건이 숨은 줄 안다. 이력을 볼 때 같은 파일의 옛 판이
+        #    겹쳐 그 차이가 세 배까지 벌어졌다(2026-09-15 실측).
+        if folded:
+            print(f"  ↳ 같은 파일·같은 낱말이라 접은 것 {folded}건 — "
+                  f"위 {len(seen)}줄이 전부입니다(이력의 옛 판이 여기 겹칩니다)")
         print()
     else:
         print("통과 — 계정 이름·메일·열쇠·사내 주소·지라 키·메신저 아이디 없음"
@@ -288,13 +295,17 @@ def main(argv=None):
         # 산문·코드 속 이름·회사는 여기서 사람에게 보인다 — 막지는 않는다
         notes = scan(NOTE, pairs, deny, advisory=True)
         print(f"\n참고 {len(notes)}건 — 정당한 쓰임이 섞이므로 막지 않는다")
-        seen = set()
+        seen, folded = set(), 0
         for name, rel, line, hit, src, _ in notes:
             key = (name, rel.split("@")[0])
             if key in seen:
+                folded += 1
                 continue
             seen.add(key)
             print(f"  [{name}] {rel}:{line}  「{hit}」")
+        if folded:
+            print(f"  ↳ 같은 파일·같은 갈래라 접은 것 {folded}건 — "
+                  f"위 {len(seen)}줄이 전부입니다")
 
     # ⛔ 안 나가는 저장소라도 **종료 코드는 그대로 1** 이다. 「원격이 없다」는 오늘의
     #    사실일 뿐 내일 생길 수 있고, 안전장치는 안전한 쪽으로 틀려야 한다.
