@@ -1,0 +1,38 @@
+{"flag_id": "F-001", "round": 1, "text": "걷습니다", "sentence": "커밋에서 진행을 걷습니다", "owner": "규칙", "note": "업무 글에 없는 말"}
+{"flag_id": "F-002", "round": 1, "text": "던지기", "sentence": "한 줄 던지기로 끝납니다", "owner": "규칙", "note": "업무 글에 없는 말"}
+{"flag_id": "F-003", "round": 1, "text": "잰 값", "sentence": "잰 값을 표에 싣습니다", "owner": "규칙", "note": "업무 글에 없는 말"}
+{"flag_id": "F-004", "round": 1, "text": "앞세우는 것", "sentence": "정확도를 앞세우는 것이 낫습니다", "owner": "규칙", "note": "업무 글에 없는 말"}
+{"flag_id": "F-005", "round": 1, "text": "돌아가는 설치", "sentence": "돌아가는 설치가 셋입니다", "owner": "규칙", "note": "업무 글에 없는 말"}
+{"flag_id": "F-006", "round": 2, "text": "묻는 때", "sentence": "묻는 때를 정합니다", "owner": "규칙", "note": "지어낸 명사구 — 「~는 때」"}
+{"flag_id": "F-007", "round": 2, "text": "다루는 때", "sentence": "Dispatch 와 Mycelium 은 다루는 때가 다릅니다", "owner": "규칙", "note": "지어낸 명사구 — 「~는 때」"}
+{"flag_id": "F-008", "round": 2, "text": "드는 값", "sentence": "모델에 드는 값을 줄였습니다", "owner": "규칙", "note": "지어낸 명사구 — 값이 목적어가 못 됨"}
+{"flag_id": "F-009", "round": 2, "text": "잰 날", "sentence": "잰 날과 옛 값을 함께 싣습니다", "owner": "규칙", "note": "업무 글에 없는 말 · 2026-09-15 에 명사 목록을 걷어내며 덮음"}
+{"flag_id": "F-010", "round": 2, "text": "쟀는지", "sentence": "무엇을 언제 쟀는지 값마다 붙여 둡니다", "owner": "규칙", "note": "업무 글에 없는 말 · 2026-09-15 에 「에서 쟀」 제약을 풀며 덮음"}
+{"flag_id": "F-011", "round": 2, "text": "없앤", "sentence": "적는 일을 없앤 업무 비서입니다", "owner": "훑개", "note": "없애/VV"}
+{"flag_id": "F-012", "round": 2, "text": "없앱니다", "sentence": "적는 일을 없앱니다", "owner": "훑개", "note": "없애/VV"}
+{"flag_id": "F-013", "round": 2, "text": "없앤 손일", "sentence": "없앤 손일이 넷입니다", "owner": "훑개", "note": "없애/VV"}
+{"flag_id": "F-014", "round": 2, "text": "알아보는 정확도", "sentence": "알아보는 정확도가 92퍼센트입니다", "owner": "훑개", "note": "알아보/VV · 정확도/NNG"}
+{"flag_id": "F-015", "round": 2, "text": "글이 좋은지 나쁜지는 안 봄", "sentence": "글이 좋은지 나쁜지는 안 봄", "owner": "훑개", "note": "나쁘/VA"}
+{"flag_id": "F-016", "round": 2, "text": "통과시켜 잼", "sentence": "사내 보고서를 그대로 통과시켜 잼", "owner": "훑개", "note": "통과/NNG"}
+{"flag_id": "F-017", "round": 2, "text": "모델을 안 부름", "sentence": "고칠 때 모델을 안 부름", "owner": "훑개", "note": "부르/VV"}
+{"flag_id": "F-018", "round": 2, "text": "돌아오는 것", "sentence": "돌아오는 것이 셋입니다", "owner": "훑개", "note": "돌아오/VV"}
+{"flag_id": "F-019", "round": 2, "text": "한글 교정기는 아예 안 부릅니다", "sentence": "한글 교정기는 아예 안 부릅니다", "owner": "훑개", "note": "교정/NNG · 부르/VV · 아예/MAG"}
+{"flag_id": "F-020", "round": 2, "text": "성가시고 말지만", "sentence": "잘못 띄운 것은 한 줄이 성가시고 말지만 잘못 버린 것은 흔적이 없습니다", "owner": "훑개", "note": "성가시/VA"}
+{"flag_id": "F-021", "round": 2, "text": "한 설치의 건수", "sentence": "한 설치의 건수입니다", "owner": "훑개", "note": "건수/NNG"}
+{"flag_id": "F-022", "round": 2, "text": "일을 하는 것과 일을 적는 것", "sentence": "일을 하는 것과 일을 적는 것은 늘 따로였습니다", "owner": "사람", "note": "병렬 구조가 어색 · finalize-korean-document §8"}
+{"flag_id": "F-023", "round": 2, "text": "도구가 아니라 방식이라", "sentence": "도구가 아니라 방식이라 가져갈 수 있습니다", "owner": "사람", "note": "연결이 어색 · finalize-korean-document §8"}
+{"flag_id": "F-024", "round": 2, "text": "후보까지만 자동", "sentence": "되돌리기가 사람 몫인 일은 후보까지만 자동입니다", "owner": "사람", "note": "뜻이 안 통함 · finalize-korean-document §8"}
+{"flag_id": "F-025", "round": 2, "text": "물으면 아무도 답하지 않습니다", "sentence": "다 끝나고 몇 시간 뒤에 물으면 아무도 답하지 않습니다", "owner": "사람", "note": "조건과 결과가 안 맞음 · finalize-korean-document §8"}
+{"flag_id": "F-026", "round": 2, "text": "갈라서 냄", "sentence": "오류와 주의를 갈라서 냄", "owner": "대기", "note": "용언을 명사형으로 굳힘"}
+{"flag_id": "F-027", "round": 2, "text": "열어 합치기", "sentence": "열어 합치기가 한 번에 됩니다", "owner": "대기", "note": "용언을 명사형으로 굳힘"}
+{"flag_id": "F-028", "round": 2, "text": "다 보는 데", "sentence": "600여 개를 다 보는 데 걸린 시간", "owner": "대기", "note": "용언을 명사형으로 굳힘"}
+{"flag_id": "F-029", "round": 2, "text": "후보만 내고", "sentence": "후보만 내고 실행은 사람이 합니다", "owner": "대기", "note": "용언을 명사형으로 굳힘"}
+{"flag_id": "F-030", "round": 2, "text": "두는 곳", "sentence": "자료를 두는 곳입니다", "owner": "대기", "note": "관형형 + 빈 명사 「곳」"}
+{"flag_id": "F-031", "round": 2, "text": "같이 나온 것", "sentence": "셋을 만들며 같이 나온 것입니다", "owner": "대기", "note": "관형형 + 빈 명사 「것」"}
+{"flag_id": "F-032", "round": 2, "text": "앞과 뒤", "sentence": "앞과 뒤가 다릅니다", "owner": "대기", "note": "가리키는 대상이 없음"}
+{"flag_id": "F-033", "round": 2, "text": "그 앞", "sentence": "사람에게 나갈 보고서에서 걸리는 것은 그 앞이었습니다", "owner": "대기", "note": "가리키는 대상이 없음 · 전역 규칙은 「그 + 명사」를 사람 몫으로 둠"}
+{"flag_id": "F-034", "round": 2, "text": "돌고 있는", "sentence": "실무에서 매일 돌고 있는 업무 비서입니다", "owner": "대기", "note": "진행형 군더더기"}
+{"flag_id": "F-035", "round": 3, "text": "따로 기록하지 않는", "sentence": "따로 기록하지 않는 업무 비서입니다", "owner": "사람", "note": "사실과 다름 · 기록은 남는다 · finalize-korean-document §8"}
+{"flag_id": "F-036", "round": 3, "text": "물으면 기록하지 않습니다", "sentence": "업무가 끝나고 몇 시간이 지난 뒤에 물으면 아무도 기록하지 않습니다", "owner": "사람", "note": "조건과 결과가 안 맞음 · finalize-korean-document §8"}
+{"flag_id": "F-037", "round": 3, "text": "공수 넣기", "sentence": "공수 넣기는 사람이 승인합니다", "owner": "대기", "note": "용언을 명사형으로 굳힘"}
+{"flag_id": "F-038", "round": 3, "text": "기술로 말하면", "sentence": "기술로 말하면 지식 그래프 위의 검색입니다", "owner": "대기", "note": "담화 표지 · 고정 문구라 규칙으로 잡힘"}

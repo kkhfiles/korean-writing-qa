@@ -103,3 +103,14 @@
 {"case_id": "C-103", "expect": "clean", "form": "prose", "kind": "「~하는 자리」", "needs": "morph", "source": "작업 감사 2026-09-14", "status": "pinned", "text": "의도는 자리를 옮깁니다", "why": "★ 「의도」+보조사인데 「도는」이 용언 목록과 겹쳐 **오류**로 걸렸다 — 두 음절이라 믿고 뺀다"}
 {"case_id": "C-104", "expect": "clean", "form": "prose", "kind": null, "needs": "morph", "source": "작업 감사 2026-09-14", "status": "pinned", "text": "태도는 자리에 남습니다", "why": "같은 갈래 — 체언 끝이 용언 목록과 겹치는 것"}
 {"case_id": "C-105", "expect": "finding", "form": "prose", "kind": "「~하는 자리」", "needs": "morph", "source": "작업 감사 2026-09-14", "status": "pinned", "text": "매일 도는 자리에 둬야 합니다", "why": "★ 「도」가 도/NNG 로 오분석된다 — 한 음절 앞말 보호가 없으면 베토가 이 **오류**를 지운다"}
+{"case_id": "C-106", "expect": "finding", "form": "prose", "kind": null, "source": "2회차 지적 · 대장 F-026", "status": "open", "text": "오류와 주의를 갈라서 냄", "why": "용언을 명사형으로 굳힘 · 사용자 2회차 지적 「갈라서 냄」"}
+{"case_id": "C-107", "expect": "finding", "form": "prose", "kind": null, "source": "2회차 지적 · 대장 F-027", "status": "open", "text": "열어 합치기가 한 번에 됩니다", "why": "용언을 명사형으로 굳힘 · 사용자 2회차 지적 「열어 합치기」"}
+{"case_id": "C-108", "expect": "finding", "form": "prose", "kind": null, "source": "2회차 지적 · 대장 F-028", "status": "open", "text": "600여 개를 다 보는 데 걸린 시간", "why": "용언을 명사형으로 굳힘 · 사용자 2회차 지적 「다 보는 데」"}
+{"case_id": "C-109", "expect": "finding", "form": "prose", "kind": null, "source": "2회차 지적 · 대장 F-029", "status": "open", "text": "후보만 내고 실행은 사람이 합니다", "why": "용언을 명사형으로 굳힘 · 사용자 2회차 지적 「후보만 내고」"}
+{"case_id": "C-110", "expect": "finding", "form": "prose", "kind": null, "source": "2회차 지적 · 대장 F-030", "status": "open", "text": "자료를 두는 곳입니다", "why": "관형형 + 빈 명사 「곳」 · 사용자 2회차 지적 「두는 곳」"}
+{"case_id": "C-111", "expect": "finding", "form": "prose", "kind": null, "source": "2회차 지적 · 대장 F-031", "status": "open", "text": "셋을 만들며 같이 나온 것입니다", "why": "관형형 + 빈 명사 「것」 · 사용자 2회차 지적 「같이 나온 것」"}
+{"case_id": "C-112", "expect": "finding", "form": "prose", "kind": null, "source": "2회차 지적 · 대장 F-032", "status": "open", "text": "앞과 뒤가 다릅니다", "why": "가리키는 대상이 없음 · 사용자 2회차 지적 「앞과 뒤」"}
+{"case_id": "C-113", "expect": "finding", "form": "prose", "kind": null, "source": "2회차 지적 · 대장 F-033", "status": "open", "text": "사람에게 나갈 보고서에서 걸리는 것은 그 앞이었습니다", "why": "가리키는 대상이 없음 · 전역 규칙은 「그 + 명사」를 사람 몫으로 둠 · 사용자 2회차 지적 「그 앞」"}
+{"case_id": "C-114", "expect": "finding", "form": "prose", "kind": null, "source": "2회차 지적 · 대장 F-034", "status": "open", "text": "실무에서 매일 돌고 있는 업무 비서입니다", "why": "진행형 군더더기 · 사용자 2회차 지적 「돌고 있는」"}
+{"case_id": "C-115", "expect": "finding", "form": "prose", "kind": null, "source": "3회차 지적 · 대장 F-037", "status": "open", "text": "공수 넣기는 사람이 승인합니다", "why": "용언을 명사형으로 굳힘 · 사용자 3회차 지적 「공수 넣기」"}
+{"case_id": "C-116", "expect": "finding", "form": "prose", "kind": null, "source": "3회차 지적 · 대장 F-038", "status": "open", "text": "기술로 말하면 지식 그래프 위의 검색입니다", "why": "담화 표지 · 고정 문구라 규칙으로 잡힘 · 사용자 3회차 지적 「기술로 말하면」"}
