@@ -47,6 +47,13 @@ def digest(path: Path) -> str:
 def pairs() -> list[tuple[Path, Path]]:
     """정본과 설치 위치의 짝을 모두 낸다."""
     out = [(repo_paths.CHECKER, repo_paths.installed("assets", "doc-style-check.py"))]
+    # ⛔ 자체 시험도 함께 옮긴다. 전역 규칙이 `~/.claude/assets/doc-style-check-test.py`
+    #    를 쓰라고 적어 두었는데 **그 파일이 저장소 밖에 혼자 있었다** — 이력에 한 번도
+    #    없었고 여기 목록에도 없어 아무도 관리하지 않았다. 그 사이 시료가 낡아
+    #    시험이 깨진 채 여드레 동안 아무도 몰랐다(2026-09-15 발견).
+    selftest = repo_paths.CHECKER.parent / "doc-style-check-test.py"
+    if selftest.exists():
+        out.append((selftest, repo_paths.installed("assets", selftest.name)))
     for name in HOOK_FILES:
         out.append((repo_paths.hook(name), repo_paths.installed("hooks", name)))
     # `skills/` 아래를 통째로 옮긴다 — 스킬을 새로 만들 때 이 함수를 안 고쳐도 된다.

@@ -15,7 +15,7 @@
 | 주인 | 뜻 | 이 시험이 보는 것 |
 |---|---|---|
 | `규칙` | 검사기가 잡는다 | 그 문장을 넣으면 실제로 지적이 난다 |
-| `훑개` | 빈도 훑개가 그 말을 집는다 | 훑개 목록에 그 낱말의 원형이 오른다 |
+| `단어 점검` | 단어 점검이 그 말을 집는다 | 단어 점검 목록에 그 낱말의 원형이 오른다 |
 | `사람` | 문맥을 봐야 갈린다 · 기계 밖 | 맡은 스킬 파일이 실제로 있고 그 대목을 적고 있다 |
 | `대기` | 규칙으로 올릴 것 · 아직 안 올림 | 사례집에 `open` 으로 박혀 있다 |
 
@@ -40,7 +40,7 @@ import repo_paths  # noqa: E402
 LEDGER = repo_paths.REPO / "data" / "cases" / "flagged-rounds.jsonl"
 CASES = repo_paths.REPO / "data" / "cases" / "contributed.jsonl"
 SWEEP = repo_paths.REPO / "scripts" / "rare_words.py"
-OWNERS = {"규칙", "훑개", "사람", "대기"}
+OWNERS = {"규칙", "단어 점검", "사람", "대기"}
 
 #: 「대기」는 **내려가기만 한다.** 새 지적을 대기로 밀어 넣어 쌓는 것을 막는다.
 #: 올리려면 왜 늘어야 하는지를 사람이 판단해 이 수를 고친다.
@@ -125,14 +125,14 @@ class RuleOwnedTests(unittest.TestCase):
 
 
 class SweepOwnedTests(unittest.TestCase):
-    """주인이 「훑개」면 빈도 훑개 목록에 그 낱말이 올라야 한다."""
+    """주인이 「단어 점검」면 단어 점검 목록에 그 낱말이 올라야 한다."""
 
     def test_the_sweep_actually_surfaces_them(self) -> None:
-        rows = [r for r in LEDGER_ROWS if r["owner"] == "훑개"]
+        rows = [r for r in LEDGER_ROWS if r["owner"] == "단어 점검"]
         if not rows:
-            self.skipTest("훑개가 맡은 지적이 없다")
+            self.skipTest("단어 점검이 맡은 지적이 없다")
         if not morph_ok():
-            self.skipTest("형태소 분석기가 없어 훑개를 못 돌린다")
+            self.skipTest("형태소 분석기가 없어 단어 점검을 못 돌린다")
         with tempfile.TemporaryDirectory() as d:
             p = Path(d) / "t.md"
             p.write_text("# 대장\n\n" + "".join(f"- {r['sentence']}\n" for r in rows),
@@ -150,7 +150,7 @@ class SweepOwnedTests(unittest.TestCase):
                 missed.append((r, sorted(want)))
         self.assertFalse(
             missed,
-            "훑개가 맡았다고 적혔는데 목록에 안 오릅니다 — 빈도표나 문턱이 바뀌었습니다:\n"
+            "단어 점검이 맡았다고 적혔는데 목록에 안 오릅니다 — 빈도표나 문턱이 바뀌었습니다:\n"
             + "\n".join(f"  {r['flag_id']} 「{r['text']}」 기대 {w}" for r, w in missed))
 
 

@@ -14,7 +14,7 @@
 
 **세 갈래로 지운다.**
 
-1. **훑개가 안 읽는 품사 전부** — `KEEP` 은 `{NNG, VV, VA, MAG, XR}` 이라 고유명사
+1. **단어 점검이 안 읽는 품사 전부** — `KEEP` 은 `{NNG, VV, VA, MAG, XR}` 이라 고유명사
    6,434종은 **한 번도 안 읽힌다.** 지워도 기능 손실이 0이고, 이름·회사·주소가
    대부분 여기 있다.
 2. **회사·조직·사옥** — 품사를 안 따진다. 회사 이름은 어디에 붙든 신원이다.
@@ -48,21 +48,28 @@ sys.stdout.reconfigure(encoding="utf-8")
 HERE = os.path.dirname(os.path.abspath(__file__))
 TABLE = os.path.normpath(os.path.join(HERE, "..", "data", "catalog", "work-korean-freq.json"))
 
-#: 훑개가 실제로 읽는 품사 — 이 밖은 표에 둘 이유가 없다
+#: 단어 점검이 실제로 읽는 품사 — 이 밖은 표에 둘 이유가 없다
 KEEP_TAGS = {"NNG", "VV", "VA", "MAG", "XR"}
 
-#: 이 횟수 **이하**는 표에서 뺀다 — 훑개가 없는 낱말과 똑같이 다루기 때문이다.
+#: 이 횟수 **이하**는 표에서 뺀다 — 단어 점검이 없는 낱말과 똑같이 다루기 때문이다.
 #   `rare_words.py` 는 `freq.get(key, 0) <= --max` 로 판정하고 `--max` 기본이 40이다.
 #   그러니 40회 이하 항목은 있으나 없으나 같은 답이 나온다 — 기능은 0을 보태면서
 #   **신원만 나른다.** 2026-09-15 2차 점검에서 항목 11,257 중 7,800이 여기 걸렸고,
 #   그 안에 회사 이름 25종·학교 5종·사람 이름 다수가 있었다.
-#   ⛔ 이 값을 올리면 훑개 판정이 바뀐다 — `rare_words.py` 의 기본 `--max` 와
+#   ⛔ 이 값을 올리면 단어 점검 판정이 바뀐다 — `rare_words.py` 의 기본 `--max` 와
 #      같아야 하고, `tests/test_freq_table_has_no_identity.py` 가 둘을 대조한다.
 FLOOR = 40
 
-#: 글자 수가 이보다 적으면 뺀다 — 훑개가 `len(tok.form) < 2` 로 건너뛴다.
-#   성씨와 이름 낱자(「박」·「홍」·「욱」·「혜」)가 여기 모여 있었다.
+#: 글자 수가 이보다 적으면 뺀다 — 성씨와 이름 낱자(「박」·「홍」·「욱」·「혜」)가
+#   한 글자 명사에 모여 있다. 318종을 이 규칙으로 뺀다.
 MIN_LEN = 2
+
+#: ⛔ **용언 어간은 한 글자여도 남긴다.** 업무 글에 안 쓰는 고유어가 바로 거기
+#   산다 — 「걷다·굳다·재다·깎다·싣다」. 단어 점검이 한 글자를 건너뛰던 탓에 그 구간이
+#   통째로 안 보였고, 사용자가 여섯 번째로 같은 갈래를 짚어 주고서야 드러났다
+#   (2026-09-15). 되돌아오는 111종에 신원은 없다 — 사람 이름은 명사이지 용언이
+#   아니다. 이름 낱자가 사는 한 글자 명사·부사 318종은 그대로 뺀다.
+STEM_TAGS = {"VV", "VA", "XR"}
 
 _SURNAME = ("김이박최정강조윤장임한오서신권황안송류전홍고문양손배백허유남심노"
             "하곽성차주우구민진지엄채원천방공함변염여추설마길연위표명기반왕")
@@ -167,7 +174,7 @@ def main() -> int:
         if tag not in KEEP_TAGS:
             dropped_tag.append((key, n))
             continue
-        if n <= FLOOR or len(form) < MIN_LEN:
+        if n <= FLOOR or (len(form) < MIN_LEN and tag not in STEM_TAGS):
             dropped_floor.append((key, n))
             continue
         kind = identifying(form, proper) or ("사람 이름" if carries_name(form) else None)
@@ -178,9 +185,9 @@ def main() -> int:
 
     print(f"표 {TABLE}")
     print(f"  항목 {before} → {len(kept)}")
-    print(f"  품사로 뺌 {len(dropped_tag)}종 (훑개가 안 읽는 품사)")
+    print(f"  품사로 뺌 {len(dropped_tag)}종 (단어 점검이 안 읽는 품사)")
     print(f"  {FLOOR}회 이하·{MIN_LEN}글자 미만이라 뺌 {len(dropped_floor)}종 "
-          "(훑개가 안 읽거나 없는 낱말과 똑같이 봄)")
+          "(단어 점검이 안 읽거나 없는 낱말과 똑같이 봄)")
     print(f"  신원으로 뺌 {len(dropped_name)}종 (NNP 에도 있고 신원 꼴인 것)\n")
 
     for kind in ("사람 이름", "회사·고객사", "주소·조직"):
@@ -201,7 +208,7 @@ def main() -> int:
 
     data["freq"] = kept
     data["scrubbed"] = ("고유명사와 신원 정보를 뺌 — 동료 실명·고객사·주소. "
-                        "훑개는 NNG·VV·VA·MAG·XR 만 읽는다.")
+                        "단어 점검은 NNG·VV·VA·MAG·XR 만 읽는다.")
     with open(TABLE, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False)
     print(f"\n고쳤습니다 — 항목 {len(kept)}종")

@@ -114,3 +114,8 @@
 {"case_id": "C-114", "expect": "finding", "form": "prose", "kind": null, "source": "2회차 지적 · 대장 F-034", "status": "open", "text": "실무에서 매일 돌고 있는 업무 비서입니다", "why": "진행형 군더더기 · 사용자 2회차 지적 「돌고 있는」"}
 {"case_id": "C-115", "expect": "finding", "form": "prose", "kind": null, "source": "3회차 지적 · 대장 F-037", "status": "open", "text": "공수 넣기는 사람이 승인합니다", "why": "용언을 명사형으로 굳힘 · 사용자 3회차 지적 「공수 넣기」"}
 {"case_id": "C-116", "expect": "finding", "form": "prose", "kind": null, "source": "3회차 지적 · 대장 F-038", "status": "open", "text": "기술로 말하면 지식 그래프 위의 검색입니다", "why": "담화 표지 · 고정 문구라 규칙으로 잡힘 · 사용자 3회차 지적 「기술로 말하면」"}
+{"case_id": "C-117", "expect": "finding", "form": "prose", "kind": null, "source": "사용자 4회차", "status": "open", "text": "담기는 단계에서 값을 확인합니다", "why": "관형형 + 명사 「단계」 — 「단계에 담기다」라 목적어가 못 된다 · 지어낸 명사구와 같은 갈래"}
+{"case_id": "C-118", "expect": "finding", "form": "prose", "kind": null, "source": "사용자 4회차", "status": "open", "text": "매일 밤 도는 작업입니다", "why": "「밤」은 업무 글에서 시각 표기로 쓰지 않는다 — 「매일 새벽 2시」처럼 시각을 적는다"}
+{"case_id": "C-119", "expect": "finding", "form": "prose", "kind": null, "source": "사용자 4회차", "status": "open", "text": "아무도 안 기다림", "why": "사람이 기다리는지로 기계 동작을 적었다 — 「응답을 받는 쪽이 없음」처럼 대상을 적는다"}
+{"case_id": "C-120", "expect": "finding", "form": "prose", "kind": null, "source": "사용자 5회차", "status": "open", "text": "갈래 ① 변경 요청 단계", "why": "사람 글 90회 대 단계 2,856 — 분류를 뜻하는 「갈래」는 대안이 32배 흔하다"}
+{"case_id": "C-121", "expect": "finding", "form": "prose", "kind": null, "source": "사용자 6회차", "status": "open", "text": "그대로 굳지 않도록 §2에 가려 두었음", "why": "가리 43회 대 표시 7,090 — 단어 점검 문턱 40을 세 끗 차이로 넘어 안 잡힌다"}

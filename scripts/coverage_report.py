@@ -28,11 +28,11 @@ LEDGER = os.path.join(HERE, "..", "data", "cases", "flagged-rounds.jsonl")
 #: 주인마다 「그래서 무엇이 보장되나」 — 등급이 다르다는 것을 숨기지 않는다
 MEANS = {
     "규칙": "검사기가 지적함 · 오류 등급이면 발행이 막힘",
-    "훑개": "훑개를 돌려야 보임 · 사람이 목록을 읽어야 함",
+    "단어 점검": "단어 점검을 돌려야 보임 · 사람이 목록을 읽어야 함",
     "사람": "기계 밖 · 스킬을 불러야 봄",
     "대기": "**아무 장치도 안 짚음** · 사례집에 open 으로만 박혀 있음",
 }
-ORDER = ["규칙", "훑개", "사람", "대기"]
+ORDER = ["규칙", "단어 점검", "사람", "대기"]
 
 
 def load():
@@ -62,7 +62,7 @@ def main():
         by_round[r["round"]][r["owner"]] += 1
 
     total = len(rows)
-    machine = by_owner["규칙"] + by_owner["훑개"]
+    machine = by_owner["규칙"] + by_owner["단어 점검"]
     print(f"짚어 준 지적 {total}건 · 기계가 짚는 것 {machine}건 "
           f"({machine * 100 // total}%)\n")
 
