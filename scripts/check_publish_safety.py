@@ -90,7 +90,33 @@ NOTE = [
 ]
 
 SKIP_SUFFIX = {".woff2", ".woff", ".ttf", ".otf", ".png", ".jpg", ".jpeg",
-               ".gif", ".ico", ".pdf", ".zip"}
+               ".gif", ".ico", ".pdf", ".zip", ".webp", ".avif", ".mp4", ".webm",
+               ".mp3", ".wasm", ".gz", ".db", ".sqlite"}
+
+
+def published(repo):
+    """이 저장소가 **실제로 밖으로 나가나.** (나감?, 한 줄 설명)
+
+    ⛔ 안 나가는 저장소의 지적과 나가는 저장소의 지적을 **같은 무게로 내면 안 된다.**
+       실측(2026-09-15) — 원격 없는 저장소에서 73건이 떴고 공개 저장소에서 4건이
+       떴는데 머리글이 같았다. 앞엣것은 한 줄도 안 나가는데 뒤엣것만 나간다.
+       못 가르는 지적이 섞이면 가르는 지적까지 안 읽힌다.
+    """
+    url = subprocess.run(["git", "remote", "get-url", "origin"], cwd=repo,
+                         capture_output=True, text=True, encoding="utf-8").stdout.strip()
+    if not url:
+        return False, "원격이 없다 — 이 저장소 자체는 안 나간다"
+    m = re.search(r"github\.com[:/](.+?)(?:\.git)?$", url)
+    if not m:
+        return True, f"원격 있음({url[:40]}) — 공개 여부를 못 봤다"
+    got = subprocess.run(["gh", "repo", "view", m.group(1), "--json", "visibility",
+                          "--jq", ".visibility"], cwd=repo, capture_output=True,
+                         text=True, encoding="utf-8").stdout.strip()
+    if got == "PUBLIC":
+        return True, f"PUBLIC — {m.group(1)}"
+    if got:
+        return False, f"{got} — {m.group(1)}"
+    return True, f"{m.group(1)} — 공개 여부를 못 물었다"
 
 
 def identity_terms():
@@ -215,8 +241,10 @@ def main(argv=None):
     if args.history:
         pairs += list(history_blobs(repo))
 
+    goes_out, why = published(repo)
     print(f"저장소 {repo} · 추적 파일 {len(files)}개"
           + (f" · 이력 판 {len(pairs) - len(files)}개" if args.history else ""))
+    print(f"   {'밖으로 나감' if goes_out else '안 나감'} — {why}")
     if not any(deny.values()):
         print(f"⚠️ 신원 목록이 없습니다({DENYLIST.name}) — 이름·회사는 안 봅니다")
     else:
@@ -224,7 +252,11 @@ def main(argv=None):
               f" · 조직 {len(deny['조직'])} (사람 이름은 어느 파일에서든 막음)")
 
     blocked = scan(BLOCK, pairs, deny)
-    if blocked:
+    if blocked and not goes_out:
+        # 안 나가는 저장소다 — 같은 지적을 「나가면 안 되는 것」으로 내면 소음이 된다
+        print(f"\n📋 지금은 안 나가지만 공개하면 걸릴 것 {len(blocked)}건"
+              " — 급하지 않으나 종료 코드는 1이다\n")
+    elif blocked:
         print(f"\n⛔ 나가면 안 되는 것 {len(blocked)}건\n")
         seen = set()
         for name, rel, line, hit, src, fix in blocked:
@@ -256,6 +288,9 @@ def main(argv=None):
             seen.add(key)
             print(f"  [{name}] {rel}:{line}  「{hit}」")
 
+    # ⛔ 안 나가는 저장소라도 **종료 코드는 그대로 1** 이다. 「원격이 없다」는 오늘의
+    #    사실일 뿐 내일 생길 수 있고, 안전장치는 안전한 쪽으로 틀려야 한다.
+    #    갈라 주는 것은 머리글이지 판정이 아니다 — 시험이 이 자리를 지킨다.
     return 1 if blocked else 0
 
 
