@@ -14,3 +14,6 @@ runs/**/raw/
 *.tmp
 *.bak
 .hook-sandbox/
+
+# 이름 목록은 공개 저장소에 두지 않는다 — scrub_freq_table.py 가 로컬에서만 읽는다.
+data/catalog/local-identity-denylist.txt
