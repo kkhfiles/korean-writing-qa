@@ -1,0 +1,33 @@
+# 사람이 「이 쓰임은 정상」이라 판정한 짝.
+# ⛔ 낱말만 열지 않는다 — **문맥**과 **범위**를 함께 적는다.
+#    범위를 안 적으면 업무 보고서에 같은 말을 써도 안 걸린다.
+# 늘리는 법 — scripts/rare_words.py --accept <낱말/품사> --context <문맥>
+#              --scope <경로 무늬> --why <근거>
+{"word": "명사/NNG", "context": "*", "scope": "P:/github/korean-writing-qa/*", "why": "품사 이름 — 이 저장소 글의 주제", "added": "2026-09-16"}
+{"word": "동사/NNG", "context": "*", "scope": "P:/github/korean-writing-qa/*", "why": "품사 이름 — 이 저장소 글의 주제", "added": "2026-09-16"}
+{"word": "형용사/NNG", "context": "*", "scope": "P:/github/korean-writing-qa/*", "why": "품사 이름 — 이 저장소 글의 주제", "added": "2026-09-16"}
+{"word": "부사/NNG", "context": "*", "scope": "P:/github/korean-writing-qa/*", "why": "품사 이름 — 이 저장소 글의 주제", "added": "2026-09-16"}
+{"word": "조사/NNG", "context": "*", "scope": "P:/github/korean-writing-qa/*", "why": "품사 이름 — 이 저장소 글의 주제", "added": "2026-09-16"}
+{"word": "어미/NNG", "context": "*", "scope": "P:/github/korean-writing-qa/*", "why": "문법 단위 — 이 저장소 글의 주제", "added": "2026-09-16"}
+{"word": "관형/NNG", "context": "*", "scope": "P:/github/korean-writing-qa/*", "why": "문법 용어 — 이 저장소 글의 주제", "added": "2026-09-16"}
+{"word": "피동/NNG", "context": "*", "scope": "P:/github/korean-writing-qa/*", "why": "문법 용어 — 이 저장소 글의 주제", "added": "2026-09-16"}
+{"word": "종결/NNG", "context": "*", "scope": "P:/github/korean-writing-qa/*", "why": "문법 용어 — 이 저장소 글의 주제", "added": "2026-09-16"}
+{"word": "문단/NNG", "context": "*", "scope": "P:/github/korean-writing-qa/*", "why": "글 단위 — 이 저장소 글의 주제", "added": "2026-09-16"}
+{"word": "형태소/NNG", "context": "*", "scope": "P:/github/korean-writing-qa/*", "why": "분석 단위 — 이 저장소 글의 주제", "added": "2026-09-16"}
+{"word": "말뭉치/NNG", "context": "*", "scope": "P:/github/korean-writing-qa/*", "why": "자료 이름 — 이 저장소 글의 주제", "added": "2026-09-16"}
+{"word": "개조/NNG", "context": "*", "scope": "P:/github/korean-writing-qa/*", "why": "문서 형식 이름 — 개조식 — 이 저장소 글의 주제", "added": "2026-09-16"}
+{"word": "절단/NNG", "context": "*", "scope": "P:/github/korean-writing-qa/*", "why": "판정 이름 — 이 저장소 글의 주제", "added": "2026-09-16"}
+{"word": "지칭/NNG", "context": "*", "scope": "P:/github/korean-writing-qa/*", "why": "판정 이름 — 모호한 지칭 — 이 저장소 글의 주제", "added": "2026-09-16"}
+{"word": "수식어/NNG", "context": "*", "scope": "P:/github/korean-writing-qa/*", "why": "판정 이름 — 평가 수식어 — 이 저장소 글의 주제", "added": "2026-09-16"}
+{"word": "은유/NNG", "context": "*", "scope": "P:/github/korean-writing-qa/*", "why": "판정 이름 — 이 저장소 글의 주제", "added": "2026-09-16"}
+{"word": "비유/NNG", "context": "*", "scope": "P:/github/korean-writing-qa/*", "why": "판정 이름 — 이 저장소 글의 주제", "added": "2026-09-16"}
+{"word": "직역/NNG", "context": "*", "scope": "P:/github/korean-writing-qa/*", "why": "번역투 설명 — 이 저장소 글의 주제", "added": "2026-09-16"}
+{"word": "오탐/NNG", "context": "*", "scope": "P:/github/korean-writing-qa/*", "why": "검사 결과 용어 — 이 저장소 글의 주제", "added": "2026-09-16"}
+{"word": "미탐/NNG", "context": "*", "scope": "P:/github/korean-writing-qa/*", "why": "검사 결과 용어 — 이 저장소 글의 주제", "added": "2026-09-16"}
+{"word": "회수/NNG", "context": "*", "scope": "P:/github/korean-writing-qa/*", "why": "측정 지표 — recall — 이 저장소 글의 주제", "added": "2026-09-16"}
+{"word": "표본/NNG", "context": "*", "scope": "P:/github/korean-writing-qa/*", "why": "측정 용어 — 이 저장소 글의 주제", "added": "2026-09-16"}
+{"word": "실측/NNG", "context": "*", "scope": "P:/github/korean-writing-qa/*", "why": "측정 용어 — 이 저장소 글의 주제", "added": "2026-09-16"}
+{"word": "슬롯/NNG", "context": "*", "scope": "P:/github/korean-writing-qa/*", "why": "검사기 구조 이름 — 값 슬롯 — 이 저장소 글의 주제", "added": "2026-09-16"}
+{"word": "승격/NNG", "context": "*", "scope": "P:/github/korean-writing-qa/*", "why": "규칙 단계 이름 — 이 저장소 글의 주제", "added": "2026-09-16"}
+{"word": "교정/NNG", "context": "*", "scope": "P:/github/korean-writing-qa/*", "why": "이 도구가 하는 일 — 이 저장소 글의 주제", "added": "2026-09-16"}
+{"word": "문체/NNG", "context": "*", "scope": "P:/github/korean-writing-qa/*", "why": "이 도구가 보는 것 — 이 저장소 글의 주제", "added": "2026-09-16"}
