@@ -7,7 +7,7 @@ form: structured
 **AI가 쓴 한글을 업무에서 낼 수 있는 글로** — 규칙은 **사람이 쓴** 사내 보고서 600여 개로 실측 · 형식과 무관한 오류가 있던 문서 8% · 개조식 규약까지 켜면 33% · 받아서 그대로 쓸 수 있음
 
 - **표시 색** — 주묵(朱墨) · 원고를 고칠 때 쓰던 붉은 먹
-- **사례집** — [`docs/showcase.html`](docs/showcase.html) · 수정 전후 74쌍 · 브라우저로 열면 됨 · [올릴 준비물](docs/site-listing.md)
+- **사례집** — <https://dispatchflow.cc/vermilion/> · 수정 전후 74쌍 · 눌러서 바로 봄 · 저장소 사본 [`docs/showcase.html`](docs/showcase.html)
 - **사례 보내기** — [`CONTRIBUTING.md`](CONTRIBUTING.md) · 이슈로 문장 하나
 - **필요한 것** — Python 3.11 이상 · 검사기는 파일 하나 · 형태소 판정만 `kiwipiepy`
 
