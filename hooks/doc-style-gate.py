@@ -95,6 +95,64 @@ RECORDER = _find(
 )
 
 
+#: 발행을 막기 전에 통과해야 하는 단계. 표면 모양·낱말·문맥 판단 셋이다.
+REQUIRE = ("structure", "words", "judgment")
+#: 사람이 푸는 길. 명령 앞에 이 값을 붙이면 보류를 넘긴다 — **명령문에 남으므로
+#  나중에 누가 왜 넘겼는지 되짚을 수 있다.** 조용히 넘기는 길은 두지 않는다.
+FORCE = "KOREAN_PUBLISH_FORCE=1"
+
+
+def missing_stages(path):
+    """지금 내용이 아직 통과하지 못한 단계. 도구가 없으면 빈 목록(막지 않는다)."""
+    if not RECORDER or not RECORDER.exists():
+        return []
+    try:
+        done = subprocess.run(
+            [sys.executable, "-X", "utf8", str(RECORDER), "status", str(path), "--json"],
+            capture_output=True, text=True, encoding="utf-8", timeout=30)
+        info = json.loads(done.stdout.strip() or "{}")
+    except (OSError, ValueError, subprocess.SubprocessError):
+        return []
+    stages = info.get("stages") or {}
+    return [s for s in REQUIRE if stages.get(s) != "pass"]
+
+
+def publish_block(payload, files):
+    """발행 직전에 통과 기록을 확인한다 — 없으면 막는 글을 낸다.
+
+    **왜 안내가 아니라 막기인가.** 안내는 읽고 넘길 수 있다 — 실측 이행율 3.8%.
+    발행은 되돌릴 수 없으므로 **허용 조건을 바꾸는 쪽**이 맞다(2026-09-16 외부 검토).
+
+    **왜 해시에 묶나.** 「검사했다」만 보면 옛 판을 검사한 뒤 고쳐서 내보내는 길이
+    열린다. 기록은 그 순간의 내용에 묶여 있어 한 글자만 고쳐도 안 맞는다.
+    """
+    if (payload.get("hook_event_name") or "") != "PreToolUse":
+        return ""
+    cmd = str((payload.get("tool_input") or {}).get("command") or "")
+    if FORCE in cmd:
+        return ""
+    stuck = []
+    for fp in files:
+        if not os.path.exists(fp):
+            continue
+        gaps = missing_stages(fp)
+        if gaps:
+            stuck.append((fp, gaps))
+    if not stuck:
+        return ""
+    lines = ["\u26d4 \ubc1c\ud589 \ubcf4\ub958 — 지금 내용으로 통과한 기록이 없습니다", ""]
+    for fp, gaps in stuck:
+        lines.append(f"  {os.path.basename(fp)} — 빠진 단계: {' · '.join(gaps)}")
+    lines += [
+        "",
+        "  고치는 법 — 이 문서에 `finalize-korean-document` 스킬을 돌립니다.",
+        "  그 절차가 낱말 점검과 문맥 판단을 마치고 통과를 기록합니다.",
+        "",
+        f"  정말 그대로 내보내야 하면 명령 앞에 `{FORCE}` 를 붙입니다 — 명령문에 남습니다.",
+    ]
+    return "\n".join(lines)
+
+
 def note_pass(path, stage, verdict):
     """판정을 기록한다. 실패해도 게이트를 멈추지 않는다."""
     if not RECORDER or not RECORDER.exists():
@@ -429,6 +487,16 @@ def main():
         body = run_korean_checker(fp)
         if body:
             korean_blocks.append(f"{os.path.basename(fp)}\n{body}")
+
+    # ⛔ **막는 것이 먼저다.** 지적을 보여 주고 나서 발행을 허용하면, 그 지적은
+    #    발행된 뒤에 읽힌다. 통과 기록이 없으면 여기서 멈춘다.
+    if not probe:
+        stop = publish_block(payload, korean_files or files)
+        if stop:
+            if mode == "once" or True:
+                save(state)
+            sys.stderr.write(stop + "\n")
+            return 2
 
     notice = finalize_notice(payload, files, state.setdefault(key, {}))
     if mode == "once" or notice:
