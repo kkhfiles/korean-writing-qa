@@ -866,7 +866,7 @@ def run(
         "meaning_markers": {
             "assertions": marker_assertions,
             "passed": marker_passed,
-            "note": "상태를 바꾸지 않고 사람이 볼 곳만 가리킨다",
+            "note": "상태를 바꾸지 않고 사람이 확인할 문장만 가리킨다",
         },
         "feedback_workflow": {
             "assertions": workflow_assertions,

@@ -152,7 +152,7 @@ def measure(
         "protected_added": display_tokens(added),
         "acknowledged_removed": display_tokens(acknowledged),
         "explicit_protected": explicit,
-        # 상태를 바꾸지 않는다 — 사람이 볼 곳만 가리킨다
+        # 상태를 바꾸지 않는다 — 사람이 확인할 문장만 가리킨다
         "meaning_marker_drops": marker_drops(original, revised),
     }
 
