@@ -66,8 +66,10 @@ class ReadmeExpectedValueTests(unittest.TestCase):
         m = INSTALL_ROW.search(self.text)
         self.assertIsNotNone(m, "README 의 `install.py --check` 줄을 못 찾았다")
         import install  # noqa: PLC0415 — 저장소 루트를 sys.path 에 넣은 뒤라야 한다
+        # 신원 목록은 작성자 기계에만 있다(gitignore) — README 는 남의 기계가 보는 수다.
         same = sum(1 for src, dst in install.pairs()
-                   if dst.exists() and install.digest(src) == install.digest(dst))
+                   if src.name != "local-identity-denylist.txt"
+                   and dst.exists() and install.digest(src) == install.digest(dst))
         missing = sum(1 for _src, dst in install.pairs() if not dst.exists())
         if missing:
             self.skipTest("설치 안 한 기계 — 남이 저장소만 받아 돌리는 것이 정상이다")

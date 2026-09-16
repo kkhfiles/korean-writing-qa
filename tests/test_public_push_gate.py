@@ -71,6 +71,67 @@ class PublicPushGateTests(unittest.TestCase):
             with self.subTest(cmd):
                 self.assertIsNone(pat.search(cmd))
 
+    def test_quoted_push_text_is_not_a_push(self) -> None:
+        """문자열 안의 `git push` 는 푸시가 아니다.
+
+        2026-09-16 에 `grep "git push 기본값"` 과 `grep -v "git push --force"` 에
+        걸려 검사기를 헛돌렸다. 따옴표 안은 가리고 본다.
+        """
+        target = load_hook().push_target
+        for cmd in ('grep -E "git push 기본값" CLAUDE.md',
+                    "git commit -m 'git push later'",
+                    'grep -v "git push --force" x.md',
+                    "git log --grep push"):
+            with self.subTest(cmd):
+                self.assertIsNone(target(cmd))
+        for cmd in ("git push", "git add -A && git push",
+                    'git commit -m "done" && git push origin main'):
+            with self.subTest(cmd):
+                self.assertEqual("", target(cmd))
+
+    def test_c_path_is_the_repo_to_check(self) -> None:
+        """`git -C <경로> push` 는 그 경로의 저장소를 본다 — cwd 가 아니다.
+
+        2026-09-16 에 slack-bot 을 밀려는데 cwd 의 claude-workflow 를 검사했다.
+        """
+        mod = load_hook()
+        self.assertEqual("/tmp/x", mod.push_target("git -C /tmp/x push"))
+        self.assertEqual("P:/a b", mod.push_target('git -C "P:/a b" push origin main'))
+        self.assertEqual("P:/a b", mod.push_target("git -C 'P:/a b' push"))
+        import tempfile                                  # noqa: PLC0415
+        with tempfile.TemporaryDirectory() as tmp:
+            # cwd 는 저장소가 아니고 -C 가 이 저장소를 가리킨다.
+            self.assertEqual(repo_paths.REPO.resolve(),
+                             mod._repo_root(tmp, str(repo_paths.REPO)).resolve())
+            self.assertIsNone(mod._repo_root(tmp, ""))
+
+    def test_hook_loads_the_checker_it_runs(self) -> None:
+        """공개 여부 판정을 실제로 돌릴 검사기 파일에서 불러온다.
+
+        `sys.path` 로 `scripts/` 를 찾던 판은 설치본 옆에 그 디렉터리가 없어
+        **모든 저장소를 「못 물었다」로 막았다**(2026-09-16). 불러오기 실패는 그
+        사유가 따로 보여야 한다.
+        """
+        goes_out, why = load_hook()._is_public(repo_paths.REPO)
+        self.assertNotIn("불러오지 못했다", why)
+        self.assertNotIn("검사기를 못 찾았다", why)
+        self.assertIsInstance(goes_out, bool)
+
+    def test_cli_mode_gates_a_repo_path(self) -> None:
+        """`--repo <경로>` 로 부르면 stdin 없이 같은 판정 — 스크립트가 쓴다."""
+        import os                                        # noqa: PLC0415
+        env = dict(os.environ)
+        env.pop("KOREAN_PUSH_FORCE", None)
+        done = subprocess.run([sys.executable, "-X", "utf8", str(HOOK),
+                               "--repo", str(repo_paths.REPO)],
+                              capture_output=True, text=True, encoding="utf-8", env=env)
+        self.assertIn(done.returncode, (0, 2))
+        import tempfile                                  # noqa: PLC0415
+        with tempfile.TemporaryDirectory() as tmp:
+            done = subprocess.run([sys.executable, "-X", "utf8", str(HOOK), "--repo", tmp],
+                                  capture_output=True, text=True, encoding="utf-8", env=env)
+            self.assertEqual(0, done.returncode)         # 저장소가 아니면 볼 것이 없다
+
     def test_escape_hatch_lets_it_through(self) -> None:
         """막되 푸는 길을 둔다 — 열쇠 없는 자물쇠를 만들지 않는다."""
         done = run("git push", env_extra={"KOREAN_PUSH_FORCE": "1"})

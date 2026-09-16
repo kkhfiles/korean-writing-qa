@@ -73,6 +73,13 @@ def pairs() -> list[tuple[Path, Path]]:
     safety = repo_paths.REPO / "scripts" / "check_publish_safety.py"
     if safety.exists():
         out.append((safety, repo_paths.installed("assets", safety.name)))
+    # ⛔ 신원 목록도 옮긴다 — 설치본 검사기는 자기 위치 기준 `data/catalog/` 를 보는데
+    #    그 자리가 비어 있어 훅이 이름·회사를 안 봤다(2026-09-16 실측). 목록은 저장소
+    #    밖에만 둔다 — 이 파일은 gitignore 대상이고 `~/.claude/data/` 는 백업 sync 가
+    #    복사하지 않는 곳이다(`assets/` 에 두면 백업 저장소로 딸려 간다).
+    denylist = repo_paths.REPO / "data" / "catalog" / "local-identity-denylist.txt"
+    if denylist.exists():
+        out.append((denylist, repo_paths.installed("data", "catalog", denylist.name)))
     for name in HOOK_FILES:
         out.append((repo_paths.hook(name), repo_paths.installed("hooks", name)))
     # `skills/` 아래를 통째로 옮긴다 — 스킬을 새로 만들 때 이 함수를 안 고쳐도 된다.
