@@ -125,3 +125,40 @@ class WordsGateTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class CodeFenceTests(unittest.TestCase):
+    """코드펜스 안의 낱말은 안 센다 — 네 겹 펜스에서도.
+
+    검사기에서 같은 결함을 고쳤다(2026-09-16). 여기도 「``` … ```」 로 적혀 있어
+    **안쪽 세 겹이 바깥 네 겹을 닫았고**, 그 뒤의 코드가 본문으로 세어 들어갔다.
+    """
+
+    def setUp(self) -> None:
+        self.dir = tempfile.mkdtemp(prefix="words-fence-")
+
+    def tearDown(self) -> None:
+        shutil.rmtree(self.dir, ignore_errors=True)
+
+    def _doc(self, body):
+        p = os.path.join(self.dir, "doc.md")
+        with io.open(p, "w", encoding="utf-8", newline="\n") as f:
+            f.write(body)
+        return p
+
+    def test_a_four_backtick_fence_hides_everything_inside(self) -> None:
+        doc = self._doc("# 계획\n\n````markdown\n되먹임\n```\n되먹임\n```\n"
+                        "되먹임\n````\n\n결과를 다시 봅니다.\n")
+        rc, out = run(doc)
+        self.assertNotIn("되먹임", out)
+
+    def test_a_tilde_fence_hides_everything_inside(self) -> None:
+        doc = self._doc("# 계획\n\n~~~\n되먹임\n~~~\n\n결과를 다시 봅니다.\n")
+        rc, out = run(doc)
+        self.assertNotIn("되먹임", out)
+
+    def test_text_outside_the_fence_is_still_counted(self) -> None:
+        """⛔ 펜스를 넓게 잡느라 **본문까지 삼키면** 고친 것이 아니다."""
+        doc = self._doc("# 계획\n\n````\n코드\n````\n\n되먹임을 봅니다.\n")
+        rc, out = run(doc)
+        self.assertIn("되먹임", out)

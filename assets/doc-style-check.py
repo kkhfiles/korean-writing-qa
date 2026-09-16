@@ -1333,6 +1333,37 @@ def list_rules():
           '— 서술형 종결·서술형 문단·제목 셋·진입점 넷.')
 
 
+#: 코드펜스 여는 줄 — 백틱이나 물결표 **셋 이상**. CommonMark 가 그렇게 정한다.
+#   ⛔ 「백틱 셋」으로 고정하면 **네 겹 펜스가 안 닫힌다.** README 양식처럼 안에
+#      세 겹 블록을 담으려면 바깥을 네 겹으로 여는데(GitHub·CommonMark 정상),
+#      그때 안쪽 세 겹이 바깥을 닫아 버려 코드가 본문으로 새어 나온다.
+FENCE = re.compile(r'^\s*(`{3,}|~{3,})')
+
+
+def fenced_lines(lines):
+    """코드펜스 **안**에 있는 줄 번호(0부터)를 낸다.
+
+    닫는 표시는 **여는 것과 같은 문자로 그 개수 이상**이어야 한다 — 그래야 네 겹
+    안의 세 겹이 바깥을 안 닫는다. 여는 줄과 닫는 줄 자체도 안쪽으로 친다.
+
+    ⛔ 이 판정을 부르는 곳마다 따로 적지 않는다. 예전에는 「출처 없는 인용 블록」
+       검사가 원문을 그대로 훑어 **펜스를 아예 안 봤고**, 코드 예시 안의
+       `> [!NOTE]` 가 문서 본문으로 잡혔다(2026-09-16 실측 · 세 겹에서도 났다).
+    """
+    inside, opener = set(), None
+    for i, line in enumerate(lines):
+        m = FENCE.match(line)
+        if opener is None:
+            if m:
+                opener = m.group(1)
+                inside.add(i)
+            continue
+        inside.add(i)
+        if m and m.group(1)[0] == opener[0] and len(m.group(1)) >= len(opener):
+            opener = None
+    return inside
+
+
 def md_body(raw):
     """(행번호, 원문) — frontmatter·코드펜스 제외. frontmatter는 메타데이터지 본문이 아니다."""
     lines = raw.split('\n')
@@ -1342,16 +1373,8 @@ def md_body(raw):
             if lines[j].strip() == '---':
                 start = j + 1
                 break
-    out, fence = [], False
-    for n in range(start, len(lines)):
-        s = lines[n].strip()
-        if s.startswith('```'):
-            fence = not fence
-            continue
-        if fence:
-            continue
-        out.append((n + 1, lines[n]))
-    return out
+    inside = fenced_lines(lines)
+    return [(n + 1, lines[n]) for n in range(start, len(lines)) if n not in inside]
 
 
 def merge_wrapped(body):
@@ -1649,13 +1672,17 @@ def scan_md(path, relaxed=False, form=None, rules=None):
                 err.append((n, '진입점 서술형', t[:56]))
 
     # 6. 출처 없는 인용 블록 = 해설이다. 인용 부호만 썼을 뿐 값과 같은 규칙을 받는다
+    #    ⛔ **코드펜스를 빼고 본다.** 예전에는 원문을 그대로 훑어서 코드 예시 안의
+    #       `> [!NOTE]` 가 문서 본문으로 잡혔다(2026-09-16).
     lines = raw.split('\n')
+    inside = fenced_lines(lines)
     i = 0
     while i < len(lines):
-        if not lines[i].strip().startswith('>'):
+        if i in inside or not lines[i].strip().startswith('>'):
             i += 1; continue
         start, blk = i, []
-        while i < len(lines) and lines[i].strip().startswith('>'):
+        while (i < len(lines) and i not in inside
+               and lines[i].strip().startswith('>')):
             blk.append(lines[i].strip().lstrip('>').strip()); i += 1
         if start < HEAD_LINES or ATTRIB.search(' '.join(blk)):
             continue
