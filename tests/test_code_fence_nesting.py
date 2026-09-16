@@ -88,5 +88,51 @@ class CodeFenceNestingTests(unittest.TestCase):
         self.assertEqual({0, 1, 2}, fenced_lines(lines))
 
 
+class FencedProseNoticeTests(unittest.TestCase):
+    """코드펜스 안에 배포되는 한글 문구가 있으면 **안 봤다고 알린다.**
+
+    공지문 초안·설문 문항·양식이 펜스 안에 들어가면 검사에서 통째로 빠진다.
+    실제로 공지문의 의문문 소제목이 그렇게 빠져나가 사람이 읽고서야 걸렸다
+    (2026-09-16 DevRel 제안서 세션 §B-1).
+
+    ⛔ **지적이 아니라 안내다.** 펜스 안을 본문처럼 검사하면 바깥 문서의 개조식
+       규약이 공지문에 걸린다 — 공지문은 산문이 정상이다.
+    """
+
+    NOTICE = "펜스 안 배포 문구"
+    DRAFT = ("````markdown\n"
+             "안녕하세요. 사내 공유 행사를 안내드립니다.\n"
+             "응모는 9월 30일까지 받습니다.\n"
+             "자세한 내용은 공지 페이지를 참고해 주세요.\n"
+             "````\n")
+
+    def test_a_buried_announcement_is_reported(self) -> None:
+        self.assertIn(self.NOTICE, check(HEAD + self.DRAFT + TAIL))
+
+    def test_code_is_not_reported(self) -> None:
+        """⛔ 코드까지 알리면 거의 모든 문서에서 울린다."""
+        body = ("```python\n"
+                "# 안녕하세요. 이것은 주석입니다.\n"
+                "# 여기도 한국어 주석입니다.\n"
+                "# 세 번째 주석입니다.\n"
+                "```\n")
+        self.assertNotIn(self.NOTICE, check(HEAD + body + TAIL))
+
+    def test_an_example_block_is_not_reported(self) -> None:
+        """앞줄이 「예:」면 본보기다 — 배포되는 글이 아니다."""
+        self.assertNotIn(self.NOTICE, check(HEAD + "예:\n\n" + self.DRAFT + TAIL))
+
+    def test_a_list_of_fragments_is_not_reported(self) -> None:
+        """금지어 목록처럼 **조각만 나열한 블록**은 배포되는 글이 아니다."""
+        body = "```text\n논의하는 자리\n공유하는 자리\n소통하는 자리\n```\n"
+        self.assertNotIn(self.NOTICE, check(HEAD + body + TAIL))
+
+    def test_the_notice_is_registered_so_it_can_be_turned_off(self) -> None:
+        import subprocess as sp                       # noqa: PLC0415
+        done = sp.run([sys.executable, "-X", "utf8", str(repo_paths.CHECKER),
+                       "--list-rules"], capture_output=True, text=True,
+                      encoding="utf-8")
+        self.assertIn(self.NOTICE, done.stdout)
+
 if __name__ == "__main__":
     unittest.main()

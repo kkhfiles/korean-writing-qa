@@ -1250,7 +1250,7 @@ RULE_GROUPS = {
         '스캔 가치 없는 라벨', '반복 블록 라벨 불일치', '해설을 인용 부호로 씀',
     ]),
     '안내': ('지적이 아니라 물음 — 형식을 안 적은 문서에 한 줄', [
-        '형식 미표기',
+        '형식 미표기', '펜스 안 배포 문구',
     ]),
 }
 ALL_KINDS = {k: g for g, (_, kinds) in RULE_GROUPS.items() for k in kinds}
@@ -1432,6 +1432,52 @@ def fenced_lines(lines):
         if m and m.group(1)[0] == opener[0] and len(m.group(1)) >= len(opener):
             opener = None
     return inside
+
+
+#: 펜스 앞줄이 「예:」류이면 그 블록은 **본보기**다 — 배포되는 글이 아니다.
+FENCE_EXAMPLE_LEAD = re.compile(r'예\s*[:：]|예시|보기|❌|✅|나쁜|잘못|금지|고치기 전')
+#: 글 갈래 표시 — 비었거나 글을 담는 것. `python`·`bash` 는 코드다.
+FENCE_PROSE_TAGS = {'', 'markdown', 'md', 'text', 'txt', 'plaintext'}
+#: 배포되는 문장으로 볼 만한 끝맺음. 금지어 목록 같은 **조각 나열**을 빼려고 종결을 본다.
+FENCE_SENTENCE = re.compile(r'(?:니다|니까|세요|나요|가요|[다요]\.)\s*$')
+FENCE_OPEN = re.compile(r'^(?P<f>`{3,}|~{3,})\s*([A-Za-z0-9_+-]*)\s*$')
+
+
+def fenced_prose(lines):
+    """코드펜스 안에 든 **배포되는 한글 문구**의 줄 수를 낸다.
+
+    **왜 세나.** 공지문 초안·설문 문항·양식이 코드펜스 안에 들어가면 검사에서
+    통째로 빠진다. 실제로 공지문의 의문문 소제목(「■ 무엇을 보나」)이 그렇게
+    빠져나가 사람이 읽고서야 걸렸다(2026-09-16 DevRel 제안서 세션 §B-1).
+
+    ⛔ **지적하지 않고 세기만 한다.** 펜스 안을 본문처럼 검사하면 바깥 문서의
+       개조식 규약이 공지문에 걸린다 — 공지문은 산문이 정상이다. 형식이 문서마다
+       하나뿐이라 안쪽만 따로 두는 길이 없다. 그래서 **넘길 곳을 알리는 쪽**으로
+       한다(전역 규칙 「자동 판정이 어려우면 넘길 곳을 명시」).
+
+    **실측** — 실문서 644개에서 이 조건에 드는 블록이 9개다. 검사에 넣어 보니
+    11건이 나왔고 8건이 실제 배포 문서(공지문 초안·README 양식)에서 왔다.
+    """
+    total, opener, tag, body, lead = 0, None, '', [], ''
+    for line in lines:
+        m = FENCE_OPEN.match(line)
+        if opener is None:
+            if m:
+                opener, tag, body = m.group('f'), (m.group(2) or '').lower(), []
+            elif line.strip():
+                lead = line.strip()
+            continue
+        if m and m.group('f')[0] == opener[0] and len(m.group('f')) >= len(opener):
+            if tag in FENCE_PROSE_TAGS and not FENCE_EXAMPLE_LEAD.search(lead):
+                sents = [b for b in body
+                         if len(re.findall(r'[가-힣]', b)) >= 6
+                         and FENCE_SENTENCE.search(b)]
+                if len(sents) >= 3:
+                    total += len(sents)
+            opener = None
+            continue
+        body.append(line.strip())
+    return total
 
 
 def md_body(raw):
@@ -1793,6 +1839,16 @@ def scan_md(path, relaxed=False, form=None, rules=None):
             '형식 미표기',
             '산문으로 보이는데 형식을 안 적었다 — 머리말에 `form: prose` 를 적으면 '
             '개조식 검사를 빼고 본다. 개조식이 맞다면 `form: structured` 를 적는다.',
+        ))
+    # 코드펜스 안에 배포되는 한글 문구가 있으면 **안 봤다고 알린다.**
+    #   ⛔ 지적이 아니라 안내다 — 펜스 안을 본문처럼 검사하면 바깥 문서의 개조식
+    #      규약이 공지문에 걸린다(공지문은 산문이 정상이다).
+    buried = fenced_prose(raw.split('\n'))
+    if buried:
+        warn.append((
+            '펜스 안 배포 문구',
+            f'코드펜스 안에 사람에게 나갈 것으로 보이는 한글 {buried}줄이 있다 — '
+            '검사에서 빠졌다. 실제로 배포되는 글이면 파일로 빼서 따로 검사한다.',
         ))
     err, warn = apply_form(err, warn, resolved)
     err, warn = apply_default_off(err, warn, rules)
