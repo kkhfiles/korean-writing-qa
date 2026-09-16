@@ -40,7 +40,7 @@ python -X utf8 -m unittest discover -s tests
 |---|---|
 | `exempt-fixture.md` 검사 | `오류 0 · 주의 0` |
 | `violation-fixture.md` 검사 | `오류 10 · 주의 5` |
-| `install.py --check` | `같음 17 · 다름 0 · 없음 0` |
+| `install.py --check` | `같음 25 · 다름 0 · 없음 0` |
 | 시험 | `OK` · 건너뛰기 14건은 정상 |
 
 **건너뛰기 14건이 정상인 까닭** — 작성자 기계에만 있는 연구 자료(사내 문서 복사본)를 대조하는 시험입니다. 검사기와 스킬을 재는 시험은 전부 돕니다.
@@ -127,6 +127,7 @@ err  = []                                 # 주의에서 오류로 올린다
 | `assets/doc-style-check.py` | 1층 검사기 정본 |
 | `skills/finalize-korean-document/` | 2층 스킬 정본 |
 | `skills/fix-korean-finding/` | 지적 하나를 규칙까지 미는 유지보수 스킬 |
+| `agents/` | 서브에이전트 정의 · 모델·사고 깊이·규칙 파일 적재 여부를 머리말로 고정 |
 | `hooks/` | 발행 직전 검사 · 겹 역슬래시 차단 · 매일 건강 검사와 GitHub 반영 확인 |
 | `install.py` · `repo_paths.py` | 설치와 경로 해석 |
 | `scripts/check_publish_safety.py` | 공개하면 안 되는 것이 섞였는지 · CI 가 같이 돎 |
@@ -155,6 +156,8 @@ err  = []                                 # 주의에서 오류로 올린다
 - [판단이 필요한 것](docs/decisions-pending.md)
 - [재발방지 설계안](docs/prevention-design-20260915.md) — 탐지 넷과 호출 하나 · 외부 검토 반영
 - [규칙 후보](docs/rule-candidates.md) — 규칙으로 올리기 전의 측정과 판단
+- [DevRel 제안서 세션의 문체 피드백](docs/devrel-session-feedback-20260916.md) — 한 문서에서 나온 지적 전수 · 규칙 후보의 원자료
+- [AI 오탐 소거 실험](docs/ai-filter-experiment-20260916.md) — 모델·사고 깊이별 실측
 - [기존 검사기 조사](docs/existing-tools.md)
 - [외부 한국어 작성 도구 검토](docs/external-korean-tools-review.md)
 - [사용자 문체 피드백 반영](docs/user-feedback-workflow.md)

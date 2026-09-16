@@ -71,6 +71,14 @@ def pairs() -> list[tuple[Path, Path]]:
         if src.is_file() and "__pycache__" not in src.parts:
             rel = src.relative_to(repo_paths.SKILLS)
             out.append((src, repo_paths.installed("skills", *rel.parts)))
+    # `agents/` 도 통째로 옮긴다 — 서브에이전트 정의는 **사용자 수준**(`~/.claude/agents/`)
+    #   에 있어야 어느 프로젝트에서 문서를 내든 같은 판정이 걸린다.
+    #   ⛔ 저장소 안 `.claude/agents/` 에 두지 않는다 — 그러면 이 저장소를 연 세션에서만
+    #      돌고, 정본과 설치본이 갈린다(스킬에서 이미 겪은 실패).
+    for src in sorted(repo_paths.AGENTS.rglob("*")):
+        if src.is_file() and "__pycache__" not in src.parts:
+            rel = src.relative_to(repo_paths.AGENTS)
+            out.append((src, repo_paths.installed("agents", *rel.parts)))
     return out
 
 

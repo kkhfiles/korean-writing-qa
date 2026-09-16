@@ -38,6 +38,11 @@ SKILL = Path(os.environ.get("KOREAN_QA_SKILL") or (REPO / "skills" / "finalize-k
 #: `install.py` 를 안 고쳐도 따라온다 — 고쳐야 하는 구조는 잊는다.
 SKILLS = REPO / "skills"
 
+#: 서브에이전트 정의. 머리말이 `model` · `effort` · `omitClaudeMd` 를 받는다
+#: — 마지막 것이 프로젝트 `CLAUDE.md` 적재를 막아 판정 교란을 없앤다
+#: (2026-09-16 실측 · `docs/ai-filter-experiment-20260916.md`).
+AGENTS = REPO / "agents"
+
 HOOKS = REPO / "hooks"
 
 
