@@ -1,8 +1,8 @@
-"""사람이 안 쓰는 낱말을 문서에서 찾아 사람에게 보여 준다.
+"""사람이 안 쓰는 단어를 문서에서 찾아 사람에게 보여 준다.
 
     python -X utf8 scripts/rare_words.py <파일…> [--max 40] [--top 25]
 
-**왜 만들었나.** 낱말 규칙은 이번에 걸린 말만 안다 — 「걷다」를 막았더니 다음에
+**왜 만들었나.** 단어 규칙은 이번에 걸린 말만 안다 — 「걷다」를 막았더니 다음에
 「갈래·스스로·채점」이 나왔고, 그것도 사람이 눈으로 찾았다(2026-09-09 두 번).
 같은 일이 되풀이되지 않으려면 **안 본 말도 걸리는 장치**가 있어야 한다.
 
@@ -56,8 +56,8 @@ def visible(path):
     return t
 
 
-#: 사람이 「이 쓰임은 정상」이라고 판정한 것. **낱말이 아니라 짝으로 적는다.**
-#   ⛔ 낱말 전체를 정상으로 등록하면 그 낱말이 나쁘게 쓰인 경우까지 영영 가려진다
+#: 사람이 「이 쓰임은 정상」이라고 판정한 것. **단어가 아니라 짝으로 적는다.**
+#   ⛔ 단어 전체를 정상으로 등록하면 그 단어가 나쁘게 쓰인 경우까지 영영 가려진다
 #      — 「갈래는 정상」으로 넣으면 「갈래 ① 변경 요청 단계」까지 통과한다
 #      (2026-09-16 외부 검토 지적). 그래서 문맥을 함께 받는다.
 #   문맥 `*` 는 **어디서나 정상**이라는 뜻이다. 근거를 반드시 적게 해서
@@ -66,7 +66,7 @@ KNOWN = os.path.join(HERE, "..", "data", "catalog", "known-words.jsonl")
 
 
 def load_known(path):
-    """{낱말/품사: [(문맥, 범위)…]} — 없으면 빈 사전."""
+    """{단어/품사: [(문맥, 범위)…]} — 없으면 빈 사전."""
     out = {}
     if not os.path.exists(path):
         return out
@@ -81,11 +81,11 @@ def load_known(path):
 
 
 def is_known(known, key, sentence, path):
-    """이 자리의 이 낱말이 이미 정상으로 판정됐나.
+    """이 자리의 이 단어가 이미 정상으로 판정됐나.
 
     ⛔ **범위를 안 보면 안 된다.** 「명사」·「동사」는 이 저장소 글에서는 정상이지만
        업무 보고서에 나오면 걸려야 한다 — 사람 글 4,790만 자에서 명사 12회 ·
-       동사 9회로 진짜 드문 말이다. 낱말만 열어 주면 그 구분이 사라진다.
+       동사 9회로 진짜 드문 말이다. 단어만 열어 주면 그 구분이 사라진다.
     """
     full = os.path.abspath(path).replace(os.sep, "/")
     for ctx, scope in known.get(key, ()):
@@ -107,8 +107,54 @@ def accept(path, word, context, why, scope="*"):
     return row
 
 
+def accept_file(known_path, rows_path):
+    """여러 짝을 한 번에 등록한다 — 단어마다 명령 하나면 사람이 게이트를 끈다.
+
+    파일은 JSONL 이고 줄마다 `{word, context, scope, why}` 다. `why` 가 빈 줄은
+    **안 받는다** — 근거 없이 열어 준 짝은 나중에 왜 열렸는지 아무도 모른다.
+    """
+    import datetime
+    today = datetime.date.today().isoformat()
+    rows, skipped = [], []
+    with io.open(rows_path, encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue
+            row = json.loads(line)
+            if not row.get("why"):
+                skipped.append(row.get("word", "?"))
+                continue
+            rows.append({"word": row["word"],
+                         "context": row.get("context") or "*",
+                         "scope": row.get("scope") or "*",
+                         "why": row["why"], "added": today})
+    os.makedirs(os.path.dirname(os.path.abspath(known_path)), exist_ok=True)
+    with io.open(known_path, "a", encoding="utf-8", newline="\n") as f:
+        for row in rows:
+            f.write(json.dumps(row, ensure_ascii=False) + "\n")
+    return len(rows), skipped
+
+
+def emit_template(rows, where, out_path, scope):
+    """게이트가 막은 단어로 등록 서식을 만든다 — 사람이 `why` 만 채우면 된다."""
+    folder = os.path.dirname(os.path.abspath(out_path))
+    if folder:
+        os.makedirs(folder, exist_ok=True)
+    with io.open(out_path, "w", encoding="utf-8", newline="\n") as f:
+        f.write("# 이 문서에서 막힌 단어. **고칠 것은 문서를 고치고 그 줄을 지운다.**\n")
+        f.write("# 정상인 것만 `why` 를 채운다 — 빈 줄은 안 받는다.\n")
+        f.write("# 등록: python -X utf8 scripts/rare_words.py --accept-file "
+                + out_path + "\n")
+        for key, mine, base in rows:
+            f.write(json.dumps({
+                "word": key, "context": "*", "scope": scope, "why": "",
+                "_이 문서": mine, "_기준선": base,
+                "_보기": where.get(key, "")[:60]}, ensure_ascii=False) + "\n")
+
+
 def main():
-    ap = argparse.ArgumentParser(description="사람이 안 쓰는 낱말을 찾아 보여 준다")
+    ap = argparse.ArgumentParser(description="사람이 안 쓰는 단어를 찾아 보여 준다")
     ap.add_argument("paths", nargs="*")
     ap.add_argument("--max", type=int, default=40,
                     help="기준선에서 이보다 적게 나오면 목록에 올린다 (기본 40)")
@@ -117,13 +163,31 @@ def main():
                     help="이미 정상으로 판정한 짝 목록 (기본: data/catalog/known-words.jsonl)")
     ap.add_argument("--all", action="store_true",
                     help="정상으로 판정한 것까지 다 보인다 — 목록을 훑을 때")
-    ap.add_argument("--accept", metavar="낱말/품사",
+    ap.add_argument("--accept", metavar="단어/품사",
                     help="이 짝을 정상으로 등록한다 — `--context` 와 `--why` 가 함께 있어야 한다")
     ap.add_argument("--context", help="정상인 문맥 · `*` 는 어디서나 정상")
     ap.add_argument("--why", help="왜 정상인지 한 줄")
     ap.add_argument("--scope", default="*",
                     help="어느 문서에서 정상인가 — 경로 무늬 · `*` 는 모든 문서")
+    ap.add_argument("--accept-file", metavar="JSONL",
+                    help="여러 짝을 한 번에 등록 — 줄마다 {word, context, scope, why}")
+    ap.add_argument("--gate", action="store_true",
+                    help="판정을 낸다 — 정상 등록이 안 된 드문 단어가 남으면 rc 1")
+    ap.add_argument("--gate-max", type=int, default=60,
+                    help="게이트가 보는 기준선 문턱 (기본 60) — 이보다 드문 단어는 "
+                         "고치거나 근거를 적어 등록해야 통과")
+    ap.add_argument("--emit-template", metavar="JSONL",
+                    help="막힌 단어로 등록 서식을 만든다 — `why` 만 채우면 된다")
     args = ap.parse_args()
+
+    if args.accept_file:
+        took, skipped = accept_file(args.known, args.accept_file)
+        print(f"정상으로 등록 {took}개")
+        if skipped:
+            print(f"⛔ 근거(`why`)가 비어 안 받은 것 {len(skipped)}개 — "
+                  + " · ".join(skipped[:8]))
+            return 1
+        return 0
 
     if args.accept:
         if not args.context or not args.why:
@@ -140,6 +204,7 @@ def main():
     freq = data["freq"]
 
     known = load_known(args.known)
+    gate_rows, gate_where = [], {}
 
     from kiwipiepy import Kiwi
     kiwi = Kiwi()
@@ -172,12 +237,34 @@ def main():
             rare = kept
         rare.sort(key=lambda x: (x[2], -x[1]))
 
-        print(f"── {os.path.basename(path)} — 낱말 {len(seen)}종 · "
+        if args.gate:
+            # ⛔ 게이트는 **문턱이 따로다.** 목록을 보여 주는 문턱(기본 40)과
+            #    막는 문턱(기본 60)이 같을 이유가 없다 — 「가리」(43회)처럼
+            #    사용자가 짚은 말이 40 과 60 사이에 있다(2026-09-16 실측).
+            blocked = [(k, n2, b) for k, n2, b in
+                       [(k, seen[k], freq.get(k, 0)) for k in seen]
+                       if b <= args.gate_max
+                       and not is_known(known, k, where.get(k, ""), path)]
+            blocked.sort(key=lambda x: (x[2], -x[1]))
+            gate_rows.extend(blocked)
+            gate_where.update(where)
+            mark = "통과" if not blocked else f"막음 {len(blocked)}종"
+            print(f"── {os.path.basename(path)} — {mark} "
+                  f"(기준선 {args.gate_max}회 이하 · 정상 등록 안 된 것)")
+            for key, mine, base in blocked[:args.top]:
+                form, tag = key.rsplit("/", 1)
+                print(f"   {form:>10}/{tag:<3} 이 문서 {mine:>2}회 · 기준선 "
+                      f"{base:>4}회   {where[key]}")
+            if len(blocked) > args.top:
+                print(f"   … 그 밖에 {len(blocked) - args.top}종")
+            continue
+
+        print(f"── {os.path.basename(path)} — 단어 {len(seen)}종 · "
               f"기준선 {args.max}회 이하 {len(rare)}종"
               + (f" · 이미 본 것 {hushed}종 접음" if hushed else ""))
         for key, mine, base in rare[:args.top]:
             form, tag = key.rsplit("/", 1)
-            # ⛔ 표에 없는 낱말을 「0회」로 찍으면 **안 쓰는 말이라고 읽힌다.**
+            # ⛔ 표에 없는 단어를 「0회」로 찍으면 **안 쓰는 말이라고 읽힌다.**
             #    표는 단어 점검이 안 읽는 구간(문턱 이하·한 글자)을 빼고 담으므로
             #    없다는 것은 「그 아래」라는 뜻이지 부재가 아니다. 전역 규칙의
             #    「부정 단정을 네 갈래로」가 그대로 걸린다 — 부재와 미기재를 가른다.
@@ -189,9 +276,22 @@ def main():
         print()
 
     print(f"기준선 — 사람이 쓴 업무 한국어 {data['docs']:,}건 · "
-          f"{data['chars']:,}자 · 낱말 {len(freq):,}종")
+          f"{data['chars']:,}자 · 단어 {len(freq):,}종")
     print(f"   표는 {FLOOR}회 이하와 한 글자를 안 담습니다 — 단어 점검이 그 둘을 "
-          "없는 낱말과 똑같이 다루기 때문입니다(「≤{0}회」가 그 뜻).".format(FLOOR))
+          "없는 단어와 똑같이 다루기 때문입니다(「≤{0}회」가 그 뜻).".format(FLOOR))
+    if args.gate:
+        if args.emit_template:
+            emit_template(gate_rows, gate_where, args.emit_template, args.scope)
+            print(f"\n등록 서식을 만들었습니다 — {args.emit_template}")
+        if not gate_rows:
+            print("\n✅ 통과 — 정상 등록이 안 된 드문 단어가 없습니다")
+            return 0
+        print(f"\n⛔ 막힌 단어 {len(gate_rows)}종 — 둘 중 하나를 합니다")
+        print("   ① 문서를 고친다 (업무에서 더 자주 쓰는 말로)")
+        print("   ② 정상이면 근거를 적어 등록한다 — `--emit-template` 로 서식을 받고")
+        print("      `why` 를 채운 뒤 `--accept-file` 로 한 번에 넣습니다")
+        return 1
+
     if known:
         print(f"   이미 정상으로 판정한 짝 {sum(len(v) for v in known.values()):,}개를 "
               "접었습니다 — 전부 보려면 `--all`")
@@ -199,4 +299,6 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    # ⛔ 종료 코드를 넘긴다. 안 넘기면 `--gate` 가 「막음 37종」이라 찍고도
+    #    프로세스는 0으로 끝나, 게이트로 쓰는 쪽이 통과로 읽는다(2026-09-16 실측).
+    sys.exit(main())
