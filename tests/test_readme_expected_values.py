@@ -75,6 +75,18 @@ class ReadmeExpectedValueTests(unittest.TestCase):
             self.skipTest("설치 안 한 기계 — 남이 저장소만 받아 돌리는 것이 정상이다")
         self.assertEqual(int(m.group(1)), same)
 
+    def test_the_rule_count_matches(self) -> None:
+        """README 가 적은 갈래 수가 실제와 같아야 한다 — 이 숫자도 한 번 낡았다."""
+        m = re.search(r"--list-rules\s+# 갈래 (\d+)종", self.text)
+        self.assertIsNotNone(m, "README 의 `--list-rules` 줄을 못 찾았다")
+        done = subprocess.run(
+            [sys.executable, "-X", "utf8", str(repo_paths.CHECKER), "--list-rules"],
+            capture_output=True, text=True, encoding="utf-8")
+        names = [l.strip() for l in (done.stdout or "").splitlines()
+                 if l.startswith("    ") and l.strip()
+                 and re.match(r"^[가-힣「]", l.strip())]
+        self.assertEqual(int(m.group(1)), len(names))
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -80,6 +80,11 @@ def pairs() -> list[tuple[Path, Path]]:
     denylist = repo_paths.REPO / "data" / "catalog" / "local-identity-denylist.txt"
     if denylist.exists():
         out.append((denylist, repo_paths.installed("data", "catalog", denylist.name)))
+    # ⛔ 제품 이름 목록도 같은 자리로 — 검사기가 `~/.claude/data/catalog/` 를 본다.
+    #    본보기(`*.example.txt`)는 저장소에 있고 실제 목록은 gitignore 대상이다.
+    brands = repo_paths.REPO / "data" / "catalog" / "local-brand-names.txt"
+    if brands.exists():
+        out.append((brands, repo_paths.installed("data", "catalog", brands.name)))
     for name in HOOK_FILES:
         out.append((repo_paths.hook(name), repo_paths.installed("hooks", name)))
     # `skills/` 아래를 통째로 옮긴다 — 스킬을 새로 만들 때 이 함수를 안 고쳐도 된다.

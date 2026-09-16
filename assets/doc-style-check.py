@@ -594,6 +594,52 @@ HEAD_LINES = 6        # 문서 머리 「누가·언제·무엇을 위해 읽나
 # 이 낱말들은 열 이름만 봐서 안에 무엇이 있는지 알 수 없다. 다만 「비고」는
 # 공문서 표의 표준 관례라 발행을 막을 근거가 못 된다 — 그래서 오류가 아니라 주의다.
 BAD_LABEL = ['내용', '기타', '참고', '비고', '설명', '메모']
+
+# ── 제품·상표 이름의 정본 표기 ────────────────────────────────────────────
+#
+# ⛔ **이름을 이 파일에 적지 않는다.** 공개 저장소이고, 전역 규칙이 「가리개를 만들 때
+#    가릴 대상을 코드에 적지 않는다 — 그 코드가 곧 명단이다」라고 못 박았다.
+#    목록은 저장소 밖(`.gitignore`)에 두고 **있으면 읽는다**. 없으면 이 갈래는 안 돈다.
+#
+# **본보기** — `data/catalog/local-brand-names.example.txt` 를 복사해서 쓴다.
+#    적는 꼴은 `정본 = 잘못 적은 꼴, 또 다른 꼴` 한 줄이다.
+#
+# **넣을 것은 자사 제품 이름뿐** — 실측(문서 272개)에서 「노션」 96회·「슬랙」 72회·
+#    「지라」 56회가 전부 정당했다. 음차가 실제로 문제였던 것은 자사 제품 이름
+#    하나(10회)뿐이다. 「음차 금지」로 넓히면 정상 224건이 걸린다.
+BRAND_FILE = 'local-brand-names.txt'
+
+
+def brand_pairs():
+    """{잘못 적은 꼴: 정본} — 목록이 없으면 빈 사전.
+
+    찾는 곳 — 지정한 것 · 설치본 옆 · 저장소 안. 검사기 하나만 받아 쓰는 사람도
+    자기 목록을 둘 수 있게 **검사기 파일 기준**으로도 찾는다.
+    """
+    here = os.path.dirname(os.path.abspath(__file__))
+    cands = [os.environ.get('KOREAN_QA_BRANDS', ''),
+             os.path.join(os.path.expanduser('~'), '.claude', 'data', 'catalog', BRAND_FILE),
+             os.path.join(here, '..', 'data', 'catalog', BRAND_FILE),
+             os.path.join(here, BRAND_FILE)]
+    out = {}
+    for cand in cands:
+        if not cand or not os.path.isfile(cand):
+            continue
+        for line in io.open(cand, encoding='utf-8'):
+            line = line.strip()
+            if not line or line.startswith('#') or '=' not in line:
+                continue
+            canon, _, wrong = line.partition('=')
+            canon = canon.strip()
+            for w in wrong.split(','):
+                w = w.strip()
+                if w and canon:
+                    out[w] = canon
+        break
+    return out
+
+
+BRANDS = brand_pairs()
 MD_HEADING = re.compile(r'^#{1,6}\s+(.+?)\s*#*$')
 
 # ── 마스킹 — 검사에서 빼야 할 구간 ────────────────────────────────────────────
@@ -894,6 +940,10 @@ def scan_html(path, relaxed=False, form=None, rules=None):
     for w in SELF_PRAISE:
         for m in re.findall(r'[^·\n]{0,20}' + w + r'[^·\n]{0,22}', text):
             warn.append(('평가 수식어', f'「{w}」 … {m.strip()[:56]} — 무엇을 하는지로 바꿀 것'))
+    for wrong, canon in BRANDS.items():
+        for m in re.finditer(re.escape(wrong), text):
+            near = ' '.join(text[max(0, m.start() - 18):m.end() + 18].split())
+            err.append(('제품 이름 음차', f'「{wrong}」 → 「{canon}」 · {near[:48]}'))
     for kind, level, fix, hit in translationese_hits(text):
         near = ' '.join(text[max(0, hit.start() - 20):hit.end() + 20].split())
         (err if level == 'err' else warn).append(
@@ -1189,7 +1239,7 @@ RULE_GROUPS = {
     '낱말': ('낱말 선택 — 지어낸 말과 뜻이 흐려지는 말', [
         '「~하는 자리」', '「~하는 자리」 의심', '지어낸 명사구', '평가 수식어',
         '모호한 지칭', '지시어 확인', '「회기」', '업무 글에 없는 말',
-        '말투 섞임',
+        '말투 섞임', '제품 이름 음차',
     ]),
     '번역투': ('번역에서 옮아온 문형', [
         '이중 피동', '번역투 이중 조사', '번역투 그녀',
@@ -1565,6 +1615,10 @@ def scan_md(path, relaxed=False, form=None, rules=None):
         for w in SELF_PRAISE:
             if w in m:
                 warn.append((n, '평가 수식어', f'「{w}」 — {strip(line).strip()[:50]}'))
+        for wrong, canon in BRANDS.items():
+            if wrong in m:
+                err.append((n, '제품 이름 음차',
+                            f'「{wrong}」 → 「{canon}」 — {strip(line).strip()[:46]}'))
         for h in HOEGI.finditer(m):
             if HOEGI_OK.search(m[max(0, h.start() - 6):h.end() + 6]):
                 continue
@@ -1861,6 +1915,13 @@ def main():
         tail += ' · 형태소 분석기 없이 본 곳 있음'
         print('\n형태소 분석기 없음 — 「~는 때」를 용언 목록으로만 봤습니다 · 미탐이 섞입니다'
               '\n   고치려면 python -m pip install kiwipiepy')
+    # ⛔ 목록이 없으면 그 갈래를 **안 본 것**이다. 조용히 넘기면 「오류 0」이 통과인지
+    #    안 본 것인지 갈리지 않는다 — 껐다는 사실을 적는 규칙과 같은 이유다.
+    if not BRANDS:
+        tail += ' · 제품 이름 안 봄'
+        print(f'\n제품 이름 목록이 없어 음차는 안 봤습니다 — 이름은 저장소 밖에 둡니다'
+              f'\n   만들려면 data/catalog/local-brand-names.example.txt 를 '
+              f'{BRAND_FILE} 로 복사하십시오')
     print(f'\n합계 — 오류 {total_e} · 주의 {total_w}{tail}')
     return 1 if total_e else 0
 
