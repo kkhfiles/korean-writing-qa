@@ -23,6 +23,11 @@ TOOL = os.path.join(ROOT, "scripts", "check_record.py")
 BODY = "# 계획\n\n**요점 셋** — 하나 · 둘 · 셋\n"
 STAGES = ("structure", "words", "judgment")
 
+#: ⛔ 막는 단계는 기본이 `structure` 하나다 — 뒤의 둘은 **적는 길이 아직 없다.**
+#   열쇠 없는 자물쇠를 기본으로 두면 넘기기가 습관이 되고, 그 뒤로는 어떤
+#   게이트도 안 듣는다. 이 시험은 셋을 다 요구하는 설정으로 장치 자체를 본다.
+STRICT = {"KOREAN_PUBLISH_REQUIRE": "structure,words,judgment"}
+
 
 class PublishRecordTests(unittest.TestCase):
 
@@ -33,7 +38,9 @@ class PublishRecordTests(unittest.TestCase):
         with io.open(self.doc, "w", encoding="utf-8", newline="\n") as f:
             f.write(BODY)
         self.store = os.path.join(self.dir, "store.jsonl")
-        self.env = dict(os.environ, KOREAN_CHECK_RECORD=self.store)
+        self.env = dict(os.environ, KOREAN_CHECK_RECORD=self.store, **STRICT)
+        self.lenient = dict(os.environ, KOREAN_CHECK_RECORD=self.store,
+                            KOREAN_PUBLISH_REQUIRE="structure")
 
     def tearDown(self) -> None:
         shutil.rmtree(self.dir, ignore_errors=True)
@@ -44,15 +51,25 @@ class PublishRecordTests(unittest.TestCase):
                             self.doc, "--stage", s, "--verdict", "pass"],
                            capture_output=True, env=self.env, cwd=ROOT, timeout=60)
 
-    def _publish(self, prefix=""):
+    def _publish(self, prefix="", env=None):
         cmd = f"{prefix}python notion.py create --md {self.doc}".strip()
         payload = {"hook_event_name": "PreToolUse", "tool_name": "Bash",
                    "session_id": "pub-session", "tool_input": {"command": cmd}}
         done = subprocess.run([sys.executable, "-X", "utf8", GATE],
                               input=json.dumps(payload, ensure_ascii=False),
                               capture_output=True, text=True, encoding="utf-8",
-                              errors="replace", timeout=240, env=self.env)
+                              errors="replace", timeout=240, env=env or self.env)
         return done.returncode, done.stdout + done.stderr
+
+    def test_the_default_does_not_demand_what_nothing_records(self) -> None:
+        """⛔ 기본 설정은 **적을 길이 있는 것만** 요구한다.
+
+        셋을 다 요구하면서 뒤의 둘을 적는 곳을 안 만들면 모든 발행이 막히고
+        통로가 넘기기 하나뿐이다. 넘기기가 습관이 되면 그 뒤로는 어떤 게이트도
+        안 듣는다 — 자물쇠가 없는 것보다 나쁘다(2026-09-16 에 그 상태로 배포함).
+        """
+        rc, out = self._publish(env=self.lenient)
+        self.assertEqual(0, rc, f"기본 설정인데 발행이 막혔습니다: {out[:300]}")
 
     def test_no_record_blocks_the_publish(self) -> None:
         """⚠️ `structure` 는 게이트가 발행 직전에 실제로 돌려 그 자리에서 통과로

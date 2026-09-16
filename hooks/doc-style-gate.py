@@ -95,8 +95,20 @@ RECORDER = _find(
 )
 
 
-#: 발행을 막기 전에 통과해야 하는 단계. 표면 모양·낱말·문맥 판단 셋이다.
-REQUIRE = ("structure", "words", "judgment")
+#: 발행을 막기 전에 통과해야 하는 단계.
+#
+# ⛔ **적을 길이 있는 것만 요구한다.** 2026-09-16 에 셋을 다 요구하게 만들고
+#    `words`·`judgment` 를 적는 곳을 아무 데도 안 만들어, **모든 발행이 막히고
+#    통로가 넘기기 하나뿐인 상태**로 전역에 배포했다. 넘기기가 습관이 되면
+#    그 뒤로는 어떤 게이트도 안 듣는다 — 자물쇠가 없는 것보다 나쁘다.
+#
+# 올리는 조건 — 그 단계를 **적는 길이 실제로 있고**, 적히는 비율을 재 본 뒤.
+#   `KOREAN_PUBLISH_REQUIRE=structure,words,judgment` 로 시험해 볼 수 있다.
+REQUIRE = tuple(
+    s.strip() for s in
+    (os.environ.get("KOREAN_PUBLISH_REQUIRE") or "structure").split(",")
+    if s.strip()
+)
 #: 사람이 푸는 길. 명령 앞에 이 값을 붙이면 보류를 넘긴다 — **명령문에 남으므로
 #  나중에 누가 왜 넘겼는지 되짚을 수 있다.** 조용히 넘기는 길은 두지 않는다.
 FORCE = "KOREAN_PUBLISH_FORCE=1"
