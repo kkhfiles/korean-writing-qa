@@ -153,6 +153,8 @@ err  = []                                 # 주의에서 오류로 올린다
 - [시스템 구조와 역할](docs/architecture.md) — 부품·실행 시점·되먹임
 - [현재 상태](docs/status.md)
 - [판단이 필요한 것](docs/decisions-pending.md)
+- [재발방지 설계안](docs/prevention-design-20260915.md) — 탐지 넷과 호출 하나 · 외부 검토 반영
+- [규칙 후보](docs/rule-candidates.md) — 규칙으로 올리기 전의 측정과 판단
 - [기존 검사기 조사](docs/existing-tools.md)
 - [외부 한국어 작성 도구 검토](docs/external-korean-tools-review.md)
 - [사용자 문체 피드백 반영](docs/user-feedback-workflow.md)
