@@ -162,3 +162,44 @@ class CodeFenceTests(unittest.TestCase):
         doc = self._doc("# 계획\n\n````\n코드\n````\n\n되먹임을 봅니다.\n")
         rc, out = run(doc)
         self.assertIn("되먹임", out)
+
+
+class OveruseAxisTests(unittest.TestCase):
+    """둘째 축 — 문턱 **위**인데 이 문서가 지나치게 자주 쓰는 말.
+
+    절대 문턱(40회 이하)만 보면 「갈래」(90)·「담기」(106)·「가리」(43)처럼
+    **사용자가 짚었는데 문턱 위에 있는 말**이 영영 안 보인다. 이 축이 그 사각을 덮는다.
+    """
+
+    def setUp(self) -> None:
+        self.dir = tempfile.mkdtemp(prefix="words-overuse-")
+
+    def tearDown(self) -> None:
+        shutil.rmtree(self.dir, ignore_errors=True)
+
+    def _doc(self, body):
+        p = os.path.join(self.dir, "doc.md")
+        with io.open(p, "w", encoding="utf-8", newline="\n") as f:
+            f.write(body)
+        return p
+
+    #: 「갈래」를 되풀이한 글 — 기준선은 90회라 첫째 축이 못 본다
+    MANY = ("# 갈래\n\n" + "갈래를 나눕니다. 갈래마다 다릅니다. 갈래가 셋입니다.\n" * 4
+            + "회의에서 결정한 내용을 정리해 공유하고 일정을 확인합니다.\n" * 20)
+
+    def test_a_word_above_the_floor_surfaces_when_overused(self) -> None:
+        rc, out = run(self._doc(self.MANY))
+        self.assertIn("지나치게 자주 쓰는 말", out)
+        self.assertIn("갈래", out.split("지나치게 자주 쓰는 말", 1)[1])
+
+    def test_the_axis_can_be_turned_off(self) -> None:
+        rc, out = run(self._doc(self.MANY), "--overuse", "0")
+        self.assertNotIn("지나치게 자주 쓰는 말", out)
+
+    def test_an_ordinary_business_document_stays_quiet(self) -> None:
+        """⛔ 평범한 글에서 울리면 아무도 이 목록을 안 읽는다."""
+        body = ("# 주간 보고\n\n"
+                + "이번 주에 확인한 내용과 다음 주 일정을 정리해 공유합니다.\n" * 12
+                + "담당자와 협의해 반영하고 결과를 회의에서 보고할 계획입니다.\n" * 12)
+        rc, out = run(self._doc(body))
+        self.assertNotIn("지나치게 자주 쓰는 말", out)

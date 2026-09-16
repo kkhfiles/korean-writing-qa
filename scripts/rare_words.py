@@ -33,6 +33,39 @@ KEEP = {"NNG", "VV", "VA", "MAG", "XR"}
 #   시험 `tests/test_freq_table_has_no_identity.py` 가 둘을 대조한다.
 FLOOR = 40
 
+#: ── 둘째 축 · 과다 비율 ────────────────────────────────────────────────────
+#
+#   **첫째 축의 사각** — 절대 문턱(40회 이하)만 보면 **문턱 위에 있는데 사용자가
+#   짚은 말**이 영영 안 보인다. 「갈래」 90 · 「담기」 106 · 「가리」 43 ·
+#   「매일」 104 · 「기다리」 203 이 전부 그 구간이다(회차별 지적 다섯).
+#
+#   **재는 것** — 「이 문서가 기준선보다 몇 배 자주 쓰나」.
+#       배수 = (이 문서 빈도 / 이 문서 글자수) ÷ (기준선 빈도 / 기준선 글자수)
+#
+#   **실측으로 고른 값**(2026-09-16)
+#   | 문서 | 1위 | 배수 |
+#   |---|---|---|
+#   | `docs/status.md` | **갈래** | **1,107** |
+#   | `docs/rule-candidates.md` | **갈래** | **784** |
+#   | 업무 기록 TSK-10 | 공동 | 353 |
+#   | 업무 기록 TSK-11 | 신설 | 461 |
+#
+#   평범한 업무 문서는 1위가 350배 안팎이고, 드문 고유어를 되풀이한 문서는 1,000배를
+#   넘는다. 그 사이에 줄을 그었다.
+#
+#   ⛔ **판정이 아니라 볼 곳 좁히기다.** 상위에는 그 문서의 주제어가 섞인다
+#      (이 저장소 글이면 판정·오탐·라벨). 걸러 낼 것은 `known-words.jsonl` 에
+#      범위와 함께 등록한다.
+#   ⛔ **한두 번 나온 말은 안 센다** — 1,800자 문서에서 1회짜리 낱말이 상위를
+#      통째로 차지했다(실측). 짧은 글일수록 비율이 불안정하다.
+#   ⛔ **기준선이 높은 말은 안 본다** — 시험이 잡았다. 같은 문장을 열두 번 되풀이한
+#      글에서 「협의」(기준선 1,835)·「보고」(1,859)가 380배로 올라왔다. 흔한 말을
+#      자주 쓰는 것은 그 글의 주제일 뿐이다. 사용자가 짚은 다섯은 전부 낮은 쪽이다
+#      — 가리 43 · 갈래 90 · 매일 104 · 담기 106 · 기다리 203.
+OVERUSE_RATIO = 350
+OVERUSE_MIN_HITS = 3
+OVERUSE_BASE_CAP = 300
+
 #: ⛔ **한 글자 용언 어간도 본다.** 「걷다·굳다·재다·깎다·싣다」처럼 업무 글에
 #   안 쓰는 고유어가 한 글자 어간에 몰려 있는데, 예전에는 `len < 2` 로 통째로
 #   건너뛰어 **이 구간이 아예 안 보였다.** 실측 2026-09-15 — 문서 13개에서
@@ -163,6 +196,10 @@ def main():
     ap.add_argument("--max", type=int, default=40,
                     help="기준선에서 이보다 적게 나오면 목록에 올린다 (기본 40)")
     ap.add_argument("--top", type=int, default=25, help="몇 개까지 보일까")
+    ap.add_argument("--overuse", type=int, default=OVERUSE_RATIO,
+                    metavar="배수",
+                    help="둘째 축 — 기준선보다 이 배수 이상 자주 쓴 말도 낸다 "
+                         "(0 이면 끔)")
     ap.add_argument("--known", default=KNOWN,
                     help="이미 정상으로 판정한 짝 목록 (기본: data/catalog/known-words.jsonl)")
     ap.add_argument("--all", action="store_true",
@@ -206,6 +243,7 @@ def main():
         sys.exit(f"빈도표가 없습니다: {os.path.normpath(TABLE)}")
     data = json.loads(io.open(TABLE, encoding="utf-8").read())
     freq = data["freq"]
+    base_chars = data["chars"]
 
     known = load_known(args.known)
     gate_rows, gate_where = [], {}
@@ -215,6 +253,7 @@ def main():
 
     for path in args.paths:
         text = visible(path)
+        chars = len(text)
         seen = collections.Counter()
         where = {}
         for sent in kiwi.split_into_sents(text):
@@ -227,6 +266,21 @@ def main():
                 key = f"{tok.form}/{tag}"
                 seen[key] += 1
                 where.setdefault(key, " ".join(sent.text.split())[:56])
+
+        # ── 둘째 축 — 문턱 **위**에 있는데 이 문서가 지나치게 자주 쓰는 말
+        over = []
+        if args.overuse and chars:
+            for key, mine in seen.items():
+                base = freq.get(key, 0)
+                if not FLOOR < base <= OVERUSE_BASE_CAP:
+                    continue
+                if mine < OVERUSE_MIN_HITS:
+                    continue
+                ratio = (mine / chars) / (base / base_chars)
+                if ratio >= args.overuse and not is_known(
+                        known, key, where.get(key, ""), path):
+                    over.append((ratio, key, mine, base))
+            over.sort(reverse=True)
 
         rare = [(k, n, freq.get(k, 0)) for k, n in seen.items()
                 if freq.get(k, 0) <= args.max]
@@ -277,6 +331,16 @@ def main():
                   f"{shown}   {where[key]}")
         if len(rare) > args.top:
             print(f"   … 그 밖에 {len(rare)-args.top}종")
+        if over:
+            print(f"   ── 문턱 위인데 이 문서가 지나치게 자주 쓰는 말 {len(over)}종 "
+                  f"(기준선 {FLOOR + 1}~{OVERUSE_BASE_CAP}회 · 이 문서가 "
+                  f"{args.overuse}배 이상 · {OVERUSE_MIN_HITS}회 이상)")
+            for ratio, key, mine, base in over[:args.top]:
+                form, tag = key.rsplit("/", 1)
+                print(f"   {form:>10}/{tag:<3} 이 문서 {mine:>2}회 · 기준선 "
+                      f"{base:>4}회 · {ratio:>6,.0f}배   {where[key]}")
+            if len(over) > args.top:
+                print(f"   … 그 밖에 {len(over) - args.top}종")
         print()
 
     print(f"기준선 — 사람이 쓴 업무 한국어 {data['docs']:,}건 · "
