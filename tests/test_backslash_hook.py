@@ -71,6 +71,50 @@ class BackslashHookTests(unittest.TestCase):
 
         self.assertEqual(code, 0)
 
+    # --- 따옴표 없는 히어독의 백틱·$( ---------------------------------------
+    # 2026-09-16 실사고: `cat > 제안서.md <<EOF` 본문의 마크다운 인라인 코드가
+    # 명령으로 실행돼 문서가 깨졌다. 구분자를 감싸면 글자 그대로 도착한다.
+
+    def test_a_backtick_in_an_unquoted_heredoc_is_blocked(self) -> None:
+        command = "\n".join(["cat > doc.md <<EOF", "# 제목", "`python -m x` 를 돌린다", "EOF"])
+        code, reason = self.run_hook(command)
+
+        self.assertEqual(code, 2)
+        self.assertIn("히어독", reason)
+        self.assertIn("<<'EOF'", reason)
+        self.assertIn("3:", reason)
+
+    def test_command_substitution_in_an_unquoted_heredoc_is_blocked(self) -> None:
+        command = "\n".join(["cat > x.sh <<EOF", "echo $(date)", "EOF"])
+        code, _reason = self.run_hook(command)
+
+        self.assertEqual(code, 2)
+
+    def test_a_quoted_heredoc_passes(self) -> None:
+        """구분자를 감싸면 본문이 글자 그대로 도착한다 — 막을 이유가 없다."""
+        for opener in ("<<'EOF'", '<<"EOF"', "<<\\EOF", "<<-'EOF'"):
+            with self.subTest(opener):
+                command = "\n".join([f"cat > doc.md {opener}", "`code` 와 $(x)", "EOF"])
+                code, _reason = self.run_hook(command)
+                self.assertEqual(code, 0)
+
+    def test_an_unquoted_heredoc_without_execution_passes(self) -> None:
+        command = "\n".join(["cat > doc.md <<EOF", "그냥 글", "EOF"])
+        code, _reason = self.run_hook(command)
+
+        self.assertEqual(code, 0)
+
+    def test_a_backtick_outside_a_heredoc_passes(self) -> None:
+        """히어독 밖의 백틱은 의도한 명령 치환이다."""
+        code, _reason = self.run_hook("echo `date` && cat <<'EOF'\n`x`\nEOF")
+
+        self.assertEqual(code, 0)
+
+    def test_a_here_string_is_not_a_heredoc(self) -> None:
+        code, _reason = self.run_hook("python x.py <<<EOF\n`x`")
+
+        self.assertEqual(code, 0)
+
     def test_other_tools_are_not_touched(self) -> None:
         """PowerShell 의 here-string 은 역슬래시가 안 벗겨진다 — 대상이 아니다."""
         code, _reason = self.run_hook(f'Write-Output "{BS * 2}"', tool="PowerShell")
