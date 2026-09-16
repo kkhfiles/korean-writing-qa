@@ -54,6 +54,16 @@ def pairs() -> list[tuple[Path, Path]]:
     selftest = repo_paths.CHECKER.parent / "doc-style-check-test.py"
     if selftest.exists():
         out.append((selftest, repo_paths.installed("assets", selftest.name)))
+    # ⛔ 설치된 게이트가 `~/.claude/assets/check_record.py` 를 찾는다. 안 옮기면
+    #    저장소를 연 세션에서만 통과 기록이 남고, 다른 프로젝트에서는 조용히 빠진다.
+    recorder = repo_paths.REPO / "scripts" / "check_record.py"
+    if recorder.exists():
+        out.append((recorder, repo_paths.installed("assets", recorder.name)))
+    # ⛔ 정상 판정 목록도 같이 옮긴다. 이것이 빠지면 **저장소본과 설치본이 규칙 판을
+    #    다르게 계산해** 게이트가 적은 기록을 저장소의 도구가 버린다(2026-09-16 실측).
+    known = repo_paths.REPO / "data" / "catalog" / "known-words.jsonl"
+    if known.exists():
+        out.append((known, repo_paths.installed("assets", known.name)))
     for name in HOOK_FILES:
         out.append((repo_paths.hook(name), repo_paths.installed("hooks", name)))
     # `skills/` 아래를 통째로 옮긴다 — 스킬을 새로 만들 때 이 함수를 안 고쳐도 된다.

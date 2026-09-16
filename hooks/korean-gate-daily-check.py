@@ -72,7 +72,10 @@ STALE_DAYS = 3
 
 #: 정본이 사는 곳 — `install.py` 가 여기서 설치본으로 옮긴다. 네 번째가 생기면
 #: `tests/test_daily_check_watches_github.py` 가 깨져서 여기를 고치라고 한다.
-CANONICAL = ("assets", "hooks", "skills")
+# ⛔ `install.py` 가 옮기는 폴더와 같아야 한다 — 시험이 둘을 대조한다.
+#    2026-09-16 에 통과 기록 도구(`scripts/check_record.py`)와 정상 판정 목록
+#    (`data/catalog/known-words.jsonl`)이 설치 대상이 되면서 둘이 어긋났다.
+CANONICAL = ("assets", "hooks", "skills", "scripts", "data")
 
 
 def state_path() -> Path:

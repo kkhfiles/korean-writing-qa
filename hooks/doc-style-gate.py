@@ -86,6 +86,27 @@ PUBLISH = re.compile(
 DRYRUN = re.compile(r"--dry-run\b")
 
 
+#: 검사 통과를 내용 해시에 묶어 적는 도구. 없으면 조용히 건너뛴다 —
+#   게이트가 그것 때문에 죽으면 안 된다.
+RECORDER = _find(
+    "KOREAN_QA_RECORDER",
+    HOME / ".claude" / "assets" / "check_record.py",
+    Path("scripts") / "check_record.py",
+)
+
+
+def note_pass(path, stage, verdict):
+    """판정을 기록한다. 실패해도 게이트를 멈추지 않는다."""
+    if not RECORDER or not RECORDER.exists():
+        return
+    try:
+        subprocess.run([sys.executable, "-X", "utf8", str(RECORDER), "record",
+                        str(path), "--stage", stage, "--verdict", verdict],
+                       capture_output=True, timeout=20)
+    except (OSError, subprocess.SubprocessError):
+        pass
+
+
 def load():
     try:
         return json.loads(STATE.read_text(encoding="utf-8"))
@@ -393,6 +414,11 @@ def main():
         body = run_checker(fp, errors_only)
         if mode == "once":
             seen[fp] = time.time()
+        # ⛔ **기계가 낸 판정은 기계가 적는다.** 사람이 따로 기록하게 하면 또
+        #    「기억해야 도는 구조」가 된다. 발행 게이트와 정지 장치가 이 기록을
+        #    읽어 「지금 내용이 통과했나」를 판정한다(2026-09-16).
+        if not probe:
+            note_pass(fp, "structure", "fail" if body else "pass")
         if body:
             blocks.append(f"{os.path.basename(fp)}\n{body}")
 
