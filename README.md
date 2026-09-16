@@ -165,3 +165,4 @@ err  = []                                 # 주의에서 오류로 올린다
 - [외부 한국어 작성 도구 검토](docs/external-korean-tools-review.md)
 - [사용자 문체 피드백 반영](docs/user-feedback-workflow.md)
 - [인수인계 설계](docs/design-handoff.md) — 2026-08-24에 멈춘 창립 문서 · 현재 상태 아님
+- **지난 기록** — [다중 형식 진단](docs/diagnostic-003.md) · [스킬 구현 1차](docs/skill-implementation-001.md) · [2차](docs/skill-implementation-002.md) · 끝난 작업의 측정 기록
