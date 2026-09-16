@@ -29,12 +29,16 @@ sys.stdout.reconfigure(encoding='utf-8')
 
 import repo_paths  # noqa: E402
 
-HOOK_FILES = ["doc-style-gate.py", "block-backslash-in-shell.py", "korean-gate-daily-check.py"]
+HOOK_FILES = ["doc-style-gate.py", "block-backslash-in-shell.py",
+              "korean-gate-daily-check.py", "public-push-gate.py"]
 
 #: 훅을 어느 사건에 걸 것인가. matcher 는 Claude Code 의 도구 이름 패턴이다.
 HOOK_WIRING = [
     ("PreToolUse", "Bash|PowerShell", "block-backslash-in-shell.py"),
     ("PreToolUse", "Artifact|Bash|PowerShell", "doc-style-gate.py"),
+    # 공개 저장소로 나가기 직전에만 선다 — 개인 저장소는 그냥 보낸다
+    #   (2026-09-16 사용자 결정: 푸시는 기본 · 공개 저장소만 게이트)
+    ("PreToolUse", "Bash|PowerShell", "public-push-gate.py"),
     ("PostToolUse", "Edit|Write|MultiEdit", "doc-style-gate.py"),
     ("SessionStart", "", "korean-gate-daily-check.py"),
 ]
@@ -64,6 +68,11 @@ def pairs() -> list[tuple[Path, Path]]:
     known = repo_paths.REPO / "data" / "catalog" / "known-words.jsonl"
     if known.exists():
         out.append((known, repo_paths.installed("assets", known.name)))
+    # ⛔ 푸시 게이트가 `~/.claude/assets/check_publish_safety.py` 를 찾는다.
+    #    안 옮기면 설치한 PC 에서 게이트가 「검사기를 못 찾았다」로 막기만 한다.
+    safety = repo_paths.REPO / "scripts" / "check_publish_safety.py"
+    if safety.exists():
+        out.append((safety, repo_paths.installed("assets", safety.name)))
     for name in HOOK_FILES:
         out.append((repo_paths.hook(name), repo_paths.installed("hooks", name)))
     # `skills/` 아래를 통째로 옮긴다 — 스킬을 새로 만들 때 이 함수를 안 고쳐도 된다.
@@ -144,7 +153,8 @@ def wire_hooks(dry_run: bool) -> int:
         added.append(f"{event} · {matcher or '(전체)'} · {name}")
 
     if not added:
-        print("훅 네 개가 이미 등록돼 있다.")
+        # ⛔ 개수를 글로 적지 않는다 — 훅을 더할 때마다 낡는다(README 가 그렇게 낡았다).
+        print(f"훅 {len(HOOK_WIRING)}개가 이미 등록돼 있다.")
         return 0
 
     print("등록할 훅:")

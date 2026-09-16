@@ -40,7 +40,7 @@ python -X utf8 -m unittest discover -s tests
 |---|---|
 | `exempt-fixture.md` 검사 | `오류 0 · 주의 0` |
 | `violation-fixture.md` 검사 | `오류 11 · 주의 6` |
-| `install.py --check` | `같음 25 · 다름 0 · 없음 0` |
+| `install.py --check` | `같음 27 · 다름 0 · 없음 0` |
 | 시험 | `OK` · 건너뛰기 2건은 정상 |
 
 **건너뛰기 2건이 정상인 까닭** — 작성자 기계에만 있는 연구 자료(사내 문서 복사본)를 대조하는 시험입니다. 검사기와 스킬을 재는 시험은 전부 돕니다.
@@ -130,7 +130,7 @@ err  = []                                 # 주의에서 오류로 올린다
 | `skills/finalize-korean-document/` | 2층 스킬 정본 |
 | `skills/fix-korean-finding/` | 지적 하나를 규칙까지 미는 유지보수 스킬 |
 | `agents/` | 서브에이전트 정의 · 모델·사고 깊이·규칙 파일 적재 여부를 머리말로 고정 |
-| `hooks/` | 발행 직전 검사 · 겹 역슬래시 차단 · 매일 건강 검사와 GitHub 반영 확인 |
+| `hooks/` | 발행 직전 검사 · 겹 역슬래시 차단 · 공개 저장소 푸시 게이트 · 매일 건강 검사와 GitHub 반영 확인 |
 | `install.py` · `repo_paths.py` | 설치와 경로 해석 |
 | `scripts/check_publish_safety.py` | 공개하면 안 되는 것이 섞였는지 · CI 가 같이 돎 |
 | `tests/` | 규칙마다 잡을 것과 잡으면 안 될 것을 짝으로 · CI 가 매 푸시마다 전부 돌림 |
