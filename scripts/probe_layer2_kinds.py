@@ -31,25 +31,35 @@
 
 갈래당 호출 1회 · `claude-agent-sdk` OAuth(구독·크레딧 풀 · 과금 키 아님)
 
-**2026-09-17 실측 · 두 회차 · sonnet · temperature 0**
+**2026-09-17 실측 · sonnet · temperature 0 · 운반 문서 두 벌 · 벌마다 두 회차**
 
-| 칸(심은 17건을 인용 출처로 가름) | blind | guided |
+운반 문서를 두 벌 돌렸다. 첫 벌은 대장 17건만, 둘째 벌은 **예비 예문 11건을
+더** 심은 것이다. 예비는 9단계가 다루는 갈래인데 **규칙이 인용하지 않은** 예문이라,
+「적힌 글자를 되찾나」와 「갈래를 알아보나」를 처음으로 갈라 낸다.
+
+| 재는 것 | blind | guided |
 |---|---|---|
-| 둘 다 인용한 4건 | 4 · 4 | 4 · 4 |
-| guided 만 인용한 8건 | 1 · 1 | 8 · 7 |
-| 둘 다 인용 안 한 5건 | 0 · 0 | 0 · 0 |
-| **까닭까지 맞음**(항목 이름이 적힌 13건) | **0 · 0** | **11 · 11** |
+| 대장 13건 · 까닭까지 · 17건 운반 | 0 · 0 | 11 · 11 |
+| 대장 13건 · 까닭까지 · 29건 운반 | 0 · 0 | **10 · 7** |
+| 예비 8건(의심 뺀 것) · 까닭까지 | 0 · 0 | **4 · 4** |
 
-- **까닭까지 맞음이 두 회차 다 11로 같다.** 흔들린 것은 느슨한 잣대뿐이다 —
-  F-035 와 F-043 이 서로 한 자리씩 맞바꿨고 합은 그대로였다. **표현만 보는
-  잣대로는 12·11 로 흔들리니 까닭까지 보는 쪽이 기준이다.**
-- blind 의 5건은 **까닭이 하나도 안 맞는다** — 전부 다른 규칙으로 걸렸다
-  (「업무에서 쓰는 말로 쓰기」·「소리 내어 읽기」). 표현만 보고 기준선으로
-  쓰면 **같은 것을 재지 않는 둘을 견주게 된다.**
-- guided 의 지적 13건이 **전부 심은 자리**다(헛짚음 0). 규칙이 길어져서 마구
-  짚은 것이 아니다.
-- **둘 다 인용 안 한 5건은 두 회차 다 0이지만 판정 불가다** — 그중 넷은 받을
-  항목이 9단계에 없다(대장 `kind` 가 비어 있다). 남는 표본이 F-025 하나뿐이다.
+- **적어 두면 인용 안 한 같은 갈래도 절반쯤 알아본다** — 의심 뺀 예비 8건에서
+  두 회차 다 4건. blind 는 두 회차 다 0이다. 9단계는 예시 목록으로만 도는 것이
+  아니다. 다만 **절반은 못 잡는다.**
+- **갈래마다 다르다**(의심 뺀 것 · 1차·2차) — 홀로 선 「자리」 1·1 / 1건 ·
+  사물을 사람처럼 1·1 / 2건 · 동사구로 품 1·2 / 3건 · 진행형 1·0 / 2건.
+  두 회차 다 잡은 것은 H-02·H-09·H-12 셋이다.
+- **⚠️ 운반 문서를 늘리자 대장 재현율이 떨어졌다**(11·11 → 10·7). 심은 것이
+  17개에서 29개로 늘자 놓치는 것이 생긴다 — **긴 문서에서 2층이 약해진다**는
+  뜻이므로 회수율을 문서 길이와 함께 읽어야 한다.
+- **blind 는 표현을 짚어도 까닭이 안 맞는다** — 두 벌 네 회차 전부 0이다.
+  「업무에서 쓰는 말로 쓰기」·「막연한 비유 줄이기」 같은 이웃 규칙으로 걸린다.
+  **표현만 보는 잣대로 기준선을 삼으면 같은 것을 재지 않는 둘을 견주게 된다.**
+- **음성 대조** — 「고치지 않는 검사기입니다」는 예비에서 뺐다(검사기는 실제로
+  안 고친다 · 결함이 아니다). 운반 문서에는 남겨 두었고 **두 갈래 다 안 짚었다.**
+- **예비는 이 저장소가 지어낸 것이다.** 못 잡은 것이 예문 탓일 수 있어 셋에
+  `doubt` 를 달았다. H-05 는 두 갈래 다 짚되 이웃 규칙 이름(「압축한 명사구
+  풀기」)으로 냈다 — 표현은 맞고 까닭이 다른 경우다.
 
 **정답이 바뀌면 `--from-json` 으로 다시 센다 — 부르지 않는다.** 2026-09-17 에
 대장의 한 줄을 고치자 재현율이 11 에서 12 로 올랐다. 지적은 그대로였고 정답만
@@ -60,6 +70,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import re
 import sys
@@ -77,6 +88,7 @@ LEDGER = REPO_ROOT / "data" / "cases" / "flagged-rounds.jsonl"
 # 운반 문서는 **시험 자료**라 tests 아래 둔다. data/raw 는 진짜 원문이 사는
 # 곳이고 통째로 무시된다 — 거기 두면 공유받은 사람에게 안 간다.
 CARRIER = (REPO_ROOT / "tests" / "fixtures" / "layer2-kinds" / "carrier.md")
+HELD_OUT = CARRIER.parent / "held-out.jsonl"
 
 #: 9단계를 제목으로 찾는다 — 번호로 찾으면 단계가 밀릴 때 조용히 엉뚱한 데를 읽는다
 STEP_TITLE = "검사기가 못 잡는 것을 직접 찾는다"
@@ -154,8 +166,34 @@ def planted() -> list[dict]:
             if line.strip():
                 row = json.loads(line)
                 if row.get("owner") == "2층":
+                    row["source"] = "대장"
                     rows.append(row)
     return rows
+
+
+def held_out() -> list[dict]:
+    """규칙이 **인용하지 않은** 같은 갈래의 예문.
+
+    대장과 섞지 않는다 — 대장은 사용자가 짚어 준 것이고 이쪽은 같은 갈래로
+    지어낸 것이다. 섞으면 「사람이 짚은 것」의 수가 부풀려진다. 지어낸 것이라
+    **못 잡았을 때의 증거 무게가 대장 쪽보다 가볍다.**
+    """
+    rows = []
+    if not HELD_OUT.is_file():
+        return rows
+    with HELD_OUT.open(encoding="utf-8") as f:
+        for line in f:
+            if line.strip():
+                row = json.loads(line)
+                row["flag_id"] = row.pop("id")
+                row["source"] = "예비"
+                rows.append(row)
+    return rows
+
+
+def carrier_sha() -> str:
+    """운반 문서의 지문 — 바뀐 문서에 옛 결과를 대고 세는 것을 막는다."""
+    return hashlib.sha256(CARRIER.read_bytes()).hexdigest()[:16]
 
 
 def numbered(text: str) -> str:
@@ -208,7 +246,9 @@ def score(items: list[dict], findings: list, document: str,
             why_ok = kind[:8] in str(tight.get("category", ""))
         rows.append({"flag_id": item["flag_id"], "text": want,
                      "line": want_line, "tight": tight, "loose": loose,
-                     "cited": want in cited, "kind": kind, "why_ok": why_ok})
+                     "cited": want in cited, "kind": kind, "why_ok": why_ok,
+                     "source": item.get("source", "대장"),
+                     "doubt": item.get("doubt")})
 
     hit_lines = {r["line"] for r in rows if r["loose"] or r["tight"]}
     extra = [f for f in said
@@ -250,7 +290,7 @@ def run_arm(arm: str, model: str, timeout: float, document: str,
     out = score(items, findings, document, cited_texts(arm))
     out.update({"arm": arm, "model": result.get("model"),
                 "cost_usd": result.get("cost_usd"), "findings": findings,
-                "rules_chars": len(rules)})
+                "rules_chars": len(rules), "carrier_sha": carrier_sha()})
     return out
 
 
@@ -260,7 +300,15 @@ def report(out: dict) -> None:
     print(f"   심은 {out['total']}건 중 — 엄격 {out['tight']} · 느슨 {out['loose']}")
     if out["gradable"]:
         print(f"      그중 **까닭까지 맞음** {out['why']} "
-              f"(대장이 항목 이름을 적은 {out['gradable']}건 기준)")
+              f"(항목 이름이 적힌 {out['gradable']}건 기준)")
+    for tag in ("대장", "예비"):
+        pick = [r for r in out["rows"] if r["source"] == tag]
+        if not pick:
+            continue
+        why = sum(1 for r in pick if r["why_ok"])
+        note = ("사용자가 짚음" if tag == "대장"
+                else "규칙이 인용 안 함 · 갈래는 9단계에 있음")
+        print(f"      {tag} {len(pick):>2}건 — 까닭까지 {why:>2} ({note})")
     else:
         print("      까닭은 안 봤다 — 대장이 항목 이름을 안 적는다 "
               "(note 에 「§9 「항목 이름」」까지 적으면 본다)")
@@ -298,18 +346,25 @@ def main() -> None:
             sys.exit(f"없는 파일: {path}")
 
     document = CARRIER.read_text(encoding="utf-8")
-    items = planted()
+    items = planted() + held_out()
     if not items:
         sys.exit("대장에 2층 몫이 없다 — 잴 것이 없다")
 
     if args.from_json:
         saved = json.loads(args.from_json.read_text(encoding="utf-8"))
+        now = carrier_sha()
+        stale = {o.get("carrier_sha") for o in saved} - {now}
+        if stale:
+            sys.exit(
+                f"⛔ 그때와 운반 문서가 다르다(그때 {sorted(stale)} · 지금 {now}).\n"
+                "   줄이 밀려 조용히 틀린 수가 나온다 — 다시 부르십시오.")
         results = []
         for old in saved:
             fresh = score(items, old.get("findings") or [], document,
                           cited_texts(old.get("arm") or "guided"))
             fresh.update({k: old.get(k) for k in
-                          ("arm", "model", "cost_usd", "findings", "rules_chars")})
+                          ("arm", "model", "cost_usd", "findings",
+                           "rules_chars", "carrier_sha")})
             fresh["cost_usd"] = 0.0          # 다시 부르지 않았다
             results.append(fresh)
     else:
@@ -348,29 +403,36 @@ def main() -> None:
                       f"blind {got[0]} · guided {got[1]}")
 
         n_new, hit_new = cells["guided 만 인용"]
-        n_none, hit_none = cells["둘 다 비인용"]
         print(f"\n   적어 둔 것의 값 — guided 가 새로 인용한 {n_new}건에서 "
-              f"{hit_new[0]} → {hit_new[1]}")
-        print(f"   글자 밖으로 번지나 — 둘 다 인용 안 한 {n_none}건에서 "
-              f"{hit_none[0]} → {hit_none[1]}")
+              f"{hit_new[0]} → {hit_new[1]} (표현 기준)")
 
-        o_b = {"total": n_none, "tight": hit_none[0]}
-        o_g = {"tight": hit_none[1]}
-        if o_b["total"] == 0:
-            print("\n⛔ 판정 불가 — 인용 안 한 표본이 없다")
-        elif o_g["tight"] > o_b["tight"]:
-            print("\n적은 것이 갈래를 알아보게 한다 — 넘긴 곳이 실제로 받는다")
+        # ── 번지나 — **예비 예문 · 까닭까지**로만 가른다.
+        # 표현만 보는 잣대는 여기서 거꾸로 나온다(blind 가 더 많이 짚는데
+        # 까닭이 하나도 안 맞는다). 인용 안 된 같은 갈래를 **알아보는지**가
+        # 물음이므로 까닭이 맞아야 잡은 것이다.
+        def spread(out):
+            pick = [r for r in out["rows"] if r["source"] == "예비"]
+            sure = [r for r in pick if not r.get("doubt")]
+            return (sum(1 for r in pick if r["why_ok"]), len(pick),
+                    sum(1 for r in sure if r["why_ok"]), len(sure))
+
+        gb, nb, sb, mb = spread(blind)
+        gg, ng, sg, mg = spread(guided)
+        if ng == 0:
+            print("\n⛔ 판정 불가 — 예비 예문이 없다. 9단계가 다루는 갈래의 "
+                  "인용 안 된 예문을 운반 문서에 심어야 잰다.")
         else:
-            # ⛔ 여기서 「못 알아본다」로 적으면 안 된다. 대장은 **단계**까지만
-            # 가리키고 항목 이름은 안 적는다 — 못 잡은 것이 「갈래를 못 알아본
-            # 것」인지 「그 갈래가 9단계에 없는 것」인지 이 자료로는 안 갈린다.
-            print(f"\n⛔ 판정 불가 — 인용 안 한 {o_b['total']}건을 하나도 "
-                  "못 잡았지만, 그 갈래가 9단계에 있는지는 대장이 안 적는다.\n"
-                  "   「갈래를 못 알아본 것」과 「그 갈래가 애초에 없는 것」이 "
-                  "안 갈린다.\n"
-                  "   가르는 법 — 대장 note 에 단계가 아니라 **항목 이름**까지 "
-                  "적고,\n   9단계가 다루는 갈래의 **인용 안 된** 예문을 운반 "
-                  "문서에 더 심는다.")
+            print(f"   글자 밖으로 번지나 — 예비 {ng}건에서 까닭까지 "
+                  f"{gb} → {gg}")
+            print(f"      의심 뺀 {mg}건만 — {sb} → {sg}")
+            if gg > gb:
+                print(f"\n적어 두면 인용 안 한 같은 갈래도 알아본다 — "
+                      f"{ng}건 중 {gg}건. 전부는 아니다.")
+            else:
+                print("\n적어도 인용 안 한 같은 갈래는 못 알아본다 — "
+                      "9단계는 예시 목록으로만 작동한다.")
+            print("   ⚠️ 예비 예문은 이 저장소가 지어낸 것이라 **못 잡은 것이 "
+                  "예문 탓일 수 있다** — `doubt` 칸을 읽는다.")
     for out in results:
         if out["tight"] < out["loose"]:
             print(f"   ⚠️ {out['arm']}: 줄은 짚었는데 표현이 다른 것 "

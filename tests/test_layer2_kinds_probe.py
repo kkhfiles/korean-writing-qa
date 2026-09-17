@@ -3,15 +3,18 @@
 탐침은 호출이 들어 재우지 않는다. 그래서 탐침이 조용히 망가져도 다음에 부를
 때까지 아무도 모른다. 부르지 않고 확인되는 전제만 여기서 지킨다.
 
-**지키는 것 넷**
+**지키는 것** (개수는 안 적는다 — 늘 때 숫자만 남는 일을 이미 겪었다)
 
 - 운반 문서가 대장의 2층 몫을 **글자 그대로** 들고 있나 (없으면 딴 것을 잰다)
 - 운반 문서가 1층에서 **오류 0 · 주의 0** 인가 (아니면 1층 지적이 섞여 들어온다)
+- 예비 예문을 규칙이 **인용하지 않나** (인용되면 되찾기 시험으로 바뀐다)
+- 예비가 대장과 **안 겹치나** (겹치면 사용자가 짚은 수가 부풀려진다)
 - `guided` 가 `blind` 보다 **실제로 더 준다** (9단계를 못 찾으면 둘이 같아진다)
-- 인용 갈림이 **한쪽으로 쏠리지 않았나** (전부 인용이면 갈림이 뜻을 잃는다)
+- 운반 문서에 **지문이 있나** (바뀐 문서에 옛 결과를 대고 세는 것을 막는다)
 """
 from __future__ import annotations
 
+import re
 import subprocess
 import sys
 import unittest
@@ -58,6 +61,72 @@ class CarrierTests(unittest.TestCase):
                       f"운반 문서에 1층 오류가 있습니다 — 2층 지적과 섞입니다\n{out}")
         self.assertIn("주의 0", out,
                       f"운반 문서에 1층 주의가 있습니다 — 2층 지적과 섞입니다\n{out}")
+
+
+class HeldOutTests(unittest.TestCase):
+    """예비 예문 — 규칙이 **인용하지 않은** 같은 갈래의 예문.
+
+    이것이 있어야 「적힌 글자를 되찾나」와 「갈래를 알아보나」가 갈린다.
+    규칙에 예문이 새로 인용되면 이 표본은 조용히 뜻을 잃는다.
+    """
+
+    def setUp(self) -> None:
+        self.held = probe.held_out()
+        self.doc = probe.CARRIER.read_text(encoding="utf-8")
+
+    def test_the_fixture_is_not_empty(self) -> None:
+        self.assertGreater(
+            len(self.held), 0,
+            "예비 예문이 없습니다 — 「번지나」를 잴 표본이 사라집니다")
+
+    def test_no_held_out_span_is_quoted_by_the_rules(self) -> None:
+        """인용되는 순간 그 예문은 **되찾기 시험**으로 바뀐다."""
+        rules = probe.rules_for("guided").replace("*", "")
+        leaked = [h["flag_id"] for h in self.held if h["text"] in rules]
+        self.assertEqual(
+            [], leaked,
+            f"규칙이 예비 예문을 인용합니다: {leaked} — 그 예문은 갈래를 "
+            "알아보는지 못 재므로, 규칙을 고쳤으면 예문도 바꿉니다")
+
+    def test_every_held_out_kind_is_a_real_item(self) -> None:
+        body = probe.step_body(
+            probe.SKILL_MD.read_text(encoding="utf-8"), probe.STEP_TITLE)
+        titles = set(re.findall(r"^   - \*\*(.+?)\*\*", body, re.M))
+        for h in self.held:
+            self.assertIn(
+                h["kind"], titles,
+                f"{h['flag_id']} 가 「{h['kind']}」 를 가리키는데 9단계에 "
+                "그런 항목이 없습니다")
+
+    def test_every_held_out_sentence_sits_in_the_carrier(self) -> None:
+        for h in self.held:
+            self.assertIn(h["text"], h["sentence"],
+                          f"{h['flag_id']}: 짚은 표현이 예문 밖입니다")
+            self.assertIn(
+                h["sentence"], self.doc,
+                f"{h['flag_id']}: 운반 문서에 예문이 없습니다 — {h['sentence']}")
+
+    def test_held_out_ids_do_not_collide_with_the_ledger(self) -> None:
+        """대장과 섞이면 사용자가 짚은 것의 수가 부풀려진다."""
+        ledger = {r["flag_id"] for r in probe.planted()}
+        clash = [h["flag_id"] for h in self.held if h["flag_id"] in ledger]
+        self.assertEqual([], clash, f"대장과 겹치는 번호: {clash}")
+        texts = {r["text"] for r in probe.planted()}
+        same = [h["flag_id"] for h in self.held if h["text"] in texts]
+        self.assertEqual([], same, f"대장과 같은 표현: {same} — 두 번 셉니다")
+
+
+class CarrierLockTests(unittest.TestCase):
+    """운반 문서가 바뀌면 옛 결과 재채점을 막아야 한다.
+
+    `--from-json` 은 **지금** 문서에 대고 다시 센다. 문서가 바뀐 뒤 옛 결과를
+    넣으면 줄이 밀려 조용히 틀린 수가 나온다.
+    """
+
+    def test_the_carrier_has_a_fingerprint(self) -> None:
+        sha = probe.carrier_sha()
+        self.assertEqual(16, len(sha), "지문 길이가 다릅니다")
+        self.assertEqual(sha, probe.carrier_sha(), "지문이 부를 때마다 다릅니다")
 
 
 class PromptTests(unittest.TestCase):
