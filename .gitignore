@@ -19,3 +19,4 @@ runs/**/raw/
 data/catalog/local-identity-denylist.txt
 # 제품·상표 이름 정본 목록 — 본보기(`*.example.txt`)만 올라간다
 data/catalog/local-brand-names.txt
+data/catalog/local-config-repo.txt

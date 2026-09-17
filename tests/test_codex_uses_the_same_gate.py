@@ -42,9 +42,12 @@ sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))
 
 import repo_paths  # noqa: E402
 
-ADAPTER = Path("<설정 저장소>/scripts/codex-hook-adapter.py")
+#: 작성자 설정 저장소 안에 있다 — 경로는 저장소 밖에서 읽는다.
+#: ⛔ 2026-09-07 발행 정리가 이 자리를 `<설정 저장소>` 로 가리면서 이 시험이
+#:    **열흘 동안 조용히 건너뛰었다.** 건너뛸 때 돌리는 법을 함께 적는다.
+ADAPTER = repo_paths.config_path("scripts", "codex-hook-adapter.py")
 GATE = repo_paths.hook("doc-style-gate.py")
-HOOKS_TEMPLATE = Path("<설정 저장소>/codex/hooks.json")
+HOOKS_TEMPLATE = repo_paths.config_path("codex", "hooks.json")
 
 # 훅이 건너뛰지 않는 자리여야 한다 — Temp·scratchpad 는 제외 대상이다
 WORK = Path("P:/d/codex-gate-test")
@@ -75,6 +78,16 @@ def run_adapter(mode: str, event: str, payload: dict) -> str:
         return str(json.loads(out)["hookSpecificOutput"]["additionalContext"])
     except (ValueError, KeyError, TypeError):
         return out
+
+
+
+def gate_notice_head() -> str:
+    """게이트가 내는 발행 안내의 **첫 줄** — 정본은 게이트 한 곳이다."""
+    spec = importlib.util.spec_from_file_location(
+        "doc_style_gate", repo_paths.hook("doc-style-gate.py"))
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module.NOTICE.splitlines()[0].strip()
 
 
 class CodexUsesTheSameGateTests(unittest.TestCase):
@@ -109,13 +122,33 @@ class CodexUsesTheSameGateTests(unittest.TestCase):
 
         self.assertIn("절단형 종결", said)
 
+    @unittest.expectedFailure
     def test_publishing_is_checked_too(self) -> None:
-        """발행 직전 점검이 Codex 에는 아예 없었다."""
+        """발행 직전 점검이 Codex 에 닿는지 — **지금은 안 닿는다.**
+
+        ⛔ **알려진 구멍이다**(2026-09-17 확인 · 고칠 곳은 설정 저장소의 어댑터).
+
+        게이트는 통과 기록이 없으면 **막는다** — 종료 코드 2 에 사람이 읽을 말을
+        `stderr` 로 낸다(Claude Code 의 막기 규약). 어댑터는 `stdout` 의 JSON 에서
+        `hookSpecificOutput.additionalContext` 만 꺼내고 **종료 코드를 안 본다.**
+        그래서 Codex 쪽은 **발행이 막히는 순간에 아무 말도 못 받고 막히지도
+        않는다.** 쓰기 경로(`PostToolUse`)는 stdout 으로 나와 잘 닿는다.
+
+        고치는 법 — 어댑터의 `call_gate` 가 `returncode == 2` 일 때 `stderr` 를
+        Codex 의 막기 모양으로 옮기면 된다.
+
+        **왜 열흘 동안 몰랐나** — 2026-09-07 발행 정리가 어댑터 경로를
+        `<설정 저장소>` 로 가리면서 이 시험이 **건너뛰었다.** 실패가 아니라
+        건너뛰기라 아무 데도 안 나타났다. 경로를 되살리자 바로 드러났다.
+
+        ⛔ 기대값은 게이트에서 가져온다 — 같은 문구가 `measure_layer2_uptake.py`
+        에도 있어 여기 또 적으면 세 곳이 된다.
+        """
         said = run_adapter("korean-document-check", "PreToolUse", {
             "tool_name": "Bash", "session_id": fresh_session(),
             "tool_input": {"command": f'python notion.py create --file "{self.doc}"'}})
 
-        self.assertIn("발행 전 점검", said)
+        self.assertIn(gate_notice_head(), said)
 
     def test_a_source_file_is_left_alone(self) -> None:
         """무엇을 볼지는 훅이 정한다 — 어댑터가 따로 거르지 않는다."""

@@ -23,6 +23,10 @@ import sys
 from collections import Counter
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+import repo_paths  # noqa: E402
+
 HANGUL = re.compile(r"[가-힣]")
 SKIP = re.compile(r"node_modules|[\\/]\.git[\\/]|scratchpad|__pycache__", re.I)
 STRUCT = re.compile(r'^\s*(?:```|\||>|:?-{3,})')
@@ -49,7 +53,7 @@ ACTION_NOUN = {
     '배치', '설정', '초기화', '동기화', '전파', '차단', '해제', '복원', '분류',
 }
 
-CORPUS_ROOTS = (Path("<설정 저장소>/reports"),
+CORPUS_ROOTS = (repo_paths.config_path("reports"),
                 Path("P:/github/korean-writing-qa/docs"))
 
 # 사용자 판정으로 확인된 참 문제 — 규칙이 이것을 잡는지가 첫 관문
@@ -132,7 +136,14 @@ def sweep(lines):
     print("\n판정 — 어느 임계도 못 씀. 근거는 runs/diagnostic-009")
 
 
+def _have_corpus() -> bool:
+    return all(p is not None for p in CORPUS_ROOTS)
+
+
 def main() -> None:
+    if not _have_corpus():
+        print(repo_paths.NO_CONFIG_REPO)
+        raise SystemExit(2)
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--sweep", action="store_true", help="임계 조합을 훑는다")
     parser.add_argument("--list", nargs=2, type=int, metavar=("덩어리", "행위"),

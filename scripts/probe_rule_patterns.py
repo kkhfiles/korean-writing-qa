@@ -13,9 +13,13 @@ import sys
 from collections import Counter
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+import repo_paths  # noqa: E402
+
 CORPORA = {
-    "보고서": Path("<설정 저장소>/reports"),
-    "발표자료": Path("<설정 저장소>/reports/project-summary"),
+    "보고서": repo_paths.config_path("reports"),
+    "발표자료": repo_paths.config_path("reports", "project-summary"),
     "AI원문": Path("P:/github/korean-writing-qa/data/raw"),
 }
 
@@ -45,7 +49,14 @@ def korean_md(root: Path) -> list[Path]:
     return out
 
 
+def _have_corpus() -> bool:
+    return all(p is not None for p in CORPORA.values())
+
+
 def main() -> None:
+    if not _have_corpus():
+        print(repo_paths.NO_CONFIG_REPO)
+        raise SystemExit(2)
     files = {name: korean_md(root) for name, root in CORPORA.items()}
     for name, paths in files.items():
         print(f"{name}: 문서 {len(paths)}건")

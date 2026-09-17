@@ -21,7 +21,7 @@ _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))
 import repo_paths  # noqa: E402
 
 CHECKER = repo_paths.CHECKER
-CORPUS = Path("<설정 저장소>/reports")
+CORPUS = repo_paths.config_path("reports")
 
 STRUCTURE = re.compile(r"^\s*(?:[-*+]\s|\d+[.)]\s|\||#{1,6}\s|>|```|:?-{3,})")
 SENTENCE_END = re.compile(r"[.!?。]\s*$")
@@ -54,7 +54,14 @@ def prose_share(text: str) -> tuple[float, int]:
     return len(flowing) / len(body), len(body)
 
 
+def _have_corpus() -> bool:
+    return CORPUS is not None
+
+
 def main() -> None:
+    if not _have_corpus():
+        print(repo_paths.NO_CONFIG_REPO)
+        raise SystemExit(2)
     checker = load_checker()
     rows = []
     for path in sorted(CORPUS.rglob("*.md")):

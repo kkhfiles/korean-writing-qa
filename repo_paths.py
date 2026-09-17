@@ -46,6 +46,51 @@ AGENTS = REPO / "agents"
 HOOKS = REPO / "hooks"
 
 
+#: 설정 저장소 경로를 적어 두는 자리 — 값은 각자 기계에, 이름만 저장소에.
+CONFIG_REPO_FILE = REPO / "data" / "catalog" / "local-config-repo.txt"
+
+
+def config_repo() -> Path | None:
+    """작성자의 설정 저장소 — 없으면 `None`.
+
+    **왜 이 함수가 있나.** 2026-09-07 발행 정리가 절대 경로를 `<설정 저장소>`
+    라는 글자로 가렸다. 가리는 것 자체는 맞았지만 **읽어 올 자리를 안 만들어**
+    그 경로를 쓰던 파일 다섯이 통째로 망가졌다. 그중 하나는 시험이었고,
+    실패가 아니라 **건너뛰기**를 골라 열흘 동안 아무 데도 안 나타났다.
+
+    찾는 곳 둘 — `KOREAN_QA_CONFIG_REPO` 환경 변수 · 저장소 밖 쪽지 파일
+    (`data/catalog/local-config-repo.txt` · `.gitignore` 대상).
+
+    **없으면 `None` 을 낸다.** 부르는 쪽이 그 사실을 **소리 내어** 다뤄야 한다 —
+    조용히 건너뛰면 그 순간부터 아무도 안 본다.
+    """
+    pinned = os.environ.get("KOREAN_QA_CONFIG_REPO", "").strip()
+    if pinned:
+        return Path(pinned)
+    try:
+        text = CONFIG_REPO_FILE.read_text(encoding="utf-8")
+    except OSError:
+        return None
+    for line in text.splitlines():
+        line = line.strip()
+        if line and not line.startswith("#"):
+            return Path(line)
+    return None
+
+
+def config_path(*parts: str) -> Path | None:
+    """설정 저장소 안의 경로 — 저장소를 못 찾으면 `None`."""
+    root = config_repo()
+    return root.joinpath(*parts) if root else None
+
+
+#: 설정 저장소를 못 찾았을 때 사람에게 내는 말 — 부르는 쪽이 그대로 쓴다.
+NO_CONFIG_REPO = (
+    "설정 저장소를 못 찾았습니다 — 이 검사는 작성자 기계에서만 돕니다.\n"
+    "   돌리려면 `KOREAN_QA_CONFIG_REPO` 를 지정하거나 "
+    "`data/catalog/local-config-repo.txt` 에 경로 한 줄을 적으십시오.")
+
+
 def hook(name: str) -> Path:
     """훅 파일 하나를 가리킨다 — 예: `hook("doc-style-gate.py")`."""
     return HOOKS / name
