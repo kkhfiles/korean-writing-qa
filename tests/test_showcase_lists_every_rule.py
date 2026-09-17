@@ -55,6 +55,22 @@ def checker_types() -> list[str]:
     return names
 
 
+
+def checker_rules():
+    """검사기의 묶음별 가지 이름 — `--list-rules` 가 정본이다."""
+    done = subprocess.run(
+        [sys.executable, "-X", "utf8", str(CHECKER), "--list-rules"],
+        capture_output=True, text=True, encoding="utf-8")
+    groups, cur = {}, None
+    for line in (done.stdout or "").splitlines():
+        if line.startswith("["):
+            cur = line.split("]")[0][1:]
+            groups[cur] = []
+        elif line.startswith("    ") and cur and re.match(r"^[가-힣「]", line.strip()):
+            groups[cur].append(line.strip())
+    return groups
+
+
 class ShowcaseListsEveryRule(unittest.TestCase):
     def test_every_rule_has_a_row(self):
         """갈래를 넣고 표를 안 고치면 여기서 걸린다."""
@@ -81,6 +97,55 @@ class ShowcaseListsEveryRule(unittest.TestCase):
             len(checker_types()), counts,
             f"페이지가 적은 가짓수 {sorted(counts)} 에 실제 갈래 수 "
             f"{len(checker_types())} 가 없습니다.")
+
+    #: 페이지가 쓰는 우리말 셈씨
+    WORDS = {"한": 1, "두": 2, "세": 3, "네": 4, "다섯": 5}
+
+    def test_the_hero_card_matches_the_checker(self):
+        """첫 화면 카드의 가짓수가 실제와 같아야 한다.
+
+        **왜**(2026-09-18). 이 카드가 **27** 로 오래 낡아 있었다. 다른 곳에
+        31 이 있어 기존 시험이 통과시켰다 — 「어딘가 맞는 수가 있나」는
+        낡은 곳을 못 찾는다.
+        """
+        html = SHOWCASE.read_text(encoding="utf-8")
+        m = re.search(r'기계가 보는 유형</p><p class="v">(\d+)가지</p>', html)
+        self.assertIsNotNone(
+            m, "첫 화면의 「기계가 보는 유형」 카드를 못 찾았습니다 — "
+               "표기를 바꿨으면 이 시험도 같이 고칩니다")
+        self.assertEqual(
+            len(checker_types()), int(m.group(1)),
+            "첫 화면 카드의 가짓수가 검사기와 다릅니다")
+
+    def test_the_breakdown_adds_up(self):
+        """「28가지 + 안내 둘 + 꺼 둔 하나」의 셋이 실제 묶음과 맞아야 한다.
+
+        **왜**(2026-09-17). 「안내 한 가지」로 적혀 있어 합이 30 이었다.
+        사람이 읽고서야 찾았다 — 셈이 안 맞는데 아무 시험도 안 봤다.
+        """
+        html = SHOWCASE.read_text(encoding="utf-8")
+        m = re.search(r"맨 위의 (\d+)가지에 안내 (\S+?) 가지와 기본으로 "
+                      r"꺼 둔 (\S+?) 가지를 더한 수", html)
+        self.assertIsNotNone(
+            m, "구성 셈 문장을 못 찾았습니다 — 문구를 바꿨으면 이 시험도 함께")
+        top = int(m.group(1))
+        guide = self.WORDS.get(m.group(2))
+        off = self.WORDS.get(m.group(3))
+        self.assertIsNotNone(guide, f"모르는 셈씨 「{m.group(2)}」")
+        self.assertIsNotNone(off, f"모르는 셈씨 「{m.group(3)}」")
+
+        rules = checker_rules()
+        self.assertEqual(
+            len(rules["안내"]), guide,
+            f"페이지는 안내가 {guide}가지라는데 검사기는 "
+            f"{len(rules['안내'])}가지입니다")
+        real_off = sum(1 for names in rules.values()
+                       for n in names if "기본으로 꺼짐" in n)
+        self.assertEqual(real_off, off,
+                         f"페이지는 꺼 둔 것이 {off}가지라는데 실제는 {real_off}가지입니다")
+        self.assertEqual(
+            len(checker_types()), top + guide + off,
+            f"셈이 안 맞습니다 — {top} + {guide} + {off}")
 
 
 if __name__ == "__main__":
