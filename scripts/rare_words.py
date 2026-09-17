@@ -248,7 +248,16 @@ def main():
     known = load_known(args.known)
     gate_rows, gate_where = [], {}
 
-    from kiwipiepy import Kiwi
+    # ⛔ 이 도구는 형태소 분석기가 **없으면 못 돈다** — 검사기와 다르다(그쪽은
+    #    글자만 보는 길로 내려가고 그 사실을 출력에 적는다). 맨몸으로 가져오면
+    #    받은 사람이 ImportError 만 보고 무엇을 해야 할지 모른다.
+    try:
+        from kiwipiepy import Kiwi
+    except ImportError:
+        sys.exit(
+            "형태소 분석기가 없어 단어 점검을 못 돌립니다.\n"
+            "   python -m pip install -r requirements.txt\n"
+            "   (구조 검사기는 이것 없이도 돕니다 — 형태소 판정만 글자로 내려갑니다.)")
     kiwi = Kiwi()
 
     for path in args.paths:
