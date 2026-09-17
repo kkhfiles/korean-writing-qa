@@ -623,10 +623,15 @@ def brand_pairs():
     자기 목록을 둘 수 있게 **검사기 파일 기준**으로도 찾는다.
     """
     here = os.path.dirname(os.path.abspath(__file__))
-    cands = [os.environ.get('KOREAN_QA_BRANDS', ''),
-             os.path.join(os.path.expanduser('~'), '.claude', 'data', 'catalog', BRAND_FILE),
-             os.path.join(here, '..', 'data', 'catalog', BRAND_FILE),
-             os.path.join(here, BRAND_FILE)]
+    pinned = os.environ.get('KOREAN_QA_BRANDS', '')
+    # ⛔ 지정했으면 **그것만** 본다. 예전에는 지정한 파일이 없으면 다음 자리로
+    #    넘어가 **목록을 끄는 길이 없었다** — 시험이 「목록 없는 기계」를 만들
+    #    수 없어, 목록을 설치하자 그 시험이 깨졌다(2026-09-17).
+    #    없는 자리를 지정하는 것이 곧 끄는 길이다.
+    cands = [pinned] if pinned else [
+        os.path.join(os.path.expanduser('~'), '.claude', 'data', 'catalog', BRAND_FILE),
+        os.path.join(here, '..', 'data', 'catalog', BRAND_FILE),
+        os.path.join(here, BRAND_FILE)]
     out = {}
     for cand in cands:
         if not cand or not os.path.isfile(cand):

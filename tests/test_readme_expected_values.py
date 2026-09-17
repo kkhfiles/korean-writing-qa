@@ -66,9 +66,12 @@ class ReadmeExpectedValueTests(unittest.TestCase):
         m = INSTALL_ROW.search(self.text)
         self.assertIsNotNone(m, "README 의 `install.py --check` 줄을 못 찾았다")
         import install  # noqa: PLC0415 — 저장소 루트를 sys.path 에 넣은 뒤라야 한다
-        # 신원 목록은 작성자 기계에만 있다(gitignore) — README 는 남의 기계가 보는 수다.
+        # 저장소 밖 목록은 작성자 기계에만 있다(gitignore) — README 는 **남의
+        # 기계가 보는 수**다. 목록이 둘로 늘어 이름을 하나만 빼면 어긋난다
+        # (2026-09-17: 제품 이름 목록을 놓자 27 != 28 로 깨졌다).
+        outside = {"local-identity-denylist.txt", "local-brand-names.txt"}
         same = sum(1 for src, dst in install.pairs()
-                   if src.name != "local-identity-denylist.txt"
+                   if src.name not in outside
                    and dst.exists() and install.digest(src) == install.digest(dst))
         missing = sum(1 for _src, dst in install.pairs() if not dst.exists())
         if missing:

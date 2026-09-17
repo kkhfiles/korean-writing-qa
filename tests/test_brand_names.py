@@ -84,7 +84,13 @@ class BrandNameTests(unittest.TestCase):
         self.assertNotIn("제품 이름 음차", out)
 
     def test_without_a_list_it_says_it_did_not_look(self) -> None:
-        """침묵은 합격이 아니다 — 안 봤으면 안 봤다고 적는다."""
+        """침묵은 합격이 아니다 — 안 봤으면 안 봤다고 적는다.
+
+        ⛔ **검사기가 지정한 자리만 보게 고친 뒤에야 이 시험이 뜻을 가진다**
+        (2026-09-17). 예전에는 지정한 파일이 없으면 설치본·저장소 자리로
+        넘어가, 그 기계에 목록이 있으면 **읽어 버렸다.** 실제로 목록을
+        놓자마자 깨졌고, 고친 곳은 시험이 아니라 검사기다.
+        """
         out = check("- **음차** — 애크미 검증 도구\n", None)
         self.assertNotIn("제품 이름 음차", out)
         self.assertIn("제품 이름 안 봄", out)
