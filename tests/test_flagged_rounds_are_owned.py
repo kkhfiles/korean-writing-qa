@@ -185,6 +185,11 @@ class Layer2OwnedTests(unittest.TestCase):
         core = (repo_paths.SKILL / "references"
                 / "core-rules.md").read_text(encoding="utf-8")
         for r in rows:
+            # 세 번째 상태 — **맥락 한정 선택**(2026-09-17). 그 문서에서
+            # 끝났고 일반 규칙으로 안 올린 것이라 갈 곳이 없는 게 맞다.
+            # 표시와 고른 문장이 **둘 다** 있어야 넘어간다 — 구멍이 되지 않게.
+            if r.get("general_rule") is False and (r.get("revised") or "").strip():
+                continue
             m = re.search(r"([a-z][a-z0-9-]+)\s*§", r["note"])
             if m is not None:
                 skill = repo_paths.REPO / "skills" / m.group(1) / "SKILL.md"

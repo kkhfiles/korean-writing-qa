@@ -83,6 +83,11 @@ class StepReferenceTests(unittest.TestCase):
             # 갈 곳은 둘 중 하나다 — 갈래를 알아보는 **9단계**이거나, 확정된
             # 짝을 읽는 **대표 수정 표**다. 사용자가 고친 꼴을 확정해 준
             # 것은 뒤쪽으로 간다(2026-09-17). 어느 쪽이든 **실재해야** 한다.
+            # 세 번째 상태 — **맥락 한정 선택**(2026-09-17). 그 문서에서
+            # 끝났고 일반 규칙으로 안 올린 것이라 갈 곳이 없는 게 맞다.
+            # 표시와 고른 문장이 **둘 다** 있어야 넘어간다 — 구멍이 되지 않게.
+            if r.get("general_rule") is False and (r.get("revised") or "").strip():
+                continue
             found = re.search(r"finalize-korean-document §(\d+)", r["note"])
             if found is not None:
                 self.assertEqual(

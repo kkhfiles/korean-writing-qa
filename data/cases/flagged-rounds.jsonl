@@ -4,7 +4,7 @@
 {"flag_id": "F-004", "round": 1, "text": "앞세우는 것", "sentence": "정확도를 앞세우는 것이 낫습니다", "owner": "규칙", "note": "업무 글에 없는 말"}
 {"flag_id": "F-005", "round": 1, "text": "돌아가는 설치", "sentence": "돌아가는 설치가 셋입니다", "owner": "규칙", "note": "업무 글에 없는 말"}
 {"flag_id": "F-006", "round": 2, "text": "묻는 때", "sentence": "묻는 때를 정합니다", "owner": "규칙", "note": "지어낸 명사구 — 「~는 때」"}
-{"flag_id": "F-007", "round": 2, "text": "다루는 때", "sentence": "Dispatch 와 Mycelium 은 다루는 때가 다릅니다", "owner": "규칙", "note": "지어낸 명사구 — 「~는 때」"}
+{"flag_id": "F-007", "round": 2, "text": "다루는 때", "sentence": "업무 비서와 검색기는 다루는 때가 다릅니다", "owner": "규칙", "note": "지어낸 명사구 — 「~는 때」"}
 {"flag_id": "F-008", "round": 2, "text": "드는 값", "sentence": "모델에 드는 값을 줄였습니다", "owner": "규칙", "note": "지어낸 명사구 — 값이 목적어가 못 됨"}
 {"flag_id": "F-009", "round": 2, "text": "잰 날", "sentence": "잰 날과 옛 값을 함께 싣습니다", "owner": "규칙", "note": "업무 글에 없는 말 · 2026-09-15 에 명사 목록을 걷어내며 덮음"}
 {"flag_id": "F-010", "round": 2, "text": "쟀는지", "sentence": "무엇을 언제 쟀는지 값마다 붙여 둡니다", "owner": "규칙", "note": "업무 글에 없는 말 · 2026-09-15 에 「에서 쟀」 제약을 풀며 덮음"}
@@ -19,7 +19,7 @@
 {"flag_id": "F-019", "round": 2, "text": "한글 교정기는 아예 안 부릅니다", "sentence": "한글 교정기는 아예 안 부릅니다", "owner": "단어 점검", "note": "교정/NNG · 부르/VV · 아예/MAG"}
 {"flag_id": "F-020", "round": 2, "text": "성가시고 말지만", "sentence": "잘못 띄운 것은 한 줄이 성가시고 말지만 잘못 버린 것은 흔적이 없습니다", "owner": "단어 점검", "note": "성가시/VA"}
 {"flag_id": "F-021", "round": 2, "text": "한 설치의 건수", "sentence": "한 설치의 건수입니다", "owner": "단어 점검", "note": "건수/NNG"}
-{"flag_id": "F-022", "round": 2, "text": "일을 하는 것과 일을 적는 것", "sentence": "일을 하는 것과 일을 적는 것은 늘 따로였습니다", "owner": "2층", "note": "병렬 구조가 어색 · finalize-korean-document §9", "kind": null}
+{"flag_id": "F-022", "round": 2, "text": "일을 하는 것과 일을 적는 것", "sentence": "일을 하는 것과 일을 적는 것은 늘 따로였습니다", "owner": "2층", "note": "병렬 구조가 어색 · 맥락 한정 선택이라 일반 규칙으로 안 올림 — 고른 문장이 기록을 별도 작업으로 세우는 틀이고 그 틀은 특정 제품 소개·홍보 문서에서만 근거가 있다", "kind": null, "revised": "기록은 업무의 일부가 아니라 별도 작업이었습니다", "general_rule": false}
 {"flag_id": "F-023", "round": 2, "text": "도구가 아니라 방식이라", "sentence": "도구가 아니라 방식이라 가져갈 수 있습니다", "owner": "2층", "note": "연결이 어색 · core-rules.md 「사용자가 확정한 대표 수정」", "kind": null}
 {"flag_id": "F-024", "round": 2, "text": "후보까지만 자동", "sentence": "되돌리기가 사람 몫인 일은 후보까지만 자동입니다", "owner": "2층", "note": "뜻이 안 통함 · core-rules.md 「사용자가 확정한 대표 수정」", "kind": null}
 {"flag_id": "F-025", "round": 2, "text": "물으면 아무도 답하지 않습니다", "sentence": "다 끝나고 몇 시간 뒤에 물으면 아무도 답하지 않습니다", "owner": "2층", "note": "조건과 결과가 안 맞음 · finalize-korean-document §9", "kind": "고치다 논리를 깬 곳"}
