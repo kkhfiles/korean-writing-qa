@@ -33,7 +33,7 @@
 {"flag_id": "F-033", "round": 2, "text": "그 앞", "sentence": "사람에게 나갈 보고서에서 걸리는 것은 그 앞이었습니다", "owner": "2층", "note": "선행사가 같은 줄에 없음 · 실문서 8건 중 정당이 대부분 · finalize-korean-document §9"}
 {"flag_id": "F-034", "round": 2, "text": "돌고 있는", "sentence": "실무에서 매일 돌고 있는 업무 비서입니다", "owner": "2층", "note": "진행형으로 늘린 서술 · 실문서 46건이 전부 정당 · finalize-korean-document §9"}
 {"flag_id": "F-035", "round": 3, "text": "따로 기록하지 않는", "sentence": "따로 기록하지 않는 업무 비서입니다", "owner": "2층", "note": "사실과 다름 · 기록은 남는다 · finalize-korean-document §9"}
-{"flag_id": "F-036", "round": 3, "text": "물으면 기록하지 않습니다", "sentence": "업무가 끝나고 몇 시간이 지난 뒤에 물으면 아무도 기록하지 않습니다", "owner": "2층", "note": "조건과 결과가 안 맞음 · finalize-korean-document §9"}
+{"flag_id": "F-036", "round": 3, "text": "물으면 아무도 기록하지 않습니다", "sentence": "업무가 끝나고 몇 시간이 지난 뒤에 물으면 아무도 기록하지 않습니다", "owner": "2층", "note": "조건과 결과가 안 맞음 · finalize-korean-document §9"}
 {"flag_id": "F-037", "round": 3, "text": "공수 넣기", "sentence": "공수 넣기는 사람이 승인합니다", "owner": "2층", "note": "입력 7,477 을 동사구로 품 · finalize-korean-document §9"}
 {"flag_id": "F-038", "round": 3, "text": "기술로 말하면", "sentence": "기술로 말하면 지식 그래프 위의 검색입니다", "owner": "2층", "note": "담화 표지 · 실문서 2건이고 「제목으로 말하면」은 정당 · finalize-korean-document §9"}
 {"flag_id": "F-039", "round": 4, "text": "언제 도나", "sentence": "언제 도나", "owner": "규칙", "note": "의문문 라벨 — 검사기가 오류로 잡음(확인 2026-09-15)"}

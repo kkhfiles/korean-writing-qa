@@ -101,11 +101,19 @@ class LedgerShapeTests(unittest.TestCase):
         self.assertEqual(len(ids), len(set(ids)), "대장 번호가 겹칩니다")
 
     def test_the_sentence_contains_the_flagged_words(self) -> None:
-        """짚어 준 말이 예문 안에 실제로 있어야 한다 — 없으면 딴 것을 재고 있다."""
+        """짚어 준 말이 예문 안에 **글자 그대로** 있어야 한다.
+
+        **왜 전체를 보나**(2026-09-17 넓힘). 예전에는 첫 낱말만 봤다. F-036 의
+        짚은 표현이 「물으면 기록하지 않습니다」였는데 예문은 「물으면 **아무도**
+        기록하지 않습니다」라 한 낱말이 빠져 있었고, 첫 낱말 「물으면」이 있어서
+        통과했다. 그 탓에 2층 탐침이 정답을 못 맞춰 재현율을 한 건 적게 셌다.
+        대장 어느 줄에도 가운뎃점으로 여럿을 적은 것이 없어 나눌 까닭이 없다.
+        """
         for r in LEDGER_ROWS:
-            head = re.split(r"[·\s]", r["text"])[0]
-            self.assertIn(head, r["sentence"],
-                          f"{r['flag_id']}: 예문에 「{head}」 가 없습니다 — {r['sentence']}")
+            self.assertIn(
+                r["text"], r["sentence"],
+                f"{r['flag_id']}: 예문에 「{r['text']}」 가 글자 그대로 없습니다 — "
+                f"{r['sentence']}")
 
 
 class RuleOwnedTests(unittest.TestCase):
