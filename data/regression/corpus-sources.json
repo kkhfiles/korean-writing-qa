@@ -1,7 +1,7 @@
 {
   "detector_cases": {
     "path": "data/regression/detector-cases.jsonl",
-    "expected_count": 68
+    "expected_count": 77
   },
   "real_document_path_allow_cases": {
     "path": "runs/diagnostic-002/path-term-candidates.jsonl",
@@ -12,7 +12,7 @@
   "human_rewrite_pairs": [
     {
       "path": "data/annotations/user-confirmed-phrases.jsonl",
-      "expected_count": 8,
+      "expected_count": 11,
       "label_basis": "direct_user_feedback"
     },
     {

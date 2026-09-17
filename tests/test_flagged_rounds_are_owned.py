@@ -169,17 +169,38 @@ class Layer2OwnedTests(unittest.TestCase):
        그 곳이 실제로 있는지 본다.
     """
 
-    def test_the_named_skill_exists_and_covers_it(self) -> None:
+    def test_the_named_place_exists_and_covers_it(self) -> None:
+        """갈 곳은 둘 중 하나이고, 어느 쪽이든 실재해야 한다.
+
+        - **스킬 단계** — 갈래를 알아보는 곳(`finalize-korean-document §9`)
+        - **핵심 규칙의 절** — 확정된 짝을 읽는 곳
+          (`core-rules.md 「사용자가 확정한 대표 수정」`)
+
+        사용자가 고친 꼴을 확정해 준 것은 뒤쪽으로 간다(2026-09-17). 스스로
+        알아낼 것이 아니라 표에서 읽을 것이기 때문이다.
+        """
         rows = [r for r in LEDGER_ROWS if r["owner"] == "2층"]
         if not rows:
             self.skipTest("2층이 맡은 지적이 없다")
+        core = (repo_paths.SKILL / "references"
+                / "core-rules.md").read_text(encoding="utf-8")
         for r in rows:
             m = re.search(r"([a-z][a-z0-9-]+)\s*§", r["note"])
+            if m is not None:
+                skill = repo_paths.REPO / "skills" / m.group(1) / "SKILL.md"
+                self.assertTrue(skill.is_file(),
+                                f"{r['flag_id']}: 스킬이 없습니다 — {skill}")
+                continue
+            table = re.search(r"core-rules\.md 「(.+?)」", r["note"])
             self.assertIsNotNone(
-                m, f"{r['flag_id']}: 「2층」이면 note 에 맡은 스킬을 "
-                   f"「finalize-korean-document §8」 꼴로 적어야 합니다 — {r['note']}")
-            skill = repo_paths.REPO / "skills" / m.group(1) / "SKILL.md"
-            self.assertTrue(skill.is_file(), f"{r['flag_id']}: 스킬이 없습니다 — {skill}")
+                table,
+                f"{r['flag_id']}: 「2층」이면 맡은 곳을 적어야 합니다 — "
+                "「finalize-korean-document §9」 이거나 "
+                f"「core-rules.md 「절 이름」」 꼴입니다 — {r['note']}")
+            self.assertIn(
+                f"## {table.group(1)}", core,
+                f"{r['flag_id']} 가 core-rules.md 「{table.group(1)}」 를 "
+                "가리키는데 그런 절이 없습니다")
 
     def test_the_skill_names_the_defect_kinds(self) -> None:
         """스킬 본문이 문맥 결함 갈래를 실제로 적고 있는지."""

@@ -72,15 +72,33 @@ class StepReferenceTests(unittest.TestCase):
             m, f"스킬에 「{STEP_TITLE}」 단계가 없습니다 — 제목이 바뀌었으면 "
                "이 시험의 STEP_TITLE 도 같이 고칩니다")
         want = int(m.group(1))
+        core = os.path.join(ROOT, "skills", "finalize-korean-document",
+                            "references", "core-rules.md")
+        with io.open(core, encoding="utf-8") as f:
+            core_text = f.read()
+
         for r in rows:
             if r["owner"] != "2층":
                 continue
+            # 갈 곳은 둘 중 하나다 — 갈래를 알아보는 **9단계**이거나, 확정된
+            # 짝을 읽는 **대표 수정 표**다. 사용자가 고친 꼴을 확정해 준
+            # 것은 뒤쪽으로 간다(2026-09-17). 어느 쪽이든 **실재해야** 한다.
             found = re.search(r"finalize-korean-document §(\d+)", r["note"])
-            self.assertIsNotNone(found, f"{r['flag_id']}: 맡은 단계가 없습니다")
-            self.assertEqual(
-                want, int(found.group(1)),
-                f"{r['flag_id']} 가 §{found.group(1)} 을 가리키는데 "
-                f"「{STEP_TITLE}」 는 {want}단계입니다 — 번호가 밀렸습니다")
+            if found is not None:
+                self.assertEqual(
+                    want, int(found.group(1)),
+                    f"{r['flag_id']} 가 §{found.group(1)} 을 가리키는데 "
+                    f"「{STEP_TITLE}」 는 {want}단계입니다 — 번호가 밀렸습니다")
+                continue
+            table = re.search(r"core-rules\.md 「(.+?)」", r["note"])
+            self.assertIsNotNone(
+                table,
+                f"{r['flag_id']}: 갈 곳이 없습니다 — 9단계이거나 "
+                "core-rules.md 의 절 이름을 적습니다")
+            self.assertIn(
+                f"## {table.group(1)}", core_text,
+                f"{r['flag_id']} 가 core-rules.md 「{table.group(1)}」 를 "
+                "가리키는데 그런 절이 없습니다")
 
     def test_every_handed_over_row_names_the_item_that_takes_it(self) -> None:
         """대장의 2층 몫은 단계가 아니라 **항목 이름**까지 가리켜야 한다.
