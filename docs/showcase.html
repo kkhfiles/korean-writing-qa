@@ -397,7 +397,7 @@ footer .in{padding:0; display:flex; gap:18px; flex-wrap:wrap; align-items:baseli
 
   <div class="figures reveal">
     <div class="fig warn"><p class="n" data-to="17">0</p><p>손대기 전 오류 — 30줄짜리 문서 한 편에서</p></div>
-    <div class="fig"><p class="n">0</p><p>지적 반영 뒤 — 값 슬롯 42개 전부 통과</p></div>
+    <div class="fig"><p class="n">0</p><p>지적 반영 뒤 — 검사 대상 42곳(표 칸·목록 항목 등) 전부 통과</p></div>
   </div>
 
   <div class="docpair reveal">
@@ -446,7 +446,7 @@ footer .in{padding:0; display:flex; gap:18px; flex-wrap:wrap; align-items:baseli
 <pre># 문서 검사 도구 도입 검토 결과
 
 <span class="ok">**문서 검사 도구 세 종 비교 · 자체 제작
-채택** — 판정 기준과 되돌리는 방법 포함</span>
+채택** — 비교 대상·판정 근거·되돌리기 비용</span>
 
 ## 1. <span class="ok">비교 대상</span>
 
@@ -454,25 +454,25 @@ footer .in{padding:0; display:flex; gap:18px; flex-wrap:wrap; align-items:baseli
 |---|---|---|---|
 | A사 | 상용 | 12초 | <span class="ok">설치 필요</span> |
 | B사 | 오픈소스 | 3초 | <span class="ok">규칙 수정 불가</span> |
-| 자체 | 사내 | 2초 | <span class="ok">규칙을 검사팀이 정함</span> |
+| 자체 | 사내 | 2초 | <span class="ok">규칙 자체 지정</span> |
 
 ## 2. <span class="ok">자체 제작을 택한 이유</span>
 
-<span class="ok">**A사 도구 — 사내 용어 미인식**</span> 규칙 수는
-가장 많았으나 검사 대상 문서에 사내 용어가
-많아 그 한계가 그대로 오탐으로 나온다.
+<span class="ok">**A사 도구 — 사내 용어 미인식**</span> 검사 대상
+문서에 사내 용어가 많으나 A사 도구가 해당
+용어를 인식하지 못한다.
 
 <span class="ok">**B사 도구 — 규칙 수정 불가**</span> 처리 속도는
 3초로 빨랐지만 규칙을 고칠 수 없었다.
 
 - **결정**: <span class="ok">자체 제작 채택</span>
-- **되돌리는 방법**: <span class="ok">규칙 파일 삭제 · 비용 최소</span>
+- **되돌리기 비용**: <span class="ok">낮음</span>
 
 ## 3. 다음 <span class="ok">회차</span> 계획
 
 - **보고 완료**: <span class="ok">검토 결과를 실장에게 보고함</span>
 - **다음 단계**: <span class="ok">시범 적용 대상 선정</span>
-- **서버 배포**: <span class="ok">시범 적용 이후로 미룸</span>
+- **서버 배포**: <span class="ok">이후로 미룸</span>
 - **변경 가능성**: <span class="ok">결과에 따라 바뀔 수 있음</span></pre>
       <ul class="findings clean">
         <li>값 슬롯 42개 전부 통과</li>
@@ -526,37 +526,37 @@ footer .in{padding:0; display:flex; gap:18px; flex-wrap:wrap; align-items:baseli
     <tbody>
       <tr><td><b>유형 끄기</b></td><td><span class="m">off&nbsp;=&nbsp;["스캔 가치 없는 라벨"]</span></td>
           <td>표 머리 「비고」를 쓰는 조직</td></tr>
-      <tr><td><b>등급 낮추기</b></td><td><span class="m">warn&nbsp;=&nbsp;["절단형 의심"]</span></td>
+      <tr><td><b>등급 낮추기</b></td><td><span class="m">warn&nbsp;=&nbsp;["절단형 종결"]</span></td>
           <td>발행은 막지 않고 참고만 받을 때</td></tr>
       <tr><td><b>묶음째 끄기</b></td><td><span class="m">off&nbsp;=&nbsp;["구조"]</span></td>
           <td>제목·진입점 형식을 자유로 두는 조직</td></tr>
       <tr><td><b>산문 문서</b></td><td>머리말에 <span class="m">form: prose</span> 한 줄</td>
           <td>소개 글·발표 대본·설명문 · 개조식 전제 아홉 가지가 통째로 빠짐</td></tr>
-      <tr><td><b>자사 제품 이름</b></td><td>목록 파일에 <span class="m">정본&nbsp;=&nbsp;잘못&nbsp;적은&nbsp;꼴</span></td>
+      <tr><td><b>자사 제품 이름</b></td><td>별도 목록 파일에 <span class="m">공식&nbsp;표기&nbsp;=&nbsp;잘못&nbsp;적은&nbsp;한글</span></td>
           <td>제품 이름을 한글로 잘못 적은 것을 잡음 · <b>목록은 저장소 밖에 둠</b></td></tr>
       <tr><td><b>새 규칙 넣기</b></td><td>어색한 문장을 이슈로 보냄</td>
-          <td>보낸 문장이 회귀 시료로 박혀 규칙이 바뀔 때마다 다시 돌아감</td></tr>
+          <td>보낸 문장이 재검사 사례로 등록됨 · 규칙이 바뀔 때마다 다시 돌려 확인</td></tr>
     </tbody>
   </table>
   </div>
 
-  <p class="sub">설정 파일 하나면 됩니다 — 검사 대상에서 위로 올라가며 <code>korean-qa.toml</code> 을 찾습니다.</p>
+  <p class="sub">유형별 사용 여부와 등급은 <code>korean-qa.toml</code> 한 파일에서 정합니다 — 검사 대상에서 위로 올라가며 찾습니다. 제품 이름만 별도 목록 파일을 씁니다.</p>
   <code class="cmd">[rules]
 off  = ["스캔 가치 없는 라벨", "구조"]
-warn = ["절단형 의심"]</code>
+warn = ["절단형 종결"]</code>
 
   <p class="note reveal"><b>끈 것은 결과 맨 위와 합계에 찍힘</b> — 조용히 끄면 「오류 0」이 통과인지
      안 본 것인지 갈리지 않습니다. 유형 이름은 지적에 찍히는 이름 그대로이고,
-     <span class="m">--list-rules</span> 로 <b>31가지</b>를 전부 볼 수 있습니다 — 맨 위의 28가지에 안내 두 갈래와 기본으로 꺼 둔 한 갈래를 더한 수입니다.</p>
+     <span class="m">--list-rules</span> 로 <b>31가지</b>를 전부 볼 수 있습니다 — 맨 위의 28가지에 안내 두 가지와 기본으로 꺼 둔 한 가지를 더한 수입니다.</p>
   <p class="note reveal"><b>제품 이름은 규칙에 안 적음</b> — 규칙은 모두가 나눠 쓰고
-     <b>이름은 각자 자기 기계에만</b> 둡니다. 걸러 낼 이름을 규칙 파일에 나열하면
+     <b>제품 이름 목록은 공용 규칙과 분리해 저장소 밖에서</b> 관리합니다. 걸러 낼 이름을 규칙 파일에 나열하면
      <b>그 파일이 곧 명단</b>이 되어, 공유하는 순간 이름도 함께 나갑니다.
-     목록이 없으면 이 갈래는 안 돌고 <b>「안 봤다」고 결과에 적습니다</b> — 침묵을 합격으로
+     목록이 없으면 이 유형은 안 돌고 <b>「안 봤다」고 결과에 적습니다</b> — 침묵을 합격으로
      읽지 않기 위해서입니다. 넣기 전에 겹침을 보는 검사도 함께 옵니다(짧은 음차가
      더 긴 낱말 안에 묻히면 헛짚습니다).</p>
-  <p class="note reveal"><b>오탐은 규칙의 예외로 들어감</b> — 줄만 봐서 안 갈리는 것은 읽는 층이 후보로 내고
-     사람이 확정합니다. 사람이 「이건 정당하다」고 판정하면 그때 한 번으로 끝나지 않고
-     <b>규칙의 예외와 회귀 시료로 함께 박힙니다.</b></p>
+  <p class="note reveal"><b>오탐은 규칙의 예외로 들어감</b> — 한 줄만 봐서 안 갈리는 표현은 <b>후보로만 내고</b>
+     사람이 정합니다. 사람이 「이건 정당하다」고 판정하면 그때 한 번으로 끝나지 않고,
+     <b>규칙의 예외로 등록되고 재검사 사례로도 함께 남습니다</b> — 규칙이 바뀔 때마다 다시 돌아갑니다.</p>
 </div></div>
 
 <!-- ═══ 04 문제의 크기 ═══ -->
@@ -786,7 +786,7 @@ warn = ["절단형 의심"]</code>
     </dl>
     <ul class="pairs">
       <li><div class="ba bad"><p>「이 문서는 사내 문서 검사 도구 세 종을 비교하여 도입 여부를 정리한 것입니다.」</p></div>
-          <div class="ba good"><p>「문서 검사 도구 세 종 비교 · 자체 제작 채택 — 판정 기준과 되돌리는 방법 포함」</p></div></li>
+          <div class="ba good"><p>「문서 검사 도구 세 종 비교 · 자체 제작 채택 — 비교 대상·판정 근거·되돌리기 비용」</p></div></li>
       <li><div class="ba bad"><p>「최신 릴리즈 노트와 변경 사항을 검토하여 정리한 주요 업데이트는 다음과 같습니다.」</p></div>
           <div class="ba good"><p>「릴리즈 노트 주요 변경 — 검토 정리본」</p></div></li>
       <li><div class="ba bad"><p>「본 보고서는 첫 보고서. 향후 보고서는 이 보고서 이후의 변경사항만 다룬다.」</p></div>
@@ -976,15 +976,16 @@ warn = ["절단형 의심"]</code>
 <div class="band"><div class="in" id="words">
   <p class="snum">06</p>
   <h2>목록에 없는 말</h2>
-  <p class="sub"><b>규칙 목록은 이미 짚힌 짝만 압니다.</b> 처음 보는 낱말은 원리적으로 못 잡습니다 —
-     짝을 적어 두지 않았으니까요. 그래서 낱말은 목록이 아니라 <b>빈도</b>로 봅니다.
-     사람이 쓴 업무 한국어를 기준선으로 두고 그 기준선에서 드문 말을 골라 냅니다.</p>
+  <p class="sub"><b>낱말 검사는 등록된 표현과 대조하는 방식입니다.</b> 그래서 등록 안 된 말은
+     못 잡습니다 — 적어 두지 않았으니까요. 문장 형식을 보는 가지들은 그대로 돌고,
+     <b>낱말 쪽만 빈도 검사로 보완합니다.</b> 사람이 쓴 업무 한국어를 기준 자료로 두고
+     거기에 견주어 드문 말을 후보로 냅니다.</p>
 
   <div class="figures reveal">
-    <div class="fig"><p class="n" data-to="36037">0</p><p>기준선 문서 — 사람이 쓴 업무 한국어</p></div>
-    <div class="fig"><p class="n">4,793만</p><p>기준선 글자 수</p></div>
-    <div class="fig"><p class="n" data-to="3108">0</p><p>기준선에 자리잡은 낱말 종수</p></div>
-    <div class="fig"><p class="n">2축</p><p>너무 드문 말 · 너무 자주 쓴 말</p></div>
+    <div class="fig"><p class="n" data-to="36037">0</p><p>기준 자료 문서 — 사람이 쓴 사내 업무 한국어</p></div>
+    <div class="fig"><p class="n">4,793만</p><p>기준 자료 글자 수</p></div>
+    <div class="fig"><p class="n" data-to="3108">0</p><p>기준 자료의 낱말 종수 — 41회 이상 나온 것</p></div>
+    <div class="fig"><p class="n">2축</p><p>기준 자료에서 드문 말 · 기준 자료보다 자주 쓴 말</p></div>
   </div>
 
   <div class="scroll reveal">
@@ -992,54 +993,66 @@ warn = ["절단형 의심"]</code>
     <colgroup><col style="width:26%"><col style="width:32%"><col style="width:42%"></colgroup>
     <thead><tr><th>보는 축</th><th>거르는 값</th><th>무엇이 걸리나</th></tr></thead>
     <tbody>
-      <tr><td><b>문턱 아래</b></td><td>기준선 40회 이하</td>
-          <td>업무 글에 거의 안 나오는 낱말 — 골라 쓴 고유어·지어낸 말</td></tr>
-      <tr><td><b>문턱 위 과용</b></td><td>기준선 대비 350배 이상 · 문서에 3회 이상</td>
-          <td>흔한 낱말인데 이 문서만 유난히 자주 쓴 것</td></tr>
+      <tr><td><b>기준 자료에 드묾</b></td><td>기준 자료에 40회 이하</td>
+          <td>기준 자료에 40회 이하로 나온 낱말 — 문맥을 봐야 할 후보</td></tr>
+      <tr><td><b>이 문서에 잦음</b></td><td>상대 빈도 350배 이상 · 이 문서에 3회 이상</td>
+          <td>기준 자료보다 이 문서에서 훨씬 자주 쓴 낱말 · <b>과용인지는 사람이 가름</b></td></tr>
     </tbody>
   </table>
   </div>
+
+  <p class="note reveal"><b>상대 빈도를 재는 법</b> — 문서 길이로 나눠 견줍니다 —
+     <span class="m">(이 문서 횟수 ÷ 이 문서 글자수) ÷ (기준 자료 횟수 ÷ 기준 자료 글자수)</span>.
+     기준 자료에 40회 이하인 낱말은 이 축에서 빼고 첫째 축이 봅니다 — 분모가 작아
+     배수가 튀기 때문입니다.</p>
 
   <p class="note reveal"><b>판정 안 함 — 목록만 냄</b> — 드문 것이 곧 틀린 것은
      아닙니다. 제품 이름·전문 용어·숫자 단위가 드문 것은 정상입니다. 가르는 것은 사람이고,
      이 도구는 <b>볼 곳을 좁혀 줄 뿐</b>입니다. 짝으로 가릅니다 — 「돈을 걷다」는 있고
      「커밋을 걷다」는 없습니다.</p>
 
-  <p class="note reveal"><b>정상 판정은 다음부터 접힘</b> — 낱말만 여는 것이 아니라
-     <b>어디서 정상인지</b>를 함께 적습니다. 같은 낱말이라도 문서 갈래가 다르면 다시 걸려야 하기
-     때문입니다.</p>
+  <p class="note reveal"><b>정상 표현 등록</b> — 낱말과 <b>적용 범위</b>를 함께 적습니다. 등록한 범위에서는
+     다음부터 후보에 안 오르고, 범위 밖에서는 그대로 오릅니다 — 같은 낱말이라도 문서 종류가
+     다르면 다시 봐야 하기 때문입니다.</p>
 
-  <p class="note reveal"><b>모델이 못 거른 것을 빈도표가 거름</b> — 같은 후보를 모델에 물어
-     걸러 보는 실험에서, <b>모든 조합이 함께 놓친 것</b>이 63개 중 12개였습니다. 그 안에
-     「깎」·「싣」·「갈음」이 있습니다 — 빈도표는 셋을 바로 냅니다. 그래서 이 층에는
-     <b>지우는 권한을 주지 않습니다.</b></p>
+  <p class="note reveal"><b>모델 검토가 놓친 사례</b> — 후보 63개를 모델에 물어 걸러 본
+     실험에서 <b>시험한 모든 조합이 함께 놓친 것</b>이 12개였습니다. 그중 「깎」·「싣」·「갈음」은
+     빈도 검사가 후보로 냈습니다. 특정 실험의 결과이고 모델 전반의 한계를 뜻하지는 않습니다.
+     다만 이 결과 때문에 <b>후보를 지우는 판단은 모델에 안 맡깁니다</b> — 사람이 정합니다.
+     쓴 모델·설정과 「놓쳤다」의 판정 근거는
+     <a href="https://github.com/kkhfiles/korean-writing-qa/blob/main/docs/ai-filter-experiment-20260916.md">실험 기록</a>에 있습니다.</p>
 </div></div>
 
 <!-- ═══ 07 가지별 비중 ═══ -->
 <div class="band paper"><div class="in" id="counts">
   <p class="snum">07</p>
   <h2>유형별 비중</h2>
-  <p class="sub"><b>어느 유형이 가장 많이 나올지 미리 가늠하실 수 있습니다.</b>
-     두 뭉치에 같은 검사기를 돌린 실측입니다(2026-09-08). <b>업무 보고서</b>는 사내 분석·진행 보고 600여 개,
-     <b>규칙·기록 문서</b>는 작업 규칙과 진행 기록 900여 개입니다. 값은 그 뭉치 지적에서 차지하는 비중입니다.</p>
+  <p class="sub"><b>사내 두 뭉치의 가지별 지적 비중입니다.</b>
+     도입을 재실 때 참고용이고, <b>조직마다 문서 형식과 켜 둔 가지가 달라 분포도 달라집니다.</b>
+     <b>업무 보고서</b>는 사내 분석·진행 보고, <b>규칙·기록 문서</b>는 작업 규칙과 진행 기록입니다.
+     값은 그 뭉치 전체 지적에서 차지하는 비중입니다.</p>
+  <p class="note"><b>잰 기준</b> — 업무 보고서 2026-09-17 · 문서 634개 중 지적이 난 것 329개 ·
+     <b>전체 지적 2,405건</b>(오류 1,780 · 주의 625)이 분모입니다.
+     규칙·기록 문서는 2026-09-08 측정이고 <b>그때 원건수를 안 남겨</b> 분모를 못 적습니다 —
+     그래서 두 열을 더하거나 견주지 마십시오.</p>
   <div class="scroll">
   <table>
-    <thead><tr><th>유형</th><th>무게</th><th class="n">업무 보고서</th><th class="n">규칙·기록</th></tr></thead>
+    <thead><tr><th>유형</th><th>등급</th><th class="n">업무 보고서</th><th class="n">규칙·기록</th></tr></thead>
     <tbody>
       <tr><td><span class="dot e"></span>서술형 종결 <span class="pill cond">개조식 전용</span></td><td>오류</td><td class="n">59%</td><td class="n">58%</td></tr>
       <tr><td><span class="dot w"></span>스캔 가치 없는 라벨</td><td>주의</td><td class="n">9%</td><td class="n">&lt;1%</td></tr>
       <tr><td><span class="dot w"></span>절단형 의심</td><td>주의</td><td class="n">6%</td><td class="n">4%</td></tr>
-      <tr><td><span class="dot w"></span>서술형 문단 <span class="pill cond">개조식 전용</span></td><td>주의</td><td class="n">7%</td><td class="n">&lt;1%</td></tr>
+      <tr><td><span class="dot e"></span>서술형 문단 <span class="pill cond">개조식 전용</span></td><td>오류</td><td class="n">7%</td><td class="n">&lt;1%</td></tr>
       <tr><td><span class="dot w"></span>해설을 인용 부호로 씀</td><td>주의</td><td class="n">4%</td><td class="n">4%</td></tr>
       <tr><td><span class="dot w"></span>형식 미표기</td><td>주의</td><td class="n">2%</td><td class="n">5%</td></tr>
       <tr><td><span class="dot w"></span>반복 블록 라벨 불일치</td><td>주의</td><td class="n">2%</td><td class="n">5%</td></tr>
       <tr><td><span class="dot e"></span>모호한 지칭</td><td>오류</td><td class="n">3%</td><td class="n">2%</td></tr>
-      <tr><td><span class="dot e"></span>제목 서술형 <span class="pill cond">개조식 전용</span></td><td>오류</td><td class="n">2%</td><td class="n">3%</td></tr>
+      <tr><td><span class="dot e"></span>제목 서술형 <span class="pill cond">개조식 전용</span></td><td>오류</td><td class="n">1%</td><td class="n">3%</td></tr>
       <tr><td><span class="dot e"></span>진입점 서술형 <span class="pill cond">개조식 전용</span></td><td>오류</td><td class="n">1%</td><td class="n">5%</td></tr>
       <tr><td><span class="dot e"></span>진입점 없음 <span class="pill cond">개조식 전용</span></td><td>오류</td><td class="n zero">0</td><td class="n">4%</td></tr>
       <tr><td><span class="dot e"></span>절단형 종결</td><td>오류</td><td class="n">2%</td><td class="n">2%</td></tr>
       <tr><td><span class="dot e"></span>제목 명사형 위반 <span class="pill cond">개조식 전용</span></td><td>오류</td><td class="n">1%</td><td class="n">1%</td></tr>
-      <tr><td><span class="dot w"></span>지어낸 명사구</td><td>주의</td><td class="n zero">0</td><td class="n">2%</td></tr>
+      <tr><td><span class="dot e"></span>지어낸 명사구</td><td>오류·주의</td><td class="n zero">0</td><td class="n">2%</td></tr>
       <tr><td><span class="dot w"></span>「~하는 자리」 의심</td><td>주의</td><td class="n zero">0</td><td class="n">1%</td></tr>
       <tr><td><span class="dot w"></span>평가 수식어</td><td>주의</td><td class="n">1%</td><td class="n">1%</td></tr>
       <tr><td><span class="dot w"></span>번역투 이중 조사</td><td>주의</td><td class="n">&lt;1%</td><td class="n">&lt;1%</td></tr>
@@ -1052,21 +1065,23 @@ warn = ["절단형 의심"]</code>
       <tr><td><span class="dot w"></span>지시어 확인</td><td>주의</td><td class="n">&lt;1%</td><td class="n">&lt;1%</td></tr>
       <tr><td><span class="dot w"></span>번역투 「그녀」</td><td>주의</td><td class="n zero">0</td><td class="n">&lt;1%</td></tr>
       <tr><td><span class="dot w"></span>결론 라벨 없는 설명</td><td>주의</td><td class="n zero">0</td><td class="n zero">0</td></tr>
-      <tr><td><span class="dot e"></span>업무 글에 없는 말</td><td>오류</td><td class="n">1%</td><td class="n zero">측정 전</td></tr>
+      <tr><td><span class="dot e"></span>업무 글에 없는 말</td><td>오류·주의</td><td class="n">1%</td><td class="n zero">측정 전</td></tr>
       <tr><td><span class="dot w"></span>말투 섞임</td><td>주의</td><td class="n">&lt;1%</td><td class="n zero">측정 전</td></tr>
       <tr><td><span class="dot e"></span>제품 이름 음차</td><td>오류</td><td class="n">&lt;1%</td><td class="n zero">측정 전</td></tr>
-      <tr><td><span class="dot w"></span>펜스 안 배포 문구</td><td>안내</td><td class="n">&lt;1%</td><td class="n zero">측정 전</td></tr>
+      <tr><td><span class="dot w"></span>펜스 안 배포 문구</td><td>주의</td><td class="n">&lt;1%</td><td class="n zero">측정 전</td></tr>
       <tr><td><span class="dot w"></span>반말 서술형 <span class="pill cond">기본 꺼짐</span></td><td>주의</td><td class="n zero">안 켬</td><td class="n zero">안 켬</td></tr>
     </tbody>
   </table>
   </div>
   <p class="note"><b>「개조식 전용」이 붙은 아홉 가지</b> — 문서가 개조식일 때만 걸림 ·
-     머리말 <code>form: prose</code> 한 줄로 통째로 빠짐 · 이 뭉치 지적의 70%가 그 아홉입니다.</p>
-  <p class="note"><b>0건이어도 규칙은 돎</b> — 「이 뭉치에 안 나왔다」와 「규칙이 없다」는 다릅니다. 이중 피동은 두 뭉치 모두 0건인데, 만들어 넣은 시료에서는 잡힙니다.</p>
+     머리말 <code>form: prose</code> 한 줄로 통째로 빠짐 · <b>업무 보고서</b> 전체 지적의 70%가 그 아홉입니다(1,673 / 2,405건).</p>
+  <p class="note"><b>0건이어도 규칙은 돎</b> — 「이 뭉치에 안 나왔다」와 「규칙이 없다」는 다릅니다. 이중 피동은 업무 보고서에서 0건인데, 만들어 넣은 시료에서는 잡힙니다.</p>
   <p class="note"><b>뒤에 들어온 유형 다섯</b> — 2026-09-08 측정 뒤에 붙었습니다.
      <b>업무 보고서 열은 2026-09-17 에 다시 돌려 채웠고</b>(같은 뭉치 · 같은 검사기 ·
      기존 값 여덟이 그대로 재현됐습니다), 규칙·기록 열은 아직 안 돌렸습니다.
      비중을 지어내지 않고 「측정 전」으로 둡니다 — <b>0건과 미측정은 다릅니다.</b></p>
+  <p class="note"><b>등급이 둘인 가지</b> — 「지어낸 명사구」와 「업무 글에 없는 말」은
+     같은 가지 안에서 <b>확실한 것만 오류</b>로 내고 나머지는 주의로 냅니다. 표는 둘을 함께 적었습니다.</p>
   <p class="note"><b>「안 켬」은 0건이 아님</b> — 반말 서술형은 기본으로 꺼져 있어
      이 측정에서 아예 안 돌았습니다. 켜야 나옵니다.</p>
 </div></div>
@@ -1207,6 +1222,14 @@ warn = ["절단형 의심"]</code>
     }
     requestAnimationFrame(step);
   }
+  // 움직임을 끈 사람에게는 **기다리지 않고 바로 채운다.** 예전에는 화면에
+  // 들어올 때만 세어서, 내비 앵커로 건너뛰면 지나친 절의 수치가 0 으로 남았다
+  // (2026-09-17 렌더 확인 — 끈 채 건너뛰면 10개 중 4개, 끝으로 튀면 6개).
+  // 천천히 내리면 안 나던 증상이라 소스만 봐서는 안 갈렸다.
+  if (reduce) {
+    Array.prototype.forEach.call(document.querySelectorAll('[data-to]'), countUp);
+  }
+
   // 옆으로 밀 것이 남았을 때만 오른쪽 끝을 흐린다.
   Array.prototype.forEach.call(document.querySelectorAll('.scroll'), function (box) {
     function mark() {
