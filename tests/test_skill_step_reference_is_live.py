@@ -82,6 +82,39 @@ class StepReferenceTests(unittest.TestCase):
                 f"{r['flag_id']} 가 §{found.group(1)} 을 가리키는데 "
                 f"「{STEP_TITLE}」 는 {want}단계입니다 — 번호가 밀렸습니다")
 
+    def test_every_handed_over_row_names_the_item_that_takes_it(self) -> None:
+        """대장의 2층 몫은 단계가 아니라 **항목 이름**까지 가리켜야 한다.
+
+        **왜**(2026-09-17 추가). note 가 `§9` 까지만 가리켰다. 그 단계 안에
+        항목이 열이라 어느 항목이 받는지는 안 적혀 있었고, 2층 탐침에서 못
+        잡힌 것이 **「갈래를 못 알아본 것」인지 「그 갈래가 애초에 없는 것」인지
+        안 갈렸다.** 이 저장소 규칙이 「넘길 곳을 안 적으면 그 순간부터 미탐」이다.
+
+        `kind` 를 **비워 두는 것은 허용한다** — 받을 항목이 없다는 뜻이고,
+        그 사실이 드러나는 것이 이 항목의 목적이다. 막으면 열쇠 없는 자물쇠가
+        된다. 다만 **적었으면 실재해야** 한다.
+        """
+        with io.open(LEDGER, encoding="utf-8") as f:
+            rows = [json.loads(l) for l in f if l.strip()]
+        text = skill_text("finalize-korean-document")
+        _step, body = step_body(text, STEP_TITLE)
+        titles = set(re.findall(r"^   - \*\*(.+?)\*\*", body, re.M))
+
+        for r in rows:
+            if r["owner"] != "2층":
+                continue
+            self.assertIn(
+                "kind", r,
+                f"{r['flag_id']}: 받는 항목 칸이 없습니다 — 받을 곳이 없으면 "
+                "`kind` 를 비워 둡니다(칸 자체는 있어야 합니다)")
+            if r["kind"] is None:
+                continue
+            self.assertIn(
+                r["kind"], titles,
+                f"{r['flag_id']} 가 「{r['kind']}」 를 가리키는데 "
+                f"{_step}단계에 그런 항목이 없습니다 — 이름이 바뀌었거나 "
+                "항목이 지워졌습니다")
+
     def test_the_step_counts_its_own_items(self) -> None:
         """머리글의 개수가 실제 항목 수와 같아야 한다."""
         text = skill_text("finalize-korean-document")

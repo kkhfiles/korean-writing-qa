@@ -31,6 +31,26 @@
 
 갈래당 호출 1회 · `claude-agent-sdk` OAuth(구독·크레딧 풀 · 과금 키 아님)
 
+**2026-09-17 실측 · 두 회차 · sonnet · temperature 0**
+
+| 칸(심은 17건을 인용 출처로 가름) | blind | guided |
+|---|---|---|
+| 둘 다 인용한 4건 | 4 · 4 | 4 · 4 |
+| guided 만 인용한 8건 | 1 · 1 | 8 · 7 |
+| 둘 다 인용 안 한 5건 | 0 · 0 | 0 · 0 |
+| **까닭까지 맞음**(항목 이름이 적힌 13건) | **0 · 0** | **11 · 11** |
+
+- **까닭까지 맞음이 두 회차 다 11로 같다.** 흔들린 것은 느슨한 잣대뿐이다 —
+  F-035 와 F-043 이 서로 한 자리씩 맞바꿨고 합은 그대로였다. **표현만 보는
+  잣대로는 12·11 로 흔들리니 까닭까지 보는 쪽이 기준이다.**
+- blind 의 5건은 **까닭이 하나도 안 맞는다** — 전부 다른 규칙으로 걸렸다
+  (「업무에서 쓰는 말로 쓰기」·「소리 내어 읽기」). 표현만 보고 기준선으로
+  쓰면 **같은 것을 재지 않는 둘을 견주게 된다.**
+- guided 의 지적 13건이 **전부 심은 자리**다(헛짚음 0). 규칙이 길어져서 마구
+  짚은 것이 아니다.
+- **둘 다 인용 안 한 5건은 두 회차 다 0이지만 판정 불가다** — 그중 넷은 받을
+  항목이 9단계에 없다(대장 `kind` 가 비어 있다). 남는 표본이 F-025 하나뿐이다.
+
 **정답이 바뀌면 `--from-json` 으로 다시 센다 — 부르지 않는다.** 2026-09-17 에
 대장의 한 줄을 고치자 재현율이 11 에서 12 로 올랐다. 지적은 그대로였고 정답만
 틀렸던 것이라 다시 부를 까닭이 없었다. 채점이 틀렸을 때 모델을 다시 부르면
@@ -102,15 +122,27 @@ def step_body(text: str, title: str) -> str:
     return body.lstrip('. ')
 
 
-def cited_texts() -> set[str]:
-    """9단계가 **글자 그대로 인용한** 표현을 모은다.
+def rules_for(arm: str) -> str:
+    """그 갈래가 실제로 받는 규칙 글 전체."""
+    text = RULES.read_text(encoding="utf-8")
+    if arm == "guided":
+        text += ("\n\n## 줄 하나만 봐서는 못 가르는 것\n\n"
+                 + step_body(SKILL_MD.read_text(encoding="utf-8"), STEP_TITLE))
+    return text
+
+
+def cited_texts(arm: str = "guided") -> set[str]:
+    """그 갈래의 규칙이 **글자 그대로 인용한** 표현을 모은다.
 
     인용된 것을 맞히는 데는 갈래를 알아볼 필요가 없다 — 적힌 글자를 문서에서
     되찾으면 된다. 그래서 인용된 것과 아닌 것을 섞어 한 숫자로 내면 **적어 둔
     것의 값이 부풀려진다.** 굵게 표시를 뺀 뒤 견준다(「담기는 **단계**」).
+
+    **갈래마다 따로 본다**(2026-09-17 고침). 처음에는 9단계만 봤는데
+    `core-rules.md` 도 넷을 인용한다. blind 는 9단계를 안 보므로 그 인용을
+    blind 몫으로 세면 **본 적 없는 예문을 인용으로 세는 것**이 된다.
     """
-    body = step_body(SKILL_MD.read_text(encoding="utf-8"), STEP_TITLE)
-    flat = body.replace("*", "")
+    flat = rules_for(arm).replace("*", "")
     return {i["text"] for i in planted() if i["text"] in flat}
 
 
@@ -149,6 +181,7 @@ def score(items: list[dict], findings: list, document: str,
     """
     said = [f for f in findings if isinstance(f, dict)]
     cited = cited_texts() if cited is None else cited
+    graded = [i for i in items if i.get("kind")]
     rows = []
     for item in items:
         want = item["text"].strip()
@@ -166,9 +199,16 @@ def score(items: list[dict], findings: list, document: str,
                     break
             except (TypeError, ValueError):
                 continue
+        # 대장이 항목 이름을 적었으면 **까닭까지** 본다. 표현만 맞고 까닭이
+        # 다른 것을 잡음으로 세면 같은 것을 재지 않는 둘을 견주게 된다 —
+        # blind 의 5건이 전부 그랬다(다른 규칙으로 걸렸다).
+        kind = item.get("kind")
+        why_ok = None
+        if kind and tight:
+            why_ok = kind[:8] in str(tight.get("category", ""))
         rows.append({"flag_id": item["flag_id"], "text": want,
                      "line": want_line, "tight": tight, "loose": loose,
-                     "cited": want in cited})
+                     "cited": want in cited, "kind": kind, "why_ok": why_ok})
 
     hit_lines = {r["line"] for r in rows if r["loose"] or r["tight"]}
     extra = [f for f in said
@@ -183,6 +223,8 @@ def score(items: list[dict], findings: list, document: str,
     return {"rows": rows, "extra": extra,
             "tight": sum(1 for r in rows if r["tight"]),
             "loose": sum(1 for r in rows if r["loose"] or r["tight"]),
+            "why": sum(1 for r in rows if r["why_ok"]),
+            "gradable": len(graded),
             "total": len(rows), "said": len(said),
             "인용": tally(True), "비인용": tally(False)}
 
@@ -190,10 +232,9 @@ def score(items: list[dict], findings: list, document: str,
 def run_arm(arm: str, model: str, timeout: float, document: str,
             items: list[dict]) -> dict:
     call_messages, parse_json = load_client()
-    rules = RULES.read_text(encoding="utf-8")
-    if arm == "guided":
-        rules += ("\n\n## 줄 하나만 봐서는 못 가르는 것\n\n"
-                  + step_body(SKILL_MD.read_text(encoding="utf-8"), STEP_TITLE))
+    # 조립은 `rules_for` 한 곳에서만 한다. 두 곳이면 인용 채점이 보는 글과
+    # 실제로 보낸 글이 어긋나고, 어긋나도 아무 데서도 안 걸린다.
+    rules = rules_for(arm)
 
     result = call_messages(
         model=model,
@@ -206,7 +247,7 @@ def run_arm(arm: str, model: str, timeout: float, document: str,
     findings = parse_json(result.get("text") or "") or []
     if not isinstance(findings, list):
         findings = []
-    out = score(items, findings, document)
+    out = score(items, findings, document, cited_texts(arm))
     out.update({"arm": arm, "model": result.get("model"),
                 "cost_usd": result.get("cost_usd"), "findings": findings,
                 "rules_chars": len(rules)})
@@ -217,9 +258,15 @@ def report(out: dict) -> None:
     print(f"\n── {out['arm']} · {out['model']} · 지적 {out['said']}건 "
           f"· 규칙 {out['rules_chars']:,}자 · {out.get('cost_usd') or 0:.4f}달러")
     print(f"   심은 {out['total']}건 중 — 엄격 {out['tight']} · 느슨 {out['loose']}")
+    if out["gradable"]:
+        print(f"      그중 **까닭까지 맞음** {out['why']} "
+              f"(대장이 항목 이름을 적은 {out['gradable']}건 기준)")
+    else:
+        print("      까닭은 안 봤다 — 대장이 항목 이름을 안 적는다 "
+              "(note 에 「§9 「항목 이름」」까지 적으면 본다)")
     for tag in ("인용", "비인용"):
         s = out[tag]
-        print(f"      9단계가 {tag} — {s['tight']} / {s['total']}")
+        print(f"      이 갈래 규칙이 {tag} — {s['tight']} / {s['total']}")
     for r in out["rows"]:
         mark = "○" if r["tight"] else ("△" if r["loose"] else "✕")
         got = r["tight"] or r["loose"]
@@ -259,7 +306,8 @@ def main() -> None:
         saved = json.loads(args.from_json.read_text(encoding="utf-8"))
         results = []
         for old in saved:
-            fresh = score(items, old.get("findings") or [], document)
+            fresh = score(items, old.get("findings") or [], document,
+                          cited_texts(old.get("arm") or "guided"))
             fresh.update({k: old.get(k) for k in
                           ("arm", "model", "cost_usd", "findings", "rules_chars")})
             fresh["cost_usd"] = 0.0          # 다시 부르지 않았다
@@ -276,15 +324,38 @@ def main() -> None:
         blind, guided = results
         print(f"합계 — 엄격 기준 {blind['tight']} → {guided['tight']} "
               f"({guided['tight'] - blind['tight']:+d}건)")
-        print("   ⚠️ 합계로 읽지 않는다 — 9단계가 인용한 것은 갈래를 알아볼 "
+        print("   ⚠️ 합계로 읽지 않는다 — 규칙이 인용한 표현은 갈래를 알아볼 "
               "필요 없이 글자로 되찾힌다")
-        c_b, c_g = blind["인용"], guided["인용"]
-        o_b, o_g = blind["비인용"], guided["비인용"]
-        print(f"   인용한 {c_b['total']}건   — {c_b['tight']} → {c_g['tight']}"
-              f"  (글자 되찾기로 설명됨)")
-        print(f"   인용 안 한 {o_b['total']}건 — {o_b['tight']} → {o_g['tight']}"
-              f"  (갈래를 알아본 것)")
 
+        # 갈래마다 인용 목록이 다르다. 나란히 놓으려면 **분모가 같아야** 한다 —
+        # 심은 것을 「어느 갈래가 인용했나」로 갈라야 칸마다 같은 것을 잰다.
+        cb, cg = cited_texts("blind"), cited_texts("guided")
+        buckets = (
+            ("둘 다 인용", lambda x: x in cb and x in cg),
+            ("guided 만 인용", lambda x: x not in cb and x in cg),
+            ("둘 다 비인용", lambda x: x not in cb and x not in cg),
+        )
+        by_arm = {r["arm"]: {row["text"]: row for row in r["rows"]}
+                  for r in results}
+        cells = {}
+        for name, pick in buckets:
+            texts = [r["text"] for r in blind["rows"] if pick(r["text"])]
+            got = tuple(sum(1 for x in texts if by_arm[a][x]["tight"])
+                        for a in ("blind", "guided"))
+            cells[name] = (len(texts), got)
+            if texts:
+                print(f"   {name:<14} {len(texts):>2}건 — "
+                      f"blind {got[0]} · guided {got[1]}")
+
+        n_new, hit_new = cells["guided 만 인용"]
+        n_none, hit_none = cells["둘 다 비인용"]
+        print(f"\n   적어 둔 것의 값 — guided 가 새로 인용한 {n_new}건에서 "
+              f"{hit_new[0]} → {hit_new[1]}")
+        print(f"   글자 밖으로 번지나 — 둘 다 인용 안 한 {n_none}건에서 "
+              f"{hit_none[0]} → {hit_none[1]}")
+
+        o_b = {"total": n_none, "tight": hit_none[0]}
+        o_g = {"tight": hit_none[1]}
         if o_b["total"] == 0:
             print("\n⛔ 판정 불가 — 인용 안 한 표본이 없다")
         elif o_g["tight"] > o_b["tight"]:

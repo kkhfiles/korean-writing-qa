@@ -19,28 +19,28 @@
 {"flag_id": "F-019", "round": 2, "text": "한글 교정기는 아예 안 부릅니다", "sentence": "한글 교정기는 아예 안 부릅니다", "owner": "단어 점검", "note": "교정/NNG · 부르/VV · 아예/MAG"}
 {"flag_id": "F-020", "round": 2, "text": "성가시고 말지만", "sentence": "잘못 띄운 것은 한 줄이 성가시고 말지만 잘못 버린 것은 흔적이 없습니다", "owner": "단어 점검", "note": "성가시/VA"}
 {"flag_id": "F-021", "round": 2, "text": "한 설치의 건수", "sentence": "한 설치의 건수입니다", "owner": "단어 점검", "note": "건수/NNG"}
-{"flag_id": "F-022", "round": 2, "text": "일을 하는 것과 일을 적는 것", "sentence": "일을 하는 것과 일을 적는 것은 늘 따로였습니다", "owner": "2층", "note": "병렬 구조가 어색 · finalize-korean-document §9"}
-{"flag_id": "F-023", "round": 2, "text": "도구가 아니라 방식이라", "sentence": "도구가 아니라 방식이라 가져갈 수 있습니다", "owner": "2층", "note": "연결이 어색 · finalize-korean-document §9"}
-{"flag_id": "F-024", "round": 2, "text": "후보까지만 자동", "sentence": "되돌리기가 사람 몫인 일은 후보까지만 자동입니다", "owner": "2층", "note": "뜻이 안 통함 · finalize-korean-document §9"}
-{"flag_id": "F-025", "round": 2, "text": "물으면 아무도 답하지 않습니다", "sentence": "다 끝나고 몇 시간 뒤에 물으면 아무도 답하지 않습니다", "owner": "2층", "note": "조건과 결과가 안 맞음 · finalize-korean-document §9"}
-{"flag_id": "F-026", "round": 2, "text": "갈라서 냄", "sentence": "오류와 주의를 갈라서 냄", "owner": "2층", "note": "구분 2,273 을 동사구로 품 · finalize-korean-document §9"}
-{"flag_id": "F-027", "round": 2, "text": "열어 합치기", "sentence": "열어 합치기가 한 번에 됩니다", "owner": "2층", "note": "통합 7,004 을 동사구로 품 · finalize-korean-document §9"}
-{"flag_id": "F-028", "round": 2, "text": "다 보는 데", "sentence": "600여 개를 다 보는 데 걸린 시간", "owner": "2층", "note": "검토 7,490 을 동사구로 품 · finalize-korean-document §9"}
-{"flag_id": "F-029", "round": 2, "text": "후보만 내고", "sentence": "후보만 내고 실행은 사람이 합니다", "owner": "2층", "note": "제시 702 · 제안 1,773 을 동사구로 품 · finalize-korean-document §9"}
+{"flag_id": "F-022", "round": 2, "text": "일을 하는 것과 일을 적는 것", "sentence": "일을 하는 것과 일을 적는 것은 늘 따로였습니다", "owner": "2층", "note": "병렬 구조가 어색 · finalize-korean-document §9", "kind": null}
+{"flag_id": "F-023", "round": 2, "text": "도구가 아니라 방식이라", "sentence": "도구가 아니라 방식이라 가져갈 수 있습니다", "owner": "2층", "note": "연결이 어색 · finalize-korean-document §9", "kind": null}
+{"flag_id": "F-024", "round": 2, "text": "후보까지만 자동", "sentence": "되돌리기가 사람 몫인 일은 후보까지만 자동입니다", "owner": "2층", "note": "뜻이 안 통함 · finalize-korean-document §9", "kind": null}
+{"flag_id": "F-025", "round": 2, "text": "물으면 아무도 답하지 않습니다", "sentence": "다 끝나고 몇 시간 뒤에 물으면 아무도 답하지 않습니다", "owner": "2층", "note": "조건과 결과가 안 맞음 · finalize-korean-document §9", "kind": "고치다 논리를 깬 곳"}
+{"flag_id": "F-026", "round": 2, "text": "갈라서 냄", "sentence": "오류와 주의를 갈라서 냄", "owner": "2층", "note": "구분 2,273 을 동사구로 품 · finalize-korean-document §9", "kind": "한 낱말로 있는 행위 명사를 동사구로 품"}
+{"flag_id": "F-027", "round": 2, "text": "열어 합치기", "sentence": "열어 합치기가 한 번에 됩니다", "owner": "2층", "note": "통합 7,004 을 동사구로 품 · finalize-korean-document §9", "kind": "한 낱말로 있는 행위 명사를 동사구로 품"}
+{"flag_id": "F-028", "round": 2, "text": "다 보는 데", "sentence": "600여 개를 다 보는 데 걸린 시간", "owner": "2층", "note": "검토 7,490 을 동사구로 품 · finalize-korean-document §9", "kind": "한 낱말로 있는 행위 명사를 동사구로 품"}
+{"flag_id": "F-029", "round": 2, "text": "후보만 내고", "sentence": "후보만 내고 실행은 사람이 합니다", "owner": "2층", "note": "제시 702 · 제안 1,773 을 동사구로 품 · finalize-korean-document §9", "kind": "한 낱말로 있는 행위 명사를 동사구로 품"}
 {"flag_id": "F-030", "round": 2, "text": "두는 곳", "sentence": "자료를 두는 곳입니다", "owner": "규칙", "note": "관형형 + 빈 명사 「곳」 · 기준선 40회 미만인데 「위치」는 3,070 · 한 글자 명사라 단어 점검이 못 봄 → 짝으로 잡음(주의)"}
-{"flag_id": "F-031", "round": 2, "text": "같이 나온 것", "sentence": "셋을 만들며 같이 나온 것입니다", "owner": "2층", "note": "관형형 + 흔한 명사 「것」 · 실문서 1,235건이라 기계 불가 · finalize-korean-document §9"}
+{"flag_id": "F-031", "round": 2, "text": "같이 나온 것", "sentence": "셋을 만들며 같이 나온 것입니다", "owner": "2층", "note": "관형형 + 흔한 명사 「것」 · 실문서 1,235건이라 기계 불가 · finalize-korean-document §9", "kind": "관형형 + 흔한 명사로 만든 구"}
 {"flag_id": "F-032", "round": 2, "text": "앞과 뒤", "sentence": "앞과 뒤가 다릅니다", "owner": "규칙", "note": "가리키는 대상이 없음 · 실문서 644개에서 0건이라 오류 등급"}
-{"flag_id": "F-033", "round": 2, "text": "그 앞", "sentence": "사람에게 나갈 보고서에서 걸리는 것은 그 앞이었습니다", "owner": "2층", "note": "선행사가 같은 줄에 없음 · 실문서 8건 중 정당이 대부분 · finalize-korean-document §9"}
-{"flag_id": "F-034", "round": 2, "text": "돌고 있는", "sentence": "실무에서 매일 돌고 있는 업무 비서입니다", "owner": "2층", "note": "진행형으로 늘린 서술 · 실문서 46건이 전부 정당 · finalize-korean-document §9"}
-{"flag_id": "F-035", "round": 3, "text": "따로 기록하지 않는", "sentence": "따로 기록하지 않는 업무 비서입니다", "owner": "2층", "note": "사실과 다름 · 기록은 남는다 · finalize-korean-document §9"}
-{"flag_id": "F-036", "round": 3, "text": "물으면 아무도 기록하지 않습니다", "sentence": "업무가 끝나고 몇 시간이 지난 뒤에 물으면 아무도 기록하지 않습니다", "owner": "2층", "note": "조건과 결과가 안 맞음 · finalize-korean-document §9"}
-{"flag_id": "F-037", "round": 3, "text": "공수 넣기", "sentence": "공수 넣기는 사람이 승인합니다", "owner": "2층", "note": "입력 7,477 을 동사구로 품 · finalize-korean-document §9"}
-{"flag_id": "F-038", "round": 3, "text": "기술로 말하면", "sentence": "기술로 말하면 지식 그래프 위의 검색입니다", "owner": "2층", "note": "담화 표지 · 실문서 2건이고 「제목으로 말하면」은 정당 · finalize-korean-document §9"}
+{"flag_id": "F-033", "round": 2, "text": "그 앞", "sentence": "사람에게 나갈 보고서에서 걸리는 것은 그 앞이었습니다", "owner": "2층", "note": "선행사가 같은 줄에 없음 · 실문서 8건 중 정당이 대부분 · finalize-korean-document §9", "kind": "선행사 없는 「그 앞」·「그 뒤」"}
+{"flag_id": "F-034", "round": 2, "text": "돌고 있는", "sentence": "실무에서 매일 돌고 있는 업무 비서입니다", "owner": "2층", "note": "진행형으로 늘린 서술 · 실문서 46건이 전부 정당 · finalize-korean-document §9", "kind": "진행형으로 늘린 서술"}
+{"flag_id": "F-035", "round": 3, "text": "따로 기록하지 않는", "sentence": "따로 기록하지 않는 업무 비서입니다", "owner": "2층", "note": "사실과 다름 · 기록은 남는다 · finalize-korean-document §9", "kind": "고치다 논리를 깬 곳"}
+{"flag_id": "F-036", "round": 3, "text": "물으면 아무도 기록하지 않습니다", "sentence": "업무가 끝나고 몇 시간이 지난 뒤에 물으면 아무도 기록하지 않습니다", "owner": "2층", "note": "조건과 결과가 안 맞음 · finalize-korean-document §9", "kind": "고치다 논리를 깬 곳"}
+{"flag_id": "F-037", "round": 3, "text": "공수 넣기", "sentence": "공수 넣기는 사람이 승인합니다", "owner": "2층", "note": "입력 7,477 을 동사구로 품 · finalize-korean-document §9", "kind": "한 낱말로 있는 행위 명사를 동사구로 품"}
+{"flag_id": "F-038", "round": 3, "text": "기술로 말하면", "sentence": "기술로 말하면 지식 그래프 위의 검색입니다", "owner": "2층", "note": "담화 표지 · 실문서 2건이고 「제목으로 말하면」은 정당 · finalize-korean-document §9", "kind": null}
 {"flag_id": "F-039", "round": 4, "text": "언제 도나", "sentence": "언제 도나", "owner": "규칙", "note": "의문문 라벨 — 검사기가 오류로 잡음(확인 2026-09-15)"}
 {"flag_id": "F-040", "round": 4, "text": "무엇을 도나", "sentence": "무엇을 도나", "owner": "규칙", "note": "의문문 라벨 — 검사기가 오류로 잡음(확인 2026-09-15)"}
-{"flag_id": "F-041", "round": 4, "text": "담기는 단계", "sentence": "담기는 단계에서 값을 확인합니다", "owner": "2층", "note": "관형형 + 「단계」 · 실문서 18건이 사실상 전부 정당 · finalize-korean-document §9"}
+{"flag_id": "F-041", "round": 4, "text": "담기는 단계", "sentence": "담기는 단계에서 값을 확인합니다", "owner": "2층", "note": "관형형 + 「단계」 · 실문서 18건이 사실상 전부 정당 · finalize-korean-document §9", "kind": "관형형 + 흔한 명사로 만든 구"}
 {"flag_id": "F-042", "round": 4, "text": "매일 밤", "sentence": "매일 밤 도는 작업입니다", "owner": "규칙", "note": "「밤」은 한 글자 명사라 단어 점검이 안 봄 · 실문서 0건이라 오류 등급"}
-{"flag_id": "F-043", "round": 4, "text": "아무도 안 기다림", "sentence": "아무도 안 기다림", "owner": "2층", "note": "사물을 사람처럼 씀 · 「아무도 안 ~」 29건 중 사람 주어가 대부분 · finalize-korean-document §9"}
+{"flag_id": "F-043", "round": 4, "text": "아무도 안 기다림", "sentence": "아무도 안 기다림", "owner": "2층", "note": "사물을 사람처럼 씀 · 「아무도 안 ~」 29건 중 사람 주어가 대부분 · finalize-korean-document §9", "kind": "사물을 사람처럼 쓴 서술"}
 {"flag_id": "F-044", "round": 5, "text": "갈래", "sentence": "갈래 ① 변경 요청 단계", "owner": "단어 점검", "note": "갈래/NNG — 사람 글 90회 대 단계 2,856 · 문턱 40 위라 첫째 축이 못 봄 · 둘째 축(과다 비율)이 잡음"}
 {"flag_id": "F-045", "round": 6, "text": "굳지 않도록", "sentence": "그대로 굳지 않도록 §2에 가려 두었음", "owner": "단어 점검", "note": "굳/VV — 굳 14회 대 확정 1,588 · 한 글자 용언을 열어 잡히게 함(2026-09-15)"}
 {"flag_id": "F-046", "round": 6, "text": "가려 두었음", "sentence": "그대로 굳지 않도록 §2에 가려 두었음", "owner": "규칙", "note": "가리 43회로 단어 점검 문턱 40을 세 끗 넘어 목록에 안 옴 · 실문서 0건이라 짝으로 잡음"}
