@@ -65,29 +65,45 @@ def fresh_session() -> str:
     return f"codex-gate-test-{uuid.uuid4().hex[:12]}"
 
 
-def run_adapter(mode: str, event: str, payload: dict) -> str:
+def call_adapter(mode: str, event: str, payload: dict):
+    """어댑터를 돌리고 `(종료 코드, 사람이 읽을 말, 막는 글)` 을 낸다.
+
+    ⛔ **종료 코드와 `stderr` 를 같이 본다** — 막기는 그 둘로 온다. `stdout` 만
+    읽으면 **막힌 것과 통과한 것이 똑같이 빈 문자열로 보인다**(2026-09-17 에
+    실제로 그래서 구멍을 열흘 못 봤다).
+    """
     done = subprocess.run(
         [sys.executable, "-X", "utf8", str(ADAPTER), mode, event],
         input=json.dumps(payload, ensure_ascii=False),
         capture_output=True, text=True, encoding="utf-8",
     )
     out = (done.stdout or "").strip()
-    if not out:
-        return ""
-    try:
-        return str(json.loads(out)["hookSpecificOutput"]["additionalContext"])
-    except (ValueError, KeyError, TypeError):
-        return out
+    said = ""
+    if out:
+        try:
+            said = str(json.loads(out)["hookSpecificOutput"]["additionalContext"])
+        except (ValueError, KeyError, TypeError):
+            said = out
+    return done.returncode, said, (done.stderr or "").strip()
+
+
+def run_adapter(mode: str, event: str, payload: dict) -> str:
+    return call_adapter(mode, event, payload)[1]
 
 
 
-def gate_notice_head() -> str:
-    """게이트가 내는 발행 안내의 **첫 줄** — 정본은 게이트 한 곳이다."""
+def gate_module():
+    """게이트를 읽어 온다 — 기대값의 정본은 게이트 한 곳이다."""
     spec = importlib.util.spec_from_file_location(
         "doc_style_gate", repo_paths.hook("doc-style-gate.py"))
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
-    return module.NOTICE.splitlines()[0].strip()
+    return module
+
+
+def gate_notice_head() -> str:
+    """게이트가 내는 발행 안내의 **첫 줄**."""
+    return gate_module().NOTICE.splitlines()[0].strip()
 
 
 class CodexUsesTheSameGateTests(unittest.TestCase):
@@ -122,33 +138,58 @@ class CodexUsesTheSameGateTests(unittest.TestCase):
 
         self.assertIn("절단형 종결", said)
 
-    @unittest.expectedFailure
-    def test_publishing_is_checked_too(self) -> None:
-        """발행 직전 점검이 Codex 에 닿는지 — **지금은 안 닿는다.**
+    def test_publishing_is_blocked_too(self) -> None:
+        """발행 직전에 통과 기록이 없으면 Codex 도 막혀야 한다.
 
-        ⛔ **알려진 구멍이다**(2026-09-17 확인 · 고칠 곳은 설정 저장소의 어댑터).
-
-        게이트는 통과 기록이 없으면 **막는다** — 종료 코드 2 에 사람이 읽을 말을
-        `stderr` 로 낸다(Claude Code 의 막기 규약). 어댑터는 `stdout` 의 JSON 에서
-        `hookSpecificOutput.additionalContext` 만 꺼내고 **종료 코드를 안 본다.**
-        그래서 Codex 쪽은 **발행이 막히는 순간에 아무 말도 못 받고 막히지도
-        않는다.** 쓰기 경로(`PostToolUse`)는 stdout 으로 나와 잘 닿는다.
-
-        고치는 법 — 어댑터의 `call_gate` 가 `returncode == 2` 일 때 `stderr` 를
-        Codex 의 막기 모양으로 옮기면 된다.
+        **무엇이 열려 있었나**(2026-09-17 확인 · 2026-09-18 고침). 게이트는 통과
+        기록이 없으면 종료 코드 2 에 사람이 읽을 말을 `stderr` 로 내서 막는다.
+        어댑터는 `stdout` 의 JSON 만 꺼내고 **종료 코드를 안 봤다.** 그래서
+        Codex 쪽은 **발행이 막히는 순간에 아무 말도 못 받고 막히지도 않았다** —
+        쓰기 경로(`PostToolUse`)는 stdout 으로 나와 잘 닿아 눈에 안 띄었다.
 
         **왜 열흘 동안 몰랐나** — 2026-09-07 발행 정리가 어댑터 경로를
         `<설정 저장소>` 로 가리면서 이 시험이 **건너뛰었다.** 실패가 아니라
         건너뛰기라 아무 데도 안 나타났다. 경로를 되살리자 바로 드러났다.
 
-        ⛔ 기대값은 게이트에서 가져온다 — 같은 문구가 `measure_layer2_uptake.py`
-        에도 있어 여기 또 적으면 세 곳이 된다.
+        ⛔ **종료 코드를 같이 본다** — 막는 글만 보면 「말은 하는데 안 막는」
+        상태가 통과한다. 그게 바로 고치기 전 모습이다.
         """
-        said = run_adapter("korean-document-check", "PreToolUse", {
+        code, _said, stop = call_adapter("korean-document-check", "PreToolUse", {
             "tool_name": "Bash", "session_id": fresh_session(),
             "tool_input": {"command": f'python notion.py create --file "{self.doc}"'}})
 
-        self.assertIn(gate_notice_head(), said)
+        self.assertEqual(2, code, f"막지 않았습니다 — 낸 말: {stop[:120]}")
+        self.assertIn("발행 보류", stop)
+
+    def test_the_block_says_how_to_pass(self) -> None:
+        """막는 글에 통과하는 길과 넘기는 길이 같이 적혀 있어야 한다.
+
+        「열쇠 없는 자물쇠」를 안 만든다 — 푸는 길이 없으면 넘기기가 습관이 되고,
+        그 뒤로는 어떤 게이트도 안 듣는다. 어댑터가 막는 글을 **잘라서** 넘기면
+        Codex 쪽만 푸는 길을 모르게 된다.
+
+        ⛔ 기대값은 게이트에서 가져온다 — 여기 또 적으면 문구가 두 곳이 된다.
+        """
+        _code, _said, stop = call_adapter("korean-document-check", "PreToolUse", {
+            "tool_name": "Bash", "session_id": fresh_session(),
+            "tool_input": {"command": f'python notion.py create --file "{self.doc}"'}})
+
+        self.assertIn("finalize-korean-document", stop)
+        self.assertIn(gate_module().FORCE, stop)
+
+    def test_the_escape_hatch_actually_opens(self) -> None:
+        """적어 둔 넘기기 표시가 Codex 경로에서도 실제로 먹어야 한다.
+
+        막는 글에 푸는 길을 적어 놓고 그 길이 안 열리면 **적어 둔 것이 거짓말**이
+        된다. 2026-09-16 에 발행 게이트가 통로를 하나만 두고 배포된 적이 있다.
+        """
+        command = (f"{gate_module().FORCE} python notion.py create "
+                   f'--file "{self.doc}"')
+        code, _said, stop = call_adapter("korean-document-check", "PreToolUse", {
+            "tool_name": "Bash", "session_id": fresh_session(),
+            "tool_input": {"command": command}})
+
+        self.assertEqual(0, code, f"넘기기 표시를 붙였는데 막혔습니다: {stop[:120]}")
 
     def test_a_source_file_is_left_alone(self) -> None:
         """무엇을 볼지는 훅이 정한다 — 어댑터가 따로 거르지 않는다."""
