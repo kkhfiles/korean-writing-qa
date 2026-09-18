@@ -111,6 +111,14 @@ VAGUE_JOSA = ('(?:에서|에는|에도|까지|부터|으로|처럼|보다|밖에
 #: ⛔ **앞이 한글이면 낱말 속이다** — 「여기저기」의 「저기」가 걸리던 것을 막는다.
 VAGUE_SOFT_RE = re.compile(r'(?<![가-힣])(' + '|'.join(VAGUE_SOFT) + ')'
                            + '(?:' + VAGUE_JOSA + r'|(?=\s+[0-9A-Za-z가-힣]))')
+#: 형태소 분석기가 있을 때 쓰는 **넓은 앞거르개** — 맨 낱말을 다 뽑고 대명사만 남긴다.
+#: ⛔ 이것이 정본이고 위 조사 목록은 **분석기가 없을 때의 대비책**이다.
+#:    조사를 하나씩 더하는 길로 가면 네 번째 조사가 또 샌다 — 이 저장소가
+#:    「단어를 하나씩 규칙에 더하기」로 여섯 번 실패한 그 모양이다.
+#: ⚠️ **앞거르개는 값싸야 한다** — 걸린 줄만 분석기에 넣는다. 앞이 한글이면
+#:    낱말 속이라(「여기저기」) 여기서 미리 뺀다 — 안 빼면 분석할 줄이 늘고,
+#:    분석기 값이 시험 전체 시간을 두 배로 만든다(실측).
+VAGUE_ANY_RE = re.compile(r'(?<![가-힣])(?:' + '|'.join(VAGUE_SOFT) + ')')
 
 
 def vague_note(word):
@@ -120,12 +128,13 @@ def vague_note(word):
     """
     josa = '이' if (ord(word[-1]) - 0xAC00) % 28 else '가'
     return f'「{word}」{josa} 가리키는 것을 이름으로 적을 것'
-#: 값 칸이 통째로 지시어 — 가리키는 대상이 아예 안 적혔다.
-#: 여기서는 자리 명사 **둘 다** 본다 — 값이 「아래」·「위쪽」뿐이면 무엇의 아래인지
-#: 안 적힌 것이다(문장 속과 달리 뒤따르는 것이 없다). 한쪽만 넣었다가 외부 검토가
-#: 「`<dd>위쪽</dd>` 은 왜 통과하나」로 짚었다.
-VAGUE_ONLY_RE = re.compile(r'^\*{0,2}(' + '|'.join(VAGUE_SOFT + ['아래', '위쪽'])
-                           + r')\*{0,2}' + VAGUE_JOSA + r'?\*{0,2}$')
+#: 값 칸이 통째로 **자리 명사** — 무엇의 아래·위쪽인지가 아예 안 적혔다.
+#: 문장 속의 「아래와 같습니다」는 가리키는 것이 바로 뒤에 있어 안 잡지만,
+#: 표 칸이 「아래」 하나면 뒤따르는 것이 없다.
+#: ⛔ **지시대명사는 여기 안 넣는다** — 위 일반 규칙이 이미 잡으므로 넣으면 같은
+#:    자리에 지적이 두 줄 난다. 이 판정은 **일반 규칙이 안 보는 것**만 맡는다.
+VAGUE_ONLY_RE = re.compile(r'^\*{0,2}(아래|위쪽)\*{0,2}'
+                           + VAGUE_JOSA + r'?\*{0,2}$')
 # 대상을 평가하는 수식어 — 사실이 아니라 자평이다. 정당한 쓰임이 있어 「주의」로만 낸다.
 # 뒤 여섯은 과장 어휘(humanize-korean 분류 체계 D-4)에서 가져왔다. 「압도적」·「대대적」은
 # 옮겨 적은 남의 공지에도 섞이므로, 인용인지 자평인지는 읽는 쪽이 가른다.
@@ -323,13 +332,25 @@ FELL_BACK = False
 
 
 def morph():
-    """형태소 분석기를 한 번만 띄운다. 없으면 None."""
+    """형태소 분석기를 한 번만 띄운다. 없으면 None.
+
+    ⛔ **분석기는 프로세스에 하나만 둔다** — 이 파일은 시험마다
+       `importlib` 로 **새 모듈로** 불려 온다. 모듈 전역에만 두면 그때마다
+       한 벌씩 더 떠서 메모리가 터진다(2026-09-18 실측 — 지시어 판정이
+       형태소를 쓰기 시작하자 시험 전체가 메모리 부족으로 죽었다).
+       그전에는 「`는 때`가 있는 문서」에서만 떠서 티가 안 났다.
+       **`kiwipiepy` 모듈에 얹어** 모든 사본이 같은 것을 쓰게 한다.
+    """
     global _KIWI, _KIWI_TRIED
     if not _KIWI_TRIED:
         _KIWI_TRIED = True
         try:
-            from kiwipiepy import Kiwi
-            _KIWI = Kiwi()
+            import kiwipiepy
+            shared = getattr(kiwipiepy, '_korean_qa_shared', None)
+            if shared is None:
+                shared = kiwipiepy.Kiwi()
+                kiwipiepy._korean_qa_shared = shared
+            _KIWI = shared
         except Exception:
             _KIWI = None
     return _KIWI
@@ -360,6 +381,47 @@ _MARKUP = str.maketrans({c: ' ' for c in '*`#~_|>"\'[]()-–—+='})
 
 def _plain(line):
     return line.translate(_MARKUP)
+
+
+def vague_hits(text):
+    """지시어 지적 후보 — 형태소가 있으면 **대명사(NP)만** 남긴다.
+
+    ⛔ **조사 목록을 손으로 늘리지 않는다.** 지시대명사인지는 품사다.
+       목록으로 가면 「이것**이**」(받침 뒤 주격)·「이것**처럼**」·「그것**조차**」가
+       하나씩 새고, 그때마다 한 줄씩 더하게 된다 — 이 저장소가 여섯 번 실패한 길이다.
+
+    형태소가 가르는 것(실측 2026-09-18)
+      · 「여기저기」  → `여기저기/NNG` · 낱말 속이라 안 잡는다
+      · 「여기는 사람」 → `여기/VV` · 동사 「여기다」의 관형형이라 안 잡는다
+      · 「화면 위쪽」  → `위쪽/NNG` · 자리 명사
+      · 「이것이」·「그것조차」·「여기 F5」 → `NP` · 다 잡는다
+
+    ⚠️ 분석기가 없으면 **조사 목록으로 좁게** 본다(`VAGUE_SOFT_RE`). 좁은 쪽이라
+       오탐은 안 늘고 미탐만 는다 — 그 사실은 출력 맨 위에 적힌다.
+
+    ⚠️ **값**(실측 2026-09-18) — 기동 0.8초 · 문서 120개 검사 0.8초.
+       실사용 문서에서는 지시어가 드물어(1만 자당 0.13) 거의 안 든다.
+       **다만 이 저장소의 시험은 148 → 275초가 됐다** — 지시어를 다루는
+       저장소라 제 문서에 그 낱말이 널려 있고, 검사기를 자식 프로세스로 부르는
+       시험마다 분석기를 새로 띄우기 때문이다. 한 프로세스 안에서는 한 벌만
+       쓴다(`morph`). 실사용 값이 아니라 **시험 환경의 값**이다.
+    """
+    k = morph()
+    if k is None:
+        return list(VAGUE_SOFT_RE.finditer(text))
+    out, at = [], 0
+    for line in text.split('\n'):
+        start, at = at, at + len(line) + 1
+        if not VAGUE_ANY_RE.search(line):
+            continue
+        if len(line) > 600:                  # 너무 긴 줄은 대비책으로
+            out += [_Hit(start + m.start(), m.group(1))
+                    for m in VAGUE_SOFT_RE.finditer(line)]
+            continue
+        for t in k.tokenize(_plain(line)):
+            if t.tag == 'NP' and t.form in VAGUE_SOFT:
+                out.append(_Hit(start + t.start, t.form))
+    return out
 
 
 def particle_veto(text, hits):
@@ -1041,7 +1103,7 @@ def scan_html(path, relaxed=False, form=None, rules=None):
     # 문제 문장이 사라진다(오류는 뜨는데 어디인지 모르는 상태가 된다).
     def around(m):
         return ' '.join(text[max(0, m.start() - 24):m.end() + 8].split())
-    for m in VAGUE_SOFT_RE.finditer(text):
+    for m in vague_hits(text):
         warn.append(('지시어 확인', f'{around(m)[:52]} — {vague_note(m.group(1))}'))
     for m in particle_veto(text, list(JARI.finditer(text))):
         err.append(('「~하는 자리」', f'{around(m)[:56]} — 지점·위치·사례·단계·시점 중 맞는 말로 바꿀 것'))
@@ -1789,7 +1851,7 @@ def scan_md(path, relaxed=False, form=None, rules=None):
                 err.append((n, '모호한 지칭', f'「{w}」 — {strip(line).strip()[:52]}'))
         # 지시어 — 2026-09-18 부터 마크다운에서도 본다(위 VAGUE_SOFT 주석에 까닭).
         # 발췌는 **짚은 자리 둘레**를 낸다 — 줄머리를 내면 어디를 고칠지가 안 보인다.
-        for hit in VAGUE_SOFT_RE.finditer(m):
+        for hit in vague_hits(m):
             near = ' '.join(m[max(0, hit.start() - 24):hit.end() + 12].split())
             warn.append((n, '지시어 확인', f'{near[:46]} — {vague_note(hit.group(1))}'))
         for w in SELF_PRAISE:
