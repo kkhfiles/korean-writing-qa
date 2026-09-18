@@ -1020,7 +1020,10 @@ def scan_html(path, relaxed=False, form=None, rules=None):
                                '작업 단위면 「세션」·「회차」'))
 
     # 3. 금지 라벨
-    for lab in re.findall(r'<dt[^>]*>(.*?)</dt>', body, re.S):
+    #    ⛔ **표 머리(`<th>`)도 라벨이다**(2026-09-18). 여기 `<dt>` 만 있어서
+    #       마크다운의 `| 항목 | 비고 |` 은 잡히는데 같은 표를 HTML 로 쓰면
+    #       통과했다. 형식이 판정을 바꾸면 사람은 **통과한 쪽만 보고 발행한다.**
+    for lab in re.findall(r'<(?:dt|th)[^>]*>(.*?)</(?:dt|th)>', body, re.S):
         if strip(lab) in BAD_LABEL:
             warn.append(('스캔 가치 없는 라벨', strip(lab)))
 
@@ -1159,6 +1162,21 @@ def scan_html(path, relaxed=False, form=None, rules=None):
         if len(once) > len(sets) / 2:
             warn.append(('반복 블록 라벨 불일치',
                          f'{len(sets)}개 블록에서 1회용 라벨 {len(once)}종: {", ".join(once[:6])}'))
+
+    # 7. 출처 없는 인용 블록 = 해설이다 — 인용 부호만 썼을 뿐 값과 같은 규칙을 받는다.
+    #    ⛔ **마크다운 경로에만 있던 갈래다**(2026-09-18). 같은 문장을 `>` 로 쓰면
+    #       잡히고 `<blockquote>` 로 쓰면 통과했다. 제목(09-02)·문단(09-04)·
+    #       인라인 코드(09-07)에 이은 **네 번째 같은 모양**이라, 낱말을 하나씩
+    #       옮기는 대신 `test_rule_parity_between_formats.py` 로 전 갈래를 대조한다.
+    for inner in re.findall(r'<blockquote[^>]*>(.*?)</blockquote>', body, re.S | re.I):
+        flat = ' '.join(strip(inner).split())
+        if ATTRIB.search(flat):          # 남의 말 원문은 글자가 같아야 한다
+            continue
+        for chunk in re.split(r'(?<=다\.)\s+', flat):
+            c = chunk.replace('**', '').strip()
+            if c and NARRATIVE.search(c) and not NOT_NARRATIVE.search(c):
+                warn.append(('해설을 인용 부호로 씀', f'{c[:52]} — 라벨:값으로 고칠 것'))
+
     # HTML 에는 머리말이 없다. 플래그만 받으면 **검사할 때마다 사람이 기억해야 하고**,
     # 기억해야 하는 구조는 실패한다 — `<meta name="form" content="prose">` 로 파일이
     # 자기 형식을 들고 있게 한다. 플래그가 오면 그쪽이 이긴다(그 자리에서 뒤집어 봄).
