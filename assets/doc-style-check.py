@@ -722,8 +722,26 @@ def mask(line):
     return QUOTE_SPAN.sub(' ', CODE_SPAN.sub(' ', line))
 
 
+#: 브라우저가 **줄을 가르는** 태그. 인라인(`b`·`span`·`a`·`code`)은 붙는 것이 맞다 —
+#: 화면에서도 붙어 보이므로 지우기만 한다.
+BLOCK_TAG = re.compile(
+    r'</?(?:p|div|dl|dt|dd|li|ul|ol|table|thead|tbody|tr|th|td|section|article|'
+    r'h[1-6]|header|footer|nav|aside|main|figure|figcaption|blockquote|pre|br|hr)'
+    r'\b[^>]*>', re.I)
+
+
 def strip(x):
-    return re.sub(r'<[^>]+>', '', x).strip()
+    """태그를 떼고 글자만 낸다 — **덩어리 태그 자리에는 줄바꿈을 남긴다.**
+
+    ⚠️ 예전에는 모든 태그를 빈 문자열로 지워 `<dt>쓰는 곳</dt><dd>사내 메신저`
+    가 **「쓰는 곳사내 메신저」**로 붙었다. 화면에서는 두 줄인데 검사기에는 한
+    낱말로 보인다 — 발췌가 그렇게 나가면 읽는 사람이 **없는 자리를 찾는다.**
+
+    지적 자체는 안 바뀐다(HTML 84개 실측 2026-09-18 — 새로 나는 것 0 · 가려졌던
+    것 0). 고치는 값은 **사람이 읽는 발췌**와, 문맥 창(`[^·\\n]{0,26}`)이 칸을
+    넘지 못하게 되는 것 둘이다.
+    """
+    return re.sub(r'<[^>]+>', '', BLOCK_TAG.sub('\n', x)).strip()
 
 
 def drop_tail(t):
