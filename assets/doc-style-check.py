@@ -100,12 +100,17 @@ VAGUE_HARD = ['우리', '이들', '저들', '얘네', '쟤네', '이쪽', '그�
 #   ④ **자리 명사를 목록에서 뺐다** — 「아래」와 「위쪽」은 지시대명사가 아니라
 #      위아래를 가리키는 명사다(「화면 위쪽에 있음」). 목록은 **지시대명사**만 든다.
 VAGUE_SOFT = ['여기', '거기', '저기', '이것', '그것', '저것']
-#: 조사가 붙어야 지시어로 읽힌다
-VAGUE_JOSA = ('(?:에서|에는|에도|까지|부터|으로|보다|에|서|를|을|가|는|은|도|만|로|와|과|의)')
+#: 조사가 붙어야 지시어로 읽힌다.
+#: ⛔ **받침 뒤 주격 「이」와 「처럼」이 빠져 있었다**(외부 검토 2026-09-18) —
+#:    「이것이 원인」·「그것이 근거」·「이것처럼」이 통째로 샜다. 긴 것부터 적는다.
+VAGUE_JOSA = ('(?:에서|에는|에도|까지|부터|으로|처럼|보다|밖에|조차|마저'
+              r'|에|서|를|을|가|는|은|도|만|로|와|과|의|이)')
 #: 조사 없이 뒤 낱말을 꾸미는 꼴도 지시어다 — 「여기 스킬」·「거기 적힌 설명」.
 #: 이것을 빼면 조사 붙은 꼴만 잡혀 절반이 샌다(실측으로 드러났다).
-VAGUE_SOFT_RE = re.compile('(' + '|'.join(VAGUE_SOFT) + ')'
-                           + '(?:' + VAGUE_JOSA + r'|(?=\s+[가-힣]))')
+#: 뒤가 숫자·라틴이어도 지시어다 — 「여기 F5 입력」·「여기 3번 항목」.
+#: ⛔ **앞이 한글이면 낱말 속이다** — 「여기저기」의 「저기」가 걸리던 것을 막는다.
+VAGUE_SOFT_RE = re.compile(r'(?<![가-힣])(' + '|'.join(VAGUE_SOFT) + ')'
+                           + '(?:' + VAGUE_JOSA + r'|(?=\s+[0-9A-Za-z가-힣]))')
 
 
 def vague_note(word):
@@ -115,8 +120,11 @@ def vague_note(word):
     """
     josa = '이' if (ord(word[-1]) - 0xAC00) % 28 else '가'
     return f'「{word}」{josa} 가리키는 것을 이름으로 적을 것'
-#: 값 칸이 통째로 지시어 — 가리키는 대상이 아예 안 적혔다
-VAGUE_ONLY_RE = re.compile(r'^\*{0,2}(' + '|'.join(VAGUE_SOFT + ['아래'])
+#: 값 칸이 통째로 지시어 — 가리키는 대상이 아예 안 적혔다.
+#: 여기서는 자리 명사 **둘 다** 본다 — 값이 「아래」·「위쪽」뿐이면 무엇의 아래인지
+#: 안 적힌 것이다(문장 속과 달리 뒤따르는 것이 없다). 한쪽만 넣었다가 외부 검토가
+#: 「`<dd>위쪽</dd>` 은 왜 통과하나」로 짚었다.
+VAGUE_ONLY_RE = re.compile(r'^\*{0,2}(' + '|'.join(VAGUE_SOFT + ['아래', '위쪽'])
                            + r')\*{0,2}' + VAGUE_JOSA + r'?\*{0,2}$')
 # 대상을 평가하는 수식어 — 사실이 아니라 자평이다. 정당한 쓰임이 있어 「주의」로만 낸다.
 # 뒤 여섯은 과장 어휘(humanize-korean 분류 체계 D-4)에서 가져왔다. 「압도적」·「대대적」은
@@ -762,12 +770,18 @@ def mask(line):
     return QUOTE_SPAN.sub(' ', CODE_SPAN.sub(' ', line))
 
 
-#: 브라우저가 **줄을 가르는** 태그. 인라인(`b`·`span`·`a`·`code`)은 붙는 것이 맞다 —
-#: 화면에서도 붙어 보이므로 지우기만 한다.
+#: **칸을 가르는** 태그 — 여기가 끊기면 다른 값이다. 자리에 줄바꿈을 남긴다.
+#: 인라인(`b`·`span`·`a`·`code`)은 화면에서도 붙어 보이므로 지우기만 한다.
 BLOCK_TAG = re.compile(
     r'</?(?:p|div|dl|dt|dd|li|ul|ol|table|thead|tbody|tr|th|td|section|article|'
-    r'h[1-6]|header|footer|nav|aside|main|figure|figcaption|blockquote|pre|br|hr)'
+    r'h[1-6]|header|footer|nav|aside|main|figure|figcaption|blockquote|pre|hr)'
     r'\b[^>]*>', re.I)
+#: ⛔ **`<br>` 는 칸 경계가 아니다** — 한 칸 **안에서** 줄만 바꾼 것이라 값은 이어진다.
+#:    처음에 이것도 줄바꿈으로 바꿨다가 `<dd>커밋을<br>걷음</dd>` 의
+#:    「업무 글에 없는 말」 오류가 사라졌다(문맥 창이 `[^\n]{0,10}` 이라 줄을 못 넘는다).
+#:    **화면에서 줄만 나눴는데 판정이 달라지면 안 된다** — 빈칸으로 바꾼다.
+#:    제목 검사는 `strip` 앞에서 `<br>` 로 직접 쪼개므로 영향을 안 받는다.
+INLINE_BREAK = re.compile(r'<br\b[^>]*>', re.I)
 
 
 def strip(x):
@@ -781,7 +795,8 @@ def strip(x):
     것 0). 고치는 값은 **사람이 읽는 발췌**와, 문맥 창(`[^·\\n]{0,26}`)이 칸을
     넘지 못하게 되는 것 둘이다.
     """
-    return re.sub(r'<[^>]+>', '', BLOCK_TAG.sub('\n', x)).strip()
+    return re.sub(r'<[^>]+>', '',
+                  BLOCK_TAG.sub('\n', INLINE_BREAK.sub(' ', x))).strip()
 
 
 def drop_tail(t):
@@ -1193,6 +1208,20 @@ def scan_html(path, relaxed=False, form=None, rules=None):
             else:
                 ledes = [first.group(1)]
     for lede in ledes:
+        # ⛔ **절단형·의문형도 본다**(2026-09-18). 여기가 서술형만 보고 있어서
+        #    진입점이 「무엇을 보나」(의문형)이거나 조사로 끝나도 HTML 은 통과시켰다.
+        #    마크다운 경로는 진작 보고 있었다 — 제목 검사가 HTML 에만 빠져 있던
+        #    2026-09-02 건과 **같은 모양**이고, 형식 짝 시험의 예외 사유에
+        #    「다른 시험이 대조한다」고 **거짓으로 적어 두어** 가려져 있었다.
+        t = drop_tail(strip(lede).replace('**', ''))
+        for v in split_value(t)[0]:
+            fe, fw = (None, None) if all_quoted(v) else fragment(drop_tail(v))
+            if fe:
+                err.append(('진입점 명사형 위반', f'{v[:48]} — {fe}'))
+            elif fw and '의문형' in fw:
+                err.append(('진입점 명사형 위반', f'{v[:48]} — {fw}'))
+            elif fw:
+                warn.append(('진입점 형태 확인', f'{v[:48]} — {fw}'))
         for chunk in re.split(r'(?<=\.)\s+', strip(lede)):
             c = chunk.strip()
             if c and NARRATIVE.search(c) and not NOT_NARRATIVE.search(c):
@@ -1918,12 +1947,19 @@ def scan_md(path, relaxed=False, form=None, rules=None):
                     warn.append((start + k + 1, '해설을 인용 부호로 씀', f'{c[:52]} — 라벨:값으로 고칠 것'))
 
     # 한 줄에서 같은 종류가 여러 번 나오면 한 건으로 센다 — 건수가 고칠 곳 수와 어긋나지 않게
+    #
+    # ⛔ **낱말마다 고쳐야 하는 갈래는 예외다**(외부 검토 2026-09-18).
+    #    「여기에 저장하고 거기에서 확인」은 이름을 **둘** 붙여야 하는데 한 건으로
+    #    접혀 HTML(2건)과 갈렸다. 그 갈래만 발췌까지 열쇠에 넣는다.
+    PER_HIT = {'지시어 확인'}
+
     def dedupe(items):
         seen, out = set(), []
         for n, kind, msg in items:
-            if (n, kind) in seen:
+            key = (n, kind, msg) if kind in PER_HIT else (n, kind)
+            if key in seen:
                 continue
-            seen.add((n, kind))
+            seen.add(key)
             out.append((kind, f'{n}행  {msg}' if n else msg))
         return out
 

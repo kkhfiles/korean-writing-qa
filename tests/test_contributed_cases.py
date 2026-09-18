@@ -102,6 +102,17 @@ def make_test(record: dict):
                 f'  이 시료가 지키려는 갈래 {record["kind"]} 가 안 나왔습니다'
                 f' · 나온 것 {" · ".join(kinds) or "없음"}',
             )
+        # ★ **이 갈래로 걸린 것은 이 사례를 지킨 것이 아니다** (2026-09-18).
+        #   지키려는 갈래 이름이 아직 없을 때 쓴다 — 규칙이 생기기 전이라 `kind`
+        #   로는 못 적는데, 문장이 **다른 규칙에 걸려** 시험이 초록이 되는 일이
+        #   실제로 났다(C-010 이 「그것이」 때문에 지시어 갈래로 걸렸다. 원래
+        #   결함인 줄임말은 그대로였다).
+        for other in record.get("not_kind", []):
+            if other in kinds and len(kinds) == 1:
+                self.fail(
+                    f'{record["case_id"]} 「{record["text"]}」\n'
+                    f'  「{other}」 하나로만 걸렸습니다 — 이 사례가 지키려는 것은'
+                    f' 그 갈래가 아닙니다\n  근거 {record["why"]}')
     check.__doc__ = f'{record["case_id"]} — {record["text"][:40]}'
     return check if record["status"] == "pinned" else unittest.expectedFailure(check)
 

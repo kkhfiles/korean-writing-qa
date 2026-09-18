@@ -206,7 +206,18 @@ def is_always(line):
 
 
 def call_checker(path, *extra):
-    """검사기를 한 번 돌린다. 실행이 안 되면 None — 빈 결과로 바꾸지 않는다."""
+    """검사기를 한 번 돌린다. 실행이 안 되면 None — 빈 결과로 바꾸지 않는다.
+
+    ⛔ **죽은 것과 깨끗한 것을 가른다**(외부 검토 2026-09-18).
+       예전에는 `done.stdout or ''` 만 냈다. 검사기가 터지면 `stdout` 이 비고
+       `stderr` 에만 자취가 남는데, 부르는 쪽은 그 빈 문자열을 **「지적 없음」**
+       으로 읽고 `structure: pass` 를 적었다 — **검사를 못 한 문서가 통과 기록을
+       달고 발행됐다.** 이 저장소가 지키기로 한 것의 정반대다.
+
+       종료 코드로 가른다 — `0`(깨끗함)과 `1`(지적 있음)만 결과로 받고,
+       그 밖은 **못 돌린 것**이라 `None` 을 낸다. 부르는 쪽은 `None` 을 소리 내어
+       다룬다(막지는 않되 「검사를 못 했다」고 말한다).
+    """
     try:
         done = subprocess.run(
             [sys.executable, "-X", "utf8", str(CHECKER), str(path), *extra],
@@ -215,7 +226,19 @@ def call_checker(path, *extra):
         )
     except (OSError, subprocess.SubprocessError):
         return None
-    return done.stdout or ""
+    # ⛔ **종료 코드만으로는 못 가른다** — 검사기는 오류를 찾으면 `1` 로 끝내는데
+    #    파이썬이 터져도 `1` 이다(검토자의 재현이 그 모양이었다: 검사기 경로를
+    #    실행 불가능한 파일로 바꿈 → SyntaxError → rc 1 · stdout 빔).
+    #    가르는 것은 **낸 말**이다 — 멀쩡히 돈 회차는 지적이 없어도 합계 줄을 낸다.
+    if not (done.stdout or "").strip():
+        tail = (done.stderr or "").strip().splitlines()
+        sys.stderr.write(
+            f"⛔ 한글 검사기가 아무 말도 없이 끝났습니다(종료 코드 "
+            f"{done.returncode}) — {os.path.basename(str(path))} 는 "
+            f"**검사되지 않았습니다**\n"
+            + (f"   {tail[-1][:160]}\n" if tail else ""))
+        return None
+    return done.stdout
 
 
 def run_checker(path, errors_only):

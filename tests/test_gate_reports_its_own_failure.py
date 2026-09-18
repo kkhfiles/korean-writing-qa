@@ -90,6 +90,54 @@ class GateReportsItsOwnFailureTests(unittest.TestCase):
 
         self.assertIn("못 돌렸다", out)
 
+    def test_a_checker_that_really_dies_is_not_read_as_clean(self) -> None:
+        """**진짜 자식 프로세스를 죽여서** 본다 — 위 시험은 이 길을 안 지난다.
+
+        위 시험은 `call_checker` 를 통째로 갈아 끼우므로 **그 함수 안**이 틀려도
+        초록이다. 실제로 틀려 있었다(외부 검토 2026-09-18) — 검사기가 터지면
+        `stdout` 이 비고 `stderr` 에만 자취가 남는데, `done.stdout or ''` 가 그
+        빈 문자열을 내고 부르는 쪽이 **「지적 없음」**으로 읽어 `structure: pass`
+        를 적었다. **검사되지 않은 문서가 통과 기록을 달고 발행됐다.**
+
+        ⛔ 종료 코드로는 못 가른다 — 검사기는 오류를 찾으면 `1` 로 끝내는데
+           파이썬이 터져도 `1` 이다. **낸 말이 비었는지**로 가른다.
+        """
+        import os
+
+        for name, source in (
+                ("문법이 깨진 파일", "이건 파이썬이 아닙니다 (((\n"),
+                ("stderr 로만 말하고 죽음",
+                 "import sys\nprint('터졌습니다', file=sys.stderr)\n"
+                 "raise SystemExit(1)\n")):
+            with self.subTest(case=name):
+                with tempfile.TemporaryDirectory() as directory:
+                    crash = Path(directory) / "crash_checker.py"
+                    crash.write_text(source, encoding="utf-8")
+                    doc = Path(directory) / "doc.md"
+                    doc.write_text(DOC, encoding="utf-8")
+
+                    keep = os.environ.get("KOREAN_QA_CHECKER")
+                    os.environ["KOREAN_QA_CHECKER"] = str(crash)
+                    try:
+                        spec = importlib.util.spec_from_file_location(
+                            f"gate_{abs(hash(name))}", HOOK)
+                        hook = importlib.util.module_from_spec(spec)
+                        spec.loader.exec_module(hook)
+                        got = hook.call_checker(str(doc))
+                    finally:
+                        if keep is None:
+                            os.environ.pop("KOREAN_QA_CHECKER", None)
+                        else:
+                            os.environ["KOREAN_QA_CHECKER"] = keep
+
+                self.assertIsNone(
+                    got, "터진 검사기를 「지적 없음」으로 읽었습니다 — "
+                         "이 값이 빈 문자열이면 게이트가 통과로 적습니다")
+                # 환경변수가 안 먹으면 이 시험은 **멀쩡한 검사기**를 재고
+                # 통과한다 — 안 본 것과 같다. 주입이 실제로 닿았는지 본다.
+                self.assertEqual(str(crash), str(hook.CHECKER),
+                                 "검사기 경로 주입이 안 먹었습니다")
+
     def test_an_unexaminable_file_is_announced(self) -> None:
         """값 슬롯을 못 찾은 파일은 합격이 아니라 **안 본 것**이다.
 

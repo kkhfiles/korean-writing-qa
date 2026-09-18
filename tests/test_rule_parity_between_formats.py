@@ -41,6 +41,14 @@ MD_HEAD = ("---\nform: structured\n---\n\n# 검토 결과\n\n"
 HTML_HEAD = ('<h1>검토 결과</h1>\n'
              '<p class="lede">하반기 검토 범위 — 한 장 조망</p>\n')
 
+#: 반복 블록은 묶음이 셋 있어야 판단한다 — 「머리 + 본문」 한 벌로는 안 된다.
+#: ⛔ 「마크다운에 같은 개념이 없다」고 **거짓 사유**를 적어 뒀다(외부 검토가 짚음).
+#:    마크다운에도 구현이 있고(검사기 §4), 라벨을 `**라벨**: 값` 꼴로 쓰면 걸린다.
+REPEAT_BLOCK_MD = "".join(f"- **고유{i}**: 값\n- **공통**: 값\n\n" for i in (1, 2, 3))
+REPEAT_BLOCK_HTML = "".join(
+    f"<article><dl><div><dt>고유{i}</dt><dd>값</dd></div>"
+    f"<div><dt>공통</dt><dd>값</dd></div></dl></article>" for i in (1, 2, 3))
+
 #: 갈래 → (마크다운 본문, 같은 내용의 HTML 본문). **글자는 같고 슬롯 모양만 다르다.**
 PAIRS = {
     "서술형 종결": ("- **기한** — 9월 4일까지 끝낸다\n",
@@ -73,6 +81,11 @@ PAIRS = {
     "번역투 그녀": ("- **담당** — 그녀가 맡음\n",
                  "<dl><div><dt>담당</dt><dd>그녀가 맡음</dd></div></dl>"),
     "제목 서술형": ("## 이것은 서술로 끝난다\n", "<h2>이것은 서술로 끝난다</h2>"),
+    #: 2026-09-18 — 「다른 시험이 대조한다」고 **거짓 사유**를 적어 둬서 일곱 갈래가
+    #: 어디서도 안 대조되고 있었다. 그 시험(`test_global_checker_form.py`)은
+    #: `scan_md` 만 쓴다. 짝을 만들어 보니 HTML 에 진짜 미탐이 있었다.
+    "제목 명사형 위반": ("## 무엇을 보나\n", "<h2>무엇을 보나</h2>"),
+    "제목 형태 확인": ("## 검토는 초안까지만\n", "<h2>검토는 초안까지만</h2>"),
     #: 2026-09-18 에 메운 구멍 둘 — 마크다운에만 있었다
     "스캔 가치 없는 라벨": ("| 항목 | 비고 |\n|---|---|\n| 가 | 나 |\n",
                      "<table><tr><th>항목</th><th>비고</th></tr>"
@@ -80,25 +93,35 @@ PAIRS = {
     "해설을 인용 부호로 씀": ("> 사람이 조작할 대상이 아니다. 릴리즈 시점에 확인한다.\n",
                       "<blockquote>사람이 조작할 대상이 아니다. "
                       "릴리즈 시점에 확인한다.</blockquote>"),
+    "반복 블록 라벨 불일치": (REPEAT_BLOCK_MD, REPEAT_BLOCK_HTML),
+}
+
+#: 진입점 갈래는 머리 자체를 바꿔야 해서 `PAIRS` 의 「머리 + 본문」 꼴에 안 맞는다.
+#: (갈래, 마크다운 진입점 줄, HTML 진입점 줄) — 머리를 통째로 갈아 끼운다.
+LEDE_PAIRS = {
+    "진입점 서술형": ("이 문서는 하반기 범위를 한 장으로 본다.",
+                 "이 문서는 하반기 범위를 한 장으로 본다."),
+    "진입점 명사형 위반": ("**하반기 검토 범위** — 산출물은 해당 폴더에",
+                    "<b>하반기 검토 범위</b> — 산출물은 해당 폴더에"),
+    "진입점 형태 확인": ("**하반기 검토 범위** — 초안까지만",
+                   "<b>하반기 검토 범위</b> — 초안까지만"),
 }
 
 #: 짝을 안 만든 갈래와 그 까닭. **「나중에」는 까닭이 아니다** — 여기 적으면
 #: 그 갈래는 이 시험 밖이므로, 왜 밖인지가 읽혀야 한다.
 UNPAIRED = {
-    "서술형 문단": "두 형식의 문단 판정은 `test_html_paragraph_parity.py` 가 이미 전담",
-    "결론 라벨 없는 설명": "`--relaxed` 에서만 나오는 강등 갈래 — 짝 시험의 축이 다름",
-    "반말 서술형": "기본으로 꺼진 갈래 — 켜는 경로는 `test_global_checker_scope.py`",
-    "말투 섞임": "서술 문장 12개가 있어야 판단 · 짧은 시료로는 두 형식 다 침묵(실측 확인)",
+    "서술형 문단": ("`test_html_paragraph_parity.py` 가 같은 내용을 두 형식에 넣어 "
+                "판정을 대조한다 — 그 시험의 본체가 바로 이 갈래다"),
+    "결론 라벨 없는 설명": ("**마크다운 전용 강등 갈래** — `--relaxed` 는 마크다운 값 "
+                    "슬롯에만 걸린다(전역 규칙에 명시). HTML 의 대응은 "
+                    "「서술형 문단」이고 그쪽은 위에서 대조된다"),
+    "반말 서술형": ("기본으로 꺼진 갈래 — `test_plain_speech_rule.py` 가 **두 형식 "
+                "모두** 끈 상태의 침묵과 켠 상태의 지적을 대조한다"),
     "제품 이름 음차": "저장소 밖 목록이 있어야 돌아 시험 기계에서 재현 불가",
-    "제목 명사형 위반": "제목 세 갈래는 `test_global_checker_form.py` 가 두 경로를 이미 대조",
-    "제목 형태 확인": "위와 같음",
-    "진입점 없음": "진입점 네 갈래도 같은 시험이 두 경로를 대조",
-    "진입점 서술형": "위와 같음",
-    "진입점 명사형 위반": "위와 같음",
-    "진입점 형태 확인": "위와 같음",
-    "반복 블록 라벨 불일치": "HTML 의 `article`·`section` 반복 구조가 전제라 마크다운에 같은 개념이 없음",
+    "진입점 없음": ("두 형식의 **진입점 정의가 다르다** — 마크다운은 제목 다음의 "
+                "빈 줄 아닌 첫 줄, HTML 은 첫 `<p>`. 마크다운에서는 목록 항목도 "
+                "진입점이 되므로 같은 내용으로 짝을 못 만든다. 형식마다 맞는 정의다."),
     "형식 미표기": "머리말이 없는 문서에만 나오는 안내 — 두 형식의 선언 방법 자체가 다름",
-    "펜스 안 배포 문구": "코드펜스 안을 보는 갈래 — HTML 에는 그 개념이 없음",
 }
 
 #: ⛔ **아직 안 메운 구멍.** 까닭이 아니라 **미룬 것**이라 따로 둔다.
@@ -106,7 +129,13 @@ UNPAIRED = {
 #:
 #:    2026-09-18 에 비웠다. 「지시어 확인」이 마지막 항목이었고, 넓히면서 판정도
 #:    같이 고쳤다(자리 명사 뺌 · 조사와 꾸밈꼴만 봄 · 나온 자리마다 냄).
-KNOWN_SPLIT: dict[str, str] = {}
+KNOWN_SPLIT: dict[str, str] = {
+    "펜스 안 배포 문구": (
+        "마크다운의 코드펜스 안을 보는 갈래인데, HTML 의 `<pre><code>` 는 내용이 "
+        "먼저 지워져 아무 말도 안 나온다(외부 검토 2026-09-18 · 안내 세 줄을 두 "
+        "형식에 넣어 실측 — 마크다운만 안내). **HTML 에 개념이 없어서가 아니라 "
+        "실제로 갈린 것**이다. 고칠지는 사용자 판단 대기"),
+}
 
 
 def load_checker():
@@ -146,13 +175,52 @@ class RuleParityTests(unittest.TestCase):
                     in_html, f"「{kind}」 이 HTML 에서 안 잡힙니다 — "
                              "같은 내용인데 형식에 따라 갈립니다")
 
+    def test_register_mixing_is_judged_the_same(self) -> None:
+        """말투 섞임은 서술 문장 12개가 있어야 판단한다 — 그 크기로 대조한다.
+
+        짧은 시료로 재면 두 형식 다 침묵해서 **갈려 있어도 통과한다.**
+        문턱을 넘는 크기로 넣어야 이 갈래를 실제로 본 것이다.
+        """
+        polite = [f"{n}번 항목은 검사팀이 확인합니다." for n in range(1, 14)]
+        sents = polite + ["기한은 9월 4일이다."]
+        got_md = self.kinds(
+            ".md", "---\nform: prose\n---\n\n# 검토 결과\n\n"
+                   "**하반기 검토 범위** — 한 장 조망\n\n" + "\n\n".join(sents) + "\n")
+        got_html = self.kinds(
+            ".html", '<meta name="form" content="prose">\n<h1>검토 결과</h1>\n'
+                     '<p class="lede">하반기 검토 범위 — 한 장 조망</p>\n'
+                     + "\n".join(f"<p>{s}</p>" for s in sents))
+        for label, got in (("마크다운", got_md), ("HTML", got_html)):
+            with self.subTest(형식=label):
+                self.assertIn("말투 섞임", got, f"{label} 이 안 잡습니다: {got}")
+
+    def test_the_lede_is_judged_the_same_in_both_formats(self) -> None:
+        """진입점 한 줄도 두 형식에서 같은 판정을 받아야 한다.
+
+        **2026-09-18 에 여기서 미탐을 찾았다.** HTML 경로가 진입점의 서술형만
+        보고 **절단형·의문형을 안 봤다** — 아티팩트의 진입점이 「무엇을 보나」
+        여도 통과했다. 마크다운은 진작 보고 있었다.
+        """
+        body_md, body_html = "- **기한** — 9월 4일\n", \
+            "<dl><div><dt>기한</dt><dd>9월 4일</dd></div></dl>"
+        for kind, (md, html) in LEDE_PAIRS.items():
+            with self.subTest(kind=kind):
+                got_md = self.kinds(
+                    ".md", f"---\nform: structured\n---\n\n# 검토 결과\n\n{md}\n\n{body_md}")
+                got_html = self.kinds(
+                    ".html",
+                    f'<h1>검토 결과</h1>\n<p class="lede">{html}</p>\n{body_html}')
+                self.assertIn(kind, got_md, f"마크다운이 안 잡습니다: {got_md}")
+                self.assertIn(kind, got_html, f"HTML 이 안 잡습니다: {got_html}")
+
     def test_every_kind_is_accounted_for(self) -> None:
         """갈래 하나도 이 시험 밖으로 조용히 빠지지 않는다.
 
         **이 검사가 본체다.** 짝을 늘리는 것보다, 새 갈래가 들어올 때
         **한쪽에만 붙였는지 그 자리에서 정하게** 하는 것이 값이다.
         """
-        known = set(PAIRS) | set(UNPAIRED) | set(KNOWN_SPLIT)
+        known = (set(PAIRS) | set(LEDE_PAIRS) | set(UNPAIRED)
+                 | set(KNOWN_SPLIT) | {"말투 섞임"})
         real = set(self.checker.ALL_KINDS)
 
         missing = sorted(real - known)

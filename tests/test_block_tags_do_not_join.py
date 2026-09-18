@@ -52,6 +52,8 @@ PAIRS = [
 INLINE = [
     ("굵게", "<p>닿는 <b>값</b>을 적음</p>", "닿는 값"),
     ("링크", '<p>여기 <a href="/x">문서</a>를 봄</p>', "여기 문서를 봄"),
+    #: `<br>` 은 **칸 경계가 아니다** — 한 칸 안에서 줄만 바꾼 것이라 값은 이어진다
+    ("줄바꿈", "<dd>커밋을<br>걷음</dd>", "커밋을 걷음"),
 ]
 
 
@@ -90,6 +92,31 @@ class BlockBoundaryTests(unittest.TestCase):
             with self.subTest(case=name):
                 text = " ".join(self.stripped(markup).split())
                 self.assertIn(want, text, f"인라인이 갈라졌습니다: {text}")
+
+    def test_a_line_break_inside_a_cell_keeps_the_judgement(self) -> None:
+        """한 칸 안에서 줄만 바꿨다고 판정이 달라지면 안 된다.
+
+        **2026-09-18 에 내가 낸 회귀다.** 덩어리 태그를 줄바꿈으로 바꾸면서
+        `<br>` 까지 넣었더니 `<dd>커밋을<br>걷음</dd>` 의 「업무 글에 없는 말」
+        오류가 사라졌다 — 그 규칙의 문맥 창이 `[^\\n]{0,10}` 이라 줄을 못 넘는다.
+        **화면에서 줄만 나눈 것이 검사를 빠져나가는 길이 되면 안 된다.**
+        실문서 84개 전수 측정은 이 모양이 없어 0으로 나왔다 — 외부 검토가 값을
+        지어 넣어 찾았다.
+        """
+        head = ('<h1>검토 결과</h1>\n'
+                '<p class="lede">하반기 검토 범위 — 한 장 조망</p>\n')
+        for name, cell in (("한 줄", "커밋을 걷음"), ("줄 나눔", "커밋을<br>걷음")):
+            with self.subTest(case=name):
+                with tempfile.TemporaryDirectory() as directory:
+                    target = Path(directory) / "doc.html"
+                    target.write_text(
+                        f"{head}<dl><div><dt>작업</dt><dd>{cell}</dd></div></dl>",
+                        encoding="utf-8")
+                    errors, _warnings, _ = self.checker.scan_html(str(target))
+                kinds = [k for k, _ in errors]
+                self.assertIn(
+                    "업무 글에 없는 말", kinds,
+                    f"「{cell}」 이 안 잡힙니다 — 줄 나눔이 검사를 빠져나갑니다")
 
     def test_the_report_quotes_the_document(self) -> None:
         """지적의 발췌가 문서에 실제로 있는 글자여야 한다.
