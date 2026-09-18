@@ -76,8 +76,48 @@ EVIDENCE_END = re.compile(r'[.。]$')
 #   전부 「자기개선」·「자기선택 표본」·「CRIU 자신이」·「제품이 스스로」 같은 정당한 쓰임이었다.
 #   주격 형태로 좁혀도(자기가/는/를 18건) 전부 정당해 규칙이 서지 않는다.
 VAGUE_HARD = ['우리', '이들', '저들', '얘네', '쟤네', '이쪽', '그쪽', '저쪽']
-# SOFT는 HTML에서만 검사한다 — md에 켜면 여기 506·아래 363·그것 142건이 쏟아진다(같은 실측)
-VAGUE_SOFT = ['여기', '거기', '아래', '위쪽', '이것', '그것', '저것']
+# 지시어 — 뜻이 앞 문장에 얹혀 있어 읽는 사람이 되짚어야 한다.
+#
+# ★ 2026-09-18 에 셋을 고쳤다. 그전에는 **HTML 에서만** 검사했고 그 근거가
+#   「md 에 켜면 여기 506·아래 363·그것 142건이 쏟아진다」였다. 그 수가 부풀려진
+#   것이었다 — **맨 글자를 세서** 「아래아 한글」·「여기다」(동사) 같은 낱말 속
+#   글자까지 셌고, 「아래」를 함께 셌다.
+#
+#   ① **「아래」를 뺐다.** 「일정은 아래와 같습니다」는 가리키는 것이 바로 뒤에
+#      있어 **이 갈래가 묻는 것(가리키는 대상이 하나로 읽히나)에 안 걸린다.**
+#      ⛔ 사람이 많이 써서가 아니다 — 빈도는 기준이 아니라 참고다(`CLAUDE.md`).
+#      값 칸이 통째로 「아래」인 것은 가리키는 대상이 안 읽히므로 아래에서 따로 본다.
+#   ② **조사가 붙은 꼴만 본다.** 낱말 속 글자가 빠진다. 「여기는」이 동사
+#      「여기다」의 관형형과 겹칠 수 있으나 실문서 818개에서 겹침 0이었다.
+#   ③ **두 형식에서 같이 돈다.** 나온 자리마다 내므로 어디를 고칠지가 읽힌다.
+#
+#   근거 — 사람이 쓴 문서 536만 자(제품·설계·참고)에서 거기·그것·이것·저것은
+#   **0회**, 여기는 1만 자당 0.021 인데 AI 문서는 0.132 로 6.4배다. 「자리」를
+#   오류로 올릴 때의 5.3배보다 세다. 다만 제품 매뉴얼의 「여기서 F5를 누릅니다」
+#   처럼 앞 단계가 가리키는 것을 정하는 쓰임이 있어 **주의**로 낸다.
+#   ⛔ 0회는 보강이지 근거의 본체가 아니다 — 본체는 「되짚어야 읽히는 말은 쓰지
+#      않는다」이고, 전역 규칙 §대상은 이름으로 지칭 이 그것을 적어 두었다.
+#   ④ **자리 명사를 목록에서 뺐다** — 「아래」와 「위쪽」은 지시대명사가 아니라
+#      위아래를 가리키는 명사다(「화면 위쪽에 있음」). 목록은 **지시대명사**만 든다.
+VAGUE_SOFT = ['여기', '거기', '저기', '이것', '그것', '저것']
+#: 조사가 붙어야 지시어로 읽힌다
+VAGUE_JOSA = ('(?:에서|에는|에도|까지|부터|으로|보다|에|서|를|을|가|는|은|도|만|로|와|과|의)')
+#: 조사 없이 뒤 낱말을 꾸미는 꼴도 지시어다 — 「여기 스킬」·「거기 적힌 설명」.
+#: 이것을 빼면 조사 붙은 꼴만 잡혀 절반이 샌다(실측으로 드러났다).
+VAGUE_SOFT_RE = re.compile('(' + '|'.join(VAGUE_SOFT) + ')'
+                           + '(?:' + VAGUE_JOSA + r'|(?=\s+[가-힣]))')
+
+
+def vague_note(word):
+    """지적 문구 — 받침에 따라 「이/가」를 가른다.
+
+    ⛔ 한글을 보는 도구가 제 출력에서 조사를 틀리면 안 된다. 「여기이」로 나갔다.
+    """
+    josa = '이' if (ord(word[-1]) - 0xAC00) % 28 else '가'
+    return f'「{word}」{josa} 가리키는 것을 이름으로 적을 것'
+#: 값 칸이 통째로 지시어 — 가리키는 대상이 아예 안 적혔다
+VAGUE_ONLY_RE = re.compile(r'^\*{0,2}(' + '|'.join(VAGUE_SOFT + ['아래'])
+                           + r')\*{0,2}' + VAGUE_JOSA + r'?\*{0,2}$')
 # 대상을 평가하는 수식어 — 사실이 아니라 자평이다. 정당한 쓰임이 있어 「주의」로만 낸다.
 # 뒤 여섯은 과장 어휘(humanize-korean 분류 체계 D-4)에서 가져왔다. 「압도적」·「대대적」은
 # 옮겨 적은 남의 공지에도 섞이므로, 인용인지 자평인지는 읽는 쪽이 가른다.
@@ -915,6 +955,10 @@ def scan_html(path, relaxed=False, form=None, rules=None):
             slots += 1
             if is_example(t):
                 continue
+            if VAGUE_ONLY_RE.match(t.strip()):
+                warn.append(('지시어 확인',
+                             f'{t.strip()[:24]} — 값이 지시어뿐이다 · '
+                             '가리키는 것을 이름으로 적을 것'))
             # 「굵은 결론 — 근거 문장」이면 결론만 본다(규칙 §1).
             # **목록 항목에만** 적용한다 — 표 칸(td)·값 칸(dd)은 그 자체가 값 슬롯이라 예외가 없다
             if tag == 'li':
@@ -943,6 +987,10 @@ def scan_html(path, relaxed=False, form=None, rules=None):
         slots += 1
         if is_example(t):
             continue
+        if VAGUE_ONLY_RE.match(t.strip()):
+            warn.append(('지시어 확인',
+                         f'{t.strip()[:24]} — 값이 지시어뿐이다 · '
+                         '가리키는 것을 이름으로 적을 것'))
         for sent in sentences(t):
             if is_narrative(sent):
                 err.append(('서술형 종결', f'class=v {sent[:58]}'))
@@ -962,10 +1010,6 @@ def scan_html(path, relaxed=False, form=None, rules=None):
             if is_example(m):
                 continue
             err.append(('모호한 지칭', f'「{w}」 … {m.strip()[:58]}'))
-    for w in VAGUE_SOFT:
-        n = len(re.findall(w, text))
-        if n:
-            warn.append(('지시어 확인', f'「{w}」 {n}회 — 가리키는 대상이 하나로 읽히는지 볼 것'))
     for w in SELF_PRAISE:
         for m in re.findall(r'[^·\n]{0,20}' + w + r'[^·\n]{0,22}', text):
             warn.append(('평가 수식어', f'「{w}」 … {m.strip()[:56]} — 무엇을 하는지로 바꿀 것'))
@@ -982,6 +1026,8 @@ def scan_html(path, relaxed=False, form=None, rules=None):
     # 문제 문장이 사라진다(오류는 뜨는데 어디인지 모르는 상태가 된다).
     def around(m):
         return ' '.join(text[max(0, m.start() - 24):m.end() + 8].split())
+    for m in VAGUE_SOFT_RE.finditer(text):
+        warn.append(('지시어 확인', f'{around(m)[:52]} — {vague_note(m.group(1))}'))
     for m in particle_veto(text, list(JARI.finditer(text))):
         err.append(('「~하는 자리」', f'{around(m)[:56]} — 지점·위치·사례·단계·시점 중 맞는 말로 바꿀 것'))
     _jari = [m for m in JARI_ANY.finditer(text)
@@ -1665,6 +1711,13 @@ def scan_md(path, relaxed=False, form=None, rules=None):
         for cell in parts:
             for v in cell:
                 slots += 1
+                # 값 칸이 통째로 지시어 — 가리키는 것이 아예 안 적혔다.
+                # 「| 검토 반영 | ✅ | 아래 |」 처럼 표 칸 하나가 「아래」뿐인 모양이다.
+                # 여기서는 「아래」도 본다 — 문장 속과 달리 뒤따르는 것이 없다.
+                if VAGUE_ONLY_RE.match(strip(v).strip()):
+                    warn.append((n, '지시어 확인',
+                                 f'{strip(v).strip()[:24]} — 값이 지시어뿐이다 · '
+                                 '가리키는 것을 이름으로 적을 것'))
                 fe, fw = (None, None) if all_quoted(v) else fragment(drop_tail(strip(v).replace('**', '')))
                 if fe and n in wrapped:
                     # 다음 줄로 이어지는 문단이라 잘린 것인지 문장이 계속되는 것인지
@@ -1705,6 +1758,11 @@ def scan_md(path, relaxed=False, form=None, rules=None):
         for w in VAGUE_HARD:
             if w in m:
                 err.append((n, '모호한 지칭', f'「{w}」 — {strip(line).strip()[:52]}'))
+        # 지시어 — 2026-09-18 부터 마크다운에서도 본다(위 VAGUE_SOFT 주석에 까닭).
+        # 발췌는 **짚은 자리 둘레**를 낸다 — 줄머리를 내면 어디를 고칠지가 안 보인다.
+        for hit in VAGUE_SOFT_RE.finditer(m):
+            near = ' '.join(m[max(0, hit.start() - 24):hit.end() + 12].split())
+            warn.append((n, '지시어 확인', f'{near[:46]} — {vague_note(hit.group(1))}'))
         for w in SELF_PRAISE:
             if w in m:
                 warn.append((n, '평가 수식어', f'「{w}」 — {strip(line).strip()[:50]}'))
