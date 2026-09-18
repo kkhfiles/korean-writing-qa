@@ -36,7 +36,22 @@ HOME = os.path.expanduser("~")
 STORE = os.environ.get("KOREAN_CHECK_RECORD") or os.path.join(
     HOME, ".claude", "state", "korean-check-pass.jsonl")
 
-STAGES = ("structure", "words", "judgment")
+#: ★ `review` — **주의를 읽고 정상으로 판단했다**는 기록 (2026-09-18 사용자 결정)
+#
+#   주의는 「사람이 보고 판단하라」는 등급인데, 그 판단을 받아 줄 곳이 없었다.
+#   발행 직전 검사가 주의 한 건만 있어도 `structure: fail` 로 적어, 오탐이라고
+#   판단해도 **문구를 지우거나 게이트를 통째로 넘기는 것**밖에 길이 없었다
+#   (외부 검토 2026-09-18 · 실측으로 재현). 「사람이 본다」고 해 놓고 본 결과를
+#   적을 곳이 없으면 그 말은 빈말이다.
+#
+#   ⛔ **고무도장이 되지 않게 하는 것 둘.**
+#     · 내용 해시에 묶인다 — 한 글자만 고쳐도 다시 판단해야 한다.
+#     · **까닭을 반드시 적는다**(`--note`). 나중에 누가 무엇을 왜 통과시켰는지
+#       되짚을 수 있어야 한다. 까닭 없는 승인은 받지 않는다.
+#
+#   ⛔ **오류에는 안 듣는다** — 오류는 사람 판단 대상이 아니다. 게이트는 오류가
+#      하나라도 있으면 이 기록을 보지 않는다.
+STAGES = ("structure", "words", "judgment", "review")
 #: 기록이 이보다 오래되면 안 믿는다 — 규칙이 그 사이에 바뀌었을 수 있다.
 STALE_DAYS = 14
 
@@ -145,6 +160,12 @@ def main(argv=None) -> int:
         return 2
 
     if args.cmd == "record":
+        # ⛔ **까닭 없는 승인은 받지 않는다** — 고무도장이 되면 이 기록은
+        #    「넘기기」와 같아진다. 나중에 누가 무엇을 왜 통과시켰는지 남아야 한다.
+        if args.stage == "review" and args.verdict == "pass" and not args.note.strip():
+            print("review 통과에는 --note 로 까닭을 적어야 합니다 — "
+                  "「무슨 주의를 왜 정상으로 봤나」")
+            return 1
         row = record(args.path, args.stage, args.verdict, args.note)
         mark = "통과" if row["verdict"] == "pass" else "실패"
         print(f"기록 — {os.path.basename(args.path)} · {row['stage']} · {mark} "

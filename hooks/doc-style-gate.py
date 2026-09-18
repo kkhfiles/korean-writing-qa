@@ -160,9 +160,47 @@ def publish_block(payload, files):
         "  고치는 법 — 이 문서에 `finalize-korean-document` 스킬을 돌립니다.",
         "  그 절차가 낱말 점검과 문맥 판단을 마치고 통과를 기록합니다.",
         "",
+        "  주의만 남았고 **읽어 보니 정상**이면 그 판단을 적습니다 —",
+        "    python -X utf8 scripts/check_record.py record <파일> \\",
+        "        --stage review --verdict pass --note \"무슨 주의를 왜 정상으로 봤나\"",
+        "  내용 해시에 묶이므로 한 글자만 고쳐도 다시 판단해야 합니다."
+        " 오류에는 안 듣습니다.",
+        "",
         f"  정말 그대로 내보내야 하면 명령 앞에 `{FORCE}` 를 붙입니다 — 명령문에 남습니다.",
     ]
     return "\n".join(lines)
+
+
+def reviewed(path):
+    """이 **내용**에 대한 검토 기록이 있나 — 주의를 읽고 정상으로 판단한 자국."""
+    if not RECORDER or not RECORDER.exists():
+        return False
+    try:
+        done = subprocess.run(
+            [sys.executable, "-X", "utf8", str(RECORDER), "status", str(path), "--json"],
+            capture_output=True, text=True, encoding="utf-8", timeout=30)
+        info = json.loads(done.stdout.strip() or "{}")
+    except (OSError, ValueError, subprocess.SubprocessError):
+        return False
+    return (info.get("stages") or {}).get("review") == "pass"
+
+
+def blocking(path, body):
+    """이 지적들이 발행을 막아야 하나.
+
+    ★ **주의만 있고 검토 기록이 있으면 안 막는다** (2026-09-18 사용자 결정).
+      주의는 「사람이 보고 판단하라」는 등급인데 그 판단을 받아 줄 곳이 없었다 —
+      오탐이라고 봐도 문구를 지우거나 게이트를 통째로 넘기는 길뿐이었다.
+      「사람이 본다」고 해 놓고 본 결과를 적을 곳이 없으면 그 말은 빈말이다.
+
+    ⛔ **오류는 이 길로 안 열린다** — 오류는 사람 판단 대상이 아니다.
+    ⛔ 검토 기록은 **내용 해시**에 묶여 있다 — 한 글자만 고쳐도 다시 판단한다.
+    """
+    if not body:
+        return False
+    if "❌" in body:
+        return True
+    return not reviewed(path)
 
 
 def note_pass(path, stage, verdict):
@@ -511,7 +549,7 @@ def main():
         #    「기억해야 도는 구조」가 된다. 발행 게이트와 정지 장치가 이 기록을
         #    읽어 「지금 내용이 통과했나」를 판정한다(2026-09-16).
         if not probe:
-            note_pass(fp, "structure", "fail" if body else "pass")
+            note_pass(fp, "structure", "fail" if blocking(fp, body) else "pass")
         if body:
             blocks.append(f"{os.path.basename(fp)}\n{body}")
 
