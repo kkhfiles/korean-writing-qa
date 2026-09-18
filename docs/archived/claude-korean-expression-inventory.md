@@ -108,7 +108,7 @@
 - 반대 실측: 사용자 작성문보다 AI 문서의 접속부사·복수 어미·`~에 대한` 빈도가 더 낮은 표본 존재
 - 사용 방식: 문서 단위 수치와 후보 표시만 허용 · 자동 오류 판정과 자동 윤문 금지
 
-**근거**: `docs/existing-tools.md` · `docs/manual-review-001.md` · `~/.claude/CLAUDE.md` 205~209행
+**근거**: `docs/existing-tools.md` · `manual-review-001.md` · `~/.claude/CLAUDE.md` 205~209행
 
 ## 이번 세션에서 새로 받은 표현
 

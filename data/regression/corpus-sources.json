@@ -7,7 +7,7 @@
     "path": "runs/diagnostic-002/path-term-candidates.jsonl",
     "expected_count": 33,
     "expected": "not_abstract_candidate",
-    "label_basis": "docs/manual-review-001.md#경로-판정"
+    "label_basis": "docs/archived/manual-review-001.md#경로-판정"
   },
   "human_rewrite_pairs": [
     {
