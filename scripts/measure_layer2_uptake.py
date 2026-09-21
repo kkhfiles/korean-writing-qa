@@ -30,6 +30,7 @@ import argparse
 import importlib.util
 import json
 import os
+import re
 import time
 from collections import Counter
 from datetime import datetime, timezone
@@ -81,6 +82,30 @@ def is_publish(hook, block) -> bool:
     return bool(files) and mode == "always"
 
 
+#: 발행 명령에서 뽑히는 문서 이름 — 훅이 쓰는 것과 같은 모양
+DOC_TOKEN = re.compile(r'["\']?([^\s"\']+\.(?:md|html))["\']?')
+
+
+def unresolved(hook, block) -> list[str]:
+    """훅이 **경로를 못 푼** 발행 대상 — 게이트가 안 본 것이다.
+
+    ⛔ 게이트는 앞선 호출에서 내보낸 셸 변수를 못 푼다. 그런 대상은 조용히
+    빠지는데, 빠진 것을 아무도 안 세면 그 순간부터 미탐이다. 훅 쪽 주석이
+    「측정기가 센다」고 적어 뒀으므로 여기가 그 자리다.
+    """
+    name = block.get("name") or ""
+    if name not in ("Bash", "PowerShell"):
+        return []
+    cmd = str((block.get("input") or {}).get("command") or "")
+    if not hook.PUBLISH.search(cmd) or hook.DRYRUN.search(cmd):
+        return []
+    out = []
+    for token in DOC_TOKEN.findall(cmd):
+        if not hook.in_command(cmd, token):
+            out.append(token)
+    return out
+
+
 def bucket(stamp: str) -> str:
     try:
         when = datetime.fromisoformat(stamp.replace("Z", "+00:00"))
@@ -93,6 +118,7 @@ def measure(days: int) -> dict:
     cutoff = time.time() - days * 86400
     hook = load_hook()
     notices, skill_calls, publishes = Counter(), Counter(), Counter()
+    lost = Counter()
     sessions = {"붙이기 전": set(), "붙인 뒤": set()}
 
     for path in TRANSCRIPTS.rglob("*.jsonl"):
@@ -129,6 +155,7 @@ def measure(days: int) -> dict:
                     skill_calls[when] += 1
                 if is_publish(hook, block):
                     publishes[when] += 1
+                lost[when] += len(unresolved(hook, block))
 
     out = {"days": days, "buckets": {}}
     for when in ("붙이기 전", "붙인 뒤"):
@@ -137,6 +164,7 @@ def measure(days: int) -> dict:
             "안내 발화": notices[when],
             "스킬 호출": skill_calls[when],
             "세션": len(sessions[when]),
+            "못 푼 대상": lost[when],
             "안내 발화율": round(notices[when] / publishes[when], 3) if publishes[when] else None,
             "안내 이행율": round(skill_calls[when] / notices[when], 3) if notices[when] else None,
         }
@@ -193,13 +221,15 @@ def main() -> None:
         args.json.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
 
     print(f"최근 {args.days}일\n")
-    print(f"{'구간':<10}{'발행':>7}{'안내':>7}{'스킬':>7}{'발화율':>9}{'이행율':>9}")
-    print("-" * 50)
+    print(f"{'구간':<10}{'발행':>7}{'안내':>7}{'스킬':>7}"
+          f"{'발화율':>9}{'이행율':>9}{'못 푼 대상':>11}")
+    print("-" * 61)
     for when, row in result["buckets"].items():
         rate = f"{row['안내 발화율']:.1%}" if row["안내 발화율"] is not None else "—"
         follow = f"{row['안내 이행율']:.1%}" if row["안내 이행율"] is not None else "—"
         print(f"{when:<10}{row['발행 호출']:>7}{row['안내 발화']:>7}"
-              f"{row['스킬 호출']:>7}{rate:>9}{follow:>9}")
+              f"{row['스킬 호출']:>7}{rate:>9}{follow:>9}"
+              f"{row['못 푼 대상']:>11}")
     docs = result["문서"]
     print(f"\n통과 기록으로 센 문서 — 문서 판 {docs['문서 판']}개 · 파일 {docs['파일']}개")
     for stage in ("structure", "words", "judgment", "review"):

@@ -143,13 +143,30 @@ def publish_block(payload, files):
     cmd = str((payload.get("tool_input") or {}).get("command") or "")
     if FORCE in cmd:
         return ""
-    stuck = []
+    stuck, opened = [], 0
     for fp in files:
         if not os.path.exists(fp):
             continue
+        opened += 1
         gaps = missing_stages(fp)
         if gaps:
             stuck.append((fp, gaps))
+    # ⛔ **한 장도 못 열었으면 그 발행은 검사된 적이 없다.** 이 자리가 조용하면
+    #    검사도 기록도 막기도 없이 나간다 — 게이트에서 가장 나쁜 실패다.
+    #
+    #    ⚠️ 못 연 것을 **하나라도** 막으면 안 된다. 발행 도구는 `.md` 를 읽어
+    #       `.html` 을 **만들면서** 부르므로 그 산출물은 이 시점에 아직 없다.
+    #       거기까지 막으면 정상 빌드마다 보류가 떠 넘기기가 습관이 된다.
+    if not opened and files:
+        return "\n".join([
+            "⛔ 발행 보류 — 발행 대상을 한 장도 열지 못했습니다", "",
+        ] + [f"  {fp}" for fp in files] + [
+            "",
+            "  검사하지 못했다는 뜻이지 깨끗하다는 뜻이 아닙니다.",
+            "  절대 경로로 다시 부르면 그대로 검사합니다.",
+            "",
+            f"  이 경로가 맞고 그냥 내보내야 하면 명령 앞에 `{FORCE}` 를 붙입니다.",
+        ])
     if not stuck:
         return ""
     lines = ["\u26d4 \ubc1c\ud589 \ubcf4\ub958 — 지금 내용으로 통과한 기록이 없습니다", ""]
@@ -423,6 +440,54 @@ def resolve(p):
     return p
 
 
+#: 명령 앞머리의 `cd <어디> &&` — 뒤따르는 상대 경로의 기준이다
+CD_PREFIX = re.compile(r'^\s*cd\s+(?:"([^"]+)"|\'([^\']+)\'|([^\s&;|]+))\s*&&')
+#: 같은 명령 안에서 정한 셸 변수 — `SP="C:/..." python ...` 의 그 자리
+SHELL_VAR = re.compile(r'(?:^|[\s;&])([A-Za-z_][A-Za-z0-9_]*)='
+                       r'(?:"([^"]*)"|\'([^\']*)\'|([^\s;&|]+))')
+VAR_USE = re.compile(r'\$\{?([A-Za-z_][A-Za-z0-9_]*)\}?')
+
+
+def in_command(cmd, p):
+    """명령이 스스로 들고 있는 것으로 경로를 끝까지 푼다.
+
+    ⛔ **왜 필요한가.** 발행 명령은 거의 늘 `cd <빌드 폴더> && <도구> <상대 경로>`
+    이거나 `SP="..." <도구> $SP/문서.md` 꼴이다. 훅은 세션의 작업 디렉터리에서
+    도는데 그 둘 다 **명령 안에서** 자리를 옮기므로, 뽑아 낸 상대 경로가 훅
+    쪽에서는 열리지 않는다. 그러면 `os.path.exists` 가 False 를 내고 검사도
+    막기도 안내도 통째로 건너뛴다.
+
+    실측 2026-09-21 — 스물한 날치 발행 대상 35개 중 **32개가 이 이유로 안
+    열렸다.** 마침 전부 작업 폴더(scratchpad) 파일이라 결과는 맞았지만, 그건
+    건너뛸 것이라 건너뛴 것이 아니라 **못 찾아서 건너뛴 것**이다. 같은 침묵이
+    진짜 발행도 삼킨다.
+
+    ⚠️ **못 푸는 것 하나 — 앞선 호출에서 내보낸 셸 변수.** 같은 명령 안에서
+       정한 값은 읽지만 `export` 로 먼저 내보낸 것은 못 본다. 그때는 빈 값을
+       돌려 대상에서 뺀다 — 무엇을 가리키는지 모르면 작업 문서인지 공유 자료
+       인지도 못 가르므로 막을 근거가 없다. **대신 측정기가 센다**
+       (`measure_layer2_uptake.py` 의 「못 푼 대상」) — 안 적으면 그 순간부터
+       미탐이다. 실측 21일에 다섯 건이고 전부 작업 폴더였다.
+    """
+    values = {}
+    for m in SHELL_VAR.finditer(cmd or ""):
+        values[m.group(1)] = m.group(2) or m.group(3) or m.group(4) or ""
+
+    def swap(m):
+        name = m.group(1)
+        return values.get(name) or os.environ.get(name) or m.group(0)
+
+    p = VAR_USE.sub(swap, p)
+    if "$" in p:
+        return ""                       # 못 푼 변수가 남았다 — 짐작하지 않는다
+    p = resolve(p)
+    if os.path.isabs(p):
+        return p
+    m = CD_PREFIX.match(cmd or "")
+    base = resolve(m.group(1) or m.group(2) or m.group(3)) if m else ""
+    return os.path.join(base, p) if base else p
+
+
 def targets(payload):
     """이번 호출에서 검사할 파일과 모드를 정한다."""
     ev = payload.get("hook_event_name") or ""
@@ -442,7 +507,10 @@ def targets(payload):
         if name in ("Bash", "PowerShell"):
             cmd = str(inp.get("command") or "")
             if PUBLISH.search(cmd) and not DRYRUN.search(cmd):
-                found = [resolve(m) for m in
+                # ⛔ 건너뛸지 가르는 것은 **푼 뒤의 경로**다. 상대 경로 그대로
+                #    보면 `scratchpad/데모.md` 가 `데모.md` 로 뽑혀 작업 문서가
+                #    검사 대상으로 올라온다(그 반대로도 샌다).
+                found = [in_command(cmd, m) for m in
                          re.findall(r'["\']?([^\s"\']+\.(?:md|html))["\']?', cmd)]
                 found = [m for m in found if m and not SKIP.search(m)]
                 if found:
