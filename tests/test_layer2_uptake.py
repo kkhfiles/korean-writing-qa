@@ -15,6 +15,10 @@
 from __future__ import annotations
 
 import importlib.util
+import json
+import os
+import tempfile
+import time
 import unittest
 from pathlib import Path
 
@@ -145,6 +149,73 @@ class VerdictTests(unittest.TestCase):
                 for field in ("발행 호출", "안내 발화", "스킬 호출",
                               "안내 발화율", "안내 이행율"):
                     self.assertIn(field, row)
+
+
+class DocumentCountTests(unittest.TestCase):
+    """문서 판으로 세는 쪽 — 호출 수로는 **어느 문서에 돌았는지**를 못 잇는다."""
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.mod = load()
+
+    def setUp(self) -> None:
+        self.store = Path(tempfile.mkdtemp()) / "store.jsonl"
+        self.prev = os.environ.get("KOREAN_CHECK_RECORD")
+        os.environ["KOREAN_CHECK_RECORD"] = str(self.store)
+
+    def tearDown(self) -> None:
+        if self.prev is None:
+            os.environ.pop("KOREAN_CHECK_RECORD", None)
+        else:
+            os.environ["KOREAN_CHECK_RECORD"] = self.prev
+
+    def write(self, rows) -> None:
+        self.store.write_text(
+            "\n".join(json.dumps(r, ensure_ascii=False) for r in rows),
+            encoding="utf-8")
+
+    @staticmethod
+    def row(path, stage, digest="aaaa", verdict="pass"):
+        return {"hash": digest, "path": path, "stage": stage,
+                "verdict": verdict, "when": time.time(), "note": ""}
+
+    def test_the_same_document_counts_once(self) -> None:
+        """같은 판에 두 번 적어도 검사받은 문서는 하나다."""
+        self.write([self.row("D:/a/doc.md", "judgment"),
+                    self.row("D:/a/doc.md", "judgment")])
+
+        out = self.mod.count_documents(days=1)
+
+        self.assertEqual(out["문서 판"], 1)
+        self.assertEqual(out["judgment"], 1)
+
+    def test_a_changed_document_is_a_new_one(self) -> None:
+        """내용이 바뀌면 다시 판단해야 하므로 별개로 센다."""
+        self.write([self.row("D:/a/doc.md", "judgment", digest="aaaa"),
+                    self.row("D:/a/doc.md", "structure", digest="bbbb")])
+
+        out = self.mod.count_documents(days=1)
+
+        self.assertEqual(out["문서 판"], 2)
+        self.assertEqual(out["파일"], 1)
+        self.assertEqual(out["2층 실행률"], 0.5)
+
+    def test_probe_leftovers_do_not_inflate_the_denominator(self) -> None:
+        """시험이 만든 것은 문서가 아니다 — 세면 실행률이 낮게 나온다."""
+        self.write([self.row("P:/x/.gate-probe-abc/probe-target.md", "structure"),
+                    self.row("C:/tmp/scratchpad/note.md", "structure"),
+                    self.row("D:/a/doc.md", "judgment")])
+
+        out = self.mod.count_documents(days=1)
+
+        self.assertEqual(out["문서 판"], 1)
+        self.assertEqual(out["2층 실행률"], 1.0)
+
+    def test_no_record_at_all_is_not_a_rate(self) -> None:
+        """분모가 0이면 비율을 지어내지 않는다."""
+        self.write([])
+
+        self.assertIsNone(self.mod.count_documents(days=1)["2층 실행률"])
 
 
 if __name__ == "__main__":

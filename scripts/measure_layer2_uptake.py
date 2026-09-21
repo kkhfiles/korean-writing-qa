@@ -13,6 +13,14 @@
 
 **안내를 발행 경로로 옮긴 날: 2026-08-31.** 그 앞뒤를 갈라 낸다.
 
+**★ 세는 축이 둘이고, 문서 쪽이 정본이다**(2026-09-21). 위 두 값은 「부르는 일이
+일어났나」를 세므로 **어느 문서에 돌았는지를 못 잇는다.** 통과 기록은 문서 내용
+해시에 묶이므로 그 이음이 된다 — 그래서 문서 쪽을 함께 낸다.
+
+⛔ 처음 재 보니 문서 판 129개 중 `words`·`judgment` 가 **0건**이었다. 2층은 같은
+기간 스물한 날에 열한 번 돌았다 — 절차에 **기록기를 부르는 줄이 없어서** 그
+실행이 어디에도 안 남은 것이지, 표본이 모자란 것이 아니었다.
+
     python -X utf8 scripts/measure_layer2_uptake.py [--days 14] [--json 경로]
 """
 
@@ -21,6 +29,7 @@ from __future__ import annotations
 import argparse
 import importlib.util
 import json
+import os
 import time
 from collections import Counter
 from datetime import datetime, timezone
@@ -134,6 +143,44 @@ def measure(days: int) -> dict:
     return out
 
 
+def count_documents(days: int) -> dict:
+    """통과 기록을 **문서 판**으로 모은다 — 경로와 내용 해시 한 벌이 한 판이다.
+
+    호출 수가 아니라 문서 수를 세는 까닭은 하나다. 한 문서에 같은 단계를 두 번
+    적어도 검사받은 문서는 하나이고, 열 문서에 한 번씩 적으면 열이다. 발행을
+    막을지 말지는 **그 문서가 검사를 지났나**로 갈린다.
+    """
+    store = os.environ.get("KOREAN_CHECK_RECORD") or str(
+        repo_paths.installed("state", "korean-check-pass.jsonl"))
+    cutoff = time.time() - days * 86400
+    docs: dict[tuple[str, str], dict] = {}
+    if os.path.exists(store):
+        with open(store, encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    row = json.loads(line)
+                except ValueError:
+                    continue
+                if (row.get("when") or 0) < cutoff:
+                    continue
+                path = (row.get("path") or "").replace(chr(92), "/")
+                # 시험이 만든 것은 문서가 아니다 — 세면 분모가 부푼다
+                if ".gate-probe-" in path or "/scratchpad/" in path:
+                    continue
+                docs.setdefault((path, row.get("hash")), {})[row["stage"]] = \
+                    row.get("verdict")
+
+    out = {"문서 판": len(docs), "파일": len({p for p, _ in docs})}
+    for stage in ("structure", "words", "judgment", "review"):
+        out[stage] = sum(1 for st in docs.values() if stage in st)
+    out["2층 실행률"] = (
+        round(out["judgment"] / out["문서 판"], 3) if out["문서 판"] else None)
+    return out
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--days", type=int, default=14)
@@ -141,6 +188,7 @@ def main() -> None:
     args = parser.parse_args()
 
     result = measure(args.days)
+    result["문서"] = count_documents(args.days)
     if args.json:
         args.json.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
 
@@ -152,6 +200,16 @@ def main() -> None:
         follow = f"{row['안내 이행율']:.1%}" if row["안내 이행율"] is not None else "—"
         print(f"{when:<10}{row['발행 호출']:>7}{row['안내 발화']:>7}"
               f"{row['스킬 호출']:>7}{rate:>9}{follow:>9}")
+    docs = result["문서"]
+    print(f"\n통과 기록으로 센 문서 — 문서 판 {docs['문서 판']}개 · 파일 {docs['파일']}개")
+    for stage in ("structure", "words", "judgment", "review"):
+        print(f"   {stage:<12}{docs[stage]:>5}")
+    if docs["문서 판"] and not docs["judgment"]:
+        print("⛔ 2층 실행률 0 — 절차가 기록기를 부르는지 먼저 확인할 것"
+              "(적는 곳이 없으면 실행률은 잴 수 없는 값이다)")
+    elif docs["2층 실행률"] is not None:
+        print(f"   2층 실행률 {docs['2층 실행률']:.1%}")
+
     print()
     after = result["buckets"]["붙인 뒤"]
     if after["발행 호출"] < 20:
