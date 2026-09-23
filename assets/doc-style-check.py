@@ -1131,11 +1131,19 @@ def scan_html(path, relaxed=False, form=None, rules=None):
     #
     # 빈칸이 아니라 표시를 남긴다 — 값이 코드뿐인 칸이 사라지면 슬롯 수가 줄고,
     # 0이 되면 「값 슬롯 미인식」으로 넘어간다. 그건 못 본 것이 아니라 정당하게 뺀 것이다.
+    # 지우기 **전에** 배포 문구가 들었는지 센다 — 지운 뒤에는 안 보인다.
+    buried = pre_code_prose(body)
     body = re.sub(r'(<pre[^>]*>)\s*<code[^>]*>.*?</code>\s*(</pre>)', r'\1code\2',
                   body, flags=re.S | re.I)
     body = re.sub(r'(<code[^>]*>).*?(</code>)', r'\1code\2', body, flags=re.S | re.I)
     err, warn = [], []
     slots = 0
+    if buried:
+        warn.append((
+            '펜스 안 배포 문구',
+            f'`<pre><code>` 안에 사람에게 나갈 것으로 보이는 한글 {buried}줄이 있다 — '
+            '검사에서 빠졌다. 실제로 배포되는 글이면 파일로 빼서 따로 검사한다.',
+        ))
 
     # 1. 값·목록·표 칸의 서술형 종결
     for tag in ('dd', 'li', 'td'):
@@ -1795,6 +1803,31 @@ def fenced_prose(lines):
             continue
         body.append(line.strip())
     return total
+
+
+PRE_CODE = re.compile(r'<pre[^>]*>\s*<code(?P<attrs>[^>]*)>(?P<inner>.*?)</code>\s*</pre>',
+                      re.S | re.I)
+
+
+def pre_code_prose(body):
+    """HTML `<pre><code>` 안의 배포 문구 줄 수 — 마크다운 `fenced_prose` 와 같은 기준.
+
+    ⛔ 예전에는 `<pre><code>` 를 먼저 지워서 이 안내가 HTML 에서 안 나왔다 — 같은 안내
+       세 줄을 두 형식에 넣으면 마크다운만 알렸다(외부 검토 2026-09-18 · 형식 짝 시험의
+       「형식에 따라 갈리는 갈래」로 적혀 있던 것). 블록을 펜스 줄로 되살려 같은 함수에
+       넘긴다 — 기준을 두 벌로 두면 한쪽이 낡는다. 앞 글은 블록 바로 앞 글자로 본다
+       (「예시」·「❌」 같은 머리가 있으면 보기라 안 센다).
+    """
+    import html as _html
+    lines = []
+    for m in PRE_CODE.finditer(body):
+        lang = re.search(r'(?:language|lang)-([A-Za-z0-9_+-]+)', m.group('attrs') or '')
+        before = [l for l in strip(body[max(0, m.start() - 600):m.start()]).split('\n')
+                  if l.strip()]
+        inner = _html.unescape(re.sub(r'<[^>]+>', '', m.group('inner')))
+        lines += [before[-1] if before else '', '```' + (lang.group(1) if lang else ''),
+                  *inner.split('\n'), '```']
+    return fenced_prose(lines)
 
 
 def md_body(raw):
