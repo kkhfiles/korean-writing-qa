@@ -96,6 +96,29 @@ def hook(name: str) -> Path:
     return HOOKS / name
 
 
+def gate_scratch(prefix: str) -> str:
+    """게이트가 **건너뛰지 않는** 임시 폴더를 저장소 밖에 만든다.
+
+    ⛔ 게이트는 `Temp`·`scratchpad`·`.claude` 를 건너뛴다. 시스템 임시 폴더에서 재면
+       대상을 안 봐서 「안 걸린다」가 나온다 — 증상이 안 나는 곳에서 잰 것이다.
+    ⛔ 그래서 예전에는 저장소 뿌리에 만들었는데, 지우기에 실패한 판이 추적 안 된 채
+       뿌리에 쌓였다(2026-09-23 · `.gate-probe-*`). 게이트의 건너뛰기 규칙으로 임시
+       폴더를 가려 보고, 걸리면 홈 폴더 아래로 간다.
+    이름 앞머리(`prefix`)는 그대로 쓴다 — 측정 도구가 `.gate-probe-` 로 시험 흔적을 거른다.
+    """
+    import importlib.util
+    import tempfile
+    spec = importlib.util.spec_from_file_location("doc_style_gate_scratch",
+                                                  hook("doc-style-gate.py"))
+    gate = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(gate)
+    base = Path(tempfile.gettempdir())
+    if gate.SKIP.search(str(base).replace(os.sep, "/") + "/"):
+        base = Path.home() / "korean-qa-gate-scratch"
+    base.mkdir(parents=True, exist_ok=True)
+    return tempfile.mkdtemp(prefix=prefix, dir=str(base))
+
+
 def installed(*parts: str) -> Path:
     """설치된 환경 안의 경로 — 그 기계에만 있는 것을 볼 때만 쓴다."""
     return INSTALLED.joinpath(*parts)

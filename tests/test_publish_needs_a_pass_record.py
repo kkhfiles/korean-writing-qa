@@ -12,11 +12,14 @@ import os
 import shutil
 import subprocess
 import sys
-import tempfile
 import unittest
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
+sys.path.insert(0, ROOT)
+
+import repo_paths  # noqa: E402
+
 GATE = os.path.join(ROOT, "hooks", "doc-style-gate.py")
 TOOL = os.path.join(ROOT, "scripts", "check_record.py")
 
@@ -32,8 +35,9 @@ STRICT = {"KOREAN_PUBLISH_REQUIRE": "structure,words,judgment"}
 class PublishRecordTests(unittest.TestCase):
 
     def setUp(self) -> None:
-        # ⛔ 게이트가 Temp·scratchpad 를 건너뛰므로 저장소 안에 만든다.
-        self.dir = tempfile.mkdtemp(prefix=".pub-rec-", dir=ROOT)
+        # ⛔ 게이트가 Temp·scratchpad 를 건너뛰므로 거기는 안 된다 — 그렇다고 저장소
+        #    안에 두면 지우기에 실패한 판이 뿌리에 쌓인다(`repo_paths.gate_scratch`).
+        self.dir = repo_paths.gate_scratch(".pub-rec-")
         self.doc = os.path.join(self.dir, "plan.md")
         with io.open(self.doc, "w", encoding="utf-8", newline="\n") as f:
             f.write(BODY)

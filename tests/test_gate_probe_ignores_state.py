@@ -10,11 +10,14 @@ import os
 import shutil
 import subprocess
 import sys
-import tempfile
 import unittest
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
+sys.path.insert(0, ROOT)
+
+import repo_paths  # noqa: E402
+
 GATE = os.path.join(ROOT, "hooks", "doc-style-gate.py")
 
 BAD = "# 점검\n\n- **언제 도나** — 매일\n- 새 자료는 해당 폴더에\n"
@@ -25,7 +28,7 @@ class GateProbeTests(unittest.TestCase):
     def setUp(self) -> None:
         # ⛔ 시스템 임시 폴더에 두면 안 된다 — 게이트의 SKIP 이 `Temp` 를 건너뛴다.
         #    안 걸리는 자리에서 재고 「안 걸린다」고 적으면 맞는 진단을 지운다.
-        self.dir = tempfile.mkdtemp(prefix=".gate-probe-", dir=ROOT)
+        self.dir = repo_paths.gate_scratch(".gate-probe-")
         self.doc = os.path.join(self.dir, "probe-target.md")
         with open(self.doc, "w", encoding="utf-8", newline="\n") as f:
             f.write(BAD)
