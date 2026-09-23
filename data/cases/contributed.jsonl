@@ -137,3 +137,10 @@
 {"case_id": "C-137", "expect": "clean", "form": "prose", "kind": null, "source": "다른 세션 점검 자료 작업 2026-09-22", "status": "pinned", "text": "두 종이를 겹쳐 붙인다", "why": "목적격이 붙은 「종이를」은 종이로만 읽혀 모호하지 않음"}
 {"case_id": "C-138", "expect": "clean", "form": "prose", "kind": null, "source": "다른 세션 점검 자료 작업 2026-09-22", "status": "pinned", "text": "한 종이컵에 담는다", "why": "「종이컵」은 한 낱말"}
 {"case_id": "C-139", "expect": "clean", "form": "prose", "kind": null, "source": "다른 세션 점검 자료 작업 2026-09-22", "status": "pinned", "text": "종이 두 장에 인쇄한다", "why": "진짜 종이 · 수사가 뒤에 옴"}
+{"case_id": "C-140", "expect": "finding", "form": "prose", "kind": "절 번호로 가리킴", "source": "사용자 지정 2026-09-23", "status": "pinned", "text": "마케팅과 제품 페이지가 함께 움직여야 합니다(§4-4)", "why": "괄호 속 절 번호 · 절 제목으로 가리켜야 함"}
+{"case_id": "C-141", "expect": "finding", "form": "structured", "kind": "절 번호로 가리킴", "source": "사용자 지정 2026-09-23", "status": "pinned", "text": "적용 조건은 §2의 셋이 전부 안 돎", "why": "문장 속 절 번호"}
+{"case_id": "C-142", "expect": "finding", "form": "structured", "kind": "절 번호로 가리킴", "source": "사용자 지정 2026-09-23", "status": "pinned", "text": "우선순위는 문서 29 §1 기준", "why": "다른 문서의 절도 번호로 가리키면 밀림"}
+{"case_id": "C-143", "expect": "finding", "form": "structured", "kind": "절 번호로 가리킴", "source": "사용자 지정 2026-09-23", "status": "pinned", "text": "회의록 MTG §2 에 기록", "why": "대문자 약어라도 번호가 없으면 외부 표준이 아님"}
+{"case_id": "C-144", "expect": "clean", "form": "structured", "kind": null, "source": "사용자 지정 2026-09-23", "status": "pinned", "text": "ISO 26262-6 §9.4.2 에 따라 단위 시험 설계", "why": "외부 표준의 고정 조항 번호 · 밀리지 않음"}
+{"case_id": "C-145", "expect": "clean", "form": "structured", "kind": null, "source": "사용자 지정 2026-09-23", "status": "pinned", "text": "RFC 9110 §15 의 상태 코드 사용", "why": "외부 표준의 고정 조항 번호"}
+{"case_id": "C-146", "expect": "clean", "form": "structured", "kind": null, "source": "사용자 지정 2026-09-23", "status": "pinned", "text": "「(§3)」 꼴 참조는 쓰지 않음", "why": "규칙을 설명하려고 인용한 보기말"}

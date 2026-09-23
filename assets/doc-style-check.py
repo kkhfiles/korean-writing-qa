@@ -211,6 +211,33 @@ MISREAD_JONGI = re.compile(
 MISREAD_FIX = '「종이(paper)」로 읽힘 · 「종류」·「가지」로 바꿀 것'
 
 
+#: ★ **절 번호로 가리킴** — 「(§3)」·「§2의 축」처럼 절을 번호로 가리키지 않는다
+#   (2026-09-23 사용자 — 「(§3) 와 같은 형태의 참조를 문서에서 만들지 말 것」).
+#   · 처음 읽는 사람은 §3 이 무엇인지 찾으러 가야 한다 — 그 문장만 읽고는 모른다.
+#   · 절이 하나 늘면 번호가 밀려 **조용히 엉뚱한 절을 가리킨다.** 이 저장소가
+#     대장의 `§8` 열한 건으로 겪었다(`tests/test_skill_step_reference_is_live.py`).
+#   절 제목으로 가리키면 둘 다 없다.
+#
+#   실측 2026-09-23 — 문서 일곱 묶음에서 1,323곳 · 외부 표준 조항 0 → **오류**.
+#   ⛔ 외부 표준 조항은 뺀다 — 「ISO 26262-6 §9.4」·「RFC 9110 §15」는 남의 문서의
+#      고정된 조항 번호라 밀리지 않는다. 가르는 기준은 낱말 목록이 아니라 **모양**
+#      (대문자 약어 + 번호 바로 뒤의 §)이다.
+SECTION_REF = re.compile(r'§\s?\d+(?:[.\-]\d+)*')
+STANDARD_BEFORE = re.compile(r'\b[A-Z]{2,}[A-Z/]*[\s\-:]?\d[\d\-:./]*\s*$')
+SECTION_FIX = '절 제목으로 가리킬 것 · 번호는 절이 늘면 밀림'
+
+
+def section_ref_hits(text):
+    """절을 번호로 가리킨 곳 — 외부 표준 조항은 뺀다."""
+    out = []
+    for m in SECTION_REF.finditer(text):
+        line_start = text.rfind('\n', 0, m.start()) + 1
+        if STANDARD_BEFORE.search(text[line_start:m.start()]):
+            continue
+        out.append(m)
+    return out
+
+
 def misread_hits(text):
     """다른 낱말로 읽히는 꼴 — 수사가 **정말 수사일 때만** 남긴다."""
     hits = list(MISREAD_JONGI.finditer(text))
@@ -1155,6 +1182,9 @@ def scan_html(path, relaxed=False, form=None, rules=None):
     for hit in misread_hits(text):
         near = ' '.join(text[max(0, hit.start() - 20):hit.end() + 20].split())
         warn.append(('다른 낱말로 읽힘', f'「{hit.group(0)}」 — {MISREAD_FIX} · {near[:48]}'))
+    for hit in section_ref_hits(text):
+        near = ' '.join(text[max(0, hit.start() - 20):hit.end() + 20].split())
+        err.append(('절 번호로 가리킴', f'「{hit.group(0)}」 — {SECTION_FIX} · {near[:48]}'))
     # 문맥 조각은 **한 줄로 눌러서** 낸다 — HTML 본문에는 줄바꿈이 섞여 있어
     # 그대로 두면 보고서가 여러 줄로 쪼개지고, 훅이 첫 줄만 걷어 가 정작
     # 문제 문장이 사라진다(오류는 뜨는데 어디인지 모르는 상태가 된다).
@@ -1489,6 +1519,7 @@ RULE_GROUPS = {
         '제목 서술형', '제목 명사형 위반', '제목 형태 확인',
         '진입점 없음', '진입점 서술형', '진입점 명사형 위반', '진입점 형태 확인',
         '스캔 가치 없는 라벨', '반복 블록 라벨 불일치', '해설을 인용 부호로 씀',
+        '절 번호로 가리킴',
     ]),
     '안내': ('지적이 아니라 물음 — 형식을 안 적은 문서에 한 줄', [
         '형식 미표기', '펜스 안 배포 문구',
@@ -1971,6 +2002,9 @@ def scan_md(path, relaxed=False, form=None, rules=None):
         for hit in misread_hits(m):
             warn.append((n, '다른 낱말로 읽힘',
                          f'「{hit.group(0)}」 — {MISREAD_FIX} · {strip(line).strip()[:40]}'))
+        for hit in section_ref_hits(m):
+            err.append((n, '절 번호로 가리킴',
+                        f'「{hit.group(0)}」 — {SECTION_FIX} · {strip(line).strip()[:40]}'))
 
     # 3. 금지 라벨 (목록의 「라벨: 값」)
     for n, line in body:

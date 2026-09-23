@@ -79,7 +79,7 @@ python doc-style-check.py <파일…|디렉터리> [-v]
 **기본으로 꺼진 갈래 하나** — 「반말 서술형」. 반말 자체는 잘못이 아니라서 꺼 두었습니다(실측 2026-09-08: 작업 기록과 규칙 문서는 서술 문장의 90%, 업무 보고서는 63%가 반말이고 그게 정상). **사람에게 내보이는 홍보·안내 자료에서만** `on = ["반말 서술형"]` 으로 켭니다.
 
 ```
-python assets/doc-style-check.py --list-rules      # 갈래 32종 · 묶음 5종
+python assets/doc-style-check.py --list-rules      # 갈래 33종 · 묶음 5종
 cp korean-qa.example.toml korean-qa.toml           # 고쳐서 문서 위에 둔다
 ```
 
