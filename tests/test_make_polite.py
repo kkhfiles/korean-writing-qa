@@ -89,6 +89,11 @@ class MakePoliteTests(unittest.TestCase):
         바꿨다 — 빠뜨린 것이 아니라 **틀린 말을 만든 것**이다(다른 세션 제보 2026-09-23)."""
         self.assertEqual("바뀌기까지입니다", self.tool.polite_word("바뀌기까지다"))
 
+    def test_here_at_the_end_of_a_sentence_is_a_place_not_a_verb(self) -> None:
+        """「…가 여기다」를 동사 「여기다」로 읽어 「여깁니다」로 바꿨다(CT2612 제보)."""
+        self.assertEqual("여기입니다", self.tool.polite_word("여기다", "가"))
+        self.assertEqual("거기입니다", self.tool.polite_word("거기다"))
+
     def test_the_word_before_settles_what_the_word_alone_cannot(self) -> None:
         """낱말만 주면 「만다」를 「만들어」로, 「긴급도다」를 「긴급 + 도다」로 읽는다."""
         self.assertEqual("맙니다", self.tool.polite_word("만다", "재고"))

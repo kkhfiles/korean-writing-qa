@@ -102,9 +102,16 @@ def polite_word(word, before=""):
     return _polite(word, word)
 
 
+#: 문장 끝 「여기다」는 동사가 아니라 「여기 + 이다」다 — 동사 「여기다」의 서술형은 「여긴다」
+#: (CT2612 세션 제보 2026-09-23 · 「…가 여기다」가 「여깁니다」로 틀리게 바뀜)
+DEICTIC = {"여기다", "거기다", "저기다"}
+
+
 def _polite(word, phrase):
     if not word.endswith("다") or len(word) < 2:
         return None
+    if word in DEICTIC:
+        return word[:-1] + "입니다"
     # ⛔ 마침표를 붙여 넘긴다 — 낱말만 주면 분석기가 「간다」·「온다」·「나쁘다」의
     #    끝을 연결 어미(EC)로 읽어 못 바꿨다(업무 비서 문서 실측 2026-09-23).
     toks = [t for t in kiwi().tokenize(phrase + ".") if not t.tag.startswith("S")]
