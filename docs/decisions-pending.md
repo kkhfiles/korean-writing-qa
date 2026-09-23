@@ -294,7 +294,7 @@ form: structured
 
 **남은 종류의 건수는 하나도 안 바뀜** — 서술형 종결 1,273 · 절단형 종결 91 · 모호한 지칭 67 등 전부 동일
 
-**바꾼 곳** — `~/.claude/assets/doc-style-check.py` · 전역 CLAUDE.md §4·§검사기 · `document-types.md`
+**바꾼 곳** — `~/.claude/assets/doc-style-check.py` · 전역 CLAUDE.md 「밀도와 강조」·「검사기」 절 · `document-types.md`
 **검증** — 돌연변이 9건 전부 잡힘(뺀 검사 되살리기 6 · 라벨 등급 되돌리기 3 · 낱말 검사 끄기 1) · 시험 149건
 **남은 어긋남 없음** — 자체 검사기 쪽 `severity` 값은 읽는 코드가 없는 죽은 데이터 · 스킬 규칙 문서에는 라벨 항목이 애초에 없음
 
