@@ -84,6 +84,27 @@ class MakePoliteTests(unittest.TestCase):
         for plain, polite in cases.items():
             self.assertEqual(polite, self.tool.polite_word(plain), plain)
 
+    def test_an_invented_verb_after_a_particle_reads_as_a_dropped_copula(self) -> None:
+        """분석기가 「바뀌기까지다」를 「까지 + 하 + 다」로 읽어 「바뀌기까집니다」로 틀리게
+        바꿨다 — 빠뜨린 것이 아니라 **틀린 말을 만든 것**이다(다른 세션 제보 2026-09-23)."""
+        self.assertEqual("바뀌기까지입니다", self.tool.polite_word("바뀌기까지다"))
+
+    def test_the_word_before_settles_what_the_word_alone_cannot(self) -> None:
+        """낱말만 주면 「만다」를 「만들어」로, 「긴급도다」를 「긴급 + 도다」로 읽는다."""
+        self.assertEqual("맙니다", self.tool.polite_word("만다", "재고"))
+        self.assertEqual("긴급도입니다", self.tool.polite_word("긴급도다", "착수"))
+
+    def test_the_converter_passes_the_word_before(self) -> None:
+        """함수가 맞아도 변환이 앞 낱말을 안 넘기면 실문서에서는 그대로 못 바꾼다."""
+        text = ("# 시험\n\n시험 문서 · 앞 낱말\n\n- 열은 상태가 아니라 착수 긴급도다.\n"
+                "- 지나가는 것 한 번에 한 번 재고 만다.\n")
+        path = self.write("문서.md", text)
+        done, missed = self.tool.convert(str(path), apply=True)
+        self.assertEqual([], missed)
+        got = path.read_text(encoding="utf-8")
+        self.assertIn("착수 긴급도입니다.", got)
+        self.assertIn("재고 맙니다.", got)
+
     def test_an_ending_it_cannot_read_is_left_to_a_person(self) -> None:
         self.assertIsNone(self.tool.polite_word("다"))
         self.assertIsNone(self.tool.polite_word("가라"))

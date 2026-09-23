@@ -30,8 +30,12 @@ HTML(마크다운만 본다) · Claude 만 읽는 지시 파일(검사기가 애
 실측(2026-09-23)
   · 이 저장소 문서 18개 — 411곳 · 잘못 바꾼 곳 0 · 손으로 고친 곳 19(그때는 굵게
     표시가 가른 낱말을 못 찾았다 · 지금은 바꾸는 음절이 굵게 밖이면 바꾼다)
-  · 다른 프로젝트 문서 3개 사본 — 2,069곳 · 바뀐 낱말을 하나씩 대조해 어긋남 0 ·
-    바꾼 뒤 남은 반말 지적 487곳 → 42곳(짧은 굵은 덩이 · 불규칙 활용 — 사람 몫)
+  · 다른 프로젝트 문서 3개 사본 — 2,069곳 · 바꾼 뒤 남은 반말 지적 487곳 → 42곳(짧은
+    굵은 덩이 · 불규칙 활용 — 사람 몫)
+  · ⚠️ 그때 「하나씩 대조해 어긋남 0」은 **기계 대조**였다 — 바뀐 낱말이 이 함수의 답과
+    같은지, 끝 음절 밖을 안 건드렸는지만 봤다. **말이 맞는지는 못 본다.** 실제로 「바뀌기
+    까지다」를 「바뀌기까집니다」로 틀리게 바꾸는 판이었다(다른 세션 제보로 고침). 바꾼 뒤
+    문서를 사람이 한 번 읽는다.
 """
 import importlib.util
 import io
@@ -79,16 +83,41 @@ def _set_final(ch, idx):
     return chr(ord(ch) - (ord(ch) - 0xAC00) % 28 + idx)
 
 
-def polite_word(word):
-    """끝이 「다」인 낱말 하나를 합쇼체로. 못 가르면 None."""
+#: 분석기가 겉에 없는 용언을 지어 넣는 꼴 — 「바뀌기까지다」를 「까지/JX + 하/VX + 다」로 읽는다
+PHANTOM_STEM = {"VV", "VA", "VX", "XSV", "XSA"}
+
+
+def polite_word(word, before=""):
+    """끝이 「다」인 낱말 하나를 합쇼체로. 못 가르면 None.
+
+    `before` 는 문장에서 바로 앞 낱말이다. 있으면 **그 낱말과 함께** 분석한다 —
+    낱말만 주면 「재고 만다」의 「만다」를 「만들어」로, 「착수 긴급도다」의 「긴급도다」를
+    「긴급 + 도다」로 읽어 못 바꿨다(다른 세션 제보 2026-09-23). 함께 읽어서 못 가르면
+    낱말만으로 다시 본다.
+    """
+    if before:
+        got = _polite(word, before + " " + word)
+        if got:
+            return got
+    return _polite(word, word)
+
+
+def _polite(word, phrase):
     if not word.endswith("다") or len(word) < 2:
         return None
     # ⛔ 마침표를 붙여 넘긴다 — 낱말만 주면 분석기가 「간다」·「온다」·「나쁘다」의
     #    끝을 연결 어미(EC)로 읽어 못 바꿨다(업무 비서 문서 실측 2026-09-23).
-    toks = [t for t in kiwi().tokenize(word + ".") if not t.tag.startswith("S")]
+    toks = [t for t in kiwi().tokenize(phrase + ".") if not t.tag.startswith("S")]
     if len(toks) < 2 or toks[-1].tag != "EF":
         return None
     ef, prev = toks[-1].form, toks[-2]
+    # ⛔ 겉에 없는 용언은 믿지 않는다 — 「바뀌기까지다」를 「까지 + 하(VX) + 다」로 읽어
+    #    받침 없는 어간으로 보고 「바뀌기까집니다」로 **틀리게 바꿨다.** 앞이 조사 · 명사면
+    #    「이다」가 준 것이다(「바뀌기까지입니다」).
+    if (ef == "다" and prev.tag in PHANTOM_STEM and len(toks) >= 3
+            and not word[:-1].endswith(prev.form)
+            and toks[-3].tag[:1] in ("J", "N", "X") and toks[-3].tag not in PHANTOM_STEM):
+        return word[:-1] + "입니다"
     body = word[:-1]                      # 「다」를 뗀 앞
     last = body[-1]
     if ef == "는다":
@@ -149,15 +178,15 @@ def convert(path, apply=False):
         words = endings(part)
         if not words:
             missed.append((n, part, "끝 낱말 없음"))
-        for w in words:
-            got = _replace(text, w, cursor.get(n, starts[n - 1]) + shift)
+        for w, before in words:
+            got = _replace(text, w, cursor.get(n, starts[n - 1]) + shift, before)
             if isinstance(got, str):
                 missed.append((n, part, got))
                 continue
             text, a, grew = got
             shift += grew
             cursor[n] = a - shift
-            done.append((n, w, polite_word(w)))
+            done.append((n, w, polite_word(w, before)))
     if apply and done:
         with io.open(path, "w", encoding="utf-8", newline="\n") as f:
             f.write(text)
@@ -176,17 +205,25 @@ def endings(part):
     바뀌고 정작 문장 끝(「덮어쓴다」)은 반말로 남았다(업무 비서 문서 실측 36곳).
     """
     body = checker().drop_tail(part)
-    out = [m.group(0) for m in ENDING.finditer(body)][-1:]
-    tail = [m.group(0) for m in ENDING.finditer(part[len(body):])][-1:]
-    return out + [w for w in tail if not w.endswith("니다")]
+    tail_text = part[len(body):]
+    out = [(m.group(0), _word_before(body, m.start())) for m in ENDING.finditer(body)][-1:]
+    tail = [(m.group(0), _word_before(tail_text, m.start()))
+            for m in ENDING.finditer(tail_text)][-1:]
+    return out + [(w, b) for w, b in tail if not w.endswith("니다")]
 
 
-def _replace(text, w, begin):
+def _word_before(text, at):
+    """`at` 바로 앞 낱말 — 분석기에 문맥으로 함께 넘긴다(굵게 · 괄호 같은 표시는 뺌)."""
+    words = re.findall(r"[가-힣A-Za-z0-9]+", text[:at])
+    return words[-1] if words else ""
+
+
+def _replace(text, w, begin, before=""):
     """`begin` 뒤에서 처음 나오는 `w` 의 끝 음절을 합쇼체로.
 
     (새 글, 바꾼 끝 위치, 늘어난 글자 수) · 못 바꾸면 까닭 한 줄.
     """
-    new = polite_word(w)
+    new = polite_word(w, before)
     if not new:
         return f"못 바꿈 「{w}」"
     window = text[begin:begin + 2000]
