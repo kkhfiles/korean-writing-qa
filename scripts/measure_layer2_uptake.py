@@ -114,6 +114,20 @@ def bucket(stamp: str) -> str:
     return "붙인 뒤" if when >= CHANGED else "붙이기 전"
 
 
+def within(stamp: str, cutoff: float) -> bool:
+    """이 줄이 잴 기간 안에 있나 — 파일이 아니라 **줄의 시각**으로 가른다.
+
+    ⛔ 예전에는 대화 기록 파일의 수정 시각만 봤다. 오래 이어진 대화는 파일이 날마다
+       고쳐지므로 **석 달 전 줄까지** 「최근 사흘」에 들어갔다. 2026-09-23 에 사흘로
+       잰 발행이 161회로 나왔는데, 줄 시각으로 다시 세니 8회였다 — 분모가 스무 배 부풀었다.
+    """
+    try:
+        when = datetime.fromisoformat(stamp.replace("Z", "+00:00"))
+    except ValueError:
+        return False
+    return when.timestamp() >= cutoff
+
+
 def measure(days: int) -> dict:
     cutoff = time.time() - days * 86400
     hook = load_hook()
@@ -137,8 +151,9 @@ def measure(days: int) -> dict:
                 item = json.loads(row)
             except ValueError:
                 continue
-            when = bucket(item.get("timestamp") or "")
-            if not when:
+            stamp = item.get("timestamp") or ""
+            when = bucket(stamp)
+            if not when or not within(stamp, cutoff):
                 continue
             blob = json.dumps(item, ensure_ascii=False)
             if NOTICE_MARK in blob or OLD_NOTICE_MARK in blob:

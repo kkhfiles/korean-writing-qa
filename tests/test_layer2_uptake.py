@@ -151,6 +151,45 @@ class VerdictTests(unittest.TestCase):
                     self.assertIn(field, row)
 
 
+class WindowTests(unittest.TestCase):
+    """기간은 **줄의 시각**으로 자른다 — 파일 수정 시각으로 자르면 옛 줄이 들어온다.
+
+    오래 이어진 대화는 파일이 날마다 고쳐져서, 사흘로 잰 발행이 161회로 나왔다.
+    줄 시각으로 다시 세니 8회였다(2026-09-23).
+    """
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.mod = load()
+        if not repo_paths.hook("doc-style-gate.py").is_file():
+            raise unittest.SkipTest("훅이 없습니다")
+
+    def test_an_old_line_in_a_fresh_file_is_left_out(self) -> None:
+        publish = {"type": "tool_use", "name": "Bash", "input": {
+            "command": "python -X utf8 notion.py create --parent abc --title 보고 P:/work/report.md"}}
+
+        def line(days_ago: float) -> str:
+            stamp = time.strftime("%Y-%m-%dT%H:%M:%S.000Z",
+                                  time.gmtime(time.time() - days_ago * 86400))
+            return json.dumps({"timestamp": stamp, "message": {"content": [publish]}},
+                              ensure_ascii=False)
+
+        with tempfile.TemporaryDirectory() as d:
+            folder = Path(d) / "P--work-other"
+            folder.mkdir()
+            # 파일은 방금 고쳐졌다 — 그 안의 한 줄은 열흘 전, 한 줄은 한 시간 전
+            (folder / "s.jsonl").write_text(line(10) + "\n" + line(1 / 24) + "\n",
+                                            encoding="utf-8")
+            saved = self.mod.TRANSCRIPTS
+            self.mod.TRANSCRIPTS = Path(d)
+            try:
+                result = self.mod.measure(days=3)
+            finally:
+                self.mod.TRANSCRIPTS = saved
+        total = sum(b["발행 호출"] for b in result["buckets"].values())
+        self.assertEqual(1, total, "열흘 전 발행이 「최근 사흘」에 들어왔습니다")
+
+
 class DocumentCountTests(unittest.TestCase):
     """문서 판으로 세는 쪽 — 호출 수로는 **어느 문서에 돌았는지**를 못 잇는다."""
 
