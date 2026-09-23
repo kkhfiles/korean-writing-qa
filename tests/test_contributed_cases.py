@@ -84,12 +84,19 @@ def make_test(record: dict):
         #   안 된다.** 건너뛰되 무엇을 안 봤는지 적는다 — 조용히 통과시키지 않는다.
         if record.get("needs") == "morph" and not _morph_available():
             self.skipTest(f'{record["case_id"]} — 형태소 분석기(kiwipiepy)가 없어 안 봤습니다')
-        got, kinds = add_case.verdict(record["text"], record.get("form", "structured"))
+        # ★ **무관한 갈래는 빼고 판정한다** — `not_kind` 가 그 목록이다. 기준은
+        #   `add_case.guarded` 한 곳이다. recheck 가 따로 판정하다 C-010 을 pinned 로
+        #   올린 적이 있다(2026-09-23).
+        _, raw = add_case.verdict(record["text"], record.get("form", "structured"))
+        kinds = add_case.guarded(record, raw)
+        got = "finding" if kinds else "clean"
+        spared = [k for k in raw if k not in kinds]
         self.assertEqual(
             record["expect"], got,
             f'{record["case_id"]} 「{record["text"]}」\n'
             f'  바라는 판정 {record["expect"]} · 나온 판정 {got}'
             + (f' ({" · ".join(kinds)})' if kinds else "")
+            + (f' · 이 사례와 무관해 뺀 갈래 {" · ".join(spared)}' if spared else "")
             + f'\n  근거 {record["why"]}',
         )
         # ★ 갈래까지 본다 (2026-09-10). 판정만 보면 **그 시료가 자기 규칙을 못
@@ -103,18 +110,10 @@ def make_test(record: dict):
                 f'  이 시료가 지키려는 갈래 {record["kind"]} 가 안 나왔습니다'
                 f' · 나온 것 {" · ".join(kinds) or "없음"}',
             )
-        # ★ **이 갈래로 걸린 것은 이 사례를 지킨 것이 아니다** (2026-09-18).
-        #   지키려는 갈래 이름이 아직 없을 때 쓴다 — 규칙이 생기기 전이라 `kind`
-        #   로는 못 적는데, 문장이 **다른 규칙에 걸려** 시험이 초록이 되는 일이
-        #   실제로 났다(C-010 이 「그것이」 때문에 지시어 갈래로 걸렸다. 원래
-        #   결함인 줄임말은 그대로였다).
-        #   ⛔ 기준은 `add_case.guarded` 한 곳 — recheck 가 따로 판정하다
-        #      C-010 을 pinned 로 올린 적이 있다(2026-09-23).
-        if kinds and not add_case.guarded(record, kinds):
-            self.fail(
-                f'{record["case_id"]} 「{record["text"]}」\n'
-                f'  「{kinds[0]}」 하나로만 걸렸습니다 — 이 사례가 지키려는 것은'
-                f' 그 갈래가 아닙니다\n  근거 {record["why"]}')
+        # ★ `not_kind` 가 생긴 까닭 (2026-09-18) — 지키려는 갈래 이름이 아직 없을 때,
+        #   문장이 **다른 규칙에 걸려** 시험이 초록이 되는 일이 실제로 났다(C-010 이
+        #   「그것이」 때문에 지시어 갈래로 걸렸다. 원래 결함인 줄임말은 그대로였다).
+        #   위 판정이 그 갈래를 빼고 보므로 따로 막을 것이 없다.
     check.__doc__ = f'{record["case_id"]} — {record["text"][:40]}'
     return check if record["status"] == "pinned" else unittest.expectedFailure(check)
 

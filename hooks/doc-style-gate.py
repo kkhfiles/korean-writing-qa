@@ -253,8 +253,10 @@ def save(data):
 # 쓰는 순간의 소음을 줄이는 데만 쓴다. 산문 판정에는 쓰지 않는다.
 # 「절 번호로 가리킴」은 사용자 지시가 「만들지 말 것」이라(2026-09-23) 발행 때가
 # 아니라 **쓰는 순간**에 걸려야 한다 — 문서가 다 쓰인 뒤에는 번호가 수십 곳에 퍼져 있다.
+# 「반말 서술형」도 같다 — 「문서에는 반말 금지 · 전부」(2026-09-23 사용자). 검사기가
+# Claude 만 읽는 지시 파일은 알아서 뺀다.
 ALWAYS = ("「~하는 자리」", "절단형", "모호한 지칭", "지시어 확인", "평가 수식어",
-          "절 번호로 가리킴")
+          "절 번호로 가리킴", "반말 서술형")
 # 검사기가 형식을 안 적은 산문으로 보고 물어보는 줄
 FORM_ASK = "형식 미표기"
 
@@ -323,7 +325,12 @@ def run_checker(path, errors_only):
     """
     if not CHECKER.exists():
         return f"⚠️ 전역 문서 검사를 못 돌렸다 — 검사기 없음 ({CHECKER})"
-    out = call_checker(path)
+    # ⛔ **발행 순간에는 설정을 무시하고 전부 본다**(`--no-rules`). 전역 규칙과 검사기
+    #    주석은 진작 「발행 게이트가 쓰는 것」이라 적어 뒀는데 이 줄이 없었다
+    #    (2026-09-23 확인). 그동안 프로젝트 설정이 끈 갈래는 발행 때도 꺼진 채였다.
+    #    쓰는 순간은 설정을 따른다 — 초안의 소음을 줄이는 쪽이 설정의 쓸모다.
+    full = () if errors_only else ("--no-rules",)
+    out = call_checker(path, *full)
     if out is None:
         return "⚠️ 전역 문서 검사를 못 돌렸다 — 실행 실패 또는 25초 초과"
     # 부분 검사여도 **잡힌 것은 함께 낸다.** 알림만 내고 지적을 버리면 실제로
@@ -332,7 +339,7 @@ def run_checker(path, errors_only):
 
     note = None
     if not errors_only and FORM_ASK in out:
-        prose = call_checker(path, "--form", "prose")
+        prose = call_checker(path, "--form", "prose", *full)
         if prose is not None and not BLIND.search(prose):
             out = prose
             note = ("(형식을 안 적어 산문으로 보고 개조식 지적을 뺐다 — "

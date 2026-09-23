@@ -6,7 +6,7 @@
 | 시료 | 무엇이 들었나 | 기대 |
 |---|---|---|
 | `exempt-fixture.md` | 위반과 겉모습이 같은 **정당한** 표기 20종 | 지적 0 |
-| `violation-fixture.md` | 같은 모양의 **진짜** 위반 | 17건 전부 · 제 갈래로 |
+| `violation-fixture.md` | 같은 모양의 **진짜** 위반 | 22건 전부 · 제 갈래로 |
 
 **정당한 쪽이 하나라도 걸리면 규칙이 너무 넓다.** 그것이 이 시험의 본체이고,
 위반 쪽 수는 규칙이 조용히 사라지지 않았는지 보는 보조 확인이다.
@@ -71,10 +71,13 @@ class PairedFixtureTests(unittest.TestCase):
         2026-09-09 에 15 → 17. 같은 줄(「앞 판에서 잰 값 · 무르는 창」)을 규칙 둘이
         새로 잡는다 — 「무르는 창」을 좁힌 지어낸 명사구가, 「잰 값」을 업무 글에
         없는 말이. 시료를 안 고쳤고 **규칙이 늘어난 만큼만 늘었다.**
+
+        2026-09-23 에 17 → 22. 반말을 문서 전부에 켜자 값 칸의 해라체 다섯 줄이
+        서술형 종결에 더해 반말로도 걸린다. 이번에도 시료는 안 고쳤다.
         """
         err, warn, slots = self.scan(VIOLATION)
         self.assertGreater(slots, 20)
-        self.assertEqual(17, len(err) + len(warn), f"오류 {err}\n주의 {warn}")
+        self.assertEqual(22, len(err) + len(warn), f"오류 {err}\n주의 {warn}")
 
     def test_every_expected_kind_still_fires(self) -> None:
         """수만 맞고 갈래가 바뀌었으면 규칙 하나가 다른 규칙에 가려진 것이다."""

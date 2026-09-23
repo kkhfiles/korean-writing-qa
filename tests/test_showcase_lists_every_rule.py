@@ -118,34 +118,30 @@ class ShowcaseListsEveryRule(unittest.TestCase):
             "첫 화면 카드의 가짓수가 검사기와 다릅니다")
 
     def test_the_breakdown_adds_up(self):
-        """「28가지 + 안내 둘 + 꺼 둔 하나」의 셋이 실제 묶음과 맞아야 한다.
+        """「맨 위 N가지 + 안내 둘」이 실제 묶음과 맞아야 한다.
 
         **왜**(2026-09-17). 「안내 한 가지」로 적혀 있어 합이 30 이었다.
         사람이 읽고서야 찾았다 — 셈이 안 맞는데 아무 시험도 안 봤다.
+        2026-09-23 에 「기본으로 꺼 둔 한 가지」(반말)가 빠졌다 — 반말을 문서 전부에 켰다.
         """
         html = SHOWCASE.read_text(encoding="utf-8")
-        m = re.search(r"맨 위의 (\d+)가지에 안내 (\S+?) 가지와 기본으로 "
-                      r"꺼 둔 (\S+?) 가지를 더한 수", html)
+        m = re.search(r"맨 위의 (\d+)가지에 안내 (\S+?) 가지를 더한 수", html)
         self.assertIsNotNone(
             m, "구성 셈 문장을 못 찾았습니다 — 문구를 바꿨으면 이 시험도 함께")
         top = int(m.group(1))
         guide = self.WORDS.get(m.group(2))
-        off = self.WORDS.get(m.group(3))
         self.assertIsNotNone(guide, f"모르는 셈씨 「{m.group(2)}」")
-        self.assertIsNotNone(off, f"모르는 셈씨 「{m.group(3)}」")
+        self.assertNotIn("기본으로 꺼 둔", html[m.start() - 80:m.end() + 80],
+                         "꺼 둔 갈래가 없는데 셈 문장이 그 말을 합니다")
 
         rules = checker_rules()
         self.assertEqual(
             len(rules["안내"]), guide,
             f"페이지는 안내가 {guide}가지라는데 검사기는 "
             f"{len(rules['안내'])}가지입니다")
-        real_off = sum(1 for names in rules.values()
-                       for n in names if "기본으로 꺼짐" in n)
-        self.assertEqual(real_off, off,
-                         f"페이지는 꺼 둔 것이 {off}가지라는데 실제는 {real_off}가지입니다")
         self.assertEqual(
-            len(checker_types()), top + guide + off,
-            f"셈이 안 맞습니다 — {top} + {guide} + {off}")
+            len(checker_types()), top + guide,
+            f"셈이 안 맞습니다 — {top} + {guide}")
 
 
 if __name__ == "__main__":

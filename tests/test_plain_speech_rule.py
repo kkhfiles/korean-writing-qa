@@ -1,16 +1,15 @@
-"""반말 서술형 갈래가 켜질 때만 걸리는지 고정한다.
+"""반말 서술형 갈래가 **문서 전부**에서 걸리는지 고정한다.
 
 **왜 이 갈래가 생겼나.** 한국어 제품 홍보 쪽에 반말은 안 쓴다. 같이 만든 소개 쪽
 셋은 서술 문장이 100% 존댓말인데 사례집 하나만 67건이 반말이었다(2026-09-08) —
 만든 사람의 작업 문서 말투가 그대로 나간 것이다. 사람이 읽고서야 걸렸다.
 
-**왜 기본으로 꺼 두나.** 반말 자체는 잘못이 아니다. 실측으로 작업 기록과 규칙
-문서는 서술 문장의 90%가, 업무 보고서는 63%가 반말이고 그게 정상이다. 기본으로
-켜면 정당한 글 수천 줄이 지적으로 쏟아져 정작 봐야 할 것을 덮는다 — 이 검사기가
-서식 검사에서 이미 겪은 실패다(주의 2,546건 중 2,239건이 서식이었다).
+**왜 기본으로 켜나**(2026-09-23 사용자 — 「반말 금지 넣을 것 · 문서는 전부」).
+예전에는 「업무 보고서의 63%가 반말이고 그게 정상」이라며 기본으로 꺼 두었는데
+빈도 논증이었다. 꺼 둔 탓에 발행 원고 열 개에서 반말 149줄이 통과한 적도 있다.
 
-**그래서 지켜야 하는 것이 셋이다** — 켜지 않으면 침묵 · 켜면 잡음 · 존댓말은
-켜도 안 걸림.
+**그래서 지켜야 하는 것이 넷이다** — 설정 없이 걸림 · 목록·표 칸의 근거 문장까지
+걸림 · 존댓말은 안 걸림 · Claude 만 읽는 지시 파일은 빠짐.
 """
 
 from __future__ import annotations
@@ -96,12 +95,32 @@ class PlainSpeechTests(unittest.TestCase):
     HTML = "<h1>소개</h1><p>사례는 모두 실제 문서에서 가져왔다.</p>"
     MD = "# 소개\n\n독자가 품는 질문 · 한 장 조망\n\n사례는 모두 실제 문서에서 가져왔다.\n"
 
-    def test_it_stays_silent_until_switched_on(self) -> None:
-        """★ 켜지 않으면 침묵한다 — 첫 실행에서 정당한 반말이 쏟아지면 사람은
-        갈래가 아니라 검사기를 끈다."""
+    def test_it_is_caught_without_any_setting(self) -> None:
+        """★ 설정 없이 걸린다 — 켜야 걸리는 동안 발행 원고에서 149줄이 샜다."""
         for suffix, doc in ((".html", self.HTML), (".md", self.MD)):
             with self.subTest(형식=suffix):
-                self.assertNotIn("반말 서술형", self.scan(doc, suffix))
+                self.assertIn("반말 서술형", self.scan(doc, suffix))
+
+    def test_a_reason_sentence_inside_a_list_is_caught(self) -> None:
+        """★ 목록 속 「굵은 결론 — 근거 문장」의 근거 문장.
+
+        개조식 검사는 근거 문장을 일부러 안 보고, 반말 검사는 문단만 봐서 이 문장은
+        **어느 검사에도 안 걸렸다**(2026-09-23 확인).
+        """
+        md = "# 소개\n\n독자가 품는 질문 · 한 장 조망\n\n- **대체 아님** — 근거는 아래에 적었다.\n"
+        html = "<h1>소개</h1><ul><li><b>대체 아님</b> — 근거는 아래에 적었다.</li></ul>"
+        for suffix, doc in ((".md", md), (".html", html)):
+            with self.subTest(형식=suffix):
+                self.assertIn("반말 서술형", self.scan(doc, suffix))
+
+    def test_a_table_cell_is_caught(self) -> None:
+        md = ("# 소개\n\n독자가 품는 질문 · 한 장 조망\n\n| 항목 | 설명 |\n|---|---|\n"
+              "| 범위 | 사례는 모두 실제 문서에서 가져왔다 |\n")
+        html = ("<h1>소개</h1><table><tr><th>항목</th><th>설명</th></tr>"
+                "<tr><td>범위</td><td>사례는 모두 실제 문서에서 가져왔다</td></tr></table>")
+        for suffix, doc in ((".md", md), (".html", html)):
+            with self.subTest(형식=suffix):
+                self.assertIn("반말 서술형", self.scan(doc, suffix))
 
     def test_switching_it_on_catches_it(self) -> None:
         on = self.dsc.Selection(on={"반말 서술형"}, source="시험")
@@ -137,13 +156,25 @@ class PlainSpeechTests(unittest.TestCase):
         doc = "<h1>소개</h1><p><b>대체 아님 · 별도 추가</b> — 근거를 아래에 적었습니다.</p>"
         self.assertNotIn("반말 서술형", self.scan(doc, ".html", on))
 
-    def test_the_kind_is_in_the_default_off_list(self) -> None:
-        """목록에서 빠지면 조용히 기본 켜짐이 되어 모든 작업 문서가 쏟아진다."""
-        self.assertIn("반말 서술형", self.dsc.DEFAULT_OFF)
-        self.assertIn("반말 서술형", self.dsc.ALL_KINDS)
+    def test_instruction_files_are_spared(self) -> None:
+        """Claude 만 읽는 지시 파일은 사람이 읽는 문서가 아니다 — 빠진다."""
+        with tempfile.TemporaryDirectory() as d:
+            skill_ref = Path(d) / "skills" / "x" / "references"
+            skill_ref.mkdir(parents=True)
+            places = [Path(d) / "CLAUDE.md", Path(d) / "AGENTS.md", Path(d) / "SKILL.md",
+                      skill_ref / "rules.md"]
+            for p in places:
+                p.write_text(self.MD, encoding="utf-8")
+                err, warn, _ = self.dsc.scan_md(str(p), False, None, None)
+                with self.subTest(파일=p.name):
+                    self.assertNotIn("반말 서술형", [k for k, _ in err + warn])
+            doc = Path(d) / "report.md"
+            doc.write_text(self.MD, encoding="utf-8")
+            err, _, _ = self.dsc.scan_md(str(doc), False, None, None)
+            self.assertIn("반말 서술형", [k for k, _ in err], "보통 문서까지 빠졌다")
 
-    def test_the_rule_list_marks_it_as_off_by_default(self) -> None:
-        """켜야 쓰는 갈래인데 목록이 그 말을 안 하면 아무도 안 켠다."""
+    def test_the_rule_list_says_every_document(self) -> None:
+        """꺼 두던 시절의 안내(「기본으로 꺼짐」·켜는 법)가 남으면 거꾸로 읽힌다."""
         import io as _io
         import contextlib
         buf = _io.StringIO()
@@ -151,8 +182,8 @@ class PlainSpeechTests(unittest.TestCase):
             self.dsc.list_rules()
         out = buf.getvalue()
         self.assertIn("반말 서술형", out)
-        self.assertIn("기본으로 꺼짐", out)
-        self.assertIn('on = ["반말 서술형"]', out)
+        self.assertIn("문서 전부", out)
+        self.assertNotIn("기본으로 꺼짐", out)
 
 
 if __name__ == "__main__":

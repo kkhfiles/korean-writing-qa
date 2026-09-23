@@ -144,10 +144,12 @@ def guarded(record: dict, kinds: list[str]) -> list[str]:
        「그것이」가 다른 갈래로 걸린 것뿐이다. 두 곳의 기준이 다르면 도구가 시험을
        깨뜨리거나, 시험이 도구를 믿고 초록이 된다.
     """
-    blocked = record.get("not_kind") or []
-    if len(kinds) == 1 and kinds[0] in blocked:
-        return []
-    return kinds
+    # `not_kind` 는 「이 갈래는 이 사례와 무관」이다 — 잡을 사례에서는 그 갈래로
+    # 걸린 것을 지킨 것으로 안 세고, 놓을 사례에서는 그 갈래가 나와도 깨끗한 것으로
+    # 본다. 2026-09-23 반말을 문서 전부에 켜자, 다른 규칙의 활용형(「죽인다」·
+    # 「말랐다」)을 시험하려고 일부러 해라체로 쓴 놓을 사례 스무 건이 반말로 걸렸다.
+    blocked = set(record.get("not_kind") or [])
+    return [k for k in kinds if k not in blocked]
 
 
 def recheck(_args) -> int:
