@@ -31,3 +31,11 @@
 {"word": "승격/NNG", "context": "*", "scope": "P:/github/korean-writing-qa/*", "why": "규칙 단계 이름 — 이 저장소 글의 주제", "added": "2026-09-16"}
 {"word": "교정/NNG", "context": "*", "scope": "P:/github/korean-writing-qa/*", "why": "이 도구가 하는 일 — 이 저장소 글의 주제", "added": "2026-09-16"}
 {"word": "문체/NNG", "context": "*", "scope": "P:/github/korean-writing-qa/*", "why": "이 도구가 보는 것 — 이 저장소 글의 주제", "added": "2026-09-16"}
+{"word": "러너/NNG", "context": "CI", "scope": "*", "why": "지속 통합의 작업 실행기 · 기술 용어", "added": "2026-09-23"}
+{"word": "러너/NNG", "context": "테스트 러너", "scope": "*", "why": "시험을 돌리는 실행기 · 기술 용어", "added": "2026-09-23"}
+{"word": "러너/NNG", "context": "윈도 러너", "scope": "*", "why": "윈도에서 도는 작업 실행기 · 기술 용어", "added": "2026-09-23"}
+{"word": "견본/NNG", "context": "형식 견본", "scope": "*", "why": "결과 파일 형식의 표본 · 마일스톤 완료 항목의 이름이라 바꾸면 정본과 어긋남", "added": "2026-09-23"}
+{"word": "지문/NNG", "context": "장비 지문", "scope": "*", "why": "장비를 식별하는 하드웨어 특성값 · 라이선스 보호의 기술 용어", "added": "2026-09-23"}
+{"word": "지문/NNG", "context": "하드웨어", "scope": "*", "why": "하드웨어 특성으로 만든 식별값 · 라이선스 보호의 기술 용어", "added": "2026-09-23"}
+{"word": "치유/NNG", "context": "자가치유", "scope": "*", "why": "스스로 복구하는 기능 · 「자가치유」로 굳은 기술 용어", "added": "2026-09-23"}
+{"word": "치유/NNG", "context": "자가 치유", "scope": "*", "why": "스스로 복구하는 기능 · 띄어 쓴 꼴", "added": "2026-09-23"}

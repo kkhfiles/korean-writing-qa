@@ -32,7 +32,9 @@ def run(*args):
 class KnownWordScopeTests(unittest.TestCase):
 
     def setUp(self) -> None:
-        self.dir = tempfile.mkdtemp(prefix="known-scope-", dir=ROOT)
+        # 저장소 밖에 만든다 — 안에 만들면 지우기가 실패한 판이 저장소에 남는다
+        #   (2026-09-23 · 빈 폴더 둘이 추적 안 된 채 뿌리에 쌓여 있었다)
+        self.dir = tempfile.mkdtemp(prefix="known-scope-")
         self.inside = os.path.join(self.dir, "inside.md")
         self.outside = os.path.join(tempfile.mkdtemp(prefix="known-out-"), "outside.md")
         for p in (self.inside, self.outside):
@@ -84,12 +86,60 @@ class KnownWordScopeTests(unittest.TestCase):
             rows = [json.loads(l) for l in f
                     if l.strip() and not l.startswith("#")]
         self.assertTrue(rows, "목록이 비었습니다")
-        wide = [r for r in rows if r.get("scope", "*") == "*"]
+        # 경로 범위가 없어도 되는 것은 **문맥으로 좁힌 짝**뿐이다(2026-09-23).
+        #   「테스트 러너」처럼 문맥이 붙으면 낱말을 연 것이 아니라 그 짝을 연
+        #   것이다. 이 목록은 공개 저장소에 실려 다른 프로젝트 경로를 범위로 못
+        #   적는다 — 적으면 내부 경로가 나간다. 그래서 그 경우는 문맥으로 좁힌다.
+        #   ⛔ 낱말만(문맥 `*`) 모든 문서에 여는 것은 여전히 막는다.
+        wide = [r for r in rows
+                if r.get("scope", "*") == "*" and r.get("context", "*") == "*"]
         self.assertEqual([], wide,
-                         "범위 없이 모든 문서에 열어 준 짝이 있습니다: "
+                         "범위도 문맥도 없이 모든 문서에 열어 준 낱말이 있습니다: "
                          + ", ".join(r["word"] for r in wide[:5]))
         for r in rows:
             self.assertTrue(r.get("why"), f"{r['word']} 에 근거가 없습니다")
+
+
+class KnownWordContextTests(unittest.TestCase):
+    """문맥을 적어 등록한 것이 **쓰임마다** 듣는지 본다.
+
+    2026-09-23 에 문맥 한정 등록이 처음 들어오자 두 가지가 드러났다. 예전에는
+    낱말마다 첫 문장 하나를, 화면용으로 56자에서 자른 것을 대 봤다.
+    · 마침표 없는 목록은 한 문장으로 뭉쳐 둘째 줄부터의 문맥이 안 보였다
+    · 첫 쓰임이 등록된 문맥이면 뒤의 등록 안 된 쓰임까지 가려졌다(미탐)
+    """
+
+    #: 발췌 56자를 넘기는 첫 줄 — 옛 판에서는 둘째 줄 문맥이 여기서 잘렸다
+    LONG = "- 이 줄은 일부러 길게 써서 화면에 보이는 발췌 쉰여섯 자를 넘기도록 만든 첫째 항목\n"
+
+    def setUp(self) -> None:
+        self.dir = tempfile.mkdtemp(prefix="known-ctx-")
+        self.known = os.path.join(self.dir, "known.jsonl")
+        with io.open(self.known, "w", encoding="utf-8", newline="\n") as f:
+            f.write(json.dumps({"word": "러너/NNG", "context": "테스트 러너", "scope": "*",
+                                "why": "시험용 — 시험 실행기"}, ensure_ascii=False) + "\n")
+
+    def tearDown(self) -> None:
+        shutil.rmtree(self.dir, ignore_errors=True)
+
+    def doc(self, body):
+        p = os.path.join(self.dir, "d.md")
+        with io.open(p, "w", encoding="utf-8", newline="\n") as f:
+            f.write("# 점검\n\n" + body)
+        return p
+
+    def test_a_registered_context_past_the_first_line_is_folded(self) -> None:
+        out = run(self.doc(self.LONG + "- 테스트 러너를 상시 가동\n"),
+                  "--known", self.known, "--top", "200")
+        self.assertNotIn("러너/NNG", out, "둘째 줄의 등록된 문맥이 안 들었습니다")
+
+    def test_an_unregistered_usage_is_not_hidden_by_a_registered_one(self) -> None:
+        """⛔ 핵심 — 먼저 나온 등록된 쓰임이 뒤의 것을 덮으면 안 된다."""
+        out = run(self.doc("- 테스트 러너를 상시 가동\n- 마라톤 러너가 결승선에 닿음\n"),
+                  "--known", self.known, "--top", "200")
+        self.assertIn("러너/NNG", out, "등록 안 된 쓰임이 가려졌습니다")
+        row = next(l for l in out.splitlines() if "러너/NNG" in l)
+        self.assertIn("마라톤", row, "보여 주는 문장이 고칠 쓰임이 아닙니다")
 
 
 if __name__ == "__main__":

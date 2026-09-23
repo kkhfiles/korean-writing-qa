@@ -265,16 +265,32 @@ def main():
         chars = len(text)
         seen = collections.Counter()
         where = {}
-        for sent in kiwi.split_into_sents(text):
-            for tok in kiwi.tokenize(sent.text):
-                tag = tok.tag.split("-")[0]
-                if tag not in KEEP or SKIP.match(tok.form):
-                    continue
-                if len(tok.form) < 2 and tag not in STEM_TAGS:
-                    continue
-                key = f"{tok.form}/{tag}"
-                seen[key] += 1
-                where.setdefault(key, " ".join(sent.text.split())[:56])
+        # ⛔ **쓰임 하나하나를 정상 등록과 대 본다** (2026-09-23).
+        #    예전에는 낱말마다 **첫 문장 하나**를, 그것도 화면용으로 56자에서 자른
+        #    것을 대 봤다. 그래서 두 가지가 났다.
+        #    · 문맥을 적어 등록해도 안 들었다 — 마침표 없는 목록은 분석기가 한
+        #      문장으로 뭉쳐, 둘째 줄부터의 문맥이 잘려 나갔다.
+        #    · 첫 쓰임이 등록된 문맥이면 **뒤의 등록 안 된 쓰임까지 가려졌다** —
+        #      「CI 러너」 뒤의 「마라톤 러너」가 안 걸린다. 미탐 쪽이라 더 나쁘다.
+        #    문맥 `*` 만 쓰던 동안은 둘 다 안 드러났다. 문맥 한정 등록이 처음
+        #    들어온 날 드러났다.
+        loose = {}      # 정상 등록에 안 걸린 쓰임이 처음 나온 문장
+        for line in text.split("\n"):
+            for sent in kiwi.split_into_sents(line):
+                full = " ".join(sent.text.split())
+                for tok in kiwi.tokenize(sent.text):
+                    tag = tok.tag.split("-")[0]
+                    if tag not in KEEP or SKIP.match(tok.form):
+                        continue
+                    if len(tok.form) < 2 and tag not in STEM_TAGS:
+                        continue
+                    key = f"{tok.form}/{tag}"
+                    seen[key] += 1
+                    where.setdefault(key, full[:56])
+                    if key not in loose and not is_known(known, key, full, path):
+                        loose[key] = full[:56]
+        # 보여 줄 문장은 **등록에 안 걸린 쓰임**을 먼저 — 고칠 곳이 그쪽이다
+        where.update(loose)
 
         # ── 둘째 축 — 문턱 **위**에 있는데 이 문서가 지나치게 자주 쓰는 말
         over = []
@@ -286,8 +302,7 @@ def main():
                 if mine < OVERUSE_MIN_HITS:
                     continue
                 ratio = (mine / chars) / (base / base_chars)
-                if ratio >= args.overuse and not is_known(
-                        known, key, where.get(key, ""), path):
+                if ratio >= args.overuse and key in loose:
                     over.append((ratio, key, mine, base))
             over.sort(reverse=True)
 
@@ -297,7 +312,7 @@ def main():
         if not args.all:
             kept = []
             for row in rare:
-                if is_known(known, row[0], where.get(row[0], ""), path):
+                if row[0] not in loose:
                     hushed += 1
                     continue
                 kept.append(row)
@@ -310,8 +325,7 @@ def main():
             #    사용자가 짚은 말이 40 과 60 사이에 있다(2026-09-16 실측).
             blocked = [(k, n2, b) for k, n2, b in
                        [(k, seen[k], freq.get(k, 0)) for k in seen]
-                       if b <= args.gate_max
-                       and not is_known(known, k, where.get(k, ""), path)]
+                       if b <= args.gate_max and k in loose]
             blocked.sort(key=lambda x: (x[2], -x[1]))
             gate_rows.extend(blocked)
             gate_where.update(where)
