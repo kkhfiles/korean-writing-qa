@@ -170,6 +170,31 @@ class MakePoliteTests(unittest.TestCase):
         self.assertEqual(2, len(done), done)
         self.assertEqual([], self.plain(path))
 
+    def test_a_word_wholly_inside_bold_is_left_alone(self) -> None:
+        """「돈다 / 안 돈다 / 안 봄」은 그 프로젝트가 정한 판정 값 이름이었다.
+
+        알림에 「굵게 표시는 안 건드린다」고 적어 보냈는데 굵게 안의 낱말을 바꿨다
+        (CT2612 세션이 사본으로 재현 · 2026-09-23). 값 이름이 조용히 다른 말이 된다.
+        """
+        text = ("# 시험\n\n시험 문서 · 판정 값 이름\n\n| 항목 | 설명 |\n|---|---|\n"
+                "| **판정** | **돈다** — 프로젝트를 받아 분석을 돌리고 결과를 읽는 경로가 "
+                "끝까지 보임 |\n"
+                "| **판정** | **안 돈다** — 분석이 중간에 멈춤 |\n")
+        path = self.write("문서.md", text)
+        done, missed = self.tool.convert(str(path), apply=True)
+        self.assertEqual([], done)
+        self.assertEqual(2, sum("굵게 안의 낱말" in why for _, _, why in missed), missed)
+        self.assertEqual(text, path.read_text(encoding="utf-8"))
+
+    def test_a_bold_sentence_still_changes(self) -> None:
+        """세 어절부터는 실문서에서 전부 문장이었다 — 굵게 안이라고 멈추면 700곳이 남는다."""
+        text = "# 시험\n\n시험 문서 · 굵은 문장\n\n본문 앞 문장 뒤에 **속도를 실측으로 잡았다.** 그래서 늦다.\n"
+        path = self.write("문서.md", text)
+        self.tool.convert(str(path), apply=True)
+        got = path.read_text(encoding="utf-8")
+        self.assertIn("**속도를 실측으로 잡았습니다.**", got)
+        self.assertIn("그래서 늦습니다.", got)
+
     def test_bold_cutting_the_changed_syllable_is_left_to_a_person(self) -> None:
         """「**쓴**다」를 「씁니다」로 바꾸면 굵게 표시가 깨진다 — 사람에게 넘긴다."""
         text = "# 시험\n\n시험 문서 · 굵게가 음절을 가름\n\n- 이 규칙은 표 칸에도 **쓴**다.\n"
