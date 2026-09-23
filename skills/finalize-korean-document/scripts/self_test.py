@@ -118,6 +118,13 @@ def run_detector_format_assertions() -> tuple[int, int, list[str]]:
 
     plain = rule()
     allowed = rule(allow=["의견을\\s*받는\\s*자리"], pattern="자리")
+    product_path = {
+        "annotation_id": "path-case",
+        "rule_id": "KOR-PATH-CASE",
+        "original": "제품화 경로",
+        "revised": "제품화 단계",
+        "scope": "general_it_business",
+    }
     literal_allowed = rule(
         detector="literal", original="경로", revised="단계", allow=["파일\\s*경로"]
     )
@@ -172,6 +179,16 @@ def run_detector_format_assertions() -> tuple[int, int, list[str]]:
                 },
                 "제품화 경로를 검토한다",
             ) == 1,
+        ),
+        (
+            # 사례집 카드는 전·후를 나란한 상자로 그려 한 상자가 한 줄이 된다
+            "a quoted citation is not a finding, a real use still is",
+            hits(product_path, "「제품화 경로」") == 0
+            and hits(product_path, "제품화 경로를 검토한다") == 1,
+        ),
+        (
+            "a skipped example does not come back as a path metaphor",
+            hits(product_path, "- 제품화 경로 → 제품화 단계") == 0,
         ),
         (
             "a candidate carrying a pattern is recorded as a regex rule",

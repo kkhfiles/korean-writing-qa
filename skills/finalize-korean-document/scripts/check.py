@@ -189,6 +189,18 @@ def is_comparison_example(line: str, original: str, revised: str) -> bool:
     return any(marker in between for marker in COMPARISON_MARKERS)
 
 
+def quoted(line: str, at: int, text: str) -> bool:
+    """`line[at:]` 에서 시작하는 `text` 가 「」 한 쌍 안에 통째로 들어 있나.
+
+    「」 안은 인용한 보기나 이름이다 — 문서 검사기도 같은 구간을 안 본다. 사례집
+    HTML 은 전·후를 나란한 상자로 그려 한 상자가 한 줄이 되므로, 같은 줄에서 고친
+    말을 찾는 대조 판정이 안 듣는다 — 「제품화 경로」를 보기로 든 카드가 그대로
+    지적으로 나왔다(2026-09-23).
+    """
+    opened = line.rfind("「", 0, at)
+    return opened >= 0 and "」" not in line[opened:at] and line.find("」", at + len(text)) >= 0
+
+
 def classify_path(line: str, start: int, end: int) -> tuple[str, str | None, str]:
     left = max(0, start - 40)
     right = min(len(line), end + 40)
@@ -276,7 +288,10 @@ def scan_text(
                 continue
             revised = str(record.get("revised") or "")
             for index, end, matched in rule_matches(record, line):
-                if is_comparison_example(line, matched, revised):
+                if is_comparison_example(line, matched, revised) or quoted(line, index, matched):
+                    # ⛔ 건너뛴 자리도 덮은 것으로 적는다 — 안 적으면 아래 「경로」 비유
+                    #    검사가 같은 보기를 다시 짚는다(「제품화 경로 → 제품화 단계」 실측).
+                    covered_spans.append((index, end))
                     continue
                 replacement_mode = str(record.get("replacement_mode", "exact_suggestion"))
                 requires_context = bool(record.get("requires_context", False))
