@@ -73,3 +73,7 @@
 - **시험은 `python -X utf8 -m unittest discover -s tests`** — 파이프로 넘기지 않는다(종료 코드가 가려진다).
 - **공개 저장소이므로 발행 전 `python -X utf8 scripts/check_publish_safety.py`** — 사람 이름·고객사는 저장소 밖 목록으로 본다.
 - **표현 하나를 짚어 주면 그 하나만 고치지 않음** — 같은 갈래를 전수로 찾고 대장(`data/cases/flagged-rounds.jsonl`)에 올린다.
+- **오류 등급 새 규칙은 lab-docs 를 먼저 고치고 올린다** (2026-09-23) — lab-docs 빌드는 검사기를 판 고정 없이 이 저장소 `main` 에서 받아 「합계 — 오류 N」으로 막는다(`tests/test_summary_line_is_a_contract.py`). 그냥 올리면 다음 빌드가 멈춘다.
+  - **순서** — 새 검사기로 두 사이트를 돌림 → 걸린 곳을 lab-docs PR 로 고침 → 합쳐진 뒤 이 저장소에 올림. 절 번호 규칙이 이 순서였다(lab-docs PR #11).
+  - **돌릴 대상은 빌드 대상과 같게** — `docs/` 맨 위 md · `pages/*.html` · README · not-found. 폴더를 통째로 돌리면 초안이 섞여 수가 부푼다(476 대 실제 22).
+  - **판 고정으로 풀지 않음** — 고정하면 새 규칙이 거기서 영영 안 걸린다(b2a 쪽 제안을 09-23 에 이 까닭으로 안 받음).
