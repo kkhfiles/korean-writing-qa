@@ -41,9 +41,13 @@ class GateProbeTests(unittest.TestCase):
                    "session_id": "probe-session",
                    "tool_input": {"file_path": self.doc},
                    "tool_response": {"filePath": self.doc}}
+        # ⛔ 통과 기록은 시험 폴더에 쓴다 — 안 막으면 실제 경로로 도는 시험이 **진짜 기록
+        #    저장소**에 시험 문서의 판정을 남긴다(2026-09-23 저장소 끝줄에서 봄). 측정기가
+        #    `.gate-probe-` 로 거르지만, 거르는 쪽에 기대는 것은 한 줄만 어긋나도 샌다.
+        env = {**os.environ, "KOREAN_CHECK_RECORD": os.path.join(self.dir, "store.jsonl")}
         done = subprocess.run([sys.executable, "-X", "utf8", GATE, *args],
                               input=json.dumps(payload, ensure_ascii=False),
-                              capture_output=True, text=True,
+                              capture_output=True, text=True, env=env,
                               encoding="utf-8", errors="replace", timeout=180)
         return done.stdout + done.stderr
 
