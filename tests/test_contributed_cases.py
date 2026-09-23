@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import json
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -107,12 +108,13 @@ def make_test(record: dict):
         #   로는 못 적는데, 문장이 **다른 규칙에 걸려** 시험이 초록이 되는 일이
         #   실제로 났다(C-010 이 「그것이」 때문에 지시어 갈래로 걸렸다. 원래
         #   결함인 줄임말은 그대로였다).
-        for other in record.get("not_kind", []):
-            if other in kinds and len(kinds) == 1:
-                self.fail(
-                    f'{record["case_id"]} 「{record["text"]}」\n'
-                    f'  「{other}」 하나로만 걸렸습니다 — 이 사례가 지키려는 것은'
-                    f' 그 갈래가 아닙니다\n  근거 {record["why"]}')
+        #   ⛔ 기준은 `add_case.guarded` 한 곳 — recheck 가 따로 판정하다
+        #      C-010 을 pinned 로 올린 적이 있다(2026-09-23).
+        if kinds and not add_case.guarded(record, kinds):
+            self.fail(
+                f'{record["case_id"]} 「{record["text"]}」\n'
+                f'  「{kinds[0]}」 하나로만 걸렸습니다 — 이 사례가 지키려는 것은'
+                f' 그 갈래가 아닙니다\n  근거 {record["why"]}')
     check.__doc__ = f'{record["case_id"]} — {record["text"][:40]}'
     return check if record["status"] == "pinned" else unittest.expectedFailure(check)
 
@@ -124,6 +126,44 @@ class ContributedCaseTests(unittest.TestCase):
 for _record in load():
     setattr(ContributedCaseTests, f'test_{_record["case_id"].replace("-", "_")}',
             make_test(_record))
+
+
+class RecheckGuardTests(unittest.TestCase):
+    """`--recheck` 가 시험과 **같은 기준**으로 판정하는지.
+
+    2026-09-23 에 recheck 가 C-010 을 「지시어 확인」으로 채워 pinned 로 올렸다.
+    그 사례는 「그 갈래로만 걸리면 안 지킨 것」이라 적혀 있었는데, 그 기준이
+    시험에만 있고 도구에는 없었다.
+    """
+
+    def recheck(self, kinds):
+        record = {"case_id": "C-900", "expect": "finding", "form": "prose", "kind": "",
+                  "not_kind": ["지시어 확인"], "source": "시험", "status": "open",
+                  "text": "반대 의견이 있으면 그것이 논의의 재룝니다", "why": "시험"}
+        with tempfile.TemporaryDirectory() as d:
+            path = Path(d) / "cases.jsonl"
+            path.write_text(json.dumps(record, ensure_ascii=False) + "\n", encoding="utf-8")
+            saved = (add_case.CASES, add_case.verdict)
+            add_case.CASES = path
+            add_case.verdict = lambda text, form: ("finding" if kinds else "clean", kinds)
+            try:
+                add_case.recheck(None)
+            finally:
+                add_case.CASES, add_case.verdict = saved
+            return json.loads(path.read_text(encoding="utf-8"))
+
+    def test_the_blocked_kind_alone_keeps_the_case_open(self):
+        after = self.recheck(["지시어 확인"])
+
+        self.assertEqual(after["status"], "open")
+        self.assertFalse(after["kind"], "막힌 갈래로 이름을 채우면 그 사례가 엉뚱한 규칙을 지킨다")
+
+    def test_another_kind_beside_it_pins_the_case(self):
+        after = self.recheck(["지시어 확인", "업무 글에 없는 말"])
+
+        self.assertEqual(after["status"], "pinned")
+        self.assertEqual(after["kind"], "업무 글에 없는 말",
+                         "이름은 막히지 않은 갈래로 채워야 한다")
 
 
 if __name__ == "__main__":

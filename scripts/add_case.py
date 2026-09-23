@@ -136,17 +136,35 @@ def show(_args) -> int:
     return 0
 
 
+def guarded(record: dict, kinds: list[str]) -> list[str]:
+    """`not_kind` 하나로만 걸렸으면 **안 걸린 것**으로 본다 — 시험과 같은 기준.
+
+    ⛔ 이 기준이 시험에만 있고 여기 없어서, recheck 가 C-010 을 「지시어 확인」으로
+       채워 pinned 로 올렸다(2026-09-23). 그 사례가 지키는 것은 줄임말 「재룝니다」이고
+       「그것이」가 다른 갈래로 걸린 것뿐이다. 두 곳의 기준이 다르면 도구가 시험을
+       깨뜨리거나, 시험이 도구를 믿고 초록이 된다.
+    """
+    blocked = record.get("not_kind") or []
+    if len(kinds) == 1 and kinds[0] in blocked:
+        return []
+    return kinds
+
+
 def recheck(_args) -> int:
     records = load()
     moved = []
     for r in records:
-        got, kinds = verdict(r["text"], r.get("form", "structured"))
+        _, kinds = verdict(r["text"], r.get("form", "structured"))
+        kinds = guarded(r, kinds)
+        got = "finding" if kinds else "clean"
         want = "pinned" if got == r["expect"] else "open"
         if want != r["status"]:
             moved.append((r["case_id"], r["status"], want, kinds))
             r["status"] = want
             if want == "pinned" and kinds and not r.get("kind"):
-                r["kind"] = kinds[0]
+                # 막힌 갈래로 이름을 채우면 그 사례가 엉뚱한 규칙을 지키게 된다
+                blocked = r.get("not_kind") or []
+                r["kind"] = next((k for k in kinds if k not in blocked), kinds[0])
     if not moved:
         print(f"{len(records)}건 모두 상태가 실제와 맞는다.")
         return 0
