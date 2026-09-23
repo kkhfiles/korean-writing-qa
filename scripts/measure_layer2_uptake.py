@@ -211,7 +211,11 @@ def count_documents(days: int) -> dict:
                     continue
                 path = (row.get("path") or "").replace(chr(92), "/")
                 # 시험이 만든 것은 문서가 아니다 — 세면 분모가 부푼다
-                if ".gate-probe-" in path or "/scratchpad/" in path:
+                #   `/codex-gate-test/` 는 코덱스 게이트 시험의 문서다. 2026-09-23 까지
+                #   그 시험이 진짜 저장소에 써서 628줄 중 278줄이 그것이었다(지금은
+                #   시험용 저장소에 씀 · 남은 줄은 여기서 거른다).
+                if (".gate-probe-" in path or "/scratchpad/" in path
+                        or "/codex-gate-test/" in path):
                     continue
                 docs.setdefault((path, row.get("hash")), {})[row["stage"]] = \
                     row.get("verdict")

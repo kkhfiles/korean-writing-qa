@@ -28,6 +28,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
 import uuid
 import subprocess
 import sys
@@ -72,10 +73,15 @@ def call_adapter(mode: str, event: str, payload: dict):
     읽으면 **막힌 것과 통과한 것이 똑같이 빈 문자열로 보인다**(2026-09-17 에
     실제로 그래서 구멍을 열흘 못 봤다).
     """
+    # ⛔ 통과 기록은 시험용 저장소에 — 안 막으면 시험 문서(`P:/d/codex-gate-test/`)의
+    #    판정이 **진짜 기록 저장소**에 쌓이고, 측정기가 그 경로를 안 걸러 문서 수가 부푼다
+    #    (2026-09-23 전체 시험 한 번에 다섯 줄).
+    store = Path(tempfile.gettempdir()) / "codex-gate-test-store.jsonl"
     done = subprocess.run(
         [sys.executable, "-X", "utf8", str(ADAPTER), mode, event],
         input=json.dumps(payload, ensure_ascii=False),
         capture_output=True, text=True, encoding="utf-8",
+        env={**os.environ, "KOREAN_CHECK_RECORD": str(store)},
     )
     out = (done.stdout or "").strip()
     said = ""
