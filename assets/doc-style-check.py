@@ -1654,11 +1654,17 @@ RULES_FILENAME = 'korean-qa.toml'
 INSTRUCTION_NAMES = {'CLAUDE.md', 'AGENTS.md', 'SKILL.md'}
 INSTRUCTION_DIRS = re.compile(r'[\\/](?:\.claude|\.agents|skills)[\\/]')
 INSTRUCTION_SPARED = {'반말 서술형'}
+#: Claude Code 작업 트리 — `<저장소>/.claude/worktrees/<이름>/`. 그 아래는 **저장소 사본**
+#: 이지 설정이 아니다. 떼고 남은 저장소 안 경로로 `.claude/` 를 본다.
+#: ⛔ 안 떼면 작업 트리 안의 문서가 통째로 지시 파일로 분류돼 반말을 안 봤다 — 같은
+#:    문서가 기본 체크아웃에서는 반말 34건, 작업 트리 사본에서는 0건이었다(2026-09-23 ·
+#:    다른 세션 제보). 작업 트리로만 고치는 저장소에서는 반말 검사가 없는 것과 같았다.
+WORKTREE_PART = re.compile(r'[\\/]\.claude[\\/]worktrees[\\/][^\\/]+(?=[\\/])')
 
 
 def is_instruction_file(path):
     """Claude 만 읽는 지시 파일인가 — 사람이 읽는 문서가 아니다."""
-    full = os.path.abspath(path)
+    full = WORKTREE_PART.sub('', os.path.abspath(path))
     return os.path.basename(full) in INSTRUCTION_NAMES or bool(INSTRUCTION_DIRS.search(full))
 
 

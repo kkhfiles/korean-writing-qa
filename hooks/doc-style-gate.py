@@ -67,6 +67,19 @@ DOC = re.compile(r"\.(?:md|html)$", re.I)
 KOREAN_DOC = re.compile(r"\.(?:md|html|txt|json|jsonl|ya?ml|properties)$", re.I)
 # 작업 문서 — 규칙을 강제하지 않는다
 SKIP = re.compile(r"scratchpad|[\\/]\.claude[\\/]|[\\/]Temp[\\/]|node_modules|[\\/]\.git[\\/]", re.I)
+# Claude Code 작업 트리 — `<저장소>/.claude/worktrees/<이름>/` 아래는 저장소 사본이다.
+#   ⛔ `.claude/` 를 건너뛰는 뜻은 `~/.claude/` 같은 설정 자리인데, 작업 트리도 그 글자를
+#      품고 있어 **작업 트리 세션의 쓰기가 전부 검사에서 빠졌다**(2026-09-23 다른 세션
+#      제보 · 오류 11건짜리 HTML 을 고치는 동안 훅이 아무 말도 없었다). 작업 트리로만
+#      고치는 저장소에서는 쓰는 순간 검사가 사실상 없었다. 떼고 남은 경로로 판정한다.
+WORKTREE_PART = re.compile(r"[\\/]\.claude[\\/]worktrees[\\/][^\\/]+(?=[\\/])", re.I)
+
+
+def skipped(path: str) -> bool:
+    """검사에서 뺄 작업 문서인가 — 작업 트리 앞머리를 떼고 본다."""
+    return bool(SKIP.search(WORKTREE_PART.sub("", path)))
+
+
 # 검사기가 「값 슬롯을 못 찾았다」고 낼 때의 **줄 모양**. 검사기 973행이 정본이다.
 #   예전에는 출력 전체에서 「검사 불가」라는 **문자열**을 찾았다. 그래서 문서 본문에
 #   그 말이 든 줄이 지적으로 실리면 그 파일의 지적이 통째로 사라졌다(실측 재현).
@@ -506,7 +519,7 @@ def targets(payload):
 
     if ev == "PostToolUse" and name in ("Write", "Edit", "MultiEdit"):
         fp = str(inp.get("file_path") or "")
-        if fp and DOC.search(fp) and not SKIP.search(fp):
+        if fp and DOC.search(fp) and not skipped(fp):
             return [fp], True, "once"
 
     if ev == "PreToolUse":
@@ -522,7 +535,7 @@ def targets(payload):
                 #    검사 대상으로 올라온다(그 반대로도 샌다).
                 found = [in_command(cmd, m) for m in
                          re.findall(r'["\']?([^\s"\']+\.(?:md|html))["\']?', cmd)]
-                found = [m for m in found if m and not SKIP.search(m)]
+                found = [m for m in found if m and not skipped(m)]
                 if found:
                     return found[:3], False, "always"
     return [], True, ""
@@ -536,13 +549,13 @@ def korean_targets(payload):
 
     if ev == "PostToolUse" and name in ("Write", "Edit", "MultiEdit"):
         fp = str(inp.get("file_path") or "")
-        if fp and KOREAN_DOC.search(fp) and not SKIP.search(fp):
+        if fp and KOREAN_DOC.search(fp) and not skipped(fp):
             return [fp]
 
     if ev == "PreToolUse":
         if name == "Artifact":
             fp = str(inp.get("file_path") or "")
-            if fp and KOREAN_DOC.search(fp) and not SKIP.search(fp):
+            if fp and KOREAN_DOC.search(fp) and not skipped(fp):
                 return [fp]
         if name in ("Bash", "PowerShell"):
             cmd = str(inp.get("command") or "")
@@ -552,7 +565,7 @@ def korean_targets(payload):
                     cmd,
                     re.I,
                 )]
-                return [match for match in found if match and not SKIP.search(match)][:3]
+                return [match for match in found if match and not skipped(match)][:3]
     return []
 
 
