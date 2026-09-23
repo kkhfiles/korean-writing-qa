@@ -258,6 +258,57 @@ def section_ref_hits(text):
     return out
 
 
+#: § 없이 번호로 절을 가리킨 곳 — 「(4-5)」 · 「5-1절」 · 「(1절)」(2026-09-23).
+#   사용자 규칙은 「(§3) 와 같은 형태의 참조를 문서에서 만들지 말 것」이다. § 만 보던
+#   동안 같은 참조가 lab-docs 빌드 대상에만 40곳 남아 있었다.
+#   ⛔ **같은 문서에 그 번호를 단 제목이 있을 때만** 절 참조로 본다. 제목 대조 없이는
+#      날짜(「(05-14)」) · 코드 줄 범위(「(17-39)」) · 남의 문서 절(「본문 6절」)과 못
+#      가른다 — 실측(문서 묶음 여섯)에서 제목과 맞는 116곳은 전부 절 참조였고, 안 맞는
+#      10곳은 전부 날짜 · 줄 범위 · 남의 문서였다.
+#   ⛔ 한 마디 번호는 「절」이 붙을 때만 — 「(1)」 · 「(4)」는 열거나 개수다.
+#   ⛔ 앞 글자는 **로마자 · 숫자만** 막는다. `\w` 로 막았더니 한글도 들어가서
+#      「확보(4-5)」·「제1절」처럼 한글 바로 뒤에 붙은 참조를 못 잡았다(시험이 찾음).
+BARE_SECTION = re.compile(
+    r'(?<![A-Za-z0-9_.\-/:§])(?:\((?P<a>\d{1,2}(?:[-.]\d{1,2})+)\)'
+    r'|\(?(?P<b>\d{1,2}(?:[-.]\d{1,2})*)\s*절(?![가-힣])\)?)')
+HEADING_NUMBER = re.compile(r'^\s*(?:부록\s+)?(\d{1,2}(?:[-.]\d{1,2})*)[.)]?\s+(.+)$')
+
+
+def heading_numbers(titles):
+    """제목 글자들에서 {번호: 제목} — 「4-5. 등재 이후」 → {'4-5': '등재 이후'}.
+
+    ⛔ 번호의 가름표(「-」·「.」)를 **그대로** 둔다 — 하나로 맞추면 소수(「만족도(2.3)」)가
+       제목 「2-3.」과 맞아 절 참조로 잡힌다. 가름표까지 같아야 같은 번호다.
+    """
+    out = {}
+    for t in titles:
+        m = HEADING_NUMBER.match(t.replace('**', ''))
+        if m:
+            out.setdefault(m.group(1), m.group(2).strip())
+    return out
+
+
+def bare_section_hits(text, heads):
+    """§ 없이 번호로 절을 가리킨 곳 — (걸린 것, 가리키는 제목). 인용 · 코드 안은 뺀다."""
+    if not heads:
+        return []
+    shielded = [(s.start(), s.end()) for pat in (QUOTE_SPAN, CODE_SPAN)
+                for s in pat.finditer(text)]
+    out = []
+    for m in BARE_SECTION.finditer(text):
+        if any(a <= m.start() < b for a, b in shielded):
+            continue
+        num = m.group('a') or m.group('b')
+        if num in heads:
+            out.append((m, heads[num]))
+    return out
+
+
+def bare_section_note(hit, title):
+    # 괄호는 한쪽만 걸릴 수 있다(「입니다(2절)」은 앞 글자 때문에 「2절)」부터 걸림) — 떼고 보인다
+    return f'「{hit.group(0).strip("() ")}」 — 「{title[:30]}」 절을 번호로 가리킴 · {SECTION_FIX}'
+
+
 def misread_hits(text):
     """다른 낱말로 읽히는 꼴 — 수사가 **정말 수사일 때만** 남긴다."""
     hits = list(MISREAD_JONGI.finditer(text))
@@ -1227,6 +1278,13 @@ def scan_html(path, relaxed=False, form=None, rules=None):
     for hit in section_ref_hits(_raw):
         near = ' '.join(_raw[max(0, hit.start() - 20):hit.end() + 20].split())
         err.append(('절 번호로 가리킴', f'「{hit.group(0)}」 — {SECTION_FIX} · {near[:48]}'))
+    _heads = heading_numbers(strip(h) for h in
+                             re.findall(r'<h[1-6][^>]*>(.*?)</h[1-6]>', body, re.S))
+    _body_only = re.sub(r'<h[1-6][^>]*>.*?</h[1-6]>', ' ', body, flags=re.S)
+    _body_raw = strip(_body_only)
+    for hit, title in bare_section_hits(_body_raw, _heads):
+        near = ' '.join(_body_raw[max(0, hit.start() - 20):hit.end() + 12].split())
+        err.append(('절 번호로 가리킴', f'{bare_section_note(hit, title)} · {near[:40]}'))
     # 문맥 조각은 **한 줄로 눌러서** 낸다 — HTML 본문에는 줄바꿈이 섞여 있어
     # 그대로 두면 보고서가 여러 줄로 쪼개지고, 훅이 첫 줄만 걷어 가 정작
     # 문제 문장이 사라진다(오류는 뜨는데 어디인지 모르는 상태가 된다).
@@ -1902,6 +1960,9 @@ def scan_md(path, relaxed=False, form=None, rules=None):
     body = merge_wrapped(md_body(raw))
     err, warn = [], []
     slots = 0
+    # 번호 붙은 제목 — § 없이 번호로 절을 가리킨 곳을 가르는 기준(`bare_section_hits`)
+    md_heads = heading_numbers(l.strip().lstrip('#').strip() for _, l in body
+                               if l.strip().startswith('#'))
 
     # 진입점 줄은 7번이 따로 본다 — 여기서 또 세면 같은 곳이 두 번 나온다
     lede_n = None
@@ -2094,6 +2155,11 @@ def scan_md(path, relaxed=False, form=None, rules=None):
         for hit in section_ref_hits(line):
             err.append((n, '절 번호로 가리킴',
                         f'「{hit.group(0)}」 — {SECTION_FIX} · {excerpt(line, hit.group(0), 40)}'))
+        if not line.lstrip().startswith('#'):
+            for hit, title in bare_section_hits(line, md_heads):
+                err.append((n, '절 번호로 가리킴',
+                            f'{bare_section_note(hit, title)} · '
+                            f'{excerpt(line, hit.group(0), 36)}'))
 
     # 3. 금지 라벨 (목록의 「라벨: 값」)
     for n, line in body:
