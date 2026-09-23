@@ -109,6 +109,10 @@ def gate_notice_head() -> str:
 class CodexUsesTheSameGateTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
+        # ⛔ 설정 저장소가 없으면 경로가 `None` 이다 — 그대로 `.is_file()` 을 부르면
+        #    건너뛰지 않고 터진다. CI 가 이것으로 2026-09-18 부터 닷새 빨강이었다.
+        if ADAPTER is None or HOOKS_TEMPLATE is None:
+            raise unittest.SkipTest(repo_paths.NO_CONFIG_REPO)
         for path in (ADAPTER, GATE, HOOKS_TEMPLATE):
             if not path.is_file():
                 raise unittest.SkipTest(f"없습니다: {path}")

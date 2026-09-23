@@ -14,6 +14,7 @@ import importlib.util
 import os
 import shutil
 import sys
+import tempfile
 import unittest
 import uuid
 from pathlib import Path
@@ -39,9 +40,23 @@ def publish(cmd):
 
 MARP = 'node "/c/npm/@marp-team/marp-cli/marp-cli.js" --no-stdin '
 
-# ⛔ 훅은 `Temp`·`scratchpad` 를 건너뛴다. 임시 폴더에서 재면 대상이 0으로
-#    나오고 그것을 「못 푼다」로 읽게 된다 — 증상이 안 나는 자리에서 재는 것이다.
-WORK = Path("P:/d/gate-target-test")
+
+def work_root() -> Path:
+    """게이트가 **건너뛰지 않는** 절대 경로.
+
+    ⛔ 훅은 `Temp`·`scratchpad` 를 건너뛴다. 임시 폴더에서 재면 대상이 0으로 나오고
+       그것을 「못 푼다」로 읽게 된다 — 증상이 안 나는 곳에서 재는 것이다.
+    ⛔ 드라이브 문자를 박으면 안 된다 — 처음에 `P:/d/...` 로 적었더니 리눅스 CI 에서
+       **상대 경로**가 되어 절대 경로 시험이 깨졌다(2026-09-23).
+    그래서 게이트의 건너뛰기 규칙으로 직접 가린다 — 걸리면 홈 폴더로 간다.
+    """
+    base = Path(tempfile.gettempdir())
+    if load().SKIP.search(str(base).replace(os.sep, "/") + "/"):
+        base = Path.home()
+    return base / "gate-target-test"
+
+
+WORK = work_root()
 
 
 def fresh_dir():
