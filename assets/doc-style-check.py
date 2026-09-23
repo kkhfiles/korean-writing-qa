@@ -288,6 +288,11 @@ def heading_numbers(titles):
     return out
 
 
+#: 번호 바로 앞이 **남의 문서 이름**이면 그 문서의 절이다 — 「「AI 역공학 대응」 7절」 ·
+#: 「spec.md 3-2절」. 이 문서의 「# 7.」과 번호만 같다(CT2612 세션 제보 2026-09-23).
+OTHER_DOC_BEFORE = re.compile(r'(?:[」』]|\.(?:md|html|pdf|docx|pptx|xlsx))\s*\(?\s*$', re.I)
+
+
 def bare_section_hits(text, heads):
     """§ 없이 번호로 절을 가리킨 곳 — (걸린 것, 가리키는 제목). 인용 · 코드 안은 뺀다."""
     if not heads:
@@ -297,6 +302,8 @@ def bare_section_hits(text, heads):
     out = []
     for m in BARE_SECTION.finditer(text):
         if any(a <= m.start() < b for a, b in shielded):
+            continue
+        if OTHER_DOC_BEFORE.search(text[:m.start()]):
             continue
         num = m.group('a') or m.group('b')
         if num in heads:

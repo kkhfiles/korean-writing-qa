@@ -84,6 +84,12 @@ class BareSectionRefTests(unittest.TestCase):
     def test_another_documents_section_is_left_alone(self) -> None:
         self.assertEqual([], self.md("- **자료** — 제안서 본문 6절과 부록"))
 
+    def test_a_section_of_a_named_other_document_is_left_alone(self) -> None:
+        """이 문서에도 「1.」이 있지만 번호 앞이 남의 문서 이름이면 그 문서의 절이다(CT2612 제보)."""
+        self.assertEqual([], self.md("- **근거** — 공유 폴더 「AI 역공학 대응」 1절"))
+        self.assertEqual([], self.md("- **근거** — spec.md 4-5절 참고"))
+        self.assertTrue(self.md("- **근거** — 이 문서 1절 표"), "이 문서를 가리키면 여전히 잡는다")
+
     def test_quotes_and_code_are_examples(self) -> None:
         self.assertEqual([], self.md("- **보기** — 「(4-5)」 꼴 · `(4-5)` 꼴"))
 
