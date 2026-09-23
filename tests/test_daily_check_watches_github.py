@@ -223,11 +223,33 @@ class GitCheckTests(unittest.TestCase):
             self.assertNotIn(f'"{outsider}"', run_suite,
                              f"훅이 {outsider} 를 요구합니다 — 기본 모듈로 도십시오")
 
+    # ── 전체 시험을 여기서 안 돌린다 — 제한에 걸려 닷새 판단 불가였다 ─────────
+
+    def test_it_runs_one_named_suite_not_the_whole_tree(self) -> None:
+        """전체를 돌리던 때는 300초가 걸려 180초 제한에 걸렸다(2026-09-18~23).
+
+        `-p` 를 떼면 다시 전체를 돌린다 — 그 되돌림을 여기서 막는다.
+        """
+        run_suite = CHECK.read_text(encoding="utf-8").split("def run_suite")[1].split("\ndef ")[0]
+        self.assertIn('"-p", SUITE', run_suite)
+
+    def test_the_named_suite_is_a_real_file_here(self) -> None:
+        """이름을 바꾸고 훅을 안 고치면 매일 판단 불가다 — 0건을 성공으로 읽지 않으므로."""
+        self.assertTrue((repo_paths.REPO / "tests" / self.check.SUITE).is_file(),
+                        f"훅이 돌릴 시험이 없습니다: tests/{self.check.SUITE}")
+
+    def test_a_missing_suite_is_no_verdict_not_a_failure(self) -> None:
+        """시험 파일이 없는 저장소에서 「회귀 실패」를 외치면 오탐이다."""
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = self._fresh_repo(Path(tmp), with_remote=True)   # `tests/` 없음
+            out = self._run_hook(repo=repo, state=Path(tmp) / "state.json")
+            self.assertNotIn("대조 실패", out)
+
     def test_it_reads_the_stream_unittest_actually_writes_to(self) -> None:
         """`unittest` 는 결과를 stderr 로 낸다 — stdout 만 읽으면 요약이 빈다."""
         with tempfile.TemporaryDirectory() as tmp:
             repo = self._fresh_repo(Path(tmp), with_remote=True, runnable=True)
-            (repo / "tests" / "test_ok.py").write_text(
+            (repo / "tests" / self.check.SUITE).write_text(
                 "import unittest\n\n\n"
                 "class Broken(unittest.TestCase):\n"
                 "    def test_broken(self):\n        self.fail('일부러 깨뜨림')\n",
@@ -236,19 +258,59 @@ class GitCheckTests(unittest.TestCase):
             git(repo, "commit", "-q", "-m", "깨뜨림", "--no-gpg-sign")
             git(repo, "push", "-q", "origin", "main")
             out = self._run_hook(repo=repo, state=Path(tmp) / "state.json")
-            self.assertIn("회귀 실패", out)
+            self.assertIn("설치본 대조 실패", out)
             self.assertIn("FAILED", out, "시험 요약이 비었습니다 — stderr 를 안 읽습니다")
 
-    def _run_hook(self, repo: Path, state: Path) -> str:
+    # ── CI — 전체 시험은 거기서만 돈다 ───────────────────────────────────────
+
+    def test_a_red_ci_is_named_with_its_title(self) -> None:
+        runs = [{"status": "completed", "conclusion": "failure",
+                 "displayTitle": "fix: 깨뜨림", "url": "https://example/1"}]
+        line = self.check.ci_problem(runs)
+        self.assertIn("fix: 깨뜨림", line)
+        self.assertIn("https://example/1", line)
+
+    def test_a_green_ci_says_nothing(self) -> None:
+        """앞의 실패는 이미 고쳐진 것이다 — 마지막 결과만 본다."""
+        runs = [{"status": "completed", "conclusion": "success"},
+                {"status": "completed", "conclusion": "failure"}]
+        self.assertIsNone(self.check.ci_problem(runs))
+
+    def test_a_run_in_progress_defers_to_the_one_before(self) -> None:
+        runs = [{"status": "in_progress", "conclusion": ""},
+                {"status": "completed", "conclusion": "failure", "displayTitle": "앞"}]
+        self.assertIn("앞", self.check.ci_problem(runs))
+
+    def test_it_is_silent_where_github_cannot_be_asked(self) -> None:
+        """gh 가 GitHub 원격을 못 찾는 저장소 — 판단 불가라 침묵한다."""
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = self._fresh_repo(Path(tmp), with_remote=True)
+            self.assertIsNone(self.check.check_ci(repo))
+
+    def test_the_red_ci_notice_actually_reaches_the_screen(self) -> None:
+        """`ci_problem` 이 맞게 가려도 `main()` 이 안 부르면 화면에 안 뜬다."""
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = self._fresh_repo(Path(tmp), with_remote=True, runnable=True)
+            runs = Path(tmp) / "runs.json"
+            runs.write_text(json.dumps([{"status": "completed", "conclusion": "failure",
+                                         "displayTitle": "깨진 커밋"}]), encoding="utf-8")
+            out = self._run_hook(repo=repo, state=Path(tmp) / "state.json", ci_runs=runs)
+            self.assertIn("GitHub 에서 깨져 있다", out)
+            self.assertIn("깨진 커밋", out)
+
+    def _run_hook(self, repo: Path, state: Path, ci_runs: Path | None = None) -> str:
         """훅을 그대로 돌려 화면에 나온 글을 낸다 — 아무 말도 없으면 빈 문자열."""
+        env = {**os.environ,
+               "KOREAN_WRITING_QA_HOME": str(repo),
+               "KOREAN_GATE_CHECK_STATE": str(state),
+               "CLAUDE_BATCH_MODE": "", "CLAUDE_SCHEDULED": ""}
+        env.pop(self.check.CI_RUNS_OVERRIDE, None)
+        if ci_runs is not None:
+            env[self.check.CI_RUNS_OVERRIDE] = str(ci_runs)
         done = subprocess.run(
             [sys.executable, "-X", "utf8", str(CHECK)],
             input="{}", capture_output=True, text=True, encoding="utf-8",
-            env={**os.environ,
-                 "KOREAN_WRITING_QA_HOME": str(repo),
-                 "KOREAN_GATE_CHECK_STATE": str(state),
-                 "CLAUDE_BATCH_MODE": "", "CLAUDE_SCHEDULED": ""},
-            timeout=240)
+            env=env, timeout=240)
         self.assertEqual(0, done.returncode, done.stderr[-400:])
         if not done.stdout.strip():
             return ""
@@ -271,7 +333,7 @@ class GitCheckTests(unittest.TestCase):
         if runnable:
             # `unittest` 는 맨 함수를 안 찾는다 — TestCase 여야 한다(pytest 와 다름).
             (repo / "tests").mkdir()
-            (repo / "tests" / "test_ok.py").write_text(
+            (repo / "tests" / self.check.SUITE).write_text(
                 "import unittest\n\n\n"
                 "class Ok(unittest.TestCase):\n"
                 "    def test_ok(self):\n        self.assertTrue(True)\n",

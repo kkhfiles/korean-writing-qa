@@ -6,13 +6,14 @@ r"""SessionStart 훅: 하루 첫 세션에 한글 검사 시스템이 성한지 
 날에는 아무도 안 돌린다. 실측(8/24~9/4): 자산이 바뀐 9일 중 9일이 덮였지만 그것은
 마침 그 저장소에서 고쳤기 때문이고, 구조가 보장한 것이 아니다.
 
-**보는 것 셋** — 고친 것이 GitHub 까지 가는 길에 끊길 지점이 셋이다.
+**보는 것 넷** — 고친 것이 GitHub 까지 가는 길에 끊길 지점 셋과, 올라간 뒤의 시험.
 
 | 끊기는 지점 | 무엇이 잡나 |
 |---|---|
-| 설치본만 고침 · 정본은 그대로 | 회귀 시험(`test_installed_copy_matches`) |
+| 설치본만 고침 · 정본은 그대로 | 설치본 대조(`test_installed_copy_matches` · 0.2초) |
 | 정본을 고치고 **커밋 안 함** | `check_git` — 아래 |
 | 커밋하고 **push 안 함** | `check_git` — 아래 |
+| 올렸는데 **전체 시험이 깨짐** | `check_ci` — GitHub 의 마지막 결과 |
 
 앞의 것 하나만 막혀 있었다(2026-09-09 확인). 「설치본과 정본이 같다」와 「저장소가
 GitHub 과 같다」는 **다른 말인데**, 뒤엣것을 보는 검사가 저장소 전체에 없었다.
@@ -37,12 +38,18 @@ GitHub 과 같다」는 **다른 말인데**, 뒤엣것을 보는 검사가 저�
 - 실패하면 **막지 않고 알린다.** 게이트가 아니라 건강 검진이다.
 - 배치·예약 실행(`CLAUDE_BATCH_MODE`·`CLAUDE_SCHEDULED`)에서는 즉시 끝.
 
-**CI 결과는 안 본다**(2026-09-09 판단) — `main` 이 빨간 채로 방치된 적이 없다
-(실측: 최근 28회 중 실패 2회, 둘 다 같은 날 몇 분 만에 고침). 세션 시작에 네트워크
-호출을 붙이는 값이 그만큼 안 나온다. 실패하면 GitHub 이 메일을 보낸다.
+**★ 전체 시험은 여기서 안 돌리고 CI 결과를 읽는다**(2026-09-23 · 09-09 판단을 뒤집음)
+— 09-09 에는 「전체 시험 9초 · CI 는 안 본다」였다. 두 전제가 다 무너졌다.
+- **전체 시험이 300초가 됐다**(714건). 제한 180초에 걸려 **09-18 부터 닷새 동안 매일
+  판단 불가**였고, 그동안 이 점검은 아무것도 안 봤다.
+- **`main` 이 닷새 빨간 채 있었다**(09-18~09-23 · 고친 커밋 `9fa23ca`). 「빨간 채
+  방치된 적이 없다」가 전제였는데, 메일이 가도 아무도 안 봤다.
+그래서 여기서는 설치본 대조만 돌리고, 전체 시험은 CI 가 돌린 결과를 한 줄로 읽는다.
+**CI 를 못 보면 침묵한다**(gh 없음 · 로그인 안 됨 · 네트워크 · GitHub 원격 아님).
 
-**왜 동기 스크립트에 안 붙였나** — `sync.sh` 는 하루 20~25번 돈다. 9초짜리 시험을
-거기 붙이면 하루 4분을 막는다. 세션 시작은 하루 몇 번이고, 그중 첫 번만 돈다.
+**왜 동기 스크립트에 안 붙였나** — `sync.sh` 는 하루 20~25번 돈다. 하루 한 번이면
+되는 점검을 거기 붙이면 GitHub 조회가 스무 번 난다. 세션 시작은 하루 몇 번이고,
+그중 첫 번만 돈다.
 
 State: `~/.claude/state/korean-gate-check-state.json`
   - `last_checked_date`: "YYYY-MM-DD" — 판정이 난 날
@@ -64,8 +71,16 @@ except (AttributeError, OSError):
 
 REPO = Path(os.environ.get("KOREAN_WRITING_QA_HOME", "P:/github/korean-writing-qa"))
 RETRY_HOURS = 6
-TIMEOUT = 180
+TIMEOUT = 60
 GIT_TIMEOUT = 10
+CI_TIMEOUT = 15
+
+#: 하루 첫 세션에 돌리는 시험 — 설치본 대조 하나. 전체 시험은 CI 몫이다(위 설명).
+SUITE = "test_installed_copy_matches.py"
+
+#: 이 환경 변수가 가리키는 파일에서 CI 결과를 읽는다 — `gh` 대신. 시험이 네트워크
+#: 없이 「CI 가 빨갛다」를 넣어 알림이 화면까지 가는지 보는 길이다.
+CI_RUNS_OVERRIDE = "KOREAN_GATE_CI_RUNS"
 
 #: 판단 불가가 이만큼 이어지면 감시가 죽은 것으로 보고 말한다.
 STALE_DAYS = 3
@@ -124,12 +139,17 @@ def run_suite():
     **판단 불가로 조용히 멈춘 채였다.**
 
     ⚠️ `unittest` 는 결과를 **stderr** 로 낸다. stdout 만 읽으면 요약이 빈다.
+
+    **`SUITE` 하나만 돌린다** — 전체를 돌리던 때는 300초가 걸려 제한에 걸렸고,
+    판단 불가가 닷새 이어졌다. 그 파일이 없으면 판단 불가다(0건 실행을 실패로
+    읽지 않는다).
     """
-    if not (REPO / "tests").is_dir():
-        return None, f"시험 저장소가 없다 ({REPO})"
+    if not (REPO / "tests" / SUITE).is_file():
+        return None, f"점검 시험이 없다 ({REPO.as_posix()}/tests/{SUITE})"
     try:
         done = subprocess.run(
-            [sys.executable, "-X", "utf8", "-m", "unittest", "discover", "-s", "tests"],
+            [sys.executable, "-X", "utf8", "-m", "unittest", "discover", "-s", "tests",
+             "-p", SUITE],
             cwd=str(REPO), capture_output=True, text=True,
             encoding="utf-8", errors="replace", timeout=TIMEOUT,
         )
@@ -138,6 +158,53 @@ def run_suite():
     spoken = (done.stderr or "") + (done.stdout or "")
     tail = [line for line in spoken.splitlines() if line.strip()]
     return done.returncode == 0, "\n".join(tail[-12:])
+
+
+def ci_problem(runs):
+    """가장 최근에 끝난 실행이 실패면 한 줄 · 성공이거나 판단이 안 서면 None.
+
+    진행 중인 실행은 건너뛴다 — 방금 올린 커밋의 결과를 기다리는 동안 그 앞의
+    결과로 판단한다.
+    """
+    if not isinstance(runs, list):
+        return None
+    for run in runs:
+        if not isinstance(run, dict) or run.get("status") != "completed":
+            continue
+        if run.get("conclusion") in ("failure", "timed_out", "startup_failure"):
+            title = run.get("displayTitle") or "제목 없음"
+            return f"마지막으로 끝난 시험이 실패 — {title} · {run.get('url') or ''}".rstrip(" ·")
+        return None
+    return None
+
+
+def check_ci(repo: Path):
+    """GitHub 에서 `main` 의 전체 시험이 마지막에 어떻게 끝났나. 실패면 한 줄.
+
+    **못 보면 침묵한다** — gh 가 없거나, 로그인이 안 됐거나, 네트워크가 없거나,
+    원격이 GitHub 이 아니면 None. 그런 기계를 매일 찌르면 오탐이다.
+    """
+    override = os.environ.get(CI_RUNS_OVERRIDE)
+    if override:
+        try:
+            return ci_problem(json.loads(Path(override).read_text(encoding="utf-8")))
+        except (OSError, json.JSONDecodeError):
+            return None
+    try:
+        done = subprocess.run(
+            ["gh", "run", "list", "--branch", "main", "--limit", "10",
+             "--json", "status,conclusion,displayTitle,url"],
+            cwd=str(repo), capture_output=True, text=True,
+            encoding="utf-8", errors="replace", timeout=CI_TIMEOUT,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    if done.returncode != 0:
+        return None
+    try:
+        return ci_problem(json.loads(done.stdout or "[]"))
+    except json.JSONDecodeError:
+        return None
 
 
 def git(repo: Path, *args: str):
@@ -216,17 +283,30 @@ def render_dead(days: int, why: str) -> str:
     ])
 
 
+def render_ci(problem: str, repo: Path) -> str:
+    return "\n".join([
+        "⛔ 한글 검사기의 전체 시험이 GitHub 에서 깨져 있다 — 하루 첫 세션 점검",
+        "",
+        f"- {problem}",
+        "",
+        "전체 시험은 CI 에서만 돈다 — 이 점검은 설치본 대조만 한다.",
+        f"보려면: `cd {repo.as_posix()} && gh run list --branch main --limit 5`",
+    ])
+
+
 def render(summary: str) -> str:
     return "\n".join([
-        "⛔ 한글 검사 시스템 회귀 실패 — 하루 첫 세션 점검",
+        "⛔ 한글 검사기 설치본 대조 실패 — 하루 첫 세션 점검",
         "",
         "지키는 것: `assets/doc-style-check.py` · `hooks/doc-style-gate.py` · "
         "`skills/finalize-korean-document`",
-        "이 셋 중 하나가 다른 곳에서 바뀌었을 수 있다.",
+        "다른 프로젝트 세션에서 설치본을 직접 고쳤을 수 있다 — 정본 저장소에서 고치고 "
+        "`install.py` 로 옮긴다.",
         "",
         summary,
         "",
-        f"다시 보려면: `cd {REPO.as_posix()} && python -X utf8 -m unittest discover -s tests`",
+        f"다시 보려면: `cd {REPO.as_posix()} && python -X utf8 -m unittest discover "
+        f"-s tests -p {SUITE}`",
     ])
 
 
@@ -270,6 +350,23 @@ def _self_test() -> int:
             bad += 1
             print(f"  ❌ {name}: {expected} 여야 하는데 {got}")
 
+    # ── CI 판정 — 마지막으로 끝난 실행만 본다 ────────────────────────────────
+    failed = {"status": "completed", "conclusion": "failure", "displayTitle": "깨뜨림"}
+    passed = {"status": "completed", "conclusion": "success"}
+    running = {"status": "in_progress", "conclusion": ""}
+    ci = [
+        ("실패로 끝났으면 말한다", [failed, passed], True),
+        ("성공으로 끝났으면 잠자코", [passed, failed], False),
+        ("진행 중은 건너뛰고 그 앞을 본다", [running, failed], True),
+        ("아무것도 없으면 판단 불가", [], False),
+        ("모양이 틀리면 판단 불가", {"runs": []}, False),
+    ]
+    for name, runs, expected in ci:
+        got = ci_problem(runs) is not None
+        if got != expected:
+            bad += 1
+            print(f"  ❌ {name}: {expected} 여야 하는데 {got}")
+
     # ── git 판정 — 저장소가 아니면 침묵한다 ──────────────────────────────────
     got = check_git(Path(__file__).resolve().parent / "없는-디렉터리")
     if got is not None:
@@ -303,6 +400,9 @@ def main() -> int:
     behind = check_git(REPO)
     if behind:
         notes.append(render_git(behind, REPO))
+    red = check_ci(REPO)
+    if red:
+        notes.append(render_ci(red, REPO))
 
     if passed is None:
         # 판단 불가 — 그날을 「봤다」로 적지 않는다

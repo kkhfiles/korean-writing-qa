@@ -153,8 +153,9 @@ form: structured
 | 되먹임 확인 | 적은 예외가 판단 층 행동을 바꾸나 | `scripts/probe_layer2_exemption.py` · 규칙 바뀔 때 1회 |
 | 연쇄 확인 | 처방이 새 지적을 만드는지 | `scripts/check_fix_cascade.py` |
 | **덮개 계기판** | 쓴 문서 중 검사 범위에 든 비율 · 실측 `runs/eval-008` | `scripts/measure_gate_coverage.py` |
-| **일일 건강 검진** | 하루 첫 세션에 회귀 · 초록이면 침묵 | `~/.claude/hooks/korean-gate-daily-check.py` |
+| **일일 건강 검진** | 하루 첫 세션에 설치본 대조 · 초록이면 침묵 · 전체 시험은 CI 몫 | `~/.claude/hooks/korean-gate-daily-check.py` |
 | **GitHub 반영 확인** | 정본 미커밋 · 안 밀린 커밋 · 점검이 사흘 넘게 죽어 있음 | 같은 훅(`check_git`) |
+| **CI 결과 확인** | GitHub 에서 전체 시험이 마지막에 실패했으면 알림 · 못 보면 침묵 | 같은 훅(`check_ci`) |
 
 ## 안전장치
 
