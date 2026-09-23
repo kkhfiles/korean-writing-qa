@@ -182,6 +182,60 @@ def translationese_hits(text):
                 continue
             yield kind, level, fix, hit
             break
+
+
+#: ★ **다른 낱말로 읽힘** — 수사 + 의존명사 「종」 + 주격 「이」가 「종이」(paper)가 된다.
+#   「설정 파일 두 종이 검증을 통과」·「세 종이 이미 다 적혀 있었다」는 종이 두 장·세 장으로
+#   읽힌다. 형태소 분석기조차 「한 종이 엔진」을 `종이/NNG` 로 읽었다(실측).
+#
+#   실측 2026-09-22 — 우리말 수사 + 띄어 쓴 「종이」가 실문서 다섯 곳(이미 고친 원문
+#   하나 · 발행된 문서 하나 포함)이고 **다섯 다 이 꼴** · 진짜 종이를 뜻한 쓰임 0.
+#   숫자로 쓴 「4종이」(실문서 수십 건)는 뺀다 — 숫자가 붙어 있어 종이로 안 읽힌다.
+#
+#   ⚠️ 글자가 같아 정규식만으로는 못 가르는 것 — 형태소로 걷어낸다.
+#      · 「메모를 **한** 종이」 — 「하다」의 관형형(`하/VV` + `ᆫ/ETM`) · 진짜 종이
+#      수사는 `MM`·`NR` 로 나온다. 분석기가 없으면 걷어내지 않는다 — 주의 등급이라
+#      사람이 보고 거르며, 미탐보다 싸다.
+#   ⚠️ **못 걷어내는 것 — 「너의」 뜻의 「네」.** 「네 종이 어디 있니」는 마침표가 없으면
+#      `네/IC`, 있으면 `네/MM` 으로 나온다(실측 — 분석이 문장부호에 흔들린다). 그래서
+#      걸린다. 업무 문서에 반말 의문문이 드물고, 읽는 사람에게도 실제로 모호한 문장이라
+#      주의로 남겨 사람이 고르게 한다.
+#
+#   주의인 까닭 — 「두 종이 겹쳐 있다」처럼 진짜 종이인 문장이 실측 0이지만 성립은 한다.
+#   ⛔ 「두 종이를」·「두 종이가」는 안 본다 — 종류라면 「두 종을」·「두 종이」라서
+#      그 꼴은 종이로만 읽히고 모호하지 않다.
+_NUMERAL = (r'(?:(?:열|스물|서른|마흔)?(?:한|두|세|네|다섯|여섯|일곱|여덟|아홉)'
+            r'|열|스무|몇|여러)')
+MISREAD_JONGI = re.compile(
+    r'(?<![가-힣])(' + _NUMERAL + r')\s+종이(?:다|며|고)?(?![가-힣])')
+MISREAD_FIX = '「종이(paper)」로 읽힘 · 「종류」·「가지」로 바꿀 것'
+
+
+def misread_hits(text):
+    """다른 낱말로 읽히는 꼴 — 수사가 **정말 수사일 때만** 남긴다."""
+    hits = list(MISREAD_JONGI.finditer(text))
+    if not hits:
+        return hits
+    k = morph()
+    if k is None:
+        return hits
+    kept, seen = [], {}
+    for h in hits:
+        line_start = text.rfind('\n', 0, h.start()) + 1
+        line_end = text.find('\n', h.start())
+        line = text[line_start:line_end if line_end >= 0 else len(text)]
+        if len(line) > 600:
+            kept.append(h)
+            continue
+        if line_start not in seen:
+            seen[line_start] = k.tokenize(_plain(line))
+        at = h.start(1) - line_start
+        tag = next((t.tag for t in seen[line_start]
+                    if t.start <= at < t.start + len(t.form)), '')
+        # 못 찾은 것은 남긴다 — 걷어낼 근거가 없으면 지적을 지우지 않는다
+        if tag in ('MM', 'NR', ''):
+            kept.append(h)
+    return kept
 # ⛔ 「~에 있어(서)」는 **안 넣는다.** 항목 자체는 정당한 번역투(일본어 における 직역)지만,
 #    한국어에는 「저장소에 있어 접근이 안 된다」처럼 **있다가 진짜 서술어인** 쓰임이 섞이고
 #    줄만 봐서는 안 갈린다. 실문서 8건이 **전부** 그쪽이었다.
@@ -1098,6 +1152,9 @@ def scan_html(path, relaxed=False, form=None, rules=None):
         near = ' '.join(text[max(0, hit.start() - 20):hit.end() + 20].split())
         (err if level == 'err' else warn).append(
             (kind, f'「{hit.group(0)}」 — {fix} · {near[:48]}'))
+    for hit in misread_hits(text):
+        near = ' '.join(text[max(0, hit.start() - 20):hit.end() + 20].split())
+        warn.append(('다른 낱말로 읽힘', f'「{hit.group(0)}」 — {MISREAD_FIX} · {near[:48]}'))
     # 문맥 조각은 **한 줄로 눌러서** 낸다 — HTML 본문에는 줄바꿈이 섞여 있어
     # 그대로 두면 보고서가 여러 줄로 쪼개지고, 훅이 첫 줄만 걷어 가 정작
     # 문제 문장이 사라진다(오류는 뜨는데 어디인지 모르는 상태가 된다).
@@ -1423,7 +1480,7 @@ RULE_GROUPS = {
     '낱말': ('낱말 선택 — 지어낸 말과 뜻이 흐려지는 말', [
         '「~하는 자리」', '「~하는 자리」 의심', '지어낸 명사구', '평가 수식어',
         '모호한 지칭', '지시어 확인', '「회기」', '업무 글에 없는 말',
-        '말투 섞임', '제품 이름 음차',
+        '말투 섞임', '제품 이름 음차', '다른 낱말로 읽힘',
     ]),
     '번역투': ('번역에서 옮아온 문형', [
         '이중 피동', '번역투 이중 조사', '번역투 그녀',
@@ -1911,6 +1968,9 @@ def scan_md(path, relaxed=False, form=None, rules=None):
         for kind, level, fix, hit in translationese_hits(m):
             note = f'「{hit.group(0)}」 — {fix} · {strip(line).strip()[:40]}'
             (err if level == 'err' else warn).append((n, kind, note))
+        for hit in misread_hits(m):
+            warn.append((n, '다른 낱말로 읽힘',
+                         f'「{hit.group(0)}」 — {MISREAD_FIX} · {strip(line).strip()[:40]}'))
 
     # 3. 금지 라벨 (목록의 「라벨: 값」)
     for n, line in body:

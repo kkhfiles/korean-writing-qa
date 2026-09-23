@@ -128,3 +128,12 @@
 {"case_id": "C-128", "expect": "clean", "form": "structured", "kind": null, "source": "회차 지적 대기 정리 2026-09-16", "status": "pinned", "text": "같은 갈래 여섯 곳을 맞대 봄", "why": "수 관형사 + 곳 · 「여섯」은 관형형 어미가 아니라 안 걸려야 함"}
 {"case_id": "C-129", "expect": "clean", "form": "structured", "kind": null, "source": "회차 지적 대기 정리 2026-09-16", "status": "pinned", "text": "매일 자정에 도는 작업", "why": "「매일 밤」의 대안 표기 · 고친 쪽이 다시 걸리면 안 됨"}
 {"case_id": "C-130", "expect": "clean", "form": "structured", "kind": null, "source": "회차 지적 대기 정리 2026-09-16", "status": "pinned", "text": "앞뒤가 맞지 않는 문장", "why": "「앞뒤」 한 낱말은 정상 · 「앞과 뒤」만 잡아야 함"}
+{"case_id": "C-131", "expect": "finding", "form": "prose", "kind": "다른 낱말로 읽힘", "source": "다른 세션 점검 자료 작업 2026-09-22", "status": "pinned", "text": "시나리오 한 종이 엔진 실행 파일로 끝까지 실행", "why": "수관형사 + 의존명사 「종」 + 주격 「이」가 종이(paper)로 읽힘"}
+{"case_id": "C-132", "expect": "finding", "form": "prose", "kind": "다른 낱말로 읽힘", "source": "다른 세션 점검 자료 작업 2026-09-22", "status": "pinned", "text": "설정 파일 두 종이 검증을 통과해야 한다", "why": "종류 둘이 종이 두 장으로 읽힘"}
+{"case_id": "C-133", "expect": "finding", "form": "prose", "kind": "다른 낱말로 읽힘", "source": "다른 세션 점검 자료 작업 2026-09-22", "status": "pinned", "text": "조사 자료에 세 종이 이미 다 적혀 있었다", "why": "종이 세 장에 적힌 것으로 읽힘 · 가장 심하게 헷갈린 실례"}
+{"case_id": "C-134", "expect": "finding", "form": "prose", "kind": "다른 낱말로 읽힘", "source": "다른 세션 점검 자료 작업 2026-09-22", "status": "pinned", "text": "열두 종이 모두 통과했다", "why": "두 음절 수사 「열두」도 같은 꼴"}
+{"case_id": "C-135", "expect": "clean", "form": "prose", "kind": null, "needs": "morph", "source": "다른 세션 점검 자료 작업 2026-09-22", "status": "pinned", "text": "메모를 한 종이 책상 위에 있다", "why": "「한」이 「하다」의 관형형 · 진짜 종이 · 형태소가 가름"}
+{"case_id": "C-136", "expect": "clean", "form": "prose", "kind": null, "source": "다른 세션 점검 자료 작업 2026-09-22", "status": "pinned", "text": "4종이 모두 통과했다", "why": "숫자가 붙어 있어 종이로 안 읽힘"}
+{"case_id": "C-137", "expect": "clean", "form": "prose", "kind": null, "source": "다른 세션 점검 자료 작업 2026-09-22", "status": "pinned", "text": "두 종이를 겹쳐 붙인다", "why": "목적격이 붙은 「종이를」은 종이로만 읽혀 모호하지 않음"}
+{"case_id": "C-138", "expect": "clean", "form": "prose", "kind": null, "source": "다른 세션 점검 자료 작업 2026-09-22", "status": "pinned", "text": "한 종이컵에 담는다", "why": "「종이컵」은 한 낱말"}
+{"case_id": "C-139", "expect": "clean", "form": "prose", "kind": null, "source": "다른 세션 점검 자료 작업 2026-09-22", "status": "pinned", "text": "종이 두 장에 인쇄한다", "why": "진짜 종이 · 수사가 뒤에 옴"}
