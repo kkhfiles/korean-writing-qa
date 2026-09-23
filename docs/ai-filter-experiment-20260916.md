@@ -40,7 +40,7 @@ form: structured
 
 **근거 — 실행 파일의 모델 목록** haiku 는 `capabilities: ["context_management"]` 뿐이고, sonnet·opus·fable 은 `["effort","max_effort","xhigh_effort","adaptive_thinking",…]` 을 갖습니다.
 
-**거기서 측정하고 「effort 는 영향 없음」이라 적으면 증상이 안 나는 조건에서 측정한 것**이 된다(전역 규칙의 재현 시험 항목).
+**거기서 측정하고 「effort 는 영향 없음」이라 적으면 증상이 안 나는 조건의 측정** — 전역 규칙의 재현 시험 항목에 해당합니다.
 
 ### 한 모델 안의 비용 지수
 

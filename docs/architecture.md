@@ -10,8 +10,8 @@ form: structured
 
 | 층 | 실행체 | 검사 대상 | 못 잡을 때 |
 |---|---|---|---|
-| **1층 · 낱말** | `skills/finalize-korean-document/scripts/check.py` | 사용자가 확정한 표현 8건 · `경로` 비유 | 2층이 맡음 |
-| **1층 · 구조** | `assets/doc-style-check.py` | 개조식 서술·절단형·모호한 지칭·번역투·지어낸 명사구 | 2층이 맡음 |
+| **1층 · 낱말** | `skills/finalize-korean-document/scripts/check.py` | 사용자가 확정한 표현 8건 · `경로` 비유 | 2층 담당 |
+| **1층 · 구조** | `assets/doc-style-check.py` | 개조식 서술·절단형·모호한 지칭·번역투·지어낸 명사구 | 2층 담당 |
 | **2층 · 판단** | 사람이나 모델이 `core-rules.md`를 읽음 | 1층이 못 잡는 원칙 일곱 | 되먹임에 기록 |
 
 **두 1층은 겹치지 않음** — 실측 380건에서 같은 줄을 둘 다 지적한 것이 5줄(2026-08-28 측정)
@@ -50,7 +50,7 @@ form: structured
 
 *마크다운·HTML 601건 기준 · 2026-09-03*
 
-**형식 축** — 산문 문서는 개조식 전제 검사를 끕니다. 마크다운 머리말 `form: prose` · HTML `<meta name="form" content="prose">` · **파일이 형식을 들고 있게 한다**(플래그로만 두면 사람이 기억해야 한다).
+**형식 축** — 산문 문서는 개조식 전제 검사를 끕니다. 마크다운 머리말 `form: prose` · HTML `<meta name="form" content="prose">` · **파일이 형식을 들고 있게 합니다**(플래그로만 두면 사람이 기억해야 합니다).
 
 **자체 시험** `python ~/.claude/assets/doc-style-check-test.py`
 
@@ -109,7 +109,7 @@ form: structured
 | 규칙 반영 | `promote_feedback.py` 또는 `core-rules.md` 예외 | 스킬 |
 | **적용 확인** | `scripts/probe_layer2_exemption.py` | `runs/eval-007` |
 
-**마지막 단계가 있는 까닭** — 규칙을 썼다는 것과 규칙이 적용된다는 것은 다릅니다. 예외를 새로 적을 때마다 한 번 돌린다(호출당 0.3달러).
+**마지막 단계가 있는 까닭** — 규칙을 썼다는 것과 규칙이 적용된다는 것은 다릅니다. 예외를 새로 적을 때마다 한 번 돌립니다(호출당 0.3달러).
 
 ## 안 하는 것 — 경계
 
