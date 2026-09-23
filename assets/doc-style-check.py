@@ -997,6 +997,21 @@ def all_quoted(t):
     return False
 
 
+def excerpt(line, found, width):
+    """지적 발췌 — 걸린 말이 앞머리에 안 들면 그 둘레를 보인다.
+
+    ⛔ 예전에는 줄 앞머리만 잘라서 긴 표 행에서는 걸린 말이 발췌에 안 보였다 —
+       「「맡음」 — … · | **1층 · 낱말** | `skills/finali」처럼 읽는 사람이 어디를
+       고치라는 것인지 줄을 다시 열어 찾아야 했다(2026-09-23).
+    """
+    text = strip(line).strip()
+    at = text.find(found)
+    if at < 0 or at + len(found) <= width:
+        return text[:width]
+    begin = max(0, at - width // 3)
+    return '…' + text[begin:begin + width]
+
+
 def is_narrative(sent):
     """값의 종결이 서술형인가 — **인용 안의 서술형은 값의 종결이 아니다**(규칙 §1).
 
@@ -1977,7 +1992,7 @@ def scan_md(path, relaxed=False, form=None, rules=None):
         m = mask(line)
         for w in VAGUE_HARD:
             if w in m:
-                err.append((n, '모호한 지칭', f'「{w}」 — {strip(line).strip()[:52]}'))
+                err.append((n, '모호한 지칭', f'「{w}」 — {excerpt(line, w, 52)}'))
         # 지시어 — 2026-09-18 부터 마크다운에서도 본다(위 VAGUE_SOFT 주석에 까닭).
         # 발췌는 **짚은 자리 둘레**를 낸다 — 줄머리를 내면 어디를 고칠지가 안 보인다.
         for hit in vague_hits(m):
@@ -1985,67 +2000,67 @@ def scan_md(path, relaxed=False, form=None, rules=None):
             warn.append((n, '지시어 확인', f'{near[:46]} — {vague_note(hit.group(1))}'))
         for w in SELF_PRAISE:
             if w in m:
-                warn.append((n, '평가 수식어', f'「{w}」 — {strip(line).strip()[:50]}'))
+                warn.append((n, '평가 수식어', f'「{w}」 — {excerpt(line, w, 50)}'))
         for wrong, canon in BRANDS.items():
             if wrong in m:
                 err.append((n, '제품 이름 음차',
-                            f'「{wrong}」 → 「{canon}」 — {strip(line).strip()[:46]}'))
+                            f'「{wrong}」 → 「{canon}」 — {excerpt(line, wrong, 46)}'))
         for h in HOEGI.finditer(m):
             if HOEGI_OK.search(m[max(0, h.start() - 6):h.end() + 6]):
                 continue
             err.append((n, '「회기」',
                         f'regression 이면 「회귀」 · 작업 단위면 「세션」·「회차」 — '
-                        f'{strip(line).strip()[:40]}'))
+                        f'{excerpt(line, h.group(0), 40)}'))
         _hard = particle_veto(m, list(JARI.finditer(m)))
         if _hard:
             j = _hard[0]
             err.append((n, '「~하는 자리」',
-                        f'「{j.group(0)}」 — {strip(line).strip()[:44]}'))
+                        f'「{j.group(0)}」 — {excerpt(line, j.group(0), 44)}'))
         else:
             _j = [q for q in JARI_ANY.finditer(m) if not JARI_OK.search(q.group(0))]
             for q in particle_veto(m, _j):
                 warn.append((n, '「~하는 자리」 의심',
-                             f'「{q.group(0)}」 — {strip(line).strip()[:42]}'))
+                             f'「{q.group(0)}」 — {excerpt(line, q.group(0), 42)}'))
         _e = [e for e in EMPTY_NOUN.finditer(m) if not EMPTY_NOUN_OK.search(e.group(0))]
         for e in particle_veto(m, _e):
             warn.append((n, '지어낸 명사구',
                          f'「{e.group(0)}」 — 그 명사가 혼자 서는지 볼 것 · '
-                         f'{strip(line).strip()[:36]}'))
+                         f'{excerpt(line, e.group(0), 36)}'))
         for e in REACH_NOUN.finditer(m):
             err.append((n, '지어낸 명사구',
                         f'「{e.group(0)}」 — 도달·획득 용언 뒤의 빈 명사 · '
-                        f'서술로 펼 것 · {strip(line).strip()[:34]}'))
+                        f'서술로 펼 것 · {excerpt(line, e.group(0), 34)}'))
         for e in COST_NOUN.finditer(m):
             err.append((n, '지어낸 명사구',
                         f'「{e.group(0)}」 — 「값이 들다」라 값이 목적어가 못 됨 · '
-                        f'「비용」으로 · {strip(line).strip()[:30]}'))
+                        f'「비용」으로 · {excerpt(line, e.group(0), 30)}'))
         for e in time_hits(m):
             err.append((n, '지어낸 명사구',
                         f'「{e.group(0)}」 — 시점을 「~는 때」로 가리킴 · '
-                        f'「시점」·「주기」로 바꿀 것 · {strip(line).strip()[:30]}'))
+                        f'「시점」·「주기」로 바꿀 것 · {excerpt(line, e.group(0), 30)}'))
         for _pat, _better in NO_WORK_WORD:
             for e in _pat.finditer(m):
                 err.append((n, '업무 글에 없는 말',
                             f'「{e.group(0)}」 — 업무 글에 안 쓰는 짝 · '
-                            f'「{_better}」쪽으로 · {strip(line).strip()[:30]}'))
+                            f'「{_better}」쪽으로 · {excerpt(line, e.group(0), 30)}'))
         for _pat, _better in NO_WORK_WORD_WARN:
             for e in _pat.finditer(m):
                 warn.append((n, '업무 글에 없는 말',
                              f'「{e.group(0)}」 — 「{_better}」으로 풀어 쓸 것 · '
-                             f'{strip(line).strip()[:30]}'))
+                             f'{excerpt(line, e.group(0), 30)}'))
         for e in MEASURED_WORD.finditer(m):
             warn.append((n, '업무 글에 없는 말',
                          f'「{e.group(0)}」 — 「측정값」·「측정한」이 흔함 · '
-                         f'{strip(line).strip()[:30]}'))
+                         f'{excerpt(line, e.group(0), 30)}'))
         for kind, level, fix, hit in translationese_hits(m):
-            note = f'「{hit.group(0)}」 — {fix} · {strip(line).strip()[:40]}'
+            note = f'「{hit.group(0)}」 — {fix} · {excerpt(line, hit.group(0), 40)}'
             (err if level == 'err' else warn).append((n, kind, note))
         for hit in misread_hits(m):
             warn.append((n, '다른 낱말로 읽힘',
-                         f'「{hit.group(0)}」 — {MISREAD_FIX} · {strip(line).strip()[:40]}'))
+                         f'「{hit.group(0)}」 — {MISREAD_FIX} · {excerpt(line, hit.group(0), 40)}'))
         for hit in section_ref_hits(line):
             err.append((n, '절 번호로 가리킴',
-                        f'「{hit.group(0)}」 — {SECTION_FIX} · {strip(line).strip()[:40]}'))
+                        f'「{hit.group(0)}」 — {SECTION_FIX} · {excerpt(line, hit.group(0), 40)}'))
 
     # 3. 금지 라벨 (목록의 「라벨: 값」)
     for n, line in body:
