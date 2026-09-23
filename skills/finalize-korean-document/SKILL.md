@@ -36,6 +36,7 @@ python -X utf8 P:/github/korean-writing-qa/scripts/rare_words.py <대상>
 python -X utf8 P:/github/korean-writing-qa/scripts/rare_words.py --accept <낱말/품사> --context <정상인 문맥> --scope <경로 무늬> --why <근거 한 줄>
 ```
 
+   - **이 저장소 밖 경로로 범위를 좁히면 `--local` 을 붙인다** — 저장소 밖 목록(`data/catalog/local-known-words.jsonl` · 공개 안 됨)에 들어간다. 안 붙이면 거절한다 — 공개 목록에 남의 프로젝트 경로가 나가기 때문이다.
    - **⛔ 목록은 면죄부가 아니다** — 다른 말로 바꿔야 하는 낱말은 넣지 않는다.
    - **끝냈으면 판정과 함께 적는다** — 남길 낱말을 다 가렸으면 `pass`, 고칠 것이 남았으면 `fail`. 중간에 멈췄으면 적지 않는다.
 

@@ -101,6 +101,24 @@ def visible(path):
 #   나중에 누가 왜 열어 줬는지 되짚을 수 있게 한다.
 KNOWN = os.path.join(HERE, "..", "data", "catalog", "known-words.jsonl")
 
+#: 저장소 밖 정상 목록 — **다른 프로젝트 경로로 범위를 좁힌 짝**은 여기에 둔다.
+#   ⛔ 공개 목록에 `D:/…/*` 같은 남의 프로젝트 경로를 적으면 그 경로가 곧 공개된다.
+#      그래서 그런 짝은 공개 목록에 못 넣는다(`--local` 없이 등록하면 거절).
+#   gitignore 대상이고 신원 목록 · 제품 이름 목록과 같은 자리(`data/catalog/local-*`)다.
+#   공개 목록과 **합쳐서** 읽는다.
+LOCAL_KNOWN = os.path.join(HERE, "..", "data", "catalog", "local-known-words.jsonl")
+REPO_ROOT = os.path.abspath(os.path.join(HERE, "..")).replace(os.sep, "/")
+
+
+def names_another_place(scope):
+    """이 저장소 밖을 가리키는 범위인가 — 공개 목록에 적으면 남의 경로가 나간다.
+
+    `*` 와 이 저장소 아래만 공개 목록에 들어간다. `*CT2612*` 처럼 무늬로 적어도
+    프로젝트 이름이 나가므로 막는다.
+    """
+    s = (scope or "*").replace("\\", "/")
+    return s != "*" and not s.lower().startswith(REPO_ROOT.lower() + "/")
+
 
 def load_known(path):
     """{단어/품사: [(문맥, 범위)…]} — 없으면 빈 사전."""
@@ -144,11 +162,12 @@ def accept(path, word, context, why, scope="*"):
     return row
 
 
-def accept_file(known_path, rows_path):
+def accept_file(known_path, rows_path, local=False):
     """여러 짝을 한 번에 등록한다 — 단어마다 명령 하나면 사람이 게이트를 끈다.
 
     파일은 JSONL 이고 줄마다 `{word, context, scope, why}` 다. `why` 가 빈 줄은
     **안 받는다** — 근거 없이 열어 준 짝은 나중에 왜 열렸는지 아무도 모른다.
+    `local` 이 아니면 남의 경로를 범위로 적은 줄도 안 받는다(`names_another_place`).
     """
     import datetime
     today = datetime.date.today().isoformat()
@@ -161,6 +180,9 @@ def accept_file(known_path, rows_path):
             row = json.loads(line)
             if not row.get("why"):
                 skipped.append(row.get("word", "?"))
+                continue
+            if not local and names_another_place(row.get("scope")):
+                skipped.append(f"{row.get('word', '?')}(남의 경로 — `--local`)")
                 continue
             rows.append({"word": row["word"],
                          "context": row.get("context") or "*",
@@ -202,6 +224,11 @@ def main():
                          "(0 이면 끔)")
     ap.add_argument("--known", default=KNOWN,
                     help="이미 정상으로 판정한 짝 목록 (기본: data/catalog/known-words.jsonl)")
+    ap.add_argument("--local-known", default=LOCAL_KNOWN,
+                    help="저장소 밖 정상 목록 — 함께 읽는다 "
+                         "(기본: data/catalog/local-known-words.jsonl · gitignore)")
+    ap.add_argument("--local", action="store_true",
+                    help="등록을 저장소 밖 목록에 — 다른 프로젝트 경로로 범위를 좁힐 때")
     ap.add_argument("--all", action="store_true",
                     help="정상으로 판정한 것까지 다 보인다 — 목록을 훑을 때")
     ap.add_argument("--accept", metavar="단어/품사",
@@ -221,11 +248,12 @@ def main():
                     help="막힌 단어로 등록 서식을 만든다 — `why` 만 채우면 된다")
     args = ap.parse_args()
 
+    target = args.local_known if args.local else args.known
     if args.accept_file:
-        took, skipped = accept_file(args.known, args.accept_file)
+        took, skipped = accept_file(target, args.accept_file, local=args.local)
         print(f"정상으로 등록 {took}개")
         if skipped:
-            print(f"⛔ 근거(`why`)가 비어 안 받은 것 {len(skipped)}개 — "
+            print(f"⛔ 안 받은 것 {len(skipped)}개(근거가 비었거나 남의 경로) — "
                   + " · ".join(skipped[:8]))
             return 1
         return 0
@@ -234,7 +262,10 @@ def main():
         if not args.context or not args.why:
             ap.error("--accept 에는 --context 와 --why 가 함께 있어야 합니다 — "
                      "근거 없이 열어 준 짝은 나중에 왜 열렸는지 아무도 모릅니다")
-        row = accept(args.known, args.accept, args.context, args.why, args.scope)
+        if not args.local and names_another_place(args.scope):
+            ap.error("이 저장소 밖 경로를 범위로 적었습니다 — 공개 목록에 넣으면 그 경로가 "
+                     "나갑니다. `--local` 을 붙여 저장소 밖 목록에 등록합니다")
+        row = accept(target, args.accept, args.context, args.why, args.scope)
         print(f"정상으로 등록 — {row['word']} · 문맥 「{row['context']}」 · "
               f"범위 「{row['scope']}」 · {row['why']}")
         return 0
@@ -246,6 +277,8 @@ def main():
     base_chars = data["chars"]
 
     known = load_known(args.known)
+    for key, rows in load_known(args.local_known).items():
+        known.setdefault(key, []).extend(rows)
     gate_rows, gate_where = [], {}
 
     # ⛔ 이 도구는 형태소 분석기가 **없으면 못 돈다** — 검사기와 다르다(그쪽은

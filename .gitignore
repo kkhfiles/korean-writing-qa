@@ -20,3 +20,5 @@ data/catalog/local-identity-denylist.txt
 # 제품·상표 이름 정본 목록 — 본보기(`*.example.txt`)만 올라간다
 data/catalog/local-brand-names.txt
 data/catalog/local-config-repo.txt
+# 남의 프로젝트 경로로 범위를 좁힌 정상 판정 — 공개하면 그 경로가 나간다(rare_words.py)
+data/catalog/local-known-words.jsonl

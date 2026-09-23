@@ -29,6 +29,80 @@ def run(*args):
     return done.stdout + done.stderr
 
 
+def run_rc(*args):
+    done = subprocess.run([sys.executable, "-X", "utf8", SWEEP, *args],
+                          capture_output=True, text=True, encoding="utf-8",
+                          errors="replace", timeout=240, cwd=ROOT)
+    return done.returncode, done.stdout + done.stderr
+
+
+class LocalListTests(unittest.TestCase):
+    """남의 프로젝트 경로로 좁힌 짝은 **저장소 밖 목록**에만 들어간다(2026-09-23).
+
+    공개 목록에 `D:/…/*` 를 적으면 그 경로가 공개된다. 스킬이 어느 프로젝트에서든
+    `--accept … --scope <경로>` 를 부르라고 적어 두었으므로, 막지 않으면 다른
+    프로젝트 세션이 자기 경로를 공개 목록에 적는다.
+    """
+
+    def setUp(self) -> None:
+        self.dir = tempfile.mkdtemp(prefix="known-local-")
+        self.doc = os.path.join(self.dir, "doc.md")
+        with io.open(self.doc, "w", encoding="utf-8", newline="\n") as f:
+            f.write(BODY)
+        self.public = os.path.join(self.dir, "public.jsonl")
+        io.open(self.public, "w", encoding="utf-8").close()
+        self.local = os.path.join(self.dir, "local.jsonl")
+        self.scope = self.dir.replace(os.sep, "/") + "/*"
+
+    def tearDown(self) -> None:
+        shutil.rmtree(self.dir, ignore_errors=True)
+
+    def lines(self, path):
+        if not os.path.exists(path):
+            return []
+        with io.open(path, encoding="utf-8") as f:
+            return [l for l in f if l.strip()]
+
+    def test_the_public_list_refuses_another_places_path(self) -> None:
+        rc, out = run_rc("--accept", "명사/NNG", "--context", "*", "--why", "시험용",
+                         "--scope", self.scope, "--known", self.public,
+                         "--local-known", self.local)
+        self.assertNotEqual(0, rc, "남의 경로가 공개 목록에 들어갔습니다")
+        self.assertEqual([], self.lines(self.public))
+        self.assertIn("--local", out, "거절만 하고 푸는 길을 안 알려 줍니다")
+
+    def test_local_takes_it_and_the_sweep_reads_it(self) -> None:
+        rc, out = run_rc("--accept", "명사/NNG", "--context", "*", "--why", "시험용",
+                         "--scope", self.scope, "--local", "--known", self.public,
+                         "--local-known", self.local)
+        self.assertEqual(0, rc, out)
+        self.assertEqual([], self.lines(self.public))
+        self.assertEqual(1, len(self.lines(self.local)))
+        swept = run_rc(self.doc, "--known", self.public, "--local-known", self.local,
+                       "--top", "200")[1]
+        self.assertNotIn("명사/NNG", swept, "저장소 밖 목록을 안 읽습니다")
+
+    def test_a_batch_file_is_held_to_the_same_line(self) -> None:
+        rows = os.path.join(self.dir, "rows.jsonl")
+        with io.open(rows, "w", encoding="utf-8", newline="\n") as f:
+            f.write(json.dumps({"word": "명사/NNG", "context": "*", "scope": self.scope,
+                                "why": "시험용"}, ensure_ascii=False) + "\n")
+        rc, _ = run_rc("--accept-file", rows, "--known", self.public,
+                       "--local-known", self.local)
+        self.assertNotEqual(0, rc)
+        self.assertEqual([], self.lines(self.public))
+
+    def test_the_shipped_list_names_no_other_place(self) -> None:
+        """공개 목록의 범위는 `*` 이거나 이 저장소 아래뿐이다."""
+        shipped = os.path.join(ROOT, "data", "catalog", "known-words.jsonl")
+        with io.open(shipped, encoding="utf-8") as f:
+            rows = [json.loads(l) for l in f if l.strip() and not l.startswith("#")]
+        leaked = [r for r in rows
+                  if r.get("scope", "*") != "*" and "/korean-writing-qa/" not in r["scope"]]
+        self.assertEqual([], leaked, "공개 목록에 남의 경로가 있습니다: "
+                         + ", ".join(f"{r['word']} {r['scope']}" for r in leaked[:3]))
+
+
 class KnownWordScopeTests(unittest.TestCase):
 
     def setUp(self) -> None:
