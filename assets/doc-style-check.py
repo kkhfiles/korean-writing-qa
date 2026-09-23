@@ -219,18 +219,33 @@ MISREAD_FIX = '「종이(paper)」로 읽힘 · 「종류」·「가지」로 �
 #   절 제목으로 가리키면 둘 다 없다.
 #
 #   실측 2026-09-23 — 문서 일곱 묶음에서 1,323곳 · 외부 표준 조항 0 → **오류**.
-#   ⛔ 외부 표준 조항은 뺀다 — 「ISO 26262-6 §9.4」·「RFC 9110 §15」는 남의 문서의
-#      고정된 조항 번호라 밀리지 않는다. 가르는 기준은 낱말 목록이 아니라 **모양**
-#      (대문자 약어 + 번호 바로 뒤의 §)이다.
+#   ⛔ 남의 문서 조항은 뺀다 — 고정된 번호라 밀리지 않는다. 가르는 기준은 낱말
+#      목록이 아니라 **§ 바로 앞의 모양**이다.
+#      · 대문자 약어 + 번호 — 「ISO 26262-6 §9.4」·「RFC 9110 §15」
+#      · 영어 제목 낱말 — 「Anthropic Software Directory Policy §5」(공동 편집 발행
+#        문서에서 처음 걸린 오탐 · 약어만 보던 첫 판이 놓쳤다)
+#      파일 이름 확장자(「check.md §7」)와 소문자 없는 약어(「MTG §2」)는 우리 문서라 잡는다.
 SECTION_REF = re.compile(r'§\s?\d+(?:[.\-]\d+)*')
-STANDARD_BEFORE = re.compile(r'\b[A-Z]{2,}[A-Z/]*[\s\-:]?\d[\d\-:./]*\s*$')
+STANDARD_BEFORE = re.compile(
+    r'(?:\b[A-Z]{2,}[A-Z/]*[\s\-:]?\d[\d\-:./]*'
+    r'|(?<![.\w])[A-Za-z]*[a-z][A-Za-z]*[」"”]?)\s*$')
 SECTION_FIX = '절 제목으로 가리킬 것 · 번호는 절이 늘면 밀림'
 
 
 def section_ref_hits(text):
-    """절을 번호로 가리킨 곳 — 외부 표준 조항은 뺀다."""
+    """절을 번호로 가리킨 곳 — 남의 문서 조항은 뺀다.
+
+    ⛔ **원문을 받는다 — 가린 판이 아니다.** 인용을 가린 판(`mask`)에서는
+       「Accelerated Mission Software」 §3.6 의 영어 제목이 빈칸이 되어 외부 문서인지
+       못 가른다. 그래서 원문에서 찾고, 인용·코드 **안에 든** § 만 건너뛴다 —
+       「(§3)」처럼 규칙을 설명하는 보기말이 그쪽이다.
+    """
+    shielded = [(s.start(), s.end()) for pat in (QUOTE_SPAN, CODE_SPAN)
+                for s in pat.finditer(text)]
     out = []
     for m in SECTION_REF.finditer(text):
+        if any(a <= m.start() < b for a, b in shielded):
+            continue
         line_start = text.rfind('\n', 0, m.start()) + 1
         if STANDARD_BEFORE.search(text[line_start:m.start()]):
             continue
@@ -1182,8 +1197,9 @@ def scan_html(path, relaxed=False, form=None, rules=None):
     for hit in misread_hits(text):
         near = ' '.join(text[max(0, hit.start() - 20):hit.end() + 20].split())
         warn.append(('다른 낱말로 읽힘', f'「{hit.group(0)}」 — {MISREAD_FIX} · {near[:48]}'))
-    for hit in section_ref_hits(text):
-        near = ' '.join(text[max(0, hit.start() - 20):hit.end() + 20].split())
+    _raw = strip(body)          # 원문 — 「영어 제목」 §N 을 가리려면 인용이 보여야 한다
+    for hit in section_ref_hits(_raw):
+        near = ' '.join(_raw[max(0, hit.start() - 20):hit.end() + 20].split())
         err.append(('절 번호로 가리킴', f'「{hit.group(0)}」 — {SECTION_FIX} · {near[:48]}'))
     # 문맥 조각은 **한 줄로 눌러서** 낸다 — HTML 본문에는 줄바꿈이 섞여 있어
     # 그대로 두면 보고서가 여러 줄로 쪼개지고, 훅이 첫 줄만 걷어 가 정작
@@ -2002,7 +2018,7 @@ def scan_md(path, relaxed=False, form=None, rules=None):
         for hit in misread_hits(m):
             warn.append((n, '다른 낱말로 읽힘',
                          f'「{hit.group(0)}」 — {MISREAD_FIX} · {strip(line).strip()[:40]}'))
-        for hit in section_ref_hits(m):
+        for hit in section_ref_hits(line):
             err.append((n, '절 번호로 가리킴',
                         f'「{hit.group(0)}」 — {SECTION_FIX} · {strip(line).strip()[:40]}'))
 

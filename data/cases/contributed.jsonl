@@ -144,3 +144,6 @@
 {"case_id": "C-144", "expect": "clean", "form": "structured", "kind": null, "source": "사용자 지정 2026-09-23", "status": "pinned", "text": "ISO 26262-6 §9.4.2 에 따라 단위 시험 설계", "why": "외부 표준의 고정 조항 번호 · 밀리지 않음"}
 {"case_id": "C-145", "expect": "clean", "form": "structured", "kind": null, "source": "사용자 지정 2026-09-23", "status": "pinned", "text": "RFC 9110 §15 의 상태 코드 사용", "why": "외부 표준의 고정 조항 번호"}
 {"case_id": "C-146", "expect": "clean", "form": "structured", "kind": null, "source": "사용자 지정 2026-09-23", "status": "pinned", "text": "「(§3)」 꼴 참조는 쓰지 않음", "why": "규칙을 설명하려고 인용한 보기말"}
+{"case_id": "C-147", "expect": "finding", "form": "structured", "kind": "절 번호로 가리킴", "source": "사용자 지정 2026-09-23", "status": "pinned", "text": "세부는 84-parallel-check.md §7 에 있음", "why": "파일 이름 뒤의 절 번호는 우리 문서 · 확장자를 영어 제목으로 읽으면 안 됨"}
+{"case_id": "C-148", "expect": "clean", "form": "structured", "kind": null, "source": "사용자 지정 2026-09-23", "status": "pinned", "text": "Anthropic Software Directory Policy §5 의 요건 A~G 준수", "why": "남의 정책 문서 조항 · 공동 편집 발행 문서에서 처음 걸린 오탐"}
+{"case_id": "C-149", "expect": "clean", "form": "structured", "kind": null, "source": "사용자 지정 2026-09-23", "status": "pinned", "text": "「Accelerated Mission Software」 §3.6 의 표 인용", "why": "영어 제목의 외부 보고서 조항 · 인용을 가린 판에서는 제목이 안 보여 걸렸음"}
