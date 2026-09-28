@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light">
-<meta name="description" content="AI 한글 교정기 — 사람에게 나갈 한글 문서를 보내기 전에 기계가 한 번 읽는다. 사내 보고서 600여 개 실측 · 유형별 수정 전후 74쌍 · 조직 관행에 맞춰 유형을 끄고 켠다.">
+<meta name="description" content="AI 한글 교정기 — 사람에게 나갈 한글 문서를 보내기 전에 기계가 한 번 읽는다. 사내 보고서 600여 개 실측 · 유형별 수정 전후 76쌍 · 조직 관행에 맞춰 유형을 끄고 켠다.">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
 <link rel="apple-touch-icon" href="/favicon-180.png">
@@ -42,7 +42,7 @@
   --green:#1F6B44; --green-bg:#EDF5F0; --green-line:#BEDCCA;
   --amber:#9A6407; --amber-bg:#FBF3E3; --amber-line:#E7D3A8;
   --kr:"Doc KR",Pretendard,"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",system-ui,sans-serif;
-  --mono:Consolas,"Cascadia Mono",ui-monospace,monospace;
+  --mono:Consolas,"Cascadia Mono","Doc KR",ui-monospace,monospace;
   --grid:linear-gradient(var(--line2) 1px,transparent 1px),linear-gradient(90deg,var(--line2) 1px,transparent 1px);
 }
 *{box-sizing:border-box}
@@ -111,6 +111,10 @@ h1 .mark::after{content:""; position:absolute; left:-.04em; right:-.04em; bottom
 .demo-dots i{width:7px; height:7px; border-radius:50%; background:var(--line); display:block;
   transition:background .3s; cursor:pointer}
 .demo-dots i.on{background:var(--red)}
+/* 저절로 넘어가는 것은 멈출 수 있어야 한다 — 마우스를 올려야만 멈춰 키보드·터치로는 못 멈췄다
+   (2026-09-28 검토). 누르는 넓이 44px 는 위아래 음수 여백으로 줄 높이를 안 늘리고 확보한다. */
+.demo-pause{min-height:44px; min-width:44px; margin:-14px -10px -14px 0; padding:0 10px; border:0; background:none;
+  font:inherit; color:var(--ink2); cursor:pointer; text-decoration:underline; text-underline-offset:3px}
 .slides{position:relative}
 .slide{opacity:0; visibility:hidden; position:absolute; inset:0; transition:opacity .45s ease}
 .slide.on{opacity:1; visibility:visible; position:relative}
@@ -163,10 +167,12 @@ h3{font-size:17px; font-weight:700; letter-spacing:-.015em; margin:0}
 /* 규칙 카드 제목은 묶음 이름의 아래 층이다. 둘 다 h3 이면 개요에서 형제로
    읽히고, 크기도 같아 눈으로도 안 갈린다. */
 h4{font-size:17px; font-weight:700; letter-spacing:-.015em; margin:0}
-.reveal{opacity:0; transform:translateY(14px); transition:opacity .55s, transform .55s}
-.reveal.seen{opacity:1; transform:none}
+/* 숨기는 것은 스크립트가 돌 때만(<html class="js">) — 스크립트 없이 읽는 도구·인쇄에서
+   절 38개가 통째로 비었다(2026-09-28 검토). */
+.js .reveal{opacity:0; transform:translateY(14px); transition:opacity .55s, transform .55s}
+.js .reveal.seen{opacity:1; transform:none}
 @media (prefers-reduced-motion:reduce){
-  .reveal{opacity:1; transform:none; transition:none}
+  .js .reveal{opacity:1; transform:none; transition:none}
   .slide.on li.bad p{text-decoration-color:var(--red); animation:none}
   .slide.on li.good{animation:none}
   html{scroll-behavior:auto}
@@ -184,9 +190,10 @@ h4{font-size:17px; font-weight:700; letter-spacing:-.015em; margin:0}
 .rank li{margin:0; display:grid; grid-template-columns:205px 1fr 56px; gap:12px; align-items:center;
   font-size:13.5px}
 .rank .bar{height:9px; border-radius:5px; background:var(--line2); overflow:hidden}
-.rank .bar i{display:block; height:100%; background:var(--red); border-radius:5px; width:0;
+.rank .bar i{display:block; height:100%; background:var(--red); border-radius:5px; width:var(--w);
   transition:width .9s cubic-bezier(.22,1,.36,1)}
-.rank.seen .bar i{width:var(--w)}
+.js .rank:not(.seen) .bar i{width:0}
+@media print{.js .reveal{opacity:1; transform:none; transition:none} .js .rank .bar i{width:var(--w)}}
 .rank .c{text-align:right; font-family:var(--mono); font-variant-numeric:tabular-nums; color:var(--ink2)}
 
 /* ── 규칙 카드 ───────────────────────────── */
@@ -248,6 +255,19 @@ th.n b{font-family:var(--mono); font-variant-numeric:tabular-nums}
 td.n{text-align:right; font-family:var(--mono); font-variant-numeric:tabular-nums; white-space:nowrap}
 tbody tr:last-child td{border-bottom:0}
 tbody tr:hover{background:#FAFCF9}
+/* 폰에서 580px 표를 348px 칸에 넣으면 오른쪽 232px 가 가려졌다(2026-09-28 검토) — 글 표는
+   줄마다 카드로 쌓고 칸 이름을 표 머리에서 옮긴다. 숫자 표는 칸 안에 맞춘다. */
+@media (max-width:560px){
+  table{min-width:0}
+  table.stack, table.stack tbody{display:block}
+  table.stack thead, table.stack colgroup{display:none}
+  table.stack tbody tr{display:block; padding:12px 14px; border-bottom:1px solid var(--line2)}
+  table.stack tbody tr:last-child{border-bottom:0}
+  table.stack td{display:block; border:0; padding:0}
+  table.stack td+td{margin-top:6px}
+  table.stack td+td[data-label]::before{content:attr(data-label); display:block; margin-bottom:2px;
+    font-size:12px; font-weight:700; color:var(--ink3)}
+}
 td .dot{display:inline-block; width:7px; height:7px; border-radius:50%; margin-right:7px;
   vertical-align:1px}
 .dot.e{background:var(--red)} .dot.w{background:var(--amber)}
@@ -312,6 +332,7 @@ footer .in{padding:0; display:flex; gap:18px; flex-wrap:wrap; align-items:baseli
 </style>
 </head>
 <body>
+<script>document.documentElement.classList.add('js')</script>
 
 <!-- ═══ 첫 화면 ═══ -->
 <div class="hero">
@@ -330,7 +351,7 @@ footer .in{padding:0; display:flex; gap:18px; flex-wrap:wrap; align-items:baseli
     <p class="lede"><b>AI가 쓴 초안을 업무 한국어로 고치는 교정기</b> — 규칙이 글자만 보고 전수로 짚고, 문맥을 읽는 층이 고침 · 걸린 문장과 고친 문장을 유형별로 모은 사례집</p>
 
     <div class="demo">
-      <p class="demo-head">실제로 걸린 문장 넷<span class="demo-dots" id="dots"><i class="on"></i><i></i><i></i><i></i></span></p>
+      <p class="demo-head">실제로 걸린 문장 넷<span class="demo-dots" id="dots" aria-hidden="true"><i class="on"></i><i></i><i></i><i></i></span><button type="button" class="demo-pause" id="pause" hidden>멈춤</button></p>
       <div class="slides" id="slides">
         <div class="slide on">
           <ul class="pair">
@@ -352,7 +373,7 @@ footer .in{padding:0; display:flex; gap:18px; flex-wrap:wrap; align-items:baseli
             <li class="good"><p>「대체 아님 · 별도 추가」</p></li>
           </ul>
           <p class="why"><b>서술형 종결</b> — 값 칸을 문장으로 끝냈습니다.
-             <b>개조식 문서에서만 걸리는 유형</b>라 산문이면 머리말 한 줄로 통째로 꺼집니다.</p>
+             <b>개조식 문서에서만 걸리는 유형</b>이라 산문이면 머리말 한 줄로 통째로 꺼집니다.</p>
         </div>
         <div class="slide">
           <ul class="pair">
@@ -396,7 +417,7 @@ footer .in{padding:0; display:flex; gap:18px; flex-wrap:wrap; align-items:baseli
      지적을 반영한 뒤 0건이 됩니다 — 걸린 낱말은 「」로 표시했습니다.</p>
 
   <div class="figures reveal">
-    <div class="fig warn"><p class="n" data-to="17">0</p><p>손대기 전 오류 — 30줄짜리 문서 한 편에서</p></div>
+    <div class="fig warn"><p class="n" data-to="17">17</p><p>손대기 전 오류 — 30줄짜리 문서 한 편에서</p></div>
     <div class="fig"><p class="n">0</p><p>지적 반영 뒤 — 검사 대상 42곳(표 칸·목록 항목 등) 전부 통과</p></div>
   </div>
 
@@ -460,10 +481,10 @@ footer .in{padding:0; display:flex; gap:18px; flex-wrap:wrap; align-items:baseli
 
 <span class="ok">**A사 도구 — 사내 용어 미인식**</span> 검사 대상
 문서에 사내 용어가 많으나 A사 도구가 해당
-용어를 인식하지 못한다.
+용어를 <span class="ok">인식하지 못합니다.</span>
 
 <span class="ok">**B사 도구 — 규칙 수정 불가**</span> 처리 속도는
-3초로 빨랐지만 규칙을 고칠 수 없었다.
+3초로 빨랐지만 <span class="ok">규칙을 고칠 수 없었습니다.</span>
 
 - **결정**: <span class="ok">자체 제작 채택</span>
 - **되돌리기 비용**: <span class="ok">낮음</span>
@@ -568,9 +589,9 @@ warn = ["절단형 종결"]</code>
      아니라는 뜻입니다.</p>
 
   <div class="figures reveal">
-    <div class="fig warn"><p class="n" data-to="8" data-suffix="%">0</p><p>형식과 무관하게 틀린 것이 있던 문서 — 열두 편에 한 편꼴</p></div>
-    <div class="fig warn"><p class="n" data-to="33" data-suffix="%">0</p><p>개조식 규약까지 켰을 때 — 세 편에 한 편꼴</p></div>
-    <div class="fig"><p class="n" data-to="70" data-suffix="%">0</p><p>지적의 대부분이 그 규약 — 아홉 가지가 한 줄로 꺼짐</p></div>
+    <div class="fig warn"><p class="n" data-to="8" data-suffix="%">8%</p><p>형식과 무관하게 틀린 것이 있던 문서 — 열두 편에 한 편꼴</p></div>
+    <div class="fig warn"><p class="n" data-to="33" data-suffix="%">33%</p><p>개조식 규약까지 켰을 때 — 세 편에 한 편꼴</p></div>
+    <div class="fig"><p class="n" data-to="67" data-suffix="%">67%</p><p>지적의 대부분이 그 규약 — 아홉 가지가 한 줄로 꺼짐</p></div>
     <div class="fig"><p class="n">3초</p><p>600여 개 전체 검사 시간</p></div>
   </div>
 
@@ -582,11 +603,11 @@ warn = ["절단형 종결"]</code>
 
   <p class="sub">가장 많이 걸린 여섯 가지 — 개조식 규약인 것은 표시했습니다</p>
   <ul class="rank" id="rank">
-    <li><span>서술형 종결 <span class="pill cond">개조식 전용</span></span><span class="bar"><i style="--w:100%"></i></span><span class="c">59%</span></li>
+    <li><span>서술형 종결 <span class="pill cond">개조식 전용</span></span><span class="bar"><i style="--w:100%"></i></span><span class="c">57%</span></li>
     <li><span>스캔 가치 없는 라벨</span><span class="bar"><i style="--w:16%"></i></span><span class="c">9%</span></li>
-    <li><span>서술형 문단 <span class="pill cond">개조식 전용</span></span><span class="bar"><i style="--w:12%"></i></span><span class="c">7%</span></li>
     <li><span>절단형 의심</span><span class="bar"><i style="--w:11%"></i></span><span class="c">6%</span></li>
-    <li><span>해설을 인용 부호로 씀</span><span class="bar"><i style="--w:6%"></i></span><span class="c">4%</span></li>
+    <li><span>서술형 문단 <span class="pill cond">개조식 전용</span></span><span class="bar"><i style="--w:11%"></i></span><span class="c">6%</span></li>
+    <li><span>해설을 인용 부호로 씀</span><span class="bar"><i style="--w:7%"></i></span><span class="c">4%</span></li>
     <li><span>모호한 지칭</span><span class="bar"><i style="--w:5%"></i></span><span class="c">3%</span></li>
   </ul>
   <p class="note reveal"><b>존댓말 종결이 상위 셋</b> — 서술형 종결의 어미를 세면 「~습니다」 · 「~입니다」 · 「~합니다」 순입니다. 보고서 말투가 그대로 값 칸에 들어간 것입니다.</p>
@@ -608,7 +629,7 @@ warn = ["절단형 종결"]</code>
 
   <article class="rule reveal">
     <div class="rule-head"><h4>서술형 종결</h4><span class="pill err">오류</span><span class="pill cond">개조식 전용</span>
-      <span class="count">보고서 지적의 <b>59%</b></span></div>
+      <span class="count">보고서 지적의 <b>57%</b></span></div>
     <dl class="meta">
       <dt>무엇</dt><dd>값 칸·목록·표 칸을 완전한 문장으로 끝냄</dd>
       <dt>적용 조건</dt><dd>개조식(라벨: 값)으로 쓰는 문서 · <b>한국어 규칙이 아니라 문서 형식 규약</b> —
@@ -982,16 +1003,16 @@ warn = ["절단형 종결"]</code>
      그 자료에 견주어 드문 말을 후보로 냅니다.</p>
 
   <div class="figures reveal">
-    <div class="fig"><p class="n" data-to="36037">0</p><p>기준 자료 문서 — 사람이 쓴 사내 업무 한국어</p></div>
+    <div class="fig"><p class="n" data-to="36037">36,037</p><p>기준 자료 문서 — 사람이 쓴 사내 업무 한국어</p></div>
     <div class="fig"><p class="n">4,793만</p><p>기준 자료 글자 수</p></div>
-    <div class="fig"><p class="n" data-to="3108">0</p><p>기준 자료의 낱말 종수 — 41회 이상 나온 것</p></div>
+    <div class="fig"><p class="n" data-to="3108">3,108</p><p>기준 자료의 낱말 종수 — 41회 이상 나온 것</p></div>
     <div class="fig"><p class="n">2축</p><p>기준 자료에서 드문 말 · 기준 자료보다 자주 쓴 말</p></div>
   </div>
 
   <div class="scroll reveal">
   <table>
     <colgroup><col style="width:26%"><col style="width:32%"><col style="width:42%"></colgroup>
-    <thead><tr><th>보는 축</th><th>거르는 값</th><th>무엇이 걸리나</th></tr></thead>
+    <thead><tr><th>보는 축</th><th>거르는 값</th><th>걸리는 낱말</th></tr></thead>
     <tbody>
       <tr><td><b>기준 자료에 드묾</b></td><td>기준 자료에 40회 이하</td>
           <td>기준 자료에 40회 이하로 나온 낱말 — 문맥을 봐야 할 후보</td></tr>
@@ -1174,7 +1195,7 @@ warn = ["절단형 종결"]</code>
     <a href="https://github.com/kkhfiles/korean-writing-qa"><code>github.com/kkhfiles/korean-writing-qa</code></a>
   </nav>
   <div class="in">
-  <span>실측 2026-09-08 · 새 가지 다섯 2026-09-17</span>
+  <span>업무 보고서 실측 2026-09-18 · 규칙·기록 2026-09-08</span>
   <span>검사기 <code>doc-style-check.py</code></span>
   <span>사례는 모두 실제 문서와 사람이 확정한 교정에서 가져왔습니다.</span>
   <span>이 페이지도 같은 검사기를 통과했습니다 — 오류 0.</span>
@@ -1201,12 +1222,34 @@ warn = ["절단형 종결"]</code>
   if (slides.length > 1 && !reduce) {
     play();
     var demo = document.querySelector('.demo');
+    var pause = document.getElementById('pause'), held = false;
+    pause.hidden = false;
+    pause.addEventListener('click', function () {
+      held = !held;
+      pause.textContent = held ? '다시 넘기기' : '멈춤';
+      if (held) { stop(); } else if (!timer) { play(); }
+    });
     demo.addEventListener('mouseenter', stop);
-    demo.addEventListener('mouseleave', function () { if (!timer) play(); });
+    demo.addEventListener('mouseleave', function () { if (!timer && !held) play(); });
     Array.prototype.forEach.call(dots, function (d, i) {
       d.addEventListener('click', function () { stop(); show(i); play(); });
     });
   }
+
+  // 원문에는 센 값이 그대로 있다 — 스크립트 없이 읽거나 인쇄해도 숫자가 보인다(2026-09-28 검토).
+  // 움직임이 켜진 사람에게만 0 으로 돌려 두고 화면에 들어올 때 센다.
+  if (!reduce) {
+    Array.prototype.forEach.call(document.querySelectorAll('[data-to]'), function (el) {
+      el.textContent = '0' + (el.getAttribute('data-suffix') || '');
+    });
+  }
+  // 인쇄는 스크롤을 안 한다 — 아직 안 나타난 절과 숫자를 다 채운다.
+  window.addEventListener('beforeprint', function () {
+    Array.prototype.forEach.call(document.querySelectorAll('.reveal, .rank'), function (n) { n.classList.add('seen'); });
+    Array.prototype.forEach.call(document.querySelectorAll('[data-to]'), function (el) {
+      el.textContent = parseInt(el.getAttribute('data-to'), 10).toLocaleString() + (el.getAttribute('data-suffix') || '');
+    });
+  });
 
   // 스크롤 등장 · 수치 세기 · 막대 채우기
   function countUp(el) {
@@ -1231,6 +1274,16 @@ warn = ["절단형 종결"]</code>
   if (reduce) {
     Array.prototype.forEach.call(document.querySelectorAll('[data-to]'), countUp);
   }
+
+  // 폰에서 글 표를 카드로 쌓을 때 쓰는 칸 이름 — 표 머리를 그대로 옮긴다(숫자 표는 그대로).
+  Array.prototype.forEach.call(document.querySelectorAll('table'), function (t) {
+    if (t.querySelector('td.n')) { return; }
+    var h = Array.prototype.map.call(t.querySelectorAll('thead th'), function (th) { return th.textContent.trim(); });
+    t.classList.add('stack');
+    Array.prototype.forEach.call(t.querySelectorAll('tbody tr'), function (r) {
+      Array.prototype.forEach.call(r.cells, function (c, i) { if (h[i]) { c.setAttribute('data-label', h[i]); } });
+    });
+  });
 
   // 옆으로 밀 것이 남았을 때만 오른쪽 끝을 흐린다.
   Array.prototype.forEach.call(document.querySelectorAll('.scroll'), function (box) {
