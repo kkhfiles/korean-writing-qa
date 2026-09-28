@@ -216,6 +216,53 @@ MISREAD_JONGI = re.compile(
 MISREAD_FIX = '「종이(paper)」로 읽힘 · 「종류」·「가지」로 바꿀 것'
 
 
+#: ★ **연동·도입 뜻의 「붙다·붙이다」** — 「검증이 붙는 흐름」·「에이전트에 DVERA를 붙여
+#   배포」·「호출 비용이 붙지 않음」. 사용자 지적 둘(2026-08-24 「사람이 가장 많이 붙는 곳」 ·
+#   2026-09-28 「붙다는 업무에 잘 쓰지 않는 용어」). 연동·적용·추가·포함·기재가 제 말이다.
+#
+#   실측 2026-09-28 — 회사 색인(동료 글 포함)의 「붙」 2,623곳은 붙여넣기 · 접미사가 붙음 ·
+#   공문 「붙임 1」 같은 **글자 그대로의 쓰임이 대부분**이고, 연동 뜻은 일감 댓글의 구어
+#   (「자동화 붙이기」·「RAG 붙여서」)에 있다. 아래 예외를 빼고 758곳(29%)이 걸린다.
+#   lab-docs · 이 저장소 문서에서는 66곳이 걸리고 대부분 연동 뜻이다.
+#
+#   ⛔ **주의다 — 오류가 아니다.** 「조건이 여럿 붙은 판정문」·「등급이 붙은 경위」처럼
+#      글자 그대로에 가까운 쓰임이 예외 밖에 남는다. 사람이 보고 고른다.
+#   예외는 **붙는 것이 글자·표시·문서일 때**와 한 낱말로 굳은 말이다. 붙는 것이 바로
+#   앞에 없으면(「번호가 옛 코드에 붙음」) 예외가 못 보고 걸린다 — 주의라 사람 몫이다.
+ATTACH = re.compile(r'붙(?!여\s?넣|잡|들|박|임성|임새)')
+ATTACH_OK_BEFORE = re.compile(
+    r'(?:'
+    # 한 낱말로 굳은 말 — 덧붙이다 · 따라붙다 · 불붙다 · 복붙 · 이어 붙이다(글자 그대로 잇기)
+    r'(?:덧|따라|달라|들러|맞|불|눌어|엉겨|복)'
+    r'|(?:갖다|이어)\s?'
+    # 붙는 것이 글자 · 표시 · 문서 — 이름을 붙이다 · 태그가 붙은 · 파일을 붙임
+    r'|(?:이름|별명|제목|태그|라벨|레이블|번호|꼬리표|딱지|스티커|포스트잇|주석|어노테이션'
+    r'|괄호|문구|명사|낱말|단어|글자|머리말|꼬리말|접두어|접두사|접미사|조사|어미|토씨'
+    r'|옵션|플래그|기호'
+    r'|표시|표|파일|자료|문서|사본|서류|양식'
+    # 실물을 붙이는 것 — 「두 종이를 겹쳐 붙인다」(C-137)
+    r'|종이|쪽지|메모|사진|그림|테이프'
+    # 굳은 관용 — 속도가 붙다 · 자신감이 붙다
+    r'|속도|탄력|가속|자신감|습관)\s?[을를이가은는도만]?\s?(?:[가-힣]{1,4}\s)?'
+    r'|시험에\s?'
+    # 자리가 앞 · 뒤 · 끝 — 「파일명 뒤에 시간 정보 붙어 있음」
+    r'|(?:앞|뒤|끝|옆|벽|위|마지막)에\s?(?:\S{1,6}\s){0,2}'
+    # 가린 인용 · 코드 뒤에 조사만 남음 — 「`--apply` 를 붙여」 · 「「~한」을 붙여」
+    r'|\s[을를이가]\s?'
+    # 코드 조각 바로 뒤 — 「const가 붙어」 · 「_mem이 붙지」 · 「\가 붙은」 · 「()을 붙임」
+    #   ⛔ 대문자는 안 뺀다 — 「DVERA를 붙여 배포」가 제품 이름 뒤다.
+    #   ⛔ 기호는 **코드에 쓰는 것에 조사가 붙었을 때만** 뺀다. 첫 판은 기호를 다 뺐더니
+    #      표 칸 「| 붙는 것 |」·「(붙인 뒤」·「**붙인 시험**」처럼 구두점 바로 뒤의
+    #      「붙」이 전부 빠졌다.
+    r'|[a-z][을를이가은는도]?\s?'
+    r"|[\\/_)\]'\"`\-+#@%$&=][을를이가은는도]\s?"
+    r')$')
+ATTACH_OK_AFTER = re.compile(
+    r'붙(?:임\s*[\d\-:.]'                                  # 공문 「붙임 1.」 · 「[붙임2]」
+    r'|\S{0,2}\s?(?:서술격\s?)?(?:조사|어미|접두사|접미사))')  # 문법 — 「명사에 붙인 조사」
+ATTACH_FIX = '연동·적용·추가·포함·기재 중 맞는 말로'
+
+
 #: ★ **절 번호로 가리킴** — 「(§3)」·「§2의 축」처럼 절을 번호로 가리키지 않는다
 #   (2026-09-23 사용자 — 「(§3) 와 같은 형태의 참조를 문서에서 만들지 말 것」).
 #   · 처음 읽는 사람은 §3 이 무엇인지 찾으러 가야 한다 — 그 문장만 읽고는 모른다.
@@ -341,6 +388,23 @@ def misread_hits(text):
         if tag in ('MM', 'NR', ''):
             kept.append(h)
     return kept
+
+
+def attach_hits(text):
+    """연동·도입 뜻으로 쓴 「붙다·붙이다」 — 글자 그대로 붙는 쓰임은 뺀다."""
+    out = []
+    for m in ATTACH.finditer(text):
+        # 줄 맨 앞이면 빈칸을 하나 둔다 — 「`코드` 를」이 가려져 조사만 남은 꼴을 줄 첫머리에서도 본다
+        before = (' ' if m.start() < 24 else '') + text[max(0, m.start() - 24):m.start()]
+        if ATTACH_OK_BEFORE.search(before) or ATTACH_OK_AFTER.match(text, m.start()):
+            continue
+        out.append(m)
+    return out
+
+
+def eojeol_at(text, pos):
+    """pos 가 든 어절 — 지적에 「붙」 한 글자가 아니라 「붙는」·「붙여」를 보인다."""
+    return re.search(r'\S*$', text[:pos]).group(0) + re.match(r'\S*', text[pos:]).group(0)
 # ⛔ 「~에 있어(서)」는 **안 넣는다.** 항목 자체는 정당한 번역투(일본어 における 직역)지만,
 #    한국어에는 「저장소에 있어 접근이 안 된다」처럼 **있다가 진짜 서술어인** 쓰임이 섞이고
 #    줄만 봐서는 안 갈린다. 실문서 8건이 **전부** 그쪽이었다.
@@ -1292,7 +1356,11 @@ def scan_html(path, relaxed=False, form=None, rules=None):
     for hit in misread_hits(text):
         near = ' '.join(text[max(0, hit.start() - 20):hit.end() + 20].split())
         warn.append(('다른 낱말로 읽힘', f'「{hit.group(0)}」 — {MISREAD_FIX} · {near[:48]}'))
-    _raw = strip(body)          # 원문 — 「영어 제목」 §N 을 가리려면 인용이 보여야 한다
+    for hit in attach_hits(text):
+        near = ' '.join(text[max(0, hit.start() - 20):hit.end() + 10].split())
+        warn.append(('업무 글에 없는 말',
+                     f'「{eojeol_at(text, hit.start())}」 — {ATTACH_FIX} · {near[:48]}'))
+    _raw = strip(body)         # 원문 — 「영어 제목」 §N 을 가리려면 인용이 보여야 한다
     for hit in section_ref_hits(_raw):
         near = ' '.join(_raw[max(0, hit.start() - 20):hit.end() + 20].split())
         err.append(('절 번호로 가리킴', f'「{hit.group(0)}」 — {SECTION_FIX} · {near[:48]}'))
@@ -2176,6 +2244,10 @@ def scan_md(path, relaxed=False, form=None, rules=None):
         for hit in misread_hits(m):
             warn.append((n, '다른 낱말로 읽힘',
                          f'「{hit.group(0)}」 — {MISREAD_FIX} · {excerpt(line, hit.group(0), 40)}'))
+        for hit in attach_hits(m):
+            word = eojeol_at(m, hit.start())
+            warn.append((n, '업무 글에 없는 말',
+                         f'「{word}」 — {ATTACH_FIX} · {excerpt(line, word, 40)}'))
         for hit in section_ref_hits(line):
             err.append((n, '절 번호로 가리킴',
                         f'「{hit.group(0)}」 — {SECTION_FIX} · {excerpt(line, hit.group(0), 40)}'))
