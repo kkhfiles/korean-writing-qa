@@ -1205,7 +1205,18 @@ def scan_html(path, relaxed=False, form=None, rules=None):
 
     # 1. 값·목록·표 칸의 서술형 종결
     for tag in ('dd', 'li', 'td'):
-        for x in re.findall(rf'<{tag}[^>]*>(.*?)</{tag}>', body, re.S):
+        if tag == 'li':
+            # 목록 항목은 **제 글만** 본다 — 하위 목록 앞에서 끊는다. `<li>(.*?)</li>` 는
+            # 바깥 항목을 안쪽 첫 항목의 닫는 태그에서 끊어, 바깥 글에 안쪽 첫 항목이
+            # 붙고 그 안쪽 항목은 따로 안 세졌다. 근거 문장 예외가 풀려 오탐이 나고,
+            # 서술형 끝이 가려져 미탐도 났다(2026-09-28 · 시험 ⑥).
+            # 여는 태그를 `<li[\s>]` 로 좁힌다 — `<li[^>]*>` 는 머리의 `<link …>` 에도
+            # 맞아, 머리부터 첫 목록 항목까지를 목록 항목 하나로 읽었다(같은 날 실문서).
+            items = re.findall(r'<li(?:\s[^>]*)?>(.*?)(?=<li[\s>]|</li>|<[uo]l[\s>]|</[uo]l>)',
+                               body, re.S | re.I)
+        else:
+            items = re.findall(rf'<{tag}[^>]*>(.*?)</{tag}>', body, re.S)
+        for x in items:
             t = strip(x)
             if not t:
                 continue
