@@ -297,6 +297,26 @@ STANDARD_BEFORE = re.compile(
     r'|(?<![.\w])[A-Za-z]*[a-z][A-Za-z]*[」"”]?)\s*$')
 SECTION_FIX = '절 제목으로 가리킬 것 · 번호는 절이 늘면 밀림'
 
+#: ★ **문장 끝 괄호 속 이름** — 「평균 26.0%였습니다(1Password).」처럼 서술어 바로 뒤 괄호에
+#   이름만 두면 출처인지 주체인지 안 갈린다(2026-09-29 사용자 · 점검표 44번 「누구나 알만한
+#   레퍼런스가 아닌 경우의 처리 방식에 대한 고민 필요」). 주체면 주어로 올리고, 출처면 무엇인지
+#   한 구로 밝히고 링크를 건다(core-rules 「처음 나오는 출처는 무엇인지 밝히기」).
+#   실측 2026-09-29 — lab-docs 빌드 대상 1건(「신뢰하지 않음(Sonar)」 · 같은 모양의 실제 사례) ·
+#   이 저장소 문서 0건. **이름꼴만 본다** — 낱말마다 대문자나 숫자로 시작하는 세 낱말 이하.
+#   「(2026-09-29)」 같은 날짜, 「(H)」 같은 한 글자 표지, 「(Not live yet)」 같은 영어 문구는
+#   실측에서 걸려 뺐다. 널리 알려진 이름인지는 못 가르므로 **주의**다.
+TRAIL_NAME = re.compile(
+    r'(?:니다|였다|했다|이다|됐다|된다|한다|됨|음|함|임)\s?'
+    r"\(([A-Z0-9][A-Za-z0-9.&+'’\-]*(?:\s[A-Z0-9][A-Za-z0-9.&+'’\-]*){0,2})\)"
+    r'(?=[.。]?(?:\s|$))')
+TRAIL_NAME_FIX = '출처인지 주체인지 모호 · 주체면 주어로 · 출처면 무엇인지 한 구로 밝히고 링크'
+
+
+def trail_name_hits(text):
+    """서술어 바로 뒤 괄호에 이름만 둔 곳 — 한 글자·숫자뿐인 것은 뺀다."""
+    return [m for m in TRAIL_NAME.finditer(text)
+            if len(m.group(1)) >= 2 and re.search(r'[A-Za-z]', m.group(1))]
+
 
 def section_ref_hits(text):
     """절을 번호로 가리킨 곳 — 남의 문서 조항은 뺀다.
@@ -1513,6 +1533,9 @@ def scan_html(path, relaxed=False, form=None, rules=None):
     for hit, title in bare_section_hits(_body_raw, _heads):
         near = ' '.join(_body_raw[max(0, hit.start() - 20):hit.end() + 12].split())
         err.append(('절 번호로 가리킴', f'{bare_section_note(hit, title)} · {near[:40]}'))
+    for hit in trail_name_hits(text):
+        near = ' '.join(text[max(0, hit.start() - 30):hit.end() + 2].split())
+        warn.append(('문장 끝 괄호 속 이름', f'「({hit.group(1)})」 — {TRAIL_NAME_FIX} · {near[:48]}'))
     # 문맥 조각은 **한 줄로 눌러서** 낸다 — HTML 본문에는 줄바꿈이 섞여 있어
     # 그대로 두면 보고서가 여러 줄로 쪼개지고, 훅이 첫 줄만 걷어 가 정작
     # 문제 문장이 사라진다(오류는 뜨는데 어디인지 모르는 상태가 된다).
@@ -1860,7 +1883,7 @@ RULE_GROUPS = {
         '제목 서술형', '제목 명사형 위반', '제목 형태 확인',
         '진입점 없음', '진입점 서술형', '진입점 명사형 위반', '진입점 형태 확인',
         '스캔 가치 없는 라벨', '반복 블록 라벨 불일치', '해설을 인용 부호로 씀',
-        '절 번호로 가리킴',
+        '절 번호로 가리킴', '문장 끝 괄호 속 이름',
     ]),
     '안내': ('지적이 아니라 물음 — 형식을 안 적은 문서에 한 줄', [
         '형식 미표기', '펜스 안 배포 문구',
@@ -2403,6 +2426,10 @@ def scan_md(path, relaxed=False, form=None, rules=None):
                 err.append((n, '절 번호로 가리킴',
                             f'{bare_section_note(hit, title)} · '
                             f'{excerpt(line, hit.group(0), 36)}'))
+        for hit in trail_name_hits(m):
+            warn.append((n, '문장 끝 괄호 속 이름',
+                         f'「({hit.group(1)})」 — {TRAIL_NAME_FIX} · '
+                         f'{excerpt(line, hit.group(0), 40)}'))
 
     # 3. 금지 라벨 (목록의 「라벨: 값」)
     for n, line in body:
