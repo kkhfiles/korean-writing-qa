@@ -62,33 +62,24 @@ class ReadmeExpectedValueTests(unittest.TestCase):
                 self.assertEqual((int(want_err), int(want_warn)), got,
                                  f"{name} — README 와 실제가 다르다")
 
-    def test_install_check_count_matches(self) -> None:
-        m = INSTALL_ROW.search(self.text)
-        self.assertIsNotNone(m, "README 의 `install.py --check` 줄을 못 찾았다")
-        import install  # noqa: PLC0415 — 저장소 루트를 sys.path 에 넣은 뒤라야 한다
-        # 저장소 밖 목록은 작성자 기계에만 있다(gitignore) — README 는 **남의
-        # 기계가 보는 수**다. 목록이 둘로 늘어 이름을 하나만 빼면 어긋난다
-        # (2026-09-17: 제품 이름 목록을 놓자 27 != 28 로 깨졌다).
-        outside = {"local-identity-denylist.txt", "local-brand-names.txt"}
-        same = sum(1 for src, dst in install.pairs()
-                   if src.name not in outside
-                   and dst.exists() and install.digest(src) == install.digest(dst))
-        missing = sum(1 for _src, dst in install.pairs() if not dst.exists())
-        if missing:
-            self.skipTest("설치 안 한 기계 — 남이 저장소만 받아 돌리는 것이 정상이다")
-        self.assertEqual(int(m.group(1)), same)
+    def test_install_check_row_names_the_values_that_decide(self) -> None:
+        """설치를 가르는 값은 「다름 0 · 없음 0」이다 — 「같음 N」은 적지 않는다.
 
-    def test_the_rule_count_matches(self) -> None:
-        """README 가 적은 갈래 수가 실제와 같아야 한다 — 이 숫자도 한 번 낡았다."""
-        m = re.search(r"--list-rules\s+# 갈래 (\d+)종", self.text)
-        self.assertIsNotNone(m, "README 의 `--list-rules` 줄을 못 찾았다")
-        done = subprocess.run(
-            [sys.executable, "-X", "utf8", str(repo_paths.CHECKER), "--list-rules"],
-            capture_output=True, text=True, encoding="utf-8")
-        names = [l.strip() for l in (done.stdout or "").splitlines()
-                 if l.startswith("    ") and l.strip()
-                 and re.match(r"^[가-힣「]", l.strip())]
-        self.assertEqual(int(m.group(1)), len(names))
+        예전에는 「같음 27」을 적고 실제 파일 수와 대조했다. 파일이 늘 때마다 README 를 고쳐야
+        했고(2026-09-17 에 27 != 28 로 깨짐), 저장소 밖 목록을 둔 기계마다 수가 달라 예외 목록까지
+        따라다녔다. 사용자가 「이런건 뭐하러 숫자를 넣어서 계속 고치고 있니?」라고 짚어
+        (2026-09-29) 숫자를 뺐다 — 저장소 규칙 「목록의 개수를 본문에 적지 않음」.
+        실제 설치본이 정본과 같은지는 `test_installed_copy_matches.py` 가 본다.
+        """
+        row = next((l for l in self.text.splitlines() if "`install.py --check`" in l and "|" in l), "")
+        self.assertIn("다름 0 · 없음 0", row, "README 의 `install.py --check` 줄에 판정 값이 없다")
+        self.assertIsNone(INSTALL_ROW.search(self.text), "설치 파일 수(「같음 N」)를 다시 적었다")
+
+    def test_the_rule_list_line_does_not_count_rules(self) -> None:
+        """갈래 수를 적지 않는다 — 갈래를 넣을 때마다 고치던 숫자다(같은 까닭)."""
+        self.assertIn("--list-rules", self.text, "README 의 `--list-rules` 줄을 못 찾았다")
+        self.assertIsNone(re.search(r"--list-rules\s+#[^\n]*\d+\s*종", self.text),
+                          "README 가 갈래 수를 다시 적었다")
 
 
 if __name__ == "__main__":

@@ -1028,6 +1028,82 @@ def brand_pairs():
 
 
 BRANDS = brand_pairs()
+
+#: ★ **개인 낱말 목록** — 각자 채워 넣는 「안 쓸 동사」 목록(2026-09-29 사용자 — 「1층에서 별도
+#:   명시하는 파일을 두고, 개인이 채워넣는 방식을 사용하면 된다」).
+#:   입말 동사(잡다·재다·넘기다)는 흔한 낱말이라 단어 점검이 못 보고, 공용 규칙으로 하나씩 넣으면
+#:   「낱말을 하나씩 더하기」가 된다. 말뭉치에서 결합 목록을 만들면 명사에 동료 이름·고객사가
+#:   섞여 공개 저장소로 나간다(9월 빈도표 유출과 같은 구조). 그래서 **목록은 저장소 밖**에 둔다.
+#:   찾는 곳은 제품 이름 목록과 같다 — 지정한 것 · 설치본 옆 · 저장소 안.
+#:   한 줄 = `동사<탭>명사(없으면 빈칸)<탭>바꿀 말<탭>까닭` · 동사는 원형(「잡다」·「잡」 둘 다 됨).
+#:   명사를 적으면 「명사 + 을/를·이/가」 뒤의 그 동사만 본다. 형태소 분석기가 있어야 돈다.
+PERSONAL_FILE = 'local-personal-words.tsv'
+
+
+def personal_words():
+    """[(동사 원형, 명사 원형 또는 '', 바꿀 말, 까닭)] — 목록이 없으면 빈 목록."""
+    here = os.path.dirname(os.path.abspath(__file__))
+    pinned = os.environ.get('KOREAN_QA_PERSONAL_WORDS', '')
+    cands = [pinned] if pinned else [
+        os.path.join(os.path.expanduser('~'), '.claude', 'data', 'catalog', PERSONAL_FILE),
+        os.path.join(here, '..', 'data', 'catalog', PERSONAL_FILE),
+        os.path.join(here, PERSONAL_FILE)]
+    for cand in cands:
+        if not cand or not os.path.isfile(cand):
+            continue
+        out = []
+        for line in io.open(cand, encoding='utf-8'):
+            if not line.strip() or line.lstrip().startswith('#'):
+                continue
+            cells = [c.strip() for c in line.rstrip('\n').split('\t')] + ['', '', '']
+            verb = cells[0][:-1] if cells[0].endswith('다') and len(cells[0]) > 1 else cells[0]
+            if verb:
+                out.append((verb, cells[1], cells[2], cells[3]))
+        return out
+    return []
+
+
+PERSONAL = personal_words()
+PERSONAL_SKIPPED = False     # 목록은 있는데 형태소 분석기가 없어 못 본 적이 있나
+
+
+def personal_hits(text):
+    """개인 목록에 맞는 곳 — [(어절, 바꿀 말, 까닭)]."""
+    global PERSONAL_SKIPPED
+    if not PERSONAL or not re.search(r'[가-힣]', text):
+        return []
+    k = morph()
+    if k is None:
+        PERSONAL_SKIPPED = True
+        return []
+    by_verb = {}
+    for verb, noun, better, why in PERSONAL:
+        by_verb.setdefault(verb, []).append((noun, better, why))
+    out = []
+    for sent in k.split_into_sents(_plain(text), return_tokens=True):
+        toks = sent.tokens
+        for i, t in enumerate(toks):
+            if not t.tag.startswith('VV') or t.form not in by_verb:
+                continue
+            # 이 동사 앞의 「명사 + 을/를·이/가」 — 사이에 같은 격 조사·문장 끝이 끼면 연결 안 됨
+            nouns = set()
+            for j in range(i - 1, max(-1, i - 8), -1):
+                if toks[j].tag in ('SF', 'EF') or (toks[j].tag.startswith('VV') and j != i):
+                    break
+                if toks[j].tag in ('JKO', 'JKS') and j > 0 and toks[j - 1].tag == 'NNG':
+                    nouns.add(toks[j - 1].form)
+                    break
+            for noun, better, why in by_verb[t.form]:
+                if noun and noun not in nouns:
+                    continue
+                start = sent.text.rfind(' ', 0, t.start - sent.start) + 1
+                end = sent.text.find(' ', t.start - sent.start + t.len)
+                word = sent.text[start:end if end >= 0 else len(sent.text)]
+                out.append((word, better, why))
+                break
+    return out
+
+
 MD_HEADING = re.compile(r'^#{1,6}\s+(.+?)\s*#*$')
 
 # ── 마스킹 — 검사에서 빼야 할 구간 ────────────────────────────────────────────
@@ -1419,6 +1495,9 @@ def scan_html(path, relaxed=False, form=None, rules=None):
         near = ' '.join(text[max(0, hit.start() - 20):hit.end() + 10].split())
         warn.append(('업무 글에 없는 말',
                      f'「{eojeol_at(text, hit.start())}」 — {ATTACH_FIX} · {near[:48]}'))
+    for word, better, why in personal_hits(text):
+        warn.append(('업무 글에 없는 말', f'「{word}」 — 개인 목록 · 「{better}」 쪽으로'
+                                     + (f' · {why}' if why else '')))
     _raw = strip(body)         # 원문 — 「영어 제목」 §N 을 가리려면 인용이 보여야 한다
     for hit in section_ref_hits(_raw):
         near = ' '.join(_raw[max(0, hit.start() - 20):hit.end() + 20].split())
@@ -2309,6 +2388,9 @@ def scan_md(path, relaxed=False, form=None, rules=None):
             word = eojeol_at(m, hit.start())
             warn.append((n, '업무 글에 없는 말',
                          f'「{word}」 — {ATTACH_FIX} · {excerpt(line, word, 40)}'))
+        for word, better, why in personal_hits(m):
+            warn.append((n, '업무 글에 없는 말', f'「{word}」 — 개인 목록 · 「{better}」 쪽으로'
+                                            + (f' · {why}' if why else '')))
         for hit in section_ref_hits(line):
             err.append((n, '절 번호로 가리킴',
                         f'「{hit.group(0)}」 — {SECTION_FIX} · {excerpt(line, hit.group(0), 40)}'))
@@ -2583,6 +2665,10 @@ def main():
               '\n   고치려면 python -m pip install kiwipiepy')
     # ⛔ 목록이 없으면 그 갈래를 **안 본 것**이다. 조용히 넘기면 「오류 0」이 통과인지
     #    안 본 것인지 갈리지 않는다 — 껐다는 사실을 적는 규칙과 같은 이유다.
+    if PERSONAL_SKIPPED:
+        tail += ' · 개인 낱말 목록 안 봄'
+        print('\n개인 낱말 목록이 있는데 형태소 분석기가 없어 대 보지 못했습니다'
+              '\n   고치려면 python -m pip install kiwipiepy')
     if not BRANDS:
         tail += ' · 제품 이름 안 봄'
         print(f'\n제품 이름 목록이 없어 음차는 안 봤습니다 — 이름은 저장소 밖에 둡니다'

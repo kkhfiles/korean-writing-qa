@@ -40,7 +40,7 @@ python -X utf8 -m unittest discover -s tests
 |---|---|
 | `exempt-fixture.md` 검사 | `오류 0 · 주의 0` |
 | `violation-fixture.md` 검사 | `오류 16 · 주의 6` |
-| `install.py --check` | `같음 27 · 다름 0 · 없음 0` (저장소 밖 목록을 둔 기계는 그만큼 늚 — 신원 목록 · 제품 이름 목록) |
+| `install.py --check` | `다름 0 · 없음 0` · 앞의 「같음」은 설치한 파일 수라 버전마다 다름 |
 | 시험 | `OK` · 건너뛰기와 「알려진 실패」가 함께 나오는 것이 정상 |
 
 **`OK` 뒤에 붙는 것을 읽는 법** — 검사기와 스킬을 재는 시험은 전부 돕니다.
@@ -79,7 +79,7 @@ python doc-style-check.py <파일…|디렉터리> [-v]
 **반말은 문서 전부에서 오류** — 「반말 서술형」은 모든 문서에 걸립니다(2026-09-23부터). 예전에는 업무 보고서에 반말이 흔하다는 이유로 꺼 두었는데, 흔하다는 것이 잘 쓴 글이라는 근거는 아니라서 켰습니다. Claude 만 읽는 지시 파일(`CLAUDE.md` · `AGENTS.md` · `SKILL.md` · `.claude/` · `skills/` 아래)만 빠집니다. 이미 쓴 문서는 `python -X utf8 scripts/make_polite.py <파일…>` 로 끝 낱말만 합쇼체로 바꿀 수 있습니다(목록만 보이고, `--apply` 를 붙여야 씁니다 · 형태소 분석기 kiwipiepy 필요).
 
 ```
-python assets/doc-style-check.py --list-rules      # 갈래 33종 · 묶음 5종
+python assets/doc-style-check.py --list-rules      # 갈래와 묶음 이름 목록
 cp korean-qa.example.toml korean-qa.toml           # 고쳐서 문서 위에 둔다
 ```
 
@@ -94,6 +94,8 @@ err  = []                                 # 주의에서 오류로 올린다
 - **★ 끈 것은 반드시 출력에 적힘** — 맨 위와 합계 줄 양쪽. 안 보이면 「오류 0」이 통과인지 안 본 것인지 갈리지 않습니다.
 - **발행 게이트** — `--no-rules` 로 설정을 무시하고 전부 봄
 - **제품 이름은 저장소 밖 목록에 둠** — `data/catalog/local-brand-names.example.txt` 를 `local-brand-names.txt` 로 복사해 자사 제품 이름과 잘못 적은 꼴을 적음 · 복사본은 `.gitignore` 대상이라 안 올라감 · 목록이 없으면 그 갈래는 안 돌고 **안 봤다고 출력에 적음**
+- **안 쓸 동사는 개인 목록에 둠** — `data/catalog/local-personal-words.example.tsv` 를 `local-personal-words.tsv` 로 복사해 「동사 · 명사 · 바꿀 말 · 까닭」을 적음(「결함을 잡다 → 검출」) · 「업무 글에 없는 말」 주의로 나옴 · 형태소 분석기가 있어야 돎 · 복사본은 `.gitignore` 대상
+  - **후보 뽑기** — `python -X utf8 scripts/suggest_personal_words.py --informal <구어 글 폴더> --formal <문어 글 폴더>` · 구어 쪽에 치우친 동사를 용례와 함께 냄 · 판정은 안 함
 - **오타는 멈춤** — 모르는 갈래 이름을 적으면 rc 1. 조용히 넘기면 끄려던 검사가 안 꺼진 채 통과로 읽힙니다.
 
 ## 두 층으로 나눔
