@@ -94,19 +94,19 @@ class CoreRulesMarkerTests(unittest.TestCase):
                     f"{name}: core-rules.md 의 담당 표시가 실제 검사기와 다릅니다",
                 )
 
-    def test_the_stated_number_of_principles_matches_the_list(self) -> None:
-        """머리글의 개수는 규칙을 더할 때 같이 안 고쳐진다 — 실제로 낡은 채 발견됐다.
+    def test_the_section_does_not_state_how_many_principles_there_are(self) -> None:
+        """원칙 개수·검사기 담당 수를 문장으로 적지 않는다 — 원칙마다 붙은 표시가 그 정보다.
 
-        이 문장은 「검사기가 안 보는 것이 몇 개인가」를 알리는 자리다. 원칙을 하나
-        더했는데 숫자가 그대로면 읽는 쪽은 덜 남았다고 믿고 그만큼 덜 본다.
+        처음엔 「열두 개 중 검사기가 보는 것은 다섯」의 숫자를 맞추는 시험이었다. 원칙을
+        더할 때마다 그 문장을 고쳐야 했고, 사용자가 「이런건 뭐하러 숫자를 넣어서 계속
+        고치고 있니?」라고 짚었다(2026-09-29). 숫자를 맞추게 할 것이 아니라 뺐다.
         """
-        korean = {8: "여덟", 9: "아홉", 10: "열", 11: "열한", 12: "열두",
-                  13: "열세", 14: "열네", 15: "열다섯"}
         section = self.core_rules.split("## 공통 원칙", 1)[1].split("\n## ", 1)[0]
-        bullets = [l for l in section.split("\n") if l.startswith("- **")]
-
-        self.assertIn(korean[len(bullets)] + " 개", section,
-                      f"원칙이 {len(bullets)}개인데 머리글의 개수가 다릅니다")
+        prose = [l for l in section.split("\n") if l and not l.startswith(("- ", "  "))]
+        for line in prose:
+            self.assertNotRegex(line, r"(?:열|스물)?(?:[한두세네]|다섯|여섯|일곱|여덟|아홉)\s?개\s?중"
+                                      r"|열\s?개\s?중|\d+\s?개\s?중",
+                                f"원칙 수를 문장으로 적었습니다 — {line}")
 
     def test_every_principle_says_who_looks_at_it(self) -> None:
         """표시 없는 원칙은 검사기가 본다고 오해된다 — 그러면 아무도 안 본다."""

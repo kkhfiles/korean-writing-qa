@@ -8,6 +8,8 @@
 **개수 표기도 같은 갈래다**(2026-09-17 추가). 그 단계의 머리글이 「아래 셋은」이라
 적혀 있었는데 항목은 열이었다. 2026-09-10 에 셋으로 시작해 일곱이 붙는 동안
 숫자만 안 따라왔다. 판단 층이 읽는 문장이라 **앞 셋만 보라는 뜻으로 읽힌다.**
+처음엔 숫자를 맞추게 했고, 2026-09-29 에 숫자를 아예 뺐다 — 맞추는 일이 항목을
+넣을 때마다 따라왔다.
 """
 import io
 import json
@@ -22,10 +24,9 @@ LEDGER = os.path.join(ROOT, "data", "cases", "flagged-rounds.jsonl")
 #: 대장이 「2층」 주인에게 맡기는 단계 — 이 제목으로 찾는다
 STEP_TITLE = "검사기가 못 잡는 것을 직접 찾는다"
 
-#: 머리글이 쓰는 우리말 셈씨 — 「아래 열 갈래는」의 그 자리
-WORDS = {"둘": 2, "셋": 3, "넷": 4, "다섯": 5, "여섯": 6, "일곱": 7,
-         "여덟": 8, "아홉": 9, "열": 10, "열하나": 11, "열둘": 12,
-         "열셋": 13, "열넷": 14, "열다섯": 15, "열여섯": 16, "열일곱": 17, "열여덟": 18}
+#: 머리글에 다시 들어오면 안 되는 셈씨 — 「아래 열 갈래는」 꼴
+NUMERALS = ["열(?:하나|둘|셋|넷|다섯|여섯|일곱|여덟|아홉)?", "스물", "둘", "셋", "넷", "다섯",
+            "여섯", "일곱", "여덟", "아홉", r"\d+"]
 
 
 def skill_text(name):
@@ -138,25 +139,21 @@ class StepReferenceTests(unittest.TestCase):
                 f"{_step}단계에 그런 항목이 없습니다 — 이름이 바뀌었거나 "
                 "항목이 지워졌습니다")
 
-    def test_the_step_counts_its_own_items(self) -> None:
-        """머리글의 개수가 실제 항목 수와 같아야 한다."""
+    def test_the_step_header_does_not_count_its_items(self) -> None:
+        """머리글에 항목 개수를 적지 않는다 — 적으면 항목을 넣을 때마다 고쳐야 한다.
+
+        처음엔 개수를 맞추는 시험이었다(2026-09-17). 사용자가 「이런건 뭐하러 숫자를
+        넣어서 계속 고치고 있니?」라고 짚었다(2026-09-29) — 숫자를 맞추게 할 것이
+        아니라 빼는 것이 맞았다. 항목 목록이 바로 아래에 있어 개수는 읽는 사람에게
+        새 정보가 아니다.
+        """
         text = skill_text("finalize-korean-document")
         step, body = step_body(text, STEP_TITLE)
         self.assertIsNotNone(step, f"「{STEP_TITLE}」 단계가 없습니다")
-
-        head = re.search(r"특히 아래 (\S+?) 갈래는", body)
-        self.assertIsNotNone(
-            head, f"{step}단계 머리글에서 개수를 못 읽었습니다 — "
-                  "「특히 아래 <셈씨> 갈래는」 꼴을 지킵니다")
-        word = head.group(1)
-        self.assertIn(word, WORDS,
-                      f"모르는 셈씨 「{word}」 — 이 시험의 WORDS 에 넣습니다")
-
-        items = re.findall(r"^   - \*\*", body, re.M)
-        self.assertEqual(
-            WORDS[word], len(items),
-            f"{step}단계 머리글은 「{word}」({WORDS[word]})라 적혔는데 "
-            f"항목은 {len(items)}개입니다 — 항목을 늘리며 숫자를 안 고쳤습니다")
+        counted = re.search(r"아래 (?:" + "|".join(NUMERALS) + r")\s*(?:갈래|가지|항목)", body)
+        self.assertIsNone(
+            counted, f"{step}단계 머리글이 항목 수를 적었습니다 — 「{counted.group(0) if counted else ''}」 "
+                     "· 개수 없이 「아래 갈래는」으로 씁니다")
 
 
 if __name__ == "__main__":
