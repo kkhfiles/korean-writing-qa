@@ -32,8 +32,11 @@ class FakeBackend:
         self.calls.append(kw)
         if self.fail:
             raise TimeoutError("시험용 실패")
+        # 입력은 셋으로 나뉘어 온다 — 캐시 쓴 것 · 읽은 것 · 나머지
         return {"text": json.dumps(self.reply, ensure_ascii=False), "model": "claude-opus-5-5",
-                "usage": {"input_tokens": 1000, "output_tokens": 200}, "cost_usd": 0.25}
+                "usage": {"input_tokens": 2, "cache_creation_input_tokens": 900,
+                          "cache_read_input_tokens": 98, "output_tokens": 200},
+                "cost_usd": 0.25}
 
     @staticmethod
     def parse(text):
@@ -120,7 +123,8 @@ class JudgeTests(unittest.TestCase):
         self.assertEqual(0, rc)
         total = [l for l in out.splitlines() if l.strip().startswith("합계")][0]
         self.assertIn("0.50", total, f"두 호출 0.25 + 0.25 가 합계에 안 맞습니다 — {total}")
-        self.assertIn("2,000", total)
+        self.assertIn("2,000", total, "입력 토큰은 캐시에 쓴 것·읽은 것까지 합쳐야 합니다 "
+                                      "(빼면 첫 실측처럼 2 토큰으로 찍힘)")
 
     def test_long_documents_are_split_at_headings_with_true_line_numbers(self) -> None:
         lines = []

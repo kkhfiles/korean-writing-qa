@@ -132,6 +132,11 @@ def load_backend():
     return call_messages, parse_json_from_text
 
 
+def input_total(row: dict) -> int:
+    """입력 토큰 전부 — 캐시에 쓴 것·읽은 것까지."""
+    return sum(int(row.get(k) or 0) for k in ("input_tokens", "cache_write", "cache_read"))
+
+
 def log_call(row: dict) -> None:
     LOG.parent.mkdir(parents=True, exist_ok=True)
     with LOG.open("a", encoding="utf-8", newline="\n") as f:
@@ -165,9 +170,12 @@ def judge(path: Path, model: str, timeout: float, backend) -> dict:
         usage = r.get("usage") or {}
         row.update(ok=True, model=r.get("model") or model,
                    seconds=round(time.time() - started, 1),
+                   # ⛔ 입력은 셋으로 나뉘어 온다 — 캐시에 쓴 것·읽은 것을 빼면 입력이
+                   #    2 토큰으로 찍힌다(첫 실측 2026-09-29). 합계는 `input_total` 로 센다.
                    input_tokens=usage.get("input_tokens", 0),
-                   output_tokens=usage.get("output_tokens", 0),
+                   cache_write=usage.get("cache_creation_input_tokens", 0),
                    cache_read=usage.get("cache_read_input_tokens", 0),
+                   output_tokens=usage.get("output_tokens", 0),
                    cost_usd=r.get("cost_usd"), findings=len(items))
         log_call(row)
         calls.append(row)
@@ -182,7 +190,7 @@ def show(result: dict) -> None:
     calls = result["calls"]
     secs = sum(c.get("seconds") or 0 for c in calls)
     cost = sum(c.get("cost_usd") or 0 for c in calls)
-    tin = sum(c.get("input_tokens") or 0 for c in calls)
+    tin = sum(input_total(c) for c in calls)
     tout = sum(c.get("output_tokens") or 0 for c in calls)
     print(f"── 2층 판정 · {Path(result['doc']).name} · 지적 {len(result['findings'])}건 · "
           f"호출 {len(calls)}회 · {secs:.0f}초 · 토큰 입력 {tin:,} · 출력 {tout:,} · "
@@ -208,7 +216,7 @@ def cost_report(by: str) -> None:
         a[0] += 1
         a[1] += 0 if r.get("ok") else 1
         a[2] += r.get("seconds") or 0
-        a[3] += r.get("input_tokens") or 0
+        a[3] += input_total(r)
         a[4] += r.get("output_tokens") or 0
         a[5] += r.get("cost_usd") or 0
     print(f"2층 판정 호출 비용 · {LOG}")
