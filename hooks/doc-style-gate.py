@@ -127,6 +127,72 @@ REQUIRE = tuple(
 FORCE = "KOREAN_PUBLISH_FORCE=1"
 
 
+#: 확인 안 된 내용을 싣고 나가는 표시 — **발행을 막는다**(2026-09-29 사용자 「이건 한국어
+#: 검사기가 고칠게 아니라 문서 만들고 배포하는 쪽에서 이런 불확실한 내용이 붙은 채로 배포하면
+#: 안됨」). 말을 다듬을 문제가 아니라 확인하거나 지울 문제라서 문체 검사기가 아니라 여기서 막는다.
+#:
+#: 괄호 안 뒤쪽 글자는 **구분 기호로 시작할 때만** 받는다 — 문서 2,816개 실측에서
+#: 「(미확인 아님)」·「(미검증이면 표기)」·「(TODO Ledger)」가 걸렸다. 「확인 중」은 뺀다 —
+#: 「문의 3건(확인 중)」처럼 진행 상태를 적는 정당한 쓰임이다.
+UNVERIFIED = re.compile(
+    r"[(\[（]\s*(?:진위|사실|출처|수치|원문)?\s*"
+    r"(?:미확인|미검증|미대조|확인\s?(?:필요|요망|전)|검증\s?(?:필요|전)|추후\s?확인|TBD|TODO)"
+    r"(?:\s*[—\-·,;:][^)\]）\n]{0,40})?\s*[)\]）]"
+    r"|\|\s*TBD\s*\|")
+#: 표시를 찾기 전에 지우는 구간 — 코드와 인용. 이 규칙을 설명하는 글이 자기에게 걸리지 않게 한다.
+_UNVERIFIED_SKIP = (
+    re.compile(r"```.*?```", re.S),
+    re.compile(r"<(script|style)\b.*?</\1>", re.S | re.I),
+)
+_UNVERIFIED_INLINE = re.compile(r"`[^`\n]*`|「[^」\n]*」|\"[^\"\n]*\"|“[^”\n]*”")
+
+
+def unverified_marks(path):
+    """확인 안 된 내용 표시 — (줄 번호, 표시, 그 줄) 목록. 못 읽으면 빈 목록."""
+    try:
+        text = Path(path).read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return []
+    for pat in _UNVERIFIED_SKIP:        # 줄 수를 지키려고 같은 수의 줄바꿈으로 바꾼다
+        text = pat.sub(lambda m: "\n" * m.group(0).count("\n"), text)
+    out = []
+    for n, line in enumerate(text.splitlines(), 1):
+        clean = _UNVERIFIED_INLINE.sub(" ", line)
+        for m in UNVERIFIED.finditer(clean):
+            out.append((n, m.group(0).strip("| "), re.sub(r"<[^>]+>", "", clean).strip()[:80]))
+    return out
+
+
+def unverified_block(payload, files):
+    """발행 직전 — 확인 안 된 표시가 남은 문서를 막는 글. 없으면 빈 문자열.
+
+    상태를 안 쓰므로 `--probe` 에서도 돈다. 검토 기록(`review`)으로는 안 열린다 —
+    사람이 읽고 정상이라 볼 대상이 아니라, 확인하거나 지울 대상이다.
+    """
+    if (payload.get("hook_event_name") or "") != "PreToolUse":
+        return ""
+    cmd = str((payload.get("tool_input") or {}).get("command") or "")
+    if FORCE in cmd:
+        return ""
+    found = [(fp, unverified_marks(fp)) for fp in files if os.path.exists(fp)]
+    found = [(fp, marks) for fp, marks in found if marks]
+    if not found:
+        return ""
+    lines = ["⛔ 발행 보류 — 확인 안 된 내용 표시가 남았습니다", ""]
+    for fp, marks in found:
+        for n, mark, line in marks[:8]:
+            lines.append(f"  {os.path.basename(fp)} {n}행  {mark} — {line}")
+    lines += [
+        "",
+        "  확인 안 된 사실은 확인하거나 지웁니다. 표시를 다른 말로 바꿔 다는 것은",
+        "  고친 것이 아닙니다(「(진위 미확인)」→「(검증되지 않은 수치)」).",
+        "  이 표시를 설명하는 글이면 표시를 「」 로 감쌉니다 — 인용은 안 봅니다.",
+        "",
+        f"  명령으로 발행하는 중이고 정말 그대로 내보내야 하면 앞에 `{FORCE}` 를 붙입니다.",
+    ]
+    return "\n".join(lines)
+
+
 def missing_stages(path):
     """지금 내용이 아직 통과하지 못한 단계. 도구가 없으면 빈 목록(막지 않는다)."""
     if not RECORDER or not RECORDER.exists():
@@ -654,6 +720,14 @@ def main():
 
     # ⛔ **막는 것이 먼저다.** 지적을 보여 주고 나서 발행을 허용하면, 그 지적은
     #    발행된 뒤에 읽힌다. 통과 기록이 없으면 여기서 멈춘다.
+    #    확인 안 된 표시는 상태를 안 쓰므로 시험 통로에서도 막는다.
+    if mode == "always" or korean_files:
+        stop = unverified_block(payload, korean_files or files)
+        if stop:
+            if not probe:
+                save(state)
+            sys.stderr.write(stop + "\n")
+            return 2
     if not probe:
         stop = publish_block(payload, korean_files or files)
         if stop:
