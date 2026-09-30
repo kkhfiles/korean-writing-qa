@@ -146,6 +146,24 @@ class JudgeTests(unittest.TestCase):
         self.assertEqual(2, judge.relocate(lines, 2, "없는 표현"),
                          "표현을 못 찾으면 모델이 낸 번호를 그대로 둡니다")
 
+    def test_fix_notes_catch_what_the_user_sent_back(self) -> None:
+        """2026-09-30 실문서 검토에서 되돌아온 수정안 모양 — 드문 말 · 지시어 · 서술형으로 바뀜."""
+        freq = judge.load_freq()
+        if freq is None:
+            self.skipTest("형태소 분석기가 없다")
+        doc = set(judge._lemmas("9월 11일 몫의 소급 · 둘만 최종 값"))
+        rare = judge.fix_notes("9월 11일 판정 항목 소급 확인", "9월 11일 몫의 소급", set(), freq)
+        self.assertTrue(any("소급" in n for n in rare), f"드문 낱말을 못 짚었습니다 — {rare}")
+        kept = judge.fix_notes("9월 11일 판정 항목 소급 확인", "9월 11일 몫의 소급", doc, freq)
+        self.assertTrue(any("그대로 둠" in n and "소급" in n for n in kept),
+                        f"원문의 드문 낱말을 그대로 둔 것은 새로 들여온 것과 갈라 짚어야 합니다 — {kept}")
+        demo = judge.fix_notes("이 기간", "이 구간", set(), freq)
+        self.assertTrue(any("지시어" in n for n in demo), f"지시어를 못 짚었습니다 — {demo}")
+        prose = judge.fix_notes("확인하지 않았다는 뜻입니다.", "관측 자체가 없음", set(), freq)
+        self.assertTrue(any("서술형" in n for n in prose), f"형식 바뀜을 못 짚었습니다 — {prose}")
+        self.assertEqual([], judge.fix_notes("분석 실행과 결과 확인", "분석 돌리고 결과 읽기",
+                                             set(), freq), "좋다고 판정된 수정안까지 짚었습니다")
+
     def test_html_is_judged_on_visible_text(self) -> None:
         p = self.doc("<html><style>p{x:y}</style><body><h1>제목</h1><p>원인을 알 수 없었습니다.</p>"
                      "<script>var a='숨은 글';</script></body></html>", "d.html")

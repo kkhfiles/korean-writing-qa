@@ -123,6 +123,56 @@ def relocate(lines: list[str], hint, phrase: str) -> int | None:
     return min(hits, key=lambda n: abs(n - hint)) if hint else hits[0]
 
 
+#: 고친 말 점검 — 판정 호출이 낸 **수정안 자체**가 새 문제를 들여오는지 본다(모델을 더 부르지
+#: 않는다). 2026-09-30 실문서 검토에서 지적 40건은 모두 맞았는데 수정안 여덟이 되돌아왔다 —
+#: 드문 말로 바꿈(「소급」·「이날」·「간이로」) · 지시어(「이 기간」) · 개조식 값을 서술형으로 바꿈.
+FREQ_PATH = HERE.parent / "data" / "catalog" / "work-korean-freq.json"
+RARE_FLOOR = 40                 # 단어 점검(`rare_words.py`)과 같은 문턱
+FIX_TAGS = ("NNG", "VV", "VA", "MAG", "XR")
+DEMONSTRATIVE = re.compile(r"(?<![가-힣])(?:이날|그날|(?:이|그|저)\s?(?:날|때|기간|구간|곳|항목|경우|단계|시점|부분))(?![가-힣])")
+PROSE_END = re.compile(r"(?:니다|다)[.。]?\s*$")
+_kiwi = None
+
+
+def _lemmas(text: str) -> list[str]:
+    global _kiwi
+    if _kiwi is None:
+        from kiwipiepy import Kiwi
+        _kiwi = Kiwi()
+    return [f"{t.form}/{t.tag}" for t in _kiwi.tokenize(text) if t.tag in FIX_TAGS and len(t.form) > 1]
+
+
+def fix_notes(fix: str, phrase: str, doc_lemmas: set, freq: dict | None) -> list[str]:
+    """수정안이 들여온 문제 — 사람이 볼 한 줄씩. 형태소 분석기가 없으면 드문 낱말은 건너뛴다."""
+    notes = []
+    if freq is not None and fix:
+        rare = [w for w in dict.fromkeys(_lemmas(fix)) if freq.get(w, 0) <= RARE_FLOOR]
+        # 원문에 있던 드문 낱말을 그대로 둔 것도 짚는다 — 「소급」은 원문 낱말이었는데 사용자가
+        # 「잘 쓰지 않으므로 바꾸면 좋을듯」으로 되돌렸다(2026-09-30). 새로 들여온 것과 갈라 적는다.
+        new = [w.split("/")[0] for w in rare if w not in doc_lemmas]
+        kept = [w.split("/")[0] for w in rare if w in doc_lemmas]
+        if new:
+            notes.append("고친 말에 드문 낱말 — " + " · ".join(new)
+                         + f"(사람 업무 글 {RARE_FLOOR}회 이하) · 흔한 말로")
+        if kept:
+            notes.append("원문의 드문 낱말을 그대로 둠 — " + " · ".join(kept)
+                         + f"(사람 업무 글 {RARE_FLOOR}회 이하) · 바꿀지 볼 것")
+    for m in DEMONSTRATIVE.finditer(fix or ""):
+        if m.group(0) not in (phrase or ""):
+            notes.append(f"고친 말에 지시어 「{m.group(0)}」 — 가리키는 것을 이름으로")
+    if fix and phrase and PROSE_END.search(fix) and not PROSE_END.search(phrase):
+        notes.append("원문은 개조식인데 고친 말은 서술형 — 값 칸이면 개조식 유지")
+    return notes
+
+
+def load_freq():
+    try:
+        import kiwipiepy  # noqa: F401
+        return json.loads(FREQ_PATH.read_text(encoding="utf-8"))["freq"]
+    except Exception:
+        return None
+
+
 def load_backend():
     """정본은 `llm_playbook.backends` 하나다 — 없으면 None(세션이 직접 읽는다)."""
     try:
@@ -183,7 +233,12 @@ def judge(path: Path, model: str, timeout: float, backend) -> dict:
             if isinstance(it, dict):
                 it["line"] = relocate(lines, it.get("line"), str(it.get("phrase") or ""))
                 found.append(it)
-    return {"doc": str(path), "findings": found, "calls": calls}
+    freq = load_freq()
+    doc_lemmas = set(_lemmas(text)) if freq is not None else set()
+    for it in found:
+        it["fix_notes"] = fix_notes(str(it.get("fix") or ""), str(it.get("phrase") or ""),
+                                    doc_lemmas, freq)
+    return {"doc": str(path), "findings": found, "calls": calls, "fix_checked": freq is not None}
 
 
 def show(result: dict) -> None:
@@ -200,6 +255,10 @@ def show(result: dict) -> None:
               f"{f.get('category')} → {f.get('fix')}")
         if f.get("why"):
             print(f"         {f['why']}")
+        for note in f.get("fix_notes") or []:
+            print(f"         ⚠️ {note}")
+    if not result.get("fix_checked", True):
+        print("  ⚠️ 형태소 분석기가 없어 고친 말의 드문 낱말을 안 봤습니다(지시어·형식은 봄)")
     print("  ⚠️ 지적마다 맞는지 판단한다 — 헛짚음이 섞인다. 고치지 않은 지적은 까닭을 남긴다.")
 
 
