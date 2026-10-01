@@ -3,6 +3,7 @@
 
     python install.py              # 검사기와 스킬 설치 · 훅은 안내만
     python install.py --hooks      # settings.json 에 훅까지 등록
+    python install.py --codex      # Codex 에도 스킬과 훅을 건다(--hooks 와 함께 써도 됨)
     python install.py --check      # 설치본이 정본과 같은지만 확인 (아무것도 안 씀)
     python install.py --dry-run    # 무엇을 쓸지만 보여 줌
 
@@ -18,6 +19,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import shutil
 import sys
 from pathlib import Path
@@ -42,6 +44,23 @@ HOOK_WIRING = [
     ("PostToolUse", "Edit|Write|MultiEdit", "doc-style-gate.py"),
     ("SessionStart", "", "korean-gate-daily-check.py"),
 ]
+
+#: Codex 쪽 훅 — Codex 는 셸 명령을 `Bash`, 파일 쓰기를 `apply_patch` 로 넘긴다(Codex 문서 「hooks」).
+#: 게이트가 Codex payload 를 직접 읽으므로 어댑터 없이 같은 훅 파일을 건다(2026-10-01).
+#: 겹 역슬래시 차단은 Claude Bash 도구의 함정이라 Codex 에는 안 건다.
+CODEX_WIRING = [
+    ("PreToolUse", "Bash", "doc-style-gate.py", 50),
+    ("PreToolUse", "Bash", "public-push-gate.py", 40),
+    ("PostToolUse", "apply_patch|Edit|Write", "doc-style-gate.py", 50),
+]
+CODEX_HOME = Path(os.environ.get("CODEX_HOME") or (Path.home() / ".codex"))
+#: Codex 가 사용자 스킬을 읽는 곳(`~/.codex/skills` 는 호환용 옛 위치)
+AGENTS_SKILLS = Path(os.environ.get("KOREAN_QA_AGENTS_SKILLS") or (Path.home() / ".agents" / "skills"))
+#: 이 표시가 있는 스킬 폴더만 이 설치기가 고친다 — 남이 만든 같은 이름 폴더는 안 건드린다.
+OWNED_MARK = ".installed-by-korean-writing-qa"
+#: 이 파일이 있으면 그 PC 의 Codex 설정은 설정 거울 투영(`sync-codex.ps1`)이 관리한다.
+#: ⛔ 둘이 같은 `hooks.json`·스킬 폴더를 쓰면 서로 덮는다 — 파일마다 관리 주체는 하나다.
+PROJECTION_MANIFEST = CODEX_HOME / "claude-sync-manifest.json"
 
 
 def digest(path: Path) -> str:
@@ -187,10 +206,67 @@ def wire_hooks(dry_run: bool) -> int:
     return 0
 
 
+def codex_hook_command(name: str) -> str:
+    """Codex 훅 명령 — 설치된 훅 파일을 절대 경로로 부른다(`$HOME` 을 펼친다는 보장이 없다)."""
+    return f'python "{repo_paths.installed("hooks", name).as_posix()}"'
+
+
+def install_codex(dry_run: bool) -> int:
+    """Codex 에도 같은 스킬과 훅을 건다 — 검사기·훅 파일은 위에서 `~/.claude/` 에 이미 깔았다."""
+    if PROJECTION_MANIFEST.is_file():
+        print(f"Codex 설정은 이 PC 의 설정 거울 투영이 관리한다({PROJECTION_MANIFEST}) — 건너뜀")
+        return 0
+    if not CODEX_HOME.is_dir():
+        print(f"Codex 설치 흔적이 없다: {CODEX_HOME} — Codex 를 한 번 실행한 뒤 다시 시도한다.")
+        return 1
+
+    for src in sorted(p for p in repo_paths.SKILLS.iterdir() if p.is_dir()):
+        dst = AGENTS_SKILLS / src.name
+        if dst.exists() and not (dst / OWNED_MARK).exists():
+            print(f"  건너뜀  {dst} — 다른 설치기가 만든 같은 이름의 스킬")
+            continue
+        print(f"  {'쓸 것' if dry_run else '씀'}  {dst}")
+        if not dry_run:
+            if dst.exists():
+                shutil.rmtree(dst)
+            shutil.copytree(src, dst, ignore=shutil.ignore_patterns("__pycache__"))
+            (dst / OWNED_MARK).write_text("korean-writing-qa install.py --codex\n", encoding="utf-8")
+
+    path = CODEX_HOME / "hooks.json"
+    data = json.loads(path.read_text(encoding="utf-8")) if path.is_file() else {}
+    hooks = data.setdefault("hooks", {})
+    ours = {codex_hook_command(name) for _, _, name, _ in CODEX_WIRING}
+    # 이 설치기가 건 것을 먼저 걷어낸다 — 다시 돌려도 겹치지 않고, 남이 건 것은 그대로 둔다
+    for event, groups in list(hooks.items()):
+        for group in groups:
+            group["hooks"] = [h for h in group.get("hooks", []) if h.get("command") not in ours]
+        hooks[event] = [g for g in groups if g.get("hooks")]
+    for event, matcher, name, timeout in CODEX_WIRING:
+        groups = hooks.setdefault(event, [])
+        group = next((g for g in groups if g.get("matcher") == matcher), None)
+        if group is None:
+            group = {"matcher": matcher, "hooks": []}
+            groups.append(group)
+        group["hooks"].append({"type": "command", "command": codex_hook_command(name),
+                               "timeout": timeout})
+        print(f"  훅  {event} · {matcher} · {name}")
+    if dry_run:
+        return 0
+    if path.is_file():
+        shutil.copy2(path, path.with_suffix(".json.bak"))
+    path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    print(f"Codex 훅을 등록했다 · {path}")
+    print("⚠️ Codex 를 다시 열면 새 훅을 승인할지 묻는다 — 승인해야 동작한다"
+          "(훅 정의가 바뀔 때마다 다시 묻는다).")
+    return 0
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description="정본을 ~/.claude 에 설치한다")
     ap.add_argument("--check", action="store_true", help="설치본이 정본과 같은지만 확인")
     ap.add_argument("--hooks", action="store_true", help="settings.json 에 훅까지 등록")
+    ap.add_argument("--codex", action="store_true",
+                    help="Codex 에도 스킬(~/.agents/skills)과 훅(~/.codex/hooks.json)을 건다")
     ap.add_argument("--dry-run", action="store_true", help="쓰지 않고 무엇을 쓸지만 보여 줌")
     args = ap.parse_args()
 
@@ -206,6 +282,9 @@ def main() -> int:
         rc |= wire_hooks(args.dry_run)
     else:
         print("\n훅은 등록하지 않았다 — 발행 직전 검사와 겹 역슬래시 차단을 걸려면 `--hooks`.")
+    if args.codex:
+        print()
+        rc |= install_codex(args.dry_run)
     return rc
 
 

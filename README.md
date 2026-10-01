@@ -25,6 +25,9 @@ python assets/doc-style-check.py tests/fixtures/paired/violation-fixture.md
 
 # 2) Claude Code 환경에 설치 (검사기 · 스킬 · 훅)
 python install.py --hooks
+#    Codex 도 쓰면 --codex 를 더함 — 스킬은 ~/.agents/skills, 훅은 ~/.codex/hooks.json
+#    (Codex 를 다시 열면 새 훅 승인을 물음 · 승인해야 동작)
+python install.py --hooks --codex
 
 # 3) 설치본이 정본과 같은지 확인
 python install.py --check
