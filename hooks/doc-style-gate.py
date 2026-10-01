@@ -915,6 +915,21 @@ def finalize_notice(payload, files, state):
     return NOTICE
 
 
+def deny(reason):
+    """PreToolUse 에서 막는다 — `permissionDecision: deny` JSON 을 내고 종료 코드 0.
+
+    ⛔ **종료 코드 2 로 막지 않는다** — Codex 0.159.1 은 그것을 막음이 아니라 「Failed」로 받고
+       명령을 그대로 실행했다(2026-10-01 실측 · 공식 문서는 종료 코드 2 가 막는다고 적었다).
+       이 JSON 은 Claude Code 와 Codex 둘 다 막음으로 받는다(둘 다 실측). `install.py --codex`
+       로 설치한 PC 는 어댑터 없이 이 훅을 바로 부르므로 훅이 직접 이 모양으로 답해야 한다.
+    """
+    print(json.dumps({"hookSpecificOutput": {"hookEventName": "PreToolUse",
+                                             "permissionDecision": "deny",
+                                             "permissionDecisionReason": reason}},
+                     ensure_ascii=False))
+    return 0
+
+
 def main():
     try:
         payload = json.load(sys.stdin)
@@ -924,8 +939,7 @@ def main():
     # push 는 문서 파일을 대상으로 잡지 않으므로 먼저 본다 · 상태를 안 쓰므로 시험 통로에서도 돈다
     stop = push_block(payload)
     if stop:
-        sys.stderr.write(stop + "\n")
-        return 2
+        return deny(stop)
 
     files, errors_only, mode = targets(payload)
     korean_files = korean_targets(payload)
@@ -977,15 +991,13 @@ def main():
         if stop:
             if not probe:
                 save(state)
-            sys.stderr.write(stop + "\n")
-            return 2
+            return deny(stop)
     if not probe:
         stop = publish_block(payload, korean_files or files)
         if stop:
             if mode == "once" or True:
                 save(state)
-            sys.stderr.write(stop + "\n")
-            return 2
+            return deny(stop)
 
     notice = finalize_notice(payload, files, state.setdefault(key, {}))
     if mode == "once" or notice:

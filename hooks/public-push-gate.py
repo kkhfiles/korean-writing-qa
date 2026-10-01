@@ -51,6 +51,7 @@ from pathlib import Path
 #    버려진 옛 wrapper 가 같은 버퍼를 닫아 stderr 가 죽는다(시험에서 실측).
 try:
     sys.stderr.reconfigure(encoding="utf-8")
+    sys.stdout.reconfigure(encoding="utf-8")      # deny JSON 의 한글 — 콘솔 로케일(CP949)로 나가면 깨진다
 except (AttributeError, ValueError):
     pass
 
@@ -225,6 +226,15 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     rc, msg = gate(repo)
+    if rc == 2:
+        # ⛔ 훅으로 불렸을 때는 종료 코드 2 로 막지 않는다 — Codex 0.159.1 은 그것을 「Failed」로 받고
+        #    push 를 실행했다(2026-10-01 실측). deny JSON 은 Claude Code 와 Codex 둘 다 막음으로 받는다.
+        #    스크립트 호출(`--repo`)은 위에서 종료 코드로 답한다 — `sync.sh` 가 그것을 읽는다.
+        print(json.dumps({"hookSpecificOutput": {"hookEventName": "PreToolUse",
+                                                 "permissionDecision": "deny",
+                                                 "permissionDecisionReason": msg}},
+                         ensure_ascii=False))
+        return 0
     if msg:
         print(msg, file=sys.stderr)
     return rc

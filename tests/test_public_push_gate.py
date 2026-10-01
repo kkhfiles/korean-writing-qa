@@ -21,6 +21,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import repo_paths  # noqa: E402
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import gate_result  # noqa: E402  막힘을 종료 코드 2 와 deny JSON 둘 다로 읽는다
+
 HOOK = repo_paths.hook("public-push-gate.py")
 
 
@@ -160,11 +163,11 @@ class PublicPushGateTests(unittest.TestCase):
 
     def test_public_repo_push_is_gated_and_says_why(self) -> None:
         """이 저장소는 공개다 — 검사를 거쳐야 하고, 통과하면 보내야 한다."""
-        done = run("git push")
-        self.assertIn(done.returncode, (0, 2))
-        if done.returncode == 2:
-            self.assertIn("공개 저장소", done.stderr)
-            self.assertIn("KOREAN_PUSH_FORCE", done.stderr)
+        code, said = gate_result.read(run("git push"))
+        self.assertIn(code, (0, 2))
+        if code == 2:
+            self.assertIn("공개 저장소", said)
+            self.assertIn("KOREAN_PUSH_FORCE", said)
 
 
 if __name__ == "__main__":

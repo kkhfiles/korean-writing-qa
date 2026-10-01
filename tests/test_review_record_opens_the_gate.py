@@ -37,6 +37,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import repo_paths  # noqa: E402
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import gate_result  # noqa: E402  막힘을 종료 코드 2 와 deny JSON 둘 다로 읽는다
+
 GATE = repo_paths.hook("doc-style-gate.py")
 RECORDER = repo_paths.REPO / "scripts" / "check_record.py"
 
@@ -80,7 +83,7 @@ class ReviewRecordTests(unittest.TestCase):
             [sys.executable, "-X", "utf8", str(GATE)],
             input=json.dumps(payload, ensure_ascii=False), env=self.env,
             capture_output=True, text=True, encoding="utf-8", timeout=120)
-        return done.returncode
+        return gate_result.read(done)[0]
 
     def review(self, note: str = "표 머리 「비고」는 공문서 표준 관례"):
         args = [sys.executable, "-X", "utf8", str(RECORDER), "record",
@@ -142,8 +145,9 @@ class ReviewRecordTests(unittest.TestCase):
             input=json.dumps(payload, ensure_ascii=False), env=self.env,
             capture_output=True, text=True, encoding="utf-8", timeout=120)
 
-        self.assertIn("--stage review", done.stderr)
-        self.assertIn("--note", done.stderr)
+        said = gate_result.read(done)[1]
+        self.assertIn("--stage review", said)
+        self.assertIn("--note", said)
 
 
 if __name__ == "__main__":

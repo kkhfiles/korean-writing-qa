@@ -21,6 +21,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import repo_paths  # noqa: E402
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import gate_result  # noqa: E402  막힘을 종료 코드 2 와 deny JSON 둘 다로 읽는다
+
 HOOK = repo_paths.hook("doc-style-gate.py")
 
 
@@ -110,8 +113,9 @@ class BlockTests(unittest.TestCase):
             [sys.executable, "-X", "utf8", str(HOOK), "--probe"],
             input=json.dumps(self.payload(), ensure_ascii=False),
             capture_output=True, text=True, encoding="utf-8", timeout=120)
-        self.assertEqual(2, done.returncode, done.stdout + done.stderr)
-        self.assertIn("확인 안 된 내용 표시", done.stderr)
+        code, said = gate_result.read(done)
+        self.assertEqual(2, code, said)
+        self.assertIn("확인 안 된 내용 표시", said)
 
 
 if __name__ == "__main__":

@@ -20,6 +20,9 @@ sys.path.insert(0, ROOT)
 
 import repo_paths  # noqa: E402
 
+sys.path.insert(0, HERE)
+import gate_result  # noqa: E402  막힘을 종료 코드 2 와 deny JSON 둘 다로 읽는다
+
 GATE = os.path.join(ROOT, "hooks", "doc-style-gate.py")
 TOOL = os.path.join(ROOT, "scripts", "check_record.py")
 
@@ -64,7 +67,7 @@ class PublishRecordTests(unittest.TestCase):
                               input=json.dumps(payload, ensure_ascii=False),
                               capture_output=True, text=True, encoding="utf-8",
                               errors="replace", timeout=240, env=env or self.env)
-        return done.returncode, done.stdout + done.stderr
+        return gate_result.read(done)
 
     def test_the_default_does_not_demand_what_nothing_records(self) -> None:
         """⛔ 기본 설정은 **적을 길이 있는 것만** 요구한다.
@@ -120,7 +123,7 @@ class PublishRecordTests(unittest.TestCase):
                               input=json.dumps(payload, ensure_ascii=False),
                               capture_output=True, text=True, encoding="utf-8",
                               errors="replace", timeout=240, env=self.env)
-        self.assertNotEqual(2, done.returncode, "시험 통로가 발행을 막았습니다")
+        self.assertNotEqual(2, gate_result.read(done)[0], "시험 통로가 발행을 막았습니다")
 
 
 if __name__ == "__main__":

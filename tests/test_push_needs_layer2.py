@@ -26,6 +26,9 @@ sys.path.insert(0, str(ROOT / "scripts"))
 
 import layer2_coverage as coverage  # noqa: E402
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import gate_result  # noqa: E402  막힘을 종료 코드 2 와 deny JSON 둘 다로 읽는다
+
 CONFIG = """[rules]
 on = ["반말 서술형"]
 
@@ -85,7 +88,7 @@ class PushGateTests(unittest.TestCase):
                               input=json.dumps(payload, ensure_ascii=False), capture_output=True,
                               text=True, encoding="utf-8", errors="replace", timeout=120,
                               env=env or self.env)
-        return done.returncode, done.stdout + done.stderr
+        return gate_result.read(done)
 
     def judged(self, path: Path | None = None) -> None:
         """판정기가 지금 내용의 줄을 다 본 것처럼 기록한다."""
