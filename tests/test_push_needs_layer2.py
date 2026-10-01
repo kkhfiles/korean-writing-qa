@@ -78,8 +78,8 @@ class PushGateTests(unittest.TestCase):
                      "- **위험**: 일정 지연 가능성"])
 
     def push(self, cmd: str = "git push -u origin HEAD", cwd: Path | None = None,
-             env: dict | None = None) -> tuple[int, str]:
-        payload = {"hook_event_name": "PreToolUse", "tool_name": "Bash", "session_id": "push-t",
+             env: dict | None = None, tool: str = "Bash") -> tuple[int, str]:
+        payload = {"hook_event_name": "PreToolUse", "tool_name": tool, "session_id": "push-t",
                    "cwd": str(cwd or self.repo), "tool_input": {"command": cmd}}
         done = subprocess.run([sys.executable, "-X", "utf8", str(GATE), "--probe"],
                               input=json.dumps(payload, ensure_ascii=False), capture_output=True,
@@ -191,6 +191,27 @@ class PushGateTests(unittest.TestCase):
         self.add_line()
         rc, _ = self.push(f'git -C "{self.repo}" push', cwd=Path(self.tmp.name))
         self.assertEqual(2, rc, "-C 로 가리킨 저장소를 안 봤습니다")
+
+    def test_cd_before_push_points_at_the_repo(self) -> None:
+        """훅 payload 의 cwd 는 명령 전 폴더다 — `cd 저장소 && git push` 를 놓치면 엉뚱한 저장소를 본다."""
+        self.add_line()
+        rc, _ = self.push(f'cd "{self.repo}" && git push -u origin HEAD', cwd=Path(self.tmp.name))
+        self.assertEqual(2, rc, "cd 로 옮긴 저장소를 안 봤습니다")
+
+    def test_set_location_before_push_in_powershell(self) -> None:
+        self.add_line()
+        rc, _ = self.push(f"Set-Location -LiteralPath '{self.repo}'; git push", cwd=Path(self.tmp.name),
+                          tool="PowerShell")
+        self.assertEqual(2, rc, "Set-Location 으로 옮긴 저장소를 안 봤습니다")
+
+    @unittest.skipUnless(os.name == "nt", "Git Bash 경로 꼴은 Windows 전용")
+    def test_git_bash_style_paths_are_resolved(self) -> None:
+        """Bash 도구 명령은 `/c/Users/…` 꼴을 흔히 쓴다 — 못 풀면 게이트가 조용히 통과한다."""
+        self.add_line()
+        drive, rest = str(self.repo.resolve()).split(":", 1)
+        bash_path = "/" + drive.lower() + rest.replace(os.sep, "/")
+        rc, _ = self.push(f"git -C {bash_path} push", cwd=Path(self.tmp.name))
+        self.assertEqual(2, rc, f"{bash_path} 를 못 풀었습니다")
 
     def test_an_unknown_base_blocks_with_a_way_out(self) -> None:
         (self.repo / "korean-qa.toml").write_text(CONFIG.replace('base = "main"', 'base = "origin/main"'),

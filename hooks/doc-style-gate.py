@@ -296,6 +296,11 @@ def publish_block(payload, files):
 PUSH = re.compile(r"(?:^|[\s;&|(])git\s+((?:-\S+\s+\S+\s+|--?\S+\s+)*)push\b")
 QUOTED = re.compile(r'"[^"]*"|\'[^\']*\'')
 C_OPT = re.compile(r"(?:^|\s)-C\s+(?:\"([^\"]*)\"|'([^']*)'|(\S+))")
+#: push 앞에서 폴더를 옮기는 명령 — `cd 저장소 && git push` 는 세션 cwd 가 아니라 그 폴더에서
+#: 민다(2026-10-01 Astra 검토). 훅 payload 의 cwd 는 명령 **전**의 폴더라 이것을 안 보면 엉뚱한
+#: 저장소를 검사하고 통과시킨다. 같은 명령 안에서 push 보다 앞선 마지막 것을 쓴다.
+CD_CMD = re.compile(r"(?:^|[;&|(]\s*)(?:cd|pushd|Set-Location|sl)\s+(?:-LiteralPath\s+|-Path\s+)?"
+                    r"(?:\"([^\"]*)\"|'([^']*)'|([^\s;&|)]+))", re.I)
 
 #: 판정기가 본 줄을 가르는 모듈 — 판정기와 같은 것을 써야 판정한 줄이 판정한 줄로 읽힌다.
 COVERAGE = _find(
@@ -312,24 +317,43 @@ SKILL_MD = _find(
 
 
 def push_target(command):
-    """push 가 아니면 None · push 면 `-C` 경로(없으면 빈 문자열)."""
+    """push 가 아니면 None · push 면 (앞서 옮긴 폴더, `-C` 경로) — 없으면 빈 문자열."""
     masked = QUOTED.sub(lambda m: m.group()[0] + "x" * (len(m.group()) - 2) + m.group()[-1],
                         command)
     m = PUSH.search(masked)
     if not m:
         return None
     c = C_OPT.search(command[m.start(1):m.end(1)])   # 원문에서 꺼내야 따옴표 친 경로가 산다
-    return next(g for g in c.groups() if g is not None) if c else ""
+    c_path = next(g for g in c.groups() if g is not None) if c else ""
+    cds = [d for d in CD_CMD.finditer(command[:m.start()])]
+    cd_path = next(g for g in cds[-1].groups() if g is not None) if cds else ""
+    return cd_path, c_path
 
 
 def _git(repo, *args):
     return subprocess.run(["git", "-C", str(repo), *args], capture_output=True, timeout=30)
 
 
-def push_repo(payload, c_path):
+def _local_path(step):
+    """명령에 적힌 경로를 이 PC 경로로 — `~` 와 Git Bash 꼴(`/p/github/…` → `P:/github/…`).
+
+    ⛔ 못 풀면 그 폴더가 없는 것으로 보여 게이트가 **조용히 통과**한다. Bash 도구 명령은
+       Git Bash 꼴을 흔히 쓴다.
+    """
+    step = os.path.expanduser(step)
+    m = re.match(r"^/([a-zA-Z])(?=/|$)", step)
+    if os.name == "nt" and m:
+        step = f"{m.group(1).upper()}:" + (step[2:] or "/")
+    return Path(step)
+
+
+def push_repo(payload, target):
+    cd_path, c_path = target
     base = Path(payload.get("cwd") or os.getcwd())
-    if c_path:
-        base = Path(c_path) if Path(c_path).is_absolute() else base / c_path
+    for step in (cd_path, c_path):       # `cd X && git -C Y push` 면 Y 는 X 기준
+        if step:
+            p = _local_path(step)
+            base = p if p.is_absolute() else base / p
     if not base.is_dir():
         return None
     got = _git(base, "rev-parse", "--show-toplevel")
