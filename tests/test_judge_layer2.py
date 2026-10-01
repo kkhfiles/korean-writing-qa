@@ -11,14 +11,17 @@ from __future__ import annotations
 import contextlib
 import io
 import json
+import subprocess
 import sys
 import tempfile
+import time
 import unittest
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 
 import judge_layer2 as judge  # noqa: E402
+import layer2_coverage as coverage  # noqa: E402
 import probe_layer2_kinds as probe  # noqa: E402
 
 
@@ -171,6 +174,124 @@ class JudgeTests(unittest.TestCase):
         self.assertIn("원인을 알 수 없었습니다.", text)
         self.assertNotIn("숨은 글", text)
         self.assertNotIn("x:y", text)
+
+
+def git(cwd: Path, *args: str) -> None:
+    subprocess.run(["git", "-c", "user.name=t", "-c", "user.email=t@t", "-C", str(cwd), *args],
+                   check=True, capture_output=True)
+
+
+class SinceTests(unittest.TestCase):
+    """`--since` — 갈라진 뒤 새로 생겼고 아직 판정 안 한 줄만 판정하고, 그 줄의 지적만 낸다.
+
+    발행 게이트가 같은 기록으로 「새 줄을 다 봤나」를 가르므로, 여기가 틀리면 게이트가
+    판정한 문서를 막거나 안 한 문서를 통과시킨다.
+    """
+
+    def setUp(self) -> None:
+        self.tmp = tempfile.TemporaryDirectory()
+        self.repo = Path(self.tmp.name) / "repo"
+        self.repo.mkdir()
+        self.saved = judge.LOG
+        judge.LOG = Path(self.tmp.name) / "calls.jsonl"
+        # 묶음 둘 — 「## 둘」(101행)에서 나뉜다
+        self.lines = (["## 하나"] + [f"하나 {i}번 문장입니다." for i in range(99)]
+                      + ["## 둘"] + [f"둘 {i}번 문장입니다." for i in range(99)])
+        self.doc = self.repo / "d.md"
+        self.write(self.lines)
+        git(self.repo, "init", "-b", "main")
+        git(self.repo, "add", ".")
+        git(self.repo, "commit", "-m", "base")
+        git(self.repo, "switch", "-c", "work")
+
+    def tearDown(self) -> None:
+        judge.LOG = self.saved
+        self.tmp.cleanup()
+
+    def write(self, lines: list[str], path: Path | None = None) -> None:
+        (path or self.doc).write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+    def edit(self, old: str, new: str) -> None:
+        self.write([new if l == old else l for l in self.doc.read_text(encoding="utf-8").splitlines()])
+
+    def run_since(self, fake: FakeBackend, path: Path | None = None, ref: str = "main") -> tuple[int, str]:
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            rc = judge.main([str(path or self.doc), "--since", ref], backend=fake.pair())
+        return rc, out.getvalue()
+
+    def test_only_the_chunk_with_a_new_line_is_sent(self) -> None:
+        self.edit("둘 5번 문장입니다.", "둘 5번 문장을 새로 썼습니다.")
+        fake = FakeBackend()
+        rc, _ = self.run_since(fake)
+        self.assertEqual(0, rc)
+        self.assertEqual(1, len(fake.calls), "새 줄이 없는 묶음까지 보냈습니다")
+        self.assertIn("101 | ## 둘", fake.calls[0]["user"])
+        self.assertIn("새로 썼습니다", fake.calls[0]["user"])
+
+    def test_findings_on_other_lines_are_hidden(self) -> None:
+        """재판정이 끝나지 않는 것을 막는다 — 안 고친 줄의 새 지적은 보이지 않는다."""
+        self.edit("둘 5번 문장입니다.", "둘 5번 문장을 새로 썼습니다.")
+        fake = FakeBackend(reply=[
+            {"line": 108, "phrase": "둘 7번", "category": "c", "fix": "옛 줄 지적"},
+            {"line": 107, "phrase": "새로 썼습니다", "category": "c", "fix": "새 줄 지적"}])
+        rc, out = self.run_since(fake)
+        self.assertEqual(0, rc)
+        self.assertIn("새 줄 지적", out)
+        self.assertNotIn("옛 줄 지적", out)
+        self.assertIn("1건은 숨김", out)
+
+    def test_a_second_run_without_changes_calls_nothing(self) -> None:
+        self.edit("둘 5번 문장입니다.", "둘 5번 문장을 새로 썼습니다.")
+        fake = FakeBackend()
+        self.run_since(fake)
+        rc, out = self.run_since(fake)
+        self.assertEqual(0, rc)
+        self.assertEqual(1, len(fake.calls), "이미 판정한 줄을 다시 보냈습니다")
+        self.assertIn("판정할 새 줄 없음", out)
+
+    def test_a_line_fixed_after_judging_is_judged_again(self) -> None:
+        """고친 말이 새 문제를 들여오는지 보는 것이 재판정의 몫이다(되돌린 수정안 8/40)."""
+        self.edit("둘 5번 문장입니다.", "둘 5번 문장을 새로 썼습니다.")
+        fake = FakeBackend(reply=[{"line": 107, "phrase": "다시 고쳤습니다", "category": "c", "fix": "f"}])
+        self.run_since(fake)
+        self.edit("둘 5번 문장을 새로 썼습니다.", "둘 5번 문장을 다시 고쳤습니다.")
+        rc, out = self.run_since(fake)
+        self.assertEqual(0, rc)
+        self.assertEqual(2, len(fake.calls))
+        self.assertIn("새 줄 1개만 판정", out)
+        self.assertIn("다시 고쳤습니다", out)
+
+    def test_a_file_new_in_the_branch_is_all_new(self) -> None:
+        new = self.repo / "n.md"
+        self.write(["# 새 문서", "", "처음 쓴 문장입니다."], new)
+        fake = FakeBackend()
+        rc, out = self.run_since(fake, new)
+        self.assertEqual(0, rc)
+        self.assertEqual(1, len(fake.calls))
+        self.assertIn("새 줄 2개만 판정", out)
+
+    def test_an_unknown_ref_is_a_usage_error(self) -> None:
+        rc, out = self.run_since(FakeBackend(), ref="no-such-branch")
+        self.assertEqual(2, rc)
+        self.assertIn("갈라진 지점", out)
+
+    def test_each_call_records_the_lines_it_saw(self) -> None:
+        self.write(self.lines + ["---", "덧붙인 문장입니다."])
+        self.run_since(FakeBackend())
+        row = [json.loads(l) for l in judge.LOG.read_text(encoding="utf-8").splitlines()][0]
+        self.assertEqual("d.md", row["key"], "저장소 뿌리 기준 경로여야 작업 트리와 기본 checkout 이 같은 문서로 읽힙니다")
+        self.assertIn(coverage.line_key("## 둘"), row["seen"])
+        self.assertIsNone(coverage.line_key("---"), "한글 없는 줄은 판정 대상이 아닙니다")
+
+    def test_old_records_are_not_trusted(self) -> None:
+        log = Path(self.tmp.name) / "old.jsonl"
+        k = coverage.line_key("하나 0번 문장입니다.")
+        stale = {"ok": True, "key": "d.md", "seen": [k], "when": time.time() - 15 * 86400}
+        failed = {"ok": False, "key": "d.md", "seen": ["x"], "when": time.time()}
+        log.write_text(json.dumps(stale) + "\n" + json.dumps(failed) + "\n", encoding="utf-8")
+        self.assertEqual(set(), coverage.judged("d.md", log),
+                         "14일 지난 기록이나 실패한 호출을 판정한 것으로 셌습니다")
 
 
 if __name__ == "__main__":

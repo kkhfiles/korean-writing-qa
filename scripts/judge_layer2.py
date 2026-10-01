@@ -17,7 +17,12 @@
 기록 위치는 저장소 밖(`~/.claude/state/`)이다 — 문서 경로가 들어가서 공개
 저장소에 두면 안 된다. `KOREAN_QA_JUDGE_LOG` 로 바꾼다(시험이 쓴다).
 
-    python -X utf8 scripts/judge_layer2.py <문서…> [--model opus] [--json 경로]
+**새 줄만 판정** — `--since origin/main` 이면 그 가지와 갈라진 뒤 새로 생겼고 판정기가
+아직 안 본 줄이 든 묶음만 부르고, 그 줄에 달린 지적만 보여 준다. 호출마다 본 줄의
+해시를 기록에 남기므로(`layer2_coverage.py`) 고친 줄만 다시 판정된다. 발행 게이트가
+push 직전에 같은 기록으로 「새 줄을 다 봤나」를 가른다.
+
+    python -X utf8 scripts/judge_layer2.py <문서…> [--since REF] [--model opus] [--json 경로]
     python -X utf8 scripts/judge_layer2.py --cost [--by day|month|doc]
 
 종료 코드 — 0 돌았음(지적은 사람이 본다) · 2 사용법 · 3 호출 백엔드 없음
@@ -28,9 +33,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
-import html.parser
 import json
-import os
 import re
 import sys
 import time
@@ -41,52 +44,15 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
+import layer2_coverage as coverage  # noqa: E402
 import probe_layer2_kinds as probe  # noqa: E402
 
-LOG = Path(os.environ.get("KOREAN_QA_JUDGE_LOG")
-           or Path.home() / ".claude" / "state" / "korean-layer2-judge.jsonl")
+LOG = coverage.LOG
+read_doc = coverage.read_doc
 #: 한 번에 넘기는 줄 수 — 탐침에서 문서가 길어지면 회수가 흔들렸다(17 → 29건).
 #: 넘으면 제목 경계에서 나눈다.
 CHUNK_LINES = 180
 DEFAULT_MODEL = "opus"      # 점검표에서 Sonnet 은 일상 동사 묶음 4/7 · Opus 6/7
-
-
-class _Text(html.parser.HTMLParser):
-    """HTML 에서 사람이 읽는 글만 줄 단위로 뽑는다 — script·style 은 뺀다."""
-
-    BLOCK = {"p", "li", "dd", "dt", "td", "th", "tr", "h1", "h2", "h3", "h4",
-             "h5", "h6", "div", "section", "article", "br", "pre", "blockquote"}
-
-    def __init__(self) -> None:
-        super().__init__()
-        self.parts: list[str] = []
-        self.skip = 0
-
-    def handle_starttag(self, tag, attrs):
-        if tag in ("script", "style"):
-            self.skip += 1
-        elif tag in self.BLOCK:
-            self.parts.append("\n")
-
-    def handle_endtag(self, tag):
-        if tag in ("script", "style") and self.skip:
-            self.skip -= 1
-        elif tag in self.BLOCK:
-            self.parts.append("\n")
-
-    def handle_data(self, data):
-        if not self.skip:
-            self.parts.append(data)
-
-
-def read_doc(path: Path) -> str:
-    text = path.read_text(encoding="utf-8", errors="replace")
-    if path.suffix.lower() in (".html", ".htm"):
-        p = _Text()
-        p.feed(text)
-        lines = [re.sub(r"\s+", " ", l).strip() for l in "".join(p.parts).splitlines()]
-        return "\n".join(l for l in lines if l)
-    return text
 
 
 def chunks(lines: list[str], limit: int = CHUNK_LINES) -> list[tuple[int, list[str]]]:
@@ -193,17 +159,43 @@ def log_call(row: dict) -> None:
         f.write(json.dumps(row, ensure_ascii=False) + "\n")
 
 
-def judge(path: Path, model: str, timeout: float, backend) -> dict:
+def open_for(path: Path, since: str) -> tuple[list[int], bool]:
+    """`--since` 로 판정할 줄 — (줄 번호, git 안인가). ref 를 못 풀면 ValueError.
+
+    갈라진 지점에 있던 줄과 판정기가 이미 본 줄은 뺀다. 고친 줄은 해시가 바뀌므로
+    다시 판정 대상이 된다 — 고친 말이 새 문제를 들여오는지 보는 것이 재판정의 몫이다.
+    """
+    lines = read_doc(path).splitlines()
+    base = coverage.base_lines(path, since)
+    seen = coverage.judged(coverage.doc_key(path), LOG)
+    return coverage.open_lines(lines, base, seen), base is not None
+
+
+def judge(path: Path, model: str, timeout: float, backend, targets: list[int] | None = None) -> dict:
+    """`targets` 가 있으면 그 줄이 든 묶음만 부르고 그 줄에 달린 지적만 낸다.
+
+    ⛔ **지적을 거르는 까닭** — 판정기는 같은 글을 다시 판정해도 지적 수가 평균 16%
+       달랐다(`docs/calibration-20260929.md`). 고친 줄 하나 때문에 묶음을 다시 보내면
+       안 고친 줄에서 새 지적이 나오고, 그것을 고치면 또 다시 판정하게 된다. 프롬프트는
+       탐침과 같게 두고 **결과만** 거른다 — 잰 것과 도는 것이 같아야 한다.
+    """
     call_messages, parse_json = backend
     text = read_doc(path)
     lines = text.splitlines()
+    key = coverage.doc_key(path)
+    want = set(targets) if targets is not None else None
     system = probe.SYSTEM.format(rules=probe.rules_for("guided"))
-    found, calls = [], []
+    found, calls, hidden = [], [], 0
     for first, part in chunks(lines):
+        if want is not None and not any(first <= n < first + len(part) for n in want):
+            continue
         started = time.time()
-        row = {"at": datetime.now().isoformat(timespec="seconds"), "doc": str(path),
+        row = {"at": datetime.now().isoformat(timespec="seconds"), "when": time.time(),
+               "doc": str(path), "key": key,
                "sha256": hashlib.sha256("\n".join(part).encode("utf-8")).hexdigest()[:16],
-               "lines": f"{first}-{first + len(part) - 1}", "model": model}
+               "lines": f"{first}-{first + len(part) - 1}", "model": model,
+               # 게이트가 「이번 가지의 새 줄을 판정기가 다 봤나」를 이것으로 가른다
+               "seen": coverage.seen_keys(part)}
         try:
             r = call_messages(model=model, system=system,
                               user=probe.USER.format(document=numbered(part, first)),
@@ -232,13 +224,18 @@ def judge(path: Path, model: str, timeout: float, backend) -> dict:
         for it in items:
             if isinstance(it, dict):
                 it["line"] = relocate(lines, it.get("line"), str(it.get("phrase") or ""))
+                # 줄을 못 찾은 지적은 남긴다 — 새 줄 것인지 모르면 보이는 쪽으로
+                if want is not None and it["line"] is not None and it["line"] not in want:
+                    hidden += 1
+                    continue
                 found.append(it)
     freq = load_freq()
     doc_lemmas = set(_lemmas(text)) if freq is not None else set()
     for it in found:
         it["fix_notes"] = fix_notes(str(it.get("fix") or ""), str(it.get("phrase") or ""),
                                     doc_lemmas, freq)
-    return {"doc": str(path), "findings": found, "calls": calls, "fix_checked": freq is not None}
+    return {"doc": str(path), "findings": found, "calls": calls, "fix_checked": freq is not None,
+            "targets": None if want is None else len(want), "hidden": hidden}
 
 
 def show(result: dict) -> None:
@@ -250,6 +247,12 @@ def show(result: dict) -> None:
     print(f"── 2층 판정 · {Path(result['doc']).name} · 지적 {len(result['findings'])}건 · "
           f"호출 {len(calls)}회 · {secs:.0f}초 · 토큰 입력 {tin:,} · 출력 {tout:,} · "
           f"환산 {cost:.2f}달러(구독 · 청구액 아님)")
+    if result.get("targets") is not None:
+        if not result["targets"]:
+            print("  판정할 새 줄 없음 — 갈라진 지점 뒤 새 줄을 판정기가 모두 봤습니다")
+        else:
+            print(f"  새 줄 {result['targets']}개만 판정 · 그 밖의 줄에 달린 지적 "
+                  f"{result.get('hidden', 0)}건은 숨김(이미 판정했거나 갈라진 지점에 있던 줄)")
     for f in sorted(result["findings"], key=lambda f: (f.get("line") or 0)):
         print(f"  {str(f.get('line') or '?'):>4}행  「{f.get('phrase')}」 — "
               f"{f.get('category')} → {f.get('fix')}")
@@ -295,6 +298,8 @@ def main(argv=None, backend=None) -> int:
     ap.add_argument("--model", default=DEFAULT_MODEL)
     ap.add_argument("--timeout", type=float, default=900)
     ap.add_argument("--json", help="지적을 JSON 으로도 씀")
+    ap.add_argument("--since", metavar="REF",
+                    help="REF 와 갈라진 뒤 새로 생겼고 아직 판정 안 한 줄만 판정 — 예: origin/main")
     ap.add_argument("--cost", action="store_true", help="누적 비용 보기")
     ap.add_argument("--by", choices=("day", "month", "doc"), default="day")
     a = ap.parse_args(argv)
@@ -315,8 +320,17 @@ def main(argv=None, backend=None) -> int:
         if not p.is_file():
             print(f"⛔ 파일 없음 — {d}")
             return 2
+        targets = None
+        if a.since:
+            try:
+                targets, in_git = open_for(p, a.since)
+            except ValueError as e:
+                print(f"⛔ {e}")
+                return 2
+            if not in_git:
+                print(f"  {p.name} — git 밖 문서라 갈라진 지점이 없습니다 · 아직 판정 안 한 한글 줄을 모두 봅니다")
         try:
-            results.append(judge(p, a.model, a.timeout, backend))
+            results.append(judge(p, a.model, a.timeout, backend, targets))
         except Exception as e:
             print(f"⛔ 호출 실패 — {p.name}: {type(e).__name__}: {e}"[:300])
             print("   검사되지 않았습니다 — 세션이 규칙을 직접 읽고 판정합니다.")
