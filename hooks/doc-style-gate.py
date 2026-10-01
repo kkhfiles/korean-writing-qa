@@ -8,6 +8,7 @@
 |---|---|---|
 | `PostToolUse` Write·Edit·MultiEdit | 방금 쓴 `.md`/`.html` | 오류만 · 같은 파일은 세션에 한 번 |
 | `PreToolUse` Artifact·Bash·PowerShell | 발행 대상 파일 | 오류와 주의 전부 |
+| `PreToolUse` Bash·PowerShell `git push` | `[publish]` 를 켠 저장소에서 이번 가지의 새 줄 | 2층 판정이 안 끝났으면 막음 |
 
 **차단하지 않는다.** 오탐 하나가 발행을 막으면 그 다음부터 아무도 안 본다.
 `additionalContext`로 내용을 넘겨 그 자리에서 고치게 한다.
@@ -193,8 +194,9 @@ def unverified_block(payload, files):
     return "\n".join(lines)
 
 
-def missing_stages(path):
+def missing_stages(path, require=None):
     """지금 내용이 아직 통과하지 못한 단계. 도구가 없으면 빈 목록(막지 않는다)."""
+    require = REQUIRE if require is None else require
     if not RECORDER or not RECORDER.exists():
         return []
     try:
@@ -205,7 +207,7 @@ def missing_stages(path):
     except (OSError, ValueError, subprocess.SubprocessError):
         return []
     stages = info.get("stages") or {}
-    return [s for s in REQUIRE if stages.get(s) != "pass"]
+    return [s for s in require if stages.get(s) != "pass"]
 
 
 def publish_block(payload, files):
@@ -265,6 +267,231 @@ def publish_block(payload, files):
         f"  정말 그대로 내보내야 하면 명령 앞에 `{FORCE}` 를 붙입니다 — 명령문에 남습니다.",
     ]
     return "\n".join(lines)
+
+
+# ── push 직전 2층 판정 ────────────────────────────────────────────────────────
+#
+# **저장소가 스스로 켠다** — 뿌리의 `korean-qa.toml` 에 `[publish]` 절이 있을 때만 본다.
+#
+#     [publish]
+#     require = ["judgment"]                       # 새 줄이 있는 문서에 요구할 기록
+#     targets = ["*/docs/*.md", "*/pages/*.html"]  # 뿌리 기준 · 칸 수까지 맞아야 함
+#     base = "origin/main"                         # 이 가지와 갈라진 뒤의 새 줄만 본다
+#
+# **왜 push 인가.** lab-docs 는 가지 push → PR → 병합 → 빌드로 나간다. 병합되는 것은
+#   push 한 커밋이고, 빌드(Cloudflare)는 이 PC 의 통과 기록을 못 본다. 그래서 이 PC 에서
+#   push 직전에 본다. 14일 동안 lab-docs 문서 62개가 이 길로 나갔고 2층 판정 기록은
+#   1건이었다(2026-10-01 실측 · 발행 게이트가 보는 노션·아티팩트 길은 같은 기간 다섯 건).
+# ⛔ **git 저장소 훅(pre-push)으로 두지 않는다** — 클론마다 설정이 필요하다(lab-docs 의
+#   2026-09-23 결정). 이 훅은 korean-writing-qa 를 설치한 PC 의 AI 세션에서만 돈다.
+# **커밋된 내용을 본다** — push 로 나가는 것은 작업 폴더가 아니라 `HEAD` 다.
+# **새 줄이 없는 문서는 안 본다** — 지우기만 한 문서 · 갈라진 지점에 이미 있던 줄은
+#   이 게이트의 몫이 아니다(묵은 문제는 따로 점검).
+# **푸는 길** — 명령 앞에 `KOREAN_PUBLISH_FORCE=1`. 명령문에 남는다.
+# ⚠️ `HEAD` 만 본다 — `git push origin 다른가지` 처럼 지금 가지가 아닌 것을 밀면
+#   그 가지는 안 본다. lab-docs 절차는 `git push -u origin HEAD` 다.
+
+#: push 판별은 `public-push-gate.py` 와 같다 — 따옴표 안은 안 보고(`git commit -m "push"`),
+#: `git -C <경로> push` 는 그 경로를, 아니면 세션 cwd 를 본다.
+PUSH = re.compile(r"(?:^|[\s;&|(])git\s+((?:-\S+\s+\S+\s+|--?\S+\s+)*)push\b")
+QUOTED = re.compile(r'"[^"]*"|\'[^\']*\'')
+C_OPT = re.compile(r"(?:^|\s)-C\s+(?:\"([^\"]*)\"|'([^']*)'|(\S+))")
+
+#: 판정기가 본 줄을 가르는 모듈 — 판정기와 같은 것을 써야 판정한 줄이 판정한 줄로 읽힌다.
+COVERAGE = _find(
+    "KOREAN_QA_COVERAGE",
+    HOME / ".claude" / "assets" / "layer2_coverage.py",
+    Path("scripts") / "layer2_coverage.py",
+)
+#: 스킬 — 세션에게 부르라고 적어 둔 판정기 경로를 여기서 읽는다.
+SKILL_MD = _find(
+    "KOREAN_QA_SKILL_MD",
+    HOME / ".claude" / "skills" / "finalize-korean-document" / "SKILL.md",
+    Path("skills") / "finalize-korean-document" / "SKILL.md",
+)
+
+
+def push_target(command):
+    """push 가 아니면 None · push 면 `-C` 경로(없으면 빈 문자열)."""
+    masked = QUOTED.sub(lambda m: m.group()[0] + "x" * (len(m.group()) - 2) + m.group()[-1],
+                        command)
+    m = PUSH.search(masked)
+    if not m:
+        return None
+    c = C_OPT.search(command[m.start(1):m.end(1)])   # 원문에서 꺼내야 따옴표 친 경로가 산다
+    return next(g for g in c.groups() if g is not None) if c else ""
+
+
+def _git(repo, *args):
+    return subprocess.run(["git", "-C", str(repo), *args], capture_output=True, timeout=30)
+
+
+def push_repo(payload, c_path):
+    base = Path(payload.get("cwd") or os.getcwd())
+    if c_path:
+        base = Path(c_path) if Path(c_path).is_absolute() else base / c_path
+    if not base.is_dir():
+        return None
+    got = _git(base, "rev-parse", "--show-toplevel")
+    top = got.stdout.decode("utf-8", "replace").strip()
+    return Path(top) if got.returncode == 0 and top else None
+
+
+def publish_config(repo):
+    """`[publish]` 절 · 없으면 None · 못 읽으면 그 까닭(문자열)."""
+    path = repo / "korean-qa.toml"
+    if not path.is_file():
+        return None
+    try:
+        import tomllib
+        data = tomllib.loads(path.read_text(encoding="utf-8"))
+    except Exception as e:              # 설정을 못 읽고 조용히 넘기면 켠 게이트가 꺼진다
+        return f"{path.name} 을 못 읽었습니다 — {type(e).__name__}: {e}"[:300]
+    conf = data.get("publish")
+    if not isinstance(conf, dict):
+        return None
+    return {"require": [str(s) for s in conf.get("require") or ["judgment"]],
+            "targets": [str(s) for s in conf.get("targets") or []],
+            "base": str(conf.get("base") or "origin/main")}
+
+
+def matches(rel, patterns):
+    """뿌리 기준 경로가 무늬와 맞나 — 칸(`/`) 수까지 같아야 한다.
+
+    `fnmatch` 를 통째로 쓰면 `*` 가 `/` 까지 삼켜 `*/docs/*.md` 가 하위 폴더의 초안까지
+    잡는다(lab-docs 빌드는 `docs/` 맨 위 md 만 낸다).
+    """
+    from fnmatch import fnmatchcase
+    parts = rel.split("/")
+    for pat in patterns:
+        pp = pat.split("/")
+        if len(pp) == len(parts) and all(fnmatchcase(a, b) for a, b in zip(parts, pp)):
+            return True
+    return False
+
+
+def judge_command():
+    """이 PC 에서 세션이 부를 수 있는 판정기 · 없으면 None.
+
+    **스킬이 세션에게 부르라고 적은 경로를 그대로 본다.** 게이트가 「판정기를 돌렸나」까지
+    요구하는 것은 세션이 그 열쇠를 쓸 수 있을 때뿐이다 — 못 쓰는 PC 에서 요구하면 넘기기
+    말고는 길이 없다(「열쇠 없는 자물쇠」). 판정기 호출 백엔드(`llm_playbook`)도 있어야 한다.
+    `KOREAN_QA_JUDGE` 로 경로를 주면 그것을 믿는다(`-` 면 없음) — 시험이 쓴다.
+    """
+    override = os.environ.get("KOREAN_QA_JUDGE")
+    if override:
+        return None if override == "-" else (Path(override) if Path(override).is_file() else None)
+    try:
+        text = SKILL_MD.read_text(encoding="utf-8")
+    except OSError:
+        return None
+    m = re.search(r"python -X utf8 (\S+judge_layer2\.py)", text)
+    if not m:
+        return None
+    path = Path(os.path.expanduser(m.group(1)))
+    if not path.is_file():
+        return None
+    import importlib.util
+    return path if importlib.util.find_spec("llm_playbook") is not None else None
+
+
+def load_coverage():
+    if not COVERAGE or not COVERAGE.is_file():
+        return None
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("layer2_coverage", COVERAGE)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def push_gaps(repo, conf, judge):
+    """새 줄이 있는 대상 문서마다 빠진 것 — [(뿌리 기준 경로, [빠진 것…])].
+
+    ⛔ 갈라진 지점을 못 찾으면 ValueError — 새 줄을 못 가르면 통과시킬 수 없다.
+    """
+    import tempfile
+    mb = _git(repo, "merge-base", "HEAD", conf["base"])
+    if mb.returncode:
+        raise ValueError(mb.stderr.decode("utf-8", "replace").strip()[:200])
+    mb = mb.stdout.decode().strip()
+    diff = _git(repo, "diff", "--name-only", "--no-renames", "--diff-filter=AM", mb, "HEAD")
+    changed = [l for l in diff.stdout.decode("utf-8", "replace").splitlines()
+               if l and matches(l, conf["targets"])]
+    cov = load_coverage()
+    out = []
+    for rel in changed:
+        blob = _git(repo, "show", f"HEAD:{rel}").stdout
+        suffix = Path(rel).suffix
+        gaps = []
+        if cov is not None:
+            lines = cov.visible_text(blob.decode("utf-8", "replace"), suffix).splitlines()
+            old = _git(repo, "show", f"{mb}:{rel}")
+            base = (cov.visible_text(old.stdout.decode("utf-8", "replace"), suffix).splitlines()
+                    if old.returncode == 0 else [])
+            if not cov.open_lines(lines, base, set()):
+                continue                    # 새 줄이 없다 — 지우기만 했거나 이미 있던 줄
+            if judge is not None:
+                left = cov.open_lines(lines, base, cov.judged(rel, cov.LOG))
+                if left:
+                    n = left[0]
+                    gaps.append(f"판정기가 아직 안 본 새 줄 {len(left)}개 — "
+                                f"{n}행 「{lines[n - 1].strip()[:30]}」")
+        with tempfile.TemporaryDirectory() as tmp:
+            # 기록은 내용 해시에 묶인다 — 커밋된 내용을 파일로 꺼내 그 해시로 묻는다
+            probe_file = Path(tmp) / f"head{suffix}"
+            probe_file.write_bytes(blob)
+            missing = missing_stages(probe_file, conf["require"])
+        gaps += [f"{s} 기록 없음(커밋된 내용 기준)" for s in missing]
+        if gaps:
+            out.append((rel, gaps))
+    return out
+
+
+def push_block(payload):
+    """push 직전 — `[publish]` 를 켠 저장소에서 새 줄의 2층 판정이 안 끝났으면 막는 글."""
+    if (payload.get("hook_event_name") or "") != "PreToolUse":
+        return ""
+    if (payload.get("tool_name") or "") not in ("Bash", "PowerShell"):
+        return ""
+    cmd = str((payload.get("tool_input") or {}).get("command") or "")
+    target = push_target(cmd)
+    if target is None or FORCE in cmd:
+        return ""
+    repo = push_repo(payload, target)
+    conf = publish_config(repo) if repo else None
+    if conf is None:
+        return ""
+    head = ["⛔ push 보류 — 이번 가지에서 새로 쓴 줄의 2층 판정이 끝나지 않았습니다",
+            f"   ({repo.name} 의 korean-qa.toml [publish] 설정)", ""]
+    tail = ["", f"  정말 그대로 올려야 하면 명령 앞에 `{FORCE}` 을 붙입니다 — 명령문에 남습니다."]
+    if isinstance(conf, str):
+        return "\n".join(head + [f"  {conf}"] + tail)
+    judge = judge_command()
+    try:
+        gaps = push_gaps(repo, conf, judge)
+    except ValueError as e:
+        return "\n".join(head + [
+            f"  `{conf['base']}` 와 갈라진 지점을 못 찾았습니다 — 새 줄을 가를 수 없습니다.",
+            f"  {e}", "", "  `git fetch` 로 기준 가지를 받은 뒤 다시 push 합니다."] + tail)
+    if not gaps:
+        return ""
+    lines = list(head)
+    for rel, why in gaps:
+        lines.append(f"  {rel}")
+        lines += [f"    · {w}" for w in why]
+    files = " ".join((repo / rel).as_posix() for rel, _ in gaps)   # 세션이 하위 폴더에 있어도 그대로 돈다
+    lines += ["", "  고치는 법"]
+    if judge is not None:
+        lines += [f"    1. python -X utf8 {judge.as_posix()} {files} --since {conf['base']}",
+                  "       새 줄만 판정합니다. 지적을 반영해 고쳤으면 같은 명령을 한 번 더 부릅니다."]
+    else:
+        lines += ["    1. 이 PC 에서는 2층 판정기를 부를 수 없습니다 — finalize-korean-document",
+                  "       9단계와 판단 규칙(core-rules.md)을 세션이 직접 읽고 새 줄을 판정합니다."]
+    lines += ["    2. python -X utf8 ~/.claude/assets/check_record.py record <파일> \\",
+              "           --stage judgment --verdict pass --note \"남긴 지적과 까닭\"",
+              "    3. 커밋한 뒤 다시 push 합니다 — 확인은 커밋된 내용으로 합니다."]
+    return "\n".join(lines + tail)
 
 
 def reviewed(path):
@@ -675,6 +902,12 @@ def main():
         payload = json.load(sys.stdin)
     except (ValueError, OSError):
         return 0
+
+    # push 는 문서 파일을 대상으로 잡지 않으므로 먼저 본다 · 상태를 안 쓰므로 시험 통로에서도 돈다
+    stop = push_block(payload)
+    if stop:
+        sys.stderr.write(stop + "\n")
+        return 2
 
     files, errors_only, mode = targets(payload)
     korean_files = korean_targets(payload)

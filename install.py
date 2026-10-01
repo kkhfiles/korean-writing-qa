@@ -63,6 +63,11 @@ def pairs() -> list[tuple[Path, Path]]:
     recorder = repo_paths.REPO / "scripts" / "check_record.py"
     if recorder.exists():
         out.append((recorder, repo_paths.installed("assets", recorder.name)))
+    # ⛔ 설치된 게이트가 push 직전에 `~/.claude/assets/layer2_coverage.py` 로 「새 줄을
+    #    판정기가 다 봤나」를 가른다. 판정기와 같은 모듈이어야 판정한 줄이 판정한 줄로 읽힌다.
+    coverage = repo_paths.REPO / "scripts" / "layer2_coverage.py"
+    if coverage.exists():
+        out.append((coverage, repo_paths.installed("assets", coverage.name)))
     # ⛔ 정상 판정 목록도 같이 옮긴다. 이것이 빠지면 **저장소본과 설치본이 규칙 판을
     #    다르게 계산해** 게이트가 적은 기록을 저장소의 도구가 버린다(2026-09-16 실측).
     known = repo_paths.REPO / "data" / "catalog" / "known-words.jsonl"
