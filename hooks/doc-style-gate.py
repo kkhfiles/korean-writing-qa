@@ -291,17 +291,6 @@ def publish_block(payload, files):
 # ⚠️ `HEAD` 만 본다 — `git push origin 다른가지` 처럼 지금 가지가 아닌 것을 밀면
 #   그 가지는 안 본다. lab-docs 절차는 `git push -u origin HEAD` 다.
 
-#: push 판별은 `public-push-gate.py` 와 같다 — 따옴표 안은 안 보고(`git commit -m "push"`),
-#: `git -C <경로> push` 는 그 경로를, 아니면 세션 cwd 를 본다.
-PUSH = re.compile(r"(?:^|[\s;&|(])git\s+((?:-\S+\s+\S+\s+|--?\S+\s+)*)push\b")
-QUOTED = re.compile(r'"[^"]*"|\'[^\']*\'')
-C_OPT = re.compile(r"(?:^|\s)-C\s+(?:\"([^\"]*)\"|'([^']*)'|(\S+))")
-#: push 앞에서 폴더를 옮기는 명령 — `cd 저장소 && git push` 는 세션 cwd 가 아니라 그 폴더에서
-#: 민다(2026-10-01 Astra 검토). 훅 payload 의 cwd 는 명령 **전**의 폴더라 이것을 안 보면 엉뚱한
-#: 저장소를 검사하고 통과시킨다. 같은 명령 안에서 push 보다 앞선 마지막 것을 쓴다.
-CD_CMD = re.compile(r"(?:^|[;&|(]\s*)(?:cd|pushd|Set-Location|sl)\s+(?:-LiteralPath\s+|-Path\s+)?"
-                    r"(?:\"([^\"]*)\"|'([^']*)'|([^\s;&|)]+))", re.I)
-
 #: 판정기가 본 줄을 가르는 모듈 — 판정기와 같은 것을 써야 판정한 줄이 판정한 줄로 읽힌다.
 COVERAGE = _find(
     "KOREAN_QA_COVERAGE",
@@ -316,49 +305,25 @@ SKILL_MD = _find(
 )
 
 
-def push_target(command):
-    """push 가 아니면 None · push 면 (앞서 옮긴 폴더, `-C` 경로) — 없으면 빈 문자열."""
-    masked = QUOTED.sub(lambda m: m.group()[0] + "x" * (len(m.group()) - 2) + m.group()[-1],
-                        command)
-    m = PUSH.search(masked)
-    if not m:
-        return None
-    c = C_OPT.search(command[m.start(1):m.end(1)])   # 원문에서 꺼내야 따옴표 친 경로가 산다
-    c_path = next(g for g in c.groups() if g is not None) if c else ""
-    cds = [d for d in CD_CMD.finditer(command[:m.start()])]
-    cd_path = next(g for g in cds[-1].groups() if g is not None) if cds else ""
-    return cd_path, c_path
-
-
 def _git(repo, *args):
     return subprocess.run(["git", "-C", str(repo), *args], capture_output=True, timeout=30)
 
 
-def _local_path(step):
-    """명령에 적힌 경로를 이 PC 경로로 — `~` 와 Git Bash 꼴(`/p/github/…` → `P:/github/…`).
+def _push_parser():
+    """push 판별 — **정본은 `public-push-gate.py` 하나다**(같은 폴더에 함께 설치된다).
 
-    ⛔ 못 풀면 그 폴더가 없는 것으로 보여 게이트가 **조용히 통과**한다. Bash 도구 명령은
-       Git Bash 꼴을 흔히 쓴다.
+    따옴표 안은 안 보고(`git commit -m "push"`), 앞서 옮긴 폴더(`cd`·`Set-Location`)와
+    `git -C <경로>` 를 따라간다. 이 파일에 사본을 두었다가 cd 해석을 한쪽에만 고쳤다(2026-10-01).
+    못 불러오면 None — push 를 가를 수 없다.
     """
-    step = os.path.expanduser(step)
-    m = re.match(r"^/([a-zA-Z])(?=/|$)", step)
-    if os.name == "nt" and m:
-        step = f"{m.group(1).upper()}:" + (step[2:] or "/")
-    return Path(step)
-
-
-def push_repo(payload, target):
-    cd_path, c_path = target
-    base = Path(payload.get("cwd") or os.getcwd())
-    for step in (cd_path, c_path):       # `cd X && git -C Y push` 면 Y 는 X 기준
-        if step:
-            p = _local_path(step)
-            base = p if p.is_absolute() else base / p
-    if not base.is_dir():
+    import importlib.util
+    path = Path(__file__).resolve().parent / "public-push-gate.py"
+    if not path.is_file():
         return None
-    got = _git(base, "rev-parse", "--show-toplevel")
-    top = got.stdout.decode("utf-8", "replace").strip()
-    return Path(top) if got.returncode == 0 and top else None
+    spec = importlib.util.spec_from_file_location("public_push_gate", path)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
 
 
 def publish_config(repo):
@@ -479,10 +444,11 @@ def push_block(payload):
     if (payload.get("tool_name") or "") not in ("Bash", "PowerShell"):
         return ""
     cmd = str((payload.get("tool_input") or {}).get("command") or "")
-    target = push_target(cmd)
+    parser = _push_parser()
+    target = parser.push_target(cmd) if parser else None
     if target is None or FORCE in cmd:
         return ""
-    repo = push_repo(payload, target)
+    repo = parser._repo_root(payload.get("cwd") or "", target)
     conf = publish_config(repo) if repo else None
     if conf is None:
         return ""

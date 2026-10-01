@@ -69,6 +69,12 @@ QUOTED = re.compile(r'"[^"]*"|\'[^\']*\'')
 #: 옵션 토막 안의 `-C <경로>` — 경로는 따옴표로 감쌌을 수 있다.
 C_OPT = re.compile(r"(?:^|\s)-C\s+(?:\"([^\"]*)\"|'([^']*)'|(\S+))")
 
+#: push 앞에서 폴더를 옮기는 명령 — `cd 저장소 && git push` 는 세션 cwd 가 아니라 그 폴더에서
+#: 민다. 훅 payload 의 cwd 는 명령 **전**의 폴더라 이것을 안 보면 엉뚱한 저장소를 검사하고
+#: 통과시킨다(2026-10-01 Astra 검토). 같은 명령 안에서 push 보다 앞선 마지막 것을 쓴다.
+CD_CMD = re.compile(r"(?:^|[;&|(]\s*)(?:cd|pushd|Set-Location|sl)\s+(?:-LiteralPath\s+|-Path\s+)?"
+                    r"(?:\"([^\"]*)\"|'([^']*)'|([^\s;&|)]+))", re.I)
+
 HERE = Path(__file__).resolve().parent
 ESCAPE = "KOREAN_PUSH_FORCE"
 
@@ -79,16 +85,34 @@ def mask_quoted(command: str) -> str:
                       command)
 
 
-def push_target(command: str) -> str | None:
-    """푸시가 아니면 None · 푸시면 `-C` 경로(없으면 빈 문자열)."""
+def push_target(command: str) -> tuple[str, str] | None:
+    """푸시가 아니면 None · 푸시면 (앞서 옮긴 폴더, `-C` 경로) — 없는 것은 빈 문자열.
+
+    **push 판별의 정본은 이 함수 하나다** — `doc-style-gate.py` 의 push 직전 2층 판정도 이것을
+    불러 쓴다. 두 벌로 두었더니 cd 해석을 한쪽에만 고쳤다(2026-10-01).
+    """
     m = PUSH.search(mask_quoted(command))
     if not m:
         return None
     opts = command[m.start(1):m.end(1)]        # 원문에서 꺼내야 따옴표 친 경로가 산다
     c = C_OPT.search(opts)
-    if not c:
-        return ""
-    return next(g for g in c.groups() if g is not None)
+    c_path = next(g for g in c.groups() if g is not None) if c else ""
+    cds = list(CD_CMD.finditer(command[:m.start()]))
+    cd_path = next(g for g in cds[-1].groups() if g is not None) if cds else ""
+    return cd_path, c_path
+
+
+def _local_path(step: str) -> Path:
+    """명령에 적힌 경로를 이 PC 경로로 — `~` 와 Git Bash 꼴(`/p/github/…` → `P:/github/…`).
+
+    ⛔ 못 풀면 그 폴더가 없는 것으로 보여 게이트가 **조용히 통과**한다. Bash 도구 명령은
+       Git Bash 꼴을 흔히 쓴다.
+    """
+    step = os.path.expanduser(step)
+    m = re.match(r"^/([a-zA-Z])(?=/|$)", step)
+    if os.name == "nt" and m:
+        step = f"{m.group(1).upper()}:" + (step[2:] or "/")
+    return Path(step)
 
 
 def _checker() -> Path | None:
@@ -104,11 +128,17 @@ def _checker() -> Path | None:
     return None
 
 
-def _repo_root(cwd: str, c_path: str = "") -> Path | None:
-    """`-C` 경로가 있으면 그것을(상대면 cwd 기준), 없으면 cwd 의 저장소 루트."""
+def _repo_root(cwd: str, target: tuple[str, str] | str = ("", "")) -> Path | None:
+    """push 하는 저장소 뿌리 — cwd 에서 출발해 앞서 옮긴 폴더, 그다음 `-C` 경로 순으로 따라간다.
+
+    `target` 에 글자 하나를 주면 `-C` 경로로 본다(스크립트 호출 `--repo`).
+    """
+    cd_path, c_path = ("", target) if isinstance(target, str) else target
     base = Path(cwd) if cwd else Path.cwd()
-    if c_path:
-        base = Path(c_path) if Path(c_path).is_absolute() else base / c_path
+    for step in (cd_path, c_path):       # `cd X && git -C Y push` 면 Y 는 X 기준
+        if step:
+            p = _local_path(step)
+            base = p if p.is_absolute() else base / p
     if not base.is_dir():
         return None
     got = subprocess.run(["git", "rev-parse", "--show-toplevel"], cwd=str(base),
@@ -186,11 +216,11 @@ def main(argv: list[str] | None = None) -> int:
     except (json.JSONDecodeError, ValueError):
         return 0
     command = (data.get("tool_input") or {}).get("command") or ""
-    c_path = push_target(command)
-    if c_path is None:
+    target = push_target(command)
+    if target is None:
         return 0
 
-    repo = _repo_root(data.get("cwd") or "", c_path)
+    repo = _repo_root(data.get("cwd") or "", target)
     if repo is None:
         return 0
 

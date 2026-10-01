@@ -11,6 +11,7 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 import unittest
@@ -87,7 +88,7 @@ class PublicPushGateTests(unittest.TestCase):
         for cmd in ("git push", "git add -A && git push",
                     'git commit -m "done" && git push origin main'):
             with self.subTest(cmd):
-                self.assertEqual("", target(cmd))
+                self.assertEqual(("", ""), target(cmd))
 
     def test_c_path_is_the_repo_to_check(self) -> None:
         """`git -C <경로> push` 는 그 경로의 저장소를 본다 — cwd 가 아니다.
@@ -95,15 +96,34 @@ class PublicPushGateTests(unittest.TestCase):
         2026-09-16 에 slack-bot 을 밀려는데 cwd 의 claude-workflow 를 검사했다.
         """
         mod = load_hook()
-        self.assertEqual("/tmp/x", mod.push_target("git -C /tmp/x push"))
-        self.assertEqual("P:/a b", mod.push_target('git -C "P:/a b" push origin main'))
-        self.assertEqual("P:/a b", mod.push_target("git -C 'P:/a b' push"))
+        self.assertEqual(("", "/tmp/x"), mod.push_target("git -C /tmp/x push"))
+        self.assertEqual(("", "P:/a b"), mod.push_target('git -C "P:/a b" push origin main'))
+        self.assertEqual(("", "P:/a b"), mod.push_target("git -C 'P:/a b' push"))
         import tempfile                                  # noqa: PLC0415
         with tempfile.TemporaryDirectory() as tmp:
             # cwd 는 저장소가 아니고 -C 가 이 저장소를 가리킨다.
             self.assertEqual(repo_paths.REPO.resolve(),
                              mod._repo_root(tmp, str(repo_paths.REPO)).resolve())
             self.assertIsNone(mod._repo_root(tmp, ""))
+
+    def test_cd_before_push_is_the_repo_to_check(self) -> None:
+        """훅 payload 의 cwd 는 명령 전 폴더다 — `cd 저장소 && git push` 는 그 저장소를 본다.
+
+        2026-10-01 Astra 검토. 안 보면 공개 저장소를 미는데 cwd 의 개인 저장소를 검사하고 통과한다.
+        """
+        mod = load_hook()
+        self.assertEqual(("P:/a b", ""), mod.push_target('cd "P:/a b" && git push'))
+        self.assertEqual(("P:/x", ""), mod.push_target("Set-Location -LiteralPath 'P:/x'; git push"))
+        self.assertEqual(("P:/x", "sub"), mod.push_target("cd P:/x && git -C sub push"))
+        self.assertEqual(("P:/y", ""), mod.push_target("cd P:/x && cd P:/y && git push"),
+                         "push 앞의 마지막 이동을 써야 합니다")
+        import tempfile                                  # noqa: PLC0415
+        with tempfile.TemporaryDirectory() as tmp:
+            self.assertEqual(repo_paths.REPO.resolve(),
+                             mod._repo_root(tmp, (str(repo_paths.REPO), "")).resolve())
+        if os.name == "nt":
+            self.assertEqual(Path("P:/github/x"), mod._local_path("/p/github/x"),
+                             "Git Bash 꼴 경로를 못 풀면 게이트가 조용히 통과합니다")
 
     def test_hook_loads_the_checker_it_runs(self) -> None:
         """공개 여부 판정을 실제로 돌릴 검사기 파일에서 불러온다.
