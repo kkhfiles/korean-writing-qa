@@ -66,7 +66,23 @@ def fresh_session() -> str:
     return f"codex-gate-test-{uuid.uuid4().hex[:12]}"
 
 
-def call_adapter(mode: str, event: str, payload: dict):
+def gate_args(event: str) -> list[str]:
+    """템플릿이 그 사건에서 게이트를 부르는 인자 — 어댑터 경로 뒤 · `--bridge-revision` 앞.
+
+    설정 거울이 연결 방식을 바꿔도(2026-10-01 `korean-document-check` → `shared … doc-style-gate.py`)
+    이 시험은 **템플릿에 적힌 그대로** 부른다. 시험이 연결 방식을 따로 들고 있으면 둘이 갈린다.
+    """
+    data = json.loads(HOOKS_TEMPLATE.read_text(encoding="utf-8"))
+    for group in data["hooks"].get(event, []):
+        for hook in group.get("hooks", []):
+            cmd = hook.get("command", "")
+            if "doc-style-gate.py" in cmd or "korean-document-check" in cmd:
+                tail = cmd.split("codex-hook-adapter.py", 1)[1].split("--bridge-revision")[0]
+                return tail.replace('"', " ").split()
+    raise AssertionError(f"템플릿의 {event} 에 한국어 게이트가 없습니다")
+
+
+def call_adapter(event: str, payload: dict):
     """어댑터를 돌리고 `(종료 코드, 사람이 읽을 말, 막는 글)` 을 낸다.
 
     ⛔ **종료 코드와 `stderr` 를 같이 본다** — 막기는 그 둘로 온다. `stdout` 만
@@ -77,8 +93,9 @@ def call_adapter(mode: str, event: str, payload: dict):
     #    판정이 **진짜 기록 저장소**에 쌓이고, 측정기가 그 경로를 안 걸러 문서 수가 부푼다
     #    (2026-09-23 전체 시험 한 번에 다섯 줄).
     store = Path(tempfile.gettempdir()) / "codex-gate-test-store.jsonl"
+    payload = {"hook_event_name": event, "cwd": str(WORK), **payload}   # 실제 Codex payload 모양
     done = subprocess.run(
-        [sys.executable, "-X", "utf8", str(ADAPTER), mode, event],
+        [sys.executable, "-X", "utf8", str(ADAPTER), *gate_args(event)],
         input=json.dumps(payload, ensure_ascii=False),
         capture_output=True, text=True, encoding="utf-8",
         env={**os.environ, "KOREAN_CHECK_RECORD": str(store)},
@@ -93,8 +110,8 @@ def call_adapter(mode: str, event: str, payload: dict):
     return done.returncode, said, (done.stderr or "").strip()
 
 
-def run_adapter(mode: str, event: str, payload: dict) -> str:
-    return call_adapter(mode, event, payload)[1]
+def run_adapter(event: str, payload: dict) -> str:
+    return call_adapter(event, payload)[1]
 
 
 
@@ -133,7 +150,7 @@ class CodexUsesTheSameGateTests(unittest.TestCase):
 
     def test_a_written_file_gets_the_structural_check(self) -> None:
         """구조 검사기가 Codex 에서도 돌아야 한다 — 오류의 대부분이 여기서 나온다."""
-        said = run_adapter("korean-document-check", "PostToolUse", {
+        said = run_adapter("PostToolUse", {
             "tool_name": "Write", "session_id": fresh_session(),
             "tool_input": {"file_path": str(self.doc)}})
 
@@ -142,7 +159,7 @@ class CodexUsesTheSameGateTests(unittest.TestCase):
     def test_a_patch_gets_the_same_check(self) -> None:
         """Codex 의 주 편집 도구는 `apply_patch` 다 — 파일 이름이 패치 본문에 있다."""
         patch = f"*** Update File: {self.doc}\n@@\n+- 산출물은 해당 폴더에\n"
-        said = run_adapter("korean-document-check", "PostToolUse", {
+        said = run_adapter("PostToolUse", {
             "tool_name": "apply_patch", "session_id": fresh_session(),
             "tool_input": {"patch": patch}})
 
@@ -164,7 +181,7 @@ class CodexUsesTheSameGateTests(unittest.TestCase):
         ⛔ **종료 코드를 같이 본다** — 막는 글만 보면 「말은 하는데 안 막는」
         상태가 통과한다. 그게 바로 고치기 전 모습이다.
         """
-        code, _said, stop = call_adapter("korean-document-check", "PreToolUse", {
+        code, _said, stop = call_adapter("PreToolUse", {
             "tool_name": "Bash", "session_id": fresh_session(),
             "tool_input": {"command": f'python notion.py create --file "{self.doc}"'}})
 
@@ -180,7 +197,7 @@ class CodexUsesTheSameGateTests(unittest.TestCase):
 
         ⛔ 기대값은 게이트에서 가져온다 — 여기 또 적으면 문구가 두 곳이 된다.
         """
-        _code, _said, stop = call_adapter("korean-document-check", "PreToolUse", {
+        _code, _said, stop = call_adapter("PreToolUse", {
             "tool_name": "Bash", "session_id": fresh_session(),
             "tool_input": {"command": f'python notion.py create --file "{self.doc}"'}})
 
@@ -195,7 +212,7 @@ class CodexUsesTheSameGateTests(unittest.TestCase):
         """
         command = (f"{gate_module().FORCE} python notion.py create "
                    f'--file "{self.doc}"')
-        code, _said, stop = call_adapter("korean-document-check", "PreToolUse", {
+        code, _said, stop = call_adapter("PreToolUse", {
             "tool_name": "Bash", "session_id": fresh_session(),
             "tool_input": {"command": command}})
 
@@ -205,7 +222,7 @@ class CodexUsesTheSameGateTests(unittest.TestCase):
         """무엇을 볼지는 훅이 정한다 — 어댑터가 따로 거르지 않는다."""
         code = WORK / "sample.py"
         code.write_text("print('산출물은 해당 폴더에')\n", encoding="utf-8")
-        said = run_adapter("korean-document-check", "PostToolUse", {
+        said = run_adapter("PostToolUse", {
             "tool_name": "Write", "session_id": fresh_session(),
             "tool_input": {"file_path": str(code)}})
 
@@ -217,14 +234,14 @@ class CodexUsesTheSameGateTests(unittest.TestCase):
 
         self.assertNotIn("KOREAN_SOURCE_EXTENSIONS", source)
         self.assertNotIn("KOREAN_SOURCE_SKIP_RE", source)
-        self.assertIn("DOC_STYLE_GATE", source)
 
     def test_both_events_are_wired_in_the_codex_template(self) -> None:
         """쓰는 순간만 걸고 발행을 안 걸면 공유 자료가 그대로 나간다."""
         data = json.loads(HOOKS_TEMPLATE.read_text(encoding="utf-8"))
         wired = {event for event, groups in data["hooks"].items()
                  for group in groups for hook in group.get("hooks", [])
-                 if "korean-document-check" in hook.get("command", "")}
+                 if "korean-document-check" in hook.get("command", "")
+                 or "doc-style-gate.py" in hook.get("command", "")}
 
         self.assertEqual(wired, {"PreToolUse", "PostToolUse"})
 
@@ -233,19 +250,10 @@ class CodexUsesTheSameGateTests(unittest.TestCase):
         spec = importlib.util.spec_from_file_location("codex_adapter", ADAPTER)
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
-        original = module.DOC_STYLE_GATE
-        module.DOC_STYLE_GATE = original.with_name("no-such-gate.py")
-        try:
-            with tempfile.TemporaryDirectory():
-                import io
-                import contextlib
-                buffer = io.StringIO()
-                with contextlib.redirect_stdout(buffer):
-                    module.run_korean_document_check("PostToolUse", {
-                        "tool_name": "Write",
-                        "tool_input": {"file_path": str(self.doc)}})
-                said = buffer.getvalue()
-        finally:
-            module.DOC_STYLE_GATE = original
-
-        self.assertIn("훅 없음", said)
+        import contextlib
+        import io
+        buffer = io.StringIO()
+        with contextlib.redirect_stdout(buffer):
+            rc = module.run_shared("PostToolUse", "hooks/no-such-gate.py", b"{}")
+        self.assertEqual(0, rc)
+        self.assertIn("no-such-gate.py", buffer.getvalue(), "훅이 없다는 사실을 알리지 않았습니다")
