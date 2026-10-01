@@ -86,6 +86,41 @@ class CheckRecordTests(unittest.TestCase):
         self.assertIsNone(self.mod.status(self.doc)["stages"]["structure"],
                           f"{self.mod.STALE_DAYS}일보다 오래된 통과를 믿고 있습니다")
 
+    def _age_rules(self, stage: str) -> None:
+        """그 단계 기록을 옛 검사기 버전으로 적은 것처럼 바꾼다."""
+        self.mod.record(self.doc, stage, "pass", "까닭")
+        rows = io.open(self.store, encoding="utf-8").read().splitlines()
+        rows[-1] = rows[-1].replace(f'"rules": "{self.mod.rules_version()}"', '"rules": "old"')
+        with io.open(self.store, "w", encoding="utf-8", newline="\n") as f:
+            f.write("\n".join(rows) + "\n")
+
+    def test_a_checker_change_drops_the_structure_pass(self) -> None:
+        self._age_rules("structure")
+        self.assertIsNone(self.mod.status(self.doc)["stages"]["structure"],
+                          "검사기가 바뀌었는데 옛 구조 통과를 믿고 있습니다")
+
+    def test_a_checker_change_keeps_the_judgment_pass(self) -> None:
+        """판단 규칙을 읽고 내린 판정은 1층 검사기 버전과 무관하다 — 묶으면 검사기를 고칠
+        때마다 방금 판정한 문서가 push 직전에 막혀 넘기기가 습관이 된다."""
+        self._age_rules("judgment")
+        self.assertEqual("pass", self.mod.status(self.doc)["stages"]["judgment"])
+
+    def test_a_judgment_pass_needs_a_reason(self) -> None:
+        env = dict(os.environ, KOREAN_CHECK_RECORD=self.store)
+
+        def rec(*extra):
+            return subprocess.run(
+                [sys.executable, "-X", "utf8", TOOL, "record", self.doc,
+                 "--stage", "judgment", *extra],
+                capture_output=True, text=True, encoding="utf-8", env=env, cwd=ROOT)
+
+        bare = rec("--verdict", "pass")
+        self.assertEqual(1, bare.returncode, "까닭 없는 판단 통과를 받았습니다")
+        self.assertIn("남긴 지적", bare.stdout)
+        self.assertEqual(0, rec("--verdict", "fail").returncode, "실패에는 까닭을 요구하지 않습니다")
+        self.assertEqual(0, rec("--verdict", "pass", "--note", "남은 2건은 굳은 용어").returncode)
+        self.assertEqual("pass", self.mod.status(self.doc)["stages"]["judgment"])
+
     def test_require_fails_when_a_stage_is_missing(self) -> None:
         env = dict(os.environ, KOREAN_CHECK_RECORD=self.store)
         self.mod.record(self.doc, "structure", "pass")

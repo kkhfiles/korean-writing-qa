@@ -10,7 +10,7 @@
 |---|---|---|
 | `structure` | 개조식·절단형·지어낸 명사구 — 표면 모양 | 게이트가 자동 |
 | `words` | 업무 글에서 드문 낱말 — 빈도 | 2층 절차의 단어 점검 |
-| `judgment` | 문맥을 읽어야 갈리는 것 | 2층 절차의 마지막 |
+| `judgment` | 문맥을 읽어야 갈리는 것 | 2층 절차의 마지막 · 통과에는 까닭(`--note`) |
 
 ⛔ **적는 곳이 있는지 확인하고 적는다.** 이 표는 2026-09-16 부터 닷새 동안 거짓
 이었다 — `finalize-korean-document` 어디에도 이 기록기를 부르는 줄이 없어
@@ -58,6 +58,15 @@ STORE = os.environ.get("KOREAN_CHECK_RECORD") or os.path.join(
 #   ⛔ **오류에는 안 듣는다** — 오류는 사람 판단 대상이 아니다. 게이트는 오류가
 #      하나라도 있으면 이 기록을 보지 않는다.
 STAGES = ("structure", "words", "judgment", "review")
+#: 통과에 까닭을 반드시 적는 단계 — 사람이나 모델이 판단한 것이라 무엇을 왜 넘겼는지 남아야 한다.
+#: `judgment` 는 2층 판정기가 다시 불러도 늘 지적 몇 건을 내므로(지적 0 은 조건이 될 수 없다)
+#: 남긴 지적을 왜 두었는지가 곧 판정 내용이다.
+NEEDS_NOTE = ("review", "judgment")
+#: 1층 검사기 버전에 묶지 않는 단계 — `judgment` 는 판단 규칙(`core-rules.md`)을 읽고 내린
+#: 판정이라 1층 검사기나 알려진 낱말 목록이 바뀌어도 그대로다. 묶어 두면 이 저장소가 검사기를
+#: 고칠 때마다(하루에도 여러 번) 방금 판정한 문서가 push 직전에 막히고, 넘기기가 습관이 된다.
+#: 신선도는 기한(`STALE_DAYS`)으로만 본다.
+RULE_FREE = ("judgment",)
 #: 기록이 이보다 오래되면 안 믿는다 — 규칙이 그 사이에 바뀌었을 수 있다.
 STALE_DAYS = 14
 
@@ -133,7 +142,7 @@ def status(path: str) -> dict:
     for row in load():
         if row.get("hash") != want:
             continue
-        if row.get("rules") != rules:
+        if row.get("rules") != rules and row.get("stage") not in RULE_FREE:
             continue                      # 검사기가 바뀌었다 — 옛 통과는 못 믿는다
         if now - float(row.get("when", 0)) > STALE_DAYS * 86400:
             continue
@@ -168,9 +177,10 @@ def main(argv=None) -> int:
     if args.cmd == "record":
         # ⛔ **까닭 없는 승인은 받지 않는다** — 고무도장이 되면 이 기록은
         #    「넘기기」와 같아진다. 나중에 누가 무엇을 왜 통과시켰는지 남아야 한다.
-        if args.stage == "review" and args.verdict == "pass" and not args.note.strip():
-            print("review 통과에는 --note 로 까닭을 적어야 합니다 — "
-                  "「무슨 주의를 왜 정상으로 봤나」")
+        if args.stage in NEEDS_NOTE and args.verdict == "pass" and not args.note.strip():
+            why = {"review": "「무슨 주의를 왜 정상으로 봤나」",
+                   "judgment": "「남긴 지적을 왜 두었나」"}[args.stage]
+            print(f"{args.stage} 통과에는 --note 로 까닭을 적어야 합니다 — {why}")
             return 1
         row = record(args.path, args.stage, args.verdict, args.note)
         mark = "통과" if row["verdict"] == "pass" else "실패"

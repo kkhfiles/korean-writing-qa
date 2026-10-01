@@ -51,9 +51,10 @@ class PublishRecordTests(unittest.TestCase):
 
     def _record(self, *stages):
         for s in stages:
+            # judgment 통과는 까닭이 있어야 적힌다 — 남긴 지적을 왜 두었나
             subprocess.run([sys.executable, "-X", "utf8", TOOL, "record",
-                            self.doc, "--stage", s, "--verdict", "pass"],
-                           capture_output=True, env=self.env, cwd=ROOT, timeout=60)
+                            self.doc, "--stage", s, "--verdict", "pass", "--note", "시험"],
+                           capture_output=True, env=self.env, cwd=ROOT, timeout=60, check=True)
 
     def _publish(self, prefix="", env=None):
         cmd = f"{prefix}python notion.py create --md {self.doc}".strip()
