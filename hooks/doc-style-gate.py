@@ -794,6 +794,28 @@ def in_command(cmd, p):
     return os.path.join(base, p) if base else p
 
 
+#: Codex 는 파일을 `apply_patch` 로 쓴다 — 패치의 파일 머리에 경로가 있다(세션 cwd 기준).
+#: **이 게이트가 Codex payload 를 직접 읽는다**(2026-10-01) — 전에는 설정 거울의 Codex 어댑터가
+#: Claude 모양(`Write`)으로 옮겨 넣었다. 옮기는 사본이 따로 있으면 한쪽만 고쳐진다.
+PATCH_FILE = re.compile(r"^\*\*\* (?:Add|Update) File: (.+?)\s*$", re.I)
+
+
+def patch_paths(payload):
+    """Codex `apply_patch` 가 건드린 파일 중 실제로 있는 것 — 절대 경로."""
+    inp = payload.get("tool_input") or {}
+    raw = [str(inp["file_path"]).strip()] if str(inp.get("file_path") or "").strip() else []
+    patch = inp.get("patch") or inp.get("command") or ""
+    if isinstance(patch, str):
+        raw += [m.group(1) for m in map(PATCH_FILE.match, patch.splitlines()) if m]
+    base = Path(payload.get("cwd") or os.getcwd())
+    out = []
+    for r in raw:
+        p = Path(r) if Path(r).is_absolute() else base / r
+        if p.is_file():
+            out.append(str(p.resolve()))
+    return sorted(set(out))
+
+
 def targets(payload):
     """이번 호출에서 검사할 파일과 모드를 정한다."""
     ev = payload.get("hook_event_name") or ""
@@ -804,6 +826,10 @@ def targets(payload):
         fp = str(inp.get("file_path") or "")
         if fp and DOC.search(fp) and not skipped(fp):
             return [fp], True, "once"
+    if ev == "PostToolUse" and name == "apply_patch":
+        found = [fp for fp in patch_paths(payload) if DOC.search(fp) and not skipped(fp)]
+        if found:
+            return found, True, "once"
 
     if ev == "PreToolUse":
         if name == "Artifact":
@@ -834,6 +860,8 @@ def korean_targets(payload):
         fp = str(inp.get("file_path") or "")
         if fp and KOREAN_DOC.search(fp) and not skipped(fp):
             return [fp]
+    if ev == "PostToolUse" and name == "apply_patch":
+        return [fp for fp in patch_paths(payload) if KOREAN_DOC.search(fp) and not skipped(fp)]
 
     if ev == "PreToolUse":
         if name == "Artifact":
