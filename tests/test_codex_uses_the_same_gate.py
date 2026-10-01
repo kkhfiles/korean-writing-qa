@@ -101,13 +101,21 @@ def call_adapter(event: str, payload: dict):
         env={**os.environ, "KOREAN_CHECK_RECORD": str(store)},
     )
     out = (done.stdout or "").strip()
-    said = ""
+    said, stop = "", (done.stderr or "").strip()
+    code = done.returncode
     if out:
         try:
-            said = str(json.loads(out)["hookSpecificOutput"]["additionalContext"])
+            spec = json.loads(out)["hookSpecificOutput"]
         except (ValueError, KeyError, TypeError):
             said = out
-    return done.returncode, said, (done.stderr or "").strip()
+        else:
+            # ⛔ Codex 는 종료 코드 2 를 막음으로 안 받았다(2026-10-01 실측) — 어댑터와 게이트는
+            #    `permissionDecision: deny` JSON 으로 막는다. 두 모양 모두 「막힘(2)」으로 읽는다.
+            if spec.get("permissionDecision") == "deny":
+                code, stop = 2, str(spec.get("permissionDecisionReason") or "")
+            else:
+                said = str(spec.get("additionalContext") or "")
+    return code, said, stop
 
 
 def run_adapter(event: str, payload: dict) -> str:
