@@ -123,11 +123,32 @@ USER = """다음 문서를 점검한다. 줄 번호는 1부터 센다.
 ```"""
 
 
-def load_client():
-    """정본은 `llm_playbook.backends` 하나다 — 옛 경로는 위임 shim 이다."""
+def load_client(backend: str = "claude"):
+    """정본은 `llm_playbook.backends` 하나다 — 옛 경로는 위임 shim 이다.
+
+    `codex` 는 Codex 만 쓰는 PC 에서 판정기를 돌릴 수 있는지 재려고 둔다.
+    프롬프트는 그대로 두고 부르는 곳만 바꾼다 — 바꾸면 모델 차이와 프롬프트
+    차이를 못 가른다. Codex 쪽은 온도를 받지 않는다.
+
+    **모델만 부르는 `codex_http` 를 쓴다.** 에이전트 하네스(`codex_sdk`)로
+    3,300자 판정을 한 번 부르자 전역 지시 파일 · 시작 훅 · 스킬 목록이 함께
+    실려 입력이 21만 7천 토큰이었고 5시간 한도의 10%가 나갔다(2026-10-02).
+    판정은 파일을 읽을 일이 없어 하네스가 할 몫이 없다.
+    """
     from llm_playbook.backends.claude_sdk import (
         call_messages, parse_json_from_text)
-    return call_messages, parse_json_from_text
+    if backend == "claude":
+        return call_messages, parse_json_from_text
+    from llm_playbook.backends import codex_http
+
+    def call_codex(*, model, system, user, timeout, **_):
+        r = codex_http.call(user, model=model, system_prompt=system,
+                            fallback=False, timeout=timeout)
+        if r.get("error"):          # 판정기가 실패를 기록하고 넘어가게 예외로 올린다
+            raise RuntimeError(f"Codex 호출 실패({model}): {r['error']}")
+        return {"text": r.get("text"), "model": r.get("model"),
+                "cost_usd": None, "usage": r.get("usage")}
+    return call_codex, parse_json_from_text
 
 
 def step_body(text: str, title: str) -> str:
@@ -278,8 +299,8 @@ def score(items: list[dict], findings: list, document: str,
 
 
 def run_arm(arm: str, model: str, timeout: float, document: str,
-            items: list[dict]) -> dict:
-    call_messages, parse_json = load_client()
+            items: list[dict], backend: str = "claude") -> dict:
+    call_messages, parse_json = load_client(backend)
     # 조립은 `rules_for` 한 곳에서만 한다. 두 곳이면 인용 채점이 보는 글과
     # 실제로 보낸 글이 어긋나고, 어긋나도 아무 데서도 안 걸린다.
     rules = rules_for(arm)
@@ -298,7 +319,8 @@ def run_arm(arm: str, model: str, timeout: float, document: str,
     out = score(items, findings, document, cited_texts(arm))
     out.update({"arm": arm, "model": result.get("model"),
                 "cost_usd": result.get("cost_usd"), "findings": findings,
-                "rules_chars": len(rules), "carrier_sha": carrier_sha()})
+                "rules_chars": len(rules), "carrier_sha": carrier_sha(),
+                "backend": backend, "usage": result.get("usage")})
     return out
 
 
@@ -353,6 +375,8 @@ def main() -> None:
     parser.add_argument("--from-json", type=Path, dest="from_json",
                         help="앞서 낸 결과를 다시 채점한다 — 모델을 안 부른다")
     parser.add_argument("--model", default="sonnet")
+    parser.add_argument("--backend", default="claude", choices=("claude", "codex"),
+                        help="codex 면 --model 에 sol-high 같은 Codex 별칭을 준다")
     parser.add_argument("--json", type=Path)
     # 기본 120초로는 모자랐다 — SDK 가 Claude Code 를 띄우는 첫 회차가 느리다
     parser.add_argument("--timeout", type=float, default=420.0)
@@ -386,7 +410,8 @@ def main() -> None:
             results.append(fresh)
     else:
         arms = ("blind", "guided") if args.arm == "both" else (args.arm,)
-        results = [run_arm(a, args.model, args.timeout, document, items)
+        results = [run_arm(a, args.model, args.timeout, document, items,
+                           args.backend)
                    for a in arms]
     for out in results:
         report(out)
