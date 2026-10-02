@@ -110,7 +110,7 @@ class JudgeTests(unittest.TestCase):
 
     def test_missing_backend_is_not_silent(self) -> None:
         saved = judge.load_backend
-        judge.load_backend = lambda: None
+        judge.load_backend = lambda *_: None
         try:
             rc, out = self.run_main([str(self.doc("본문입니다.\n"))])
         finally:

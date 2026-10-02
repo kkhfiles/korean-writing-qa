@@ -17,12 +17,18 @@
 기록 위치는 저장소 밖(`~/.claude/state/`)이다 — 문서 경로가 들어가서 공개
 저장소에 두면 안 된다. `KOREAN_QA_JUDGE_LOG` 로 바꾼다(시험이 쓴다).
 
+**Codex 만 쓰는 PC 에서도 돈다** — `--backend auto`(기본)는 Claude 를 먼저, 없으면 Codex 를
+부른다. Codex 는 모델만 부르는 `codex_http` 로 `sol-high` 를 쓴다. 대장 탐침 · 점검표를 Opus 와
+나란히 세 번씩 재서 회수 · 헛짚음이 같은 수준임을 보고 넣었다(2026-10-02 · 점검표 문서).
+Codex 쪽은 토큰 수만 남고 환산 금액은 0 으로 찍힌다.
+
 **새 줄만 판정** — `--since origin/main` 이면 그 가지와 갈라진 뒤 새로 생겼고 판정기가
 아직 안 본 줄이 든 묶음만 부르고, 그 줄에 달린 지적만 보여 준다. 호출마다 본 줄의
 해시를 기록에 남기므로(`layer2_coverage.py`) 고친 줄만 다시 판정된다. 발행 게이트가
 push 직전에 같은 기록으로 「새 줄을 다 봤나」를 가른다.
 
-    python -X utf8 scripts/judge_layer2.py <문서…> [--since REF] [--model opus] [--json 경로]
+    python -X utf8 scripts/judge_layer2.py <문서…> [--since REF] [--backend auto|claude|codex]
+                                           [--model 별칭] [--json 경로]
     python -X utf8 scripts/judge_layer2.py --cost [--by day|month|doc]
 
 종료 코드 — 0 돌았음(지적은 사람이 본다) · 2 사용법 · 3 호출 백엔드 없음
@@ -53,6 +59,9 @@ read_doc = coverage.read_doc
 #: 넘으면 제목 경계에서 나눈다.
 CHUNK_LINES = 180
 DEFAULT_MODEL = "opus"      # 점검표에서 Sonnet 은 일상 동사 묶음 4/7 · Opus 6/7
+#: Codex 쪽 기본 — 2026-10-02 대장 탐침 · 점검표를 Opus 와 나란히 잰 값(`docs/calibration-20260929.md`)
+#: astra-high 와 회수 · 헛짚음이 같고 5시간 한도는 4분의 1(탐침 1회 1~2% · astra 6~7%)
+CODEX_MODEL = "sol-high"
 
 
 def chunks(lines: list[str], limit: int = CHUNK_LINES) -> list[tuple[int, list[str]]]:
@@ -139,13 +148,30 @@ def load_freq():
         return None
 
 
-def load_backend():
-    """정본은 `llm_playbook.backends` 하나다 — 없으면 None(세션이 직접 읽는다)."""
+def pick_backend(which: str = "auto") -> str | None:
+    """부를 백엔드 이름 · `auto` 면 이 PC 에서 쓸 수 있는 쪽을 Claude → Codex 순서로.
+
+    설치·로그인 여부는 `llm_playbook.ladder.available` 이 가른다(게이트도 같은 것을 본다).
+    Codex 만 쓰는 PC 에서도 판정기가 돌아야 발행 게이트가 판정을 요구할 수 있다.
+    """
+    if which != "auto":
+        return which
     try:
-        from llm_playbook.backends.claude_sdk import call_messages, parse_json_from_text
+        from llm_playbook.ladder import available
+    except Exception:
+        return "claude"         # 사다리가 없는 옛 llm_playbook — 전처럼 Claude 를 부른다
+    return next((name for name in ("claude", "codex") if available(name)[0]), None)
+
+
+def load_backend(which: str = "claude"):
+    """정본은 `llm_playbook.backends` 하나다 — 없으면 None(세션이 직접 읽는다).
+
+    부르는 길은 2층 탐침과 같은 것을 쓴다 — 잰 것과 도는 것이 같아야 한다.
+    """
+    try:
+        return probe.load_client(which)
     except Exception:
         return None
-    return call_messages, parse_json_from_text
 
 
 def input_total(row: dict) -> int:
@@ -295,7 +321,9 @@ def cost_report(by: str) -> None:
 def main(argv=None, backend=None) -> int:
     ap = argparse.ArgumentParser(description="2층 판정 호출 · 비용 기록")
     ap.add_argument("docs", nargs="*")
-    ap.add_argument("--model", default=DEFAULT_MODEL)
+    ap.add_argument("--backend", choices=("auto", "claude", "codex"), default="auto",
+                    help="auto 면 Claude → Codex 순서로 이 PC 에서 쓸 수 있는 쪽")
+    ap.add_argument("--model", help=f"기본 — Claude {DEFAULT_MODEL} · Codex {CODEX_MODEL}")
     ap.add_argument("--timeout", type=float, default=900)
     ap.add_argument("--json", help="지적을 JSON 으로도 씀")
     ap.add_argument("--since", metavar="REF",
@@ -309,10 +337,12 @@ def main(argv=None, backend=None) -> int:
     if not a.docs:
         ap.print_usage()
         return 2
-    backend = backend or load_backend()
+    name = pick_backend(a.backend)
+    model = a.model or (CODEX_MODEL if name == "codex" else DEFAULT_MODEL)
+    backend = backend or (load_backend(name) if name else None)
     if backend is None:
-        print("⛔ 2층 판정 호출을 못 합니다 — llm_playbook 이 없습니다. "
-              "판단 규칙과 9단계를 세션이 직접 읽고 판정합니다.")
+        print("⛔ 2층 판정 호출을 못 합니다 — llm_playbook 이 없거나 Claude Code · Codex 둘 다 "
+              "설치·로그인이 안 돼 있습니다. 판단 규칙과 9단계를 세션이 직접 읽고 판정합니다.")
         return 3
     results = []
     for d in a.docs:
@@ -330,7 +360,7 @@ def main(argv=None, backend=None) -> int:
             if not in_git:
                 print(f"  {p.name} — git 밖 문서라 갈라진 지점이 없습니다 · 아직 판정 안 한 한글 줄을 모두 봅니다")
         try:
-            results.append(judge(p, a.model, a.timeout, backend, targets))
+            results.append(judge(p, model, a.timeout, backend, targets))
         except Exception as e:
             print(f"⛔ 호출 실패 — {p.name}: {type(e).__name__}: {e}"[:300])
             print("   검사되지 않았습니다 — 세션이 규칙을 직접 읽고 판정합니다.")

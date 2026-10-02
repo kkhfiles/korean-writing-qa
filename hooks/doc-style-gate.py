@@ -364,7 +364,7 @@ def judge_command():
 
     **스킬이 세션에게 부르라고 적은 경로를 그대로 본다.** 게이트가 「판정기를 돌렸나」까지
     요구하는 것은 세션이 그 열쇠를 쓸 수 있을 때뿐이다 — 못 쓰는 PC 에서 요구하면 넘기기
-    말고는 길이 없다(「열쇠 없는 자물쇠」). 판정기 호출 백엔드(`llm_playbook`)도 있어야 한다.
+    말고는 길이 없다(「열쇠 없는 자물쇠」). 판정기가 부를 모델(Claude Code 나 Codex)도 있어야 한다.
     `KOREAN_QA_JUDGE` 로 경로를 주면 그것을 믿는다(`-` 면 없음) — 시험이 쓴다.
     """
     override = os.environ.get("KOREAN_QA_JUDGE")
@@ -380,8 +380,25 @@ def judge_command():
     path = Path(os.path.expanduser(m.group(1)))
     if not path.is_file():
         return None
+    return path if judge_backend_ready() else None
+
+
+def judge_backend_ready():
+    """판정기가 부를 모델이 이 PC 에 있나 — 판정기의 `pick_backend` 와 같은 것을 본다.
+
+    `llm_playbook` 만 있고 Claude Code · Codex 가 둘 다 설치·로그인이 안 됐으면 판정기가
+    못 돈다(종료 코드 3). 그때 판정을 요구하면 열쇠 없는 자물쇠다 — 2026-10-02 까지는
+    `llm_playbook` 만 보고 요구해서 Claude 가 없는 PC 가 그 상태였다. 사다리가 없는 옛
+    `llm_playbook` 은 전처럼 있다고 본다 — 판정기도 그때 Claude 를 부른다.
+    """
     import importlib.util
-    return path if importlib.util.find_spec("llm_playbook") is not None else None
+    if importlib.util.find_spec("llm_playbook") is None:
+        return False
+    try:
+        from llm_playbook.ladder import available
+    except Exception:
+        return True
+    return any(available(name)[0] for name in ("claude", "codex"))
 
 
 def load_coverage():
