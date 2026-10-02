@@ -20,7 +20,7 @@
 **Codex 만 쓰는 PC 에서도 돈다** — `--backend auto`(기본)는 Claude 를 먼저, 없으면 Codex 를
 부른다. Codex 는 모델만 부르는 `codex_http` 로 `sol-high` 를 쓴다. 대장 탐침 · 점검표를 Opus 와
 나란히 세 번씩 재서 회수 · 헛짚음이 같은 수준임을 보고 넣었다(2026-10-02 · 점검표 문서).
-Codex 쪽은 토큰 수만 남고 환산 금액은 0 으로 찍힌다.
+Codex 쪽은 토큰 수만 남고 금액은 「금액 없음」으로 찍힌다.
 
 **새 줄만 판정** — `--since origin/main` 이면 그 가지와 갈라진 뒤 새로 생겼고 판정기가
 아직 안 본 줄이 든 묶음만 부르고, 그 줄에 달린 지적만 보여 준다. 호출마다 본 줄의
@@ -270,9 +270,11 @@ def show(result: dict) -> None:
     cost = sum(c.get("cost_usd") or 0 for c in calls)
     tin = sum(input_total(c) for c in calls)
     tout = sum(c.get("output_tokens") or 0 for c in calls)
+    # Codex 는 금액을 안 준다 — 0.00달러로 찍으면 공짜로 읽힌다
+    priced = any(c.get("cost_usd") is not None for c in calls)
+    money = f"환산 {cost:.2f}달러(구독 · 청구액 아님)" if priced else "금액 없음(Codex 구독 · 토큰만 기록)"
     print(f"── 2층 판정 · {Path(result['doc']).name} · 지적 {len(result['findings'])}건 · "
-          f"호출 {len(calls)}회 · {secs:.0f}초 · 토큰 입력 {tin:,} · 출력 {tout:,} · "
-          f"환산 {cost:.2f}달러(구독 · 청구액 아님)")
+          f"호출 {len(calls)}회 · {secs:.0f}초 · 토큰 입력 {tin:,} · 출력 {tout:,} · {money}")
     if result.get("targets") is not None:
         if not result["targets"]:
             print("  판정할 새 줄 없음 — 갈라진 지점 뒤 새 줄을 판정기가 모두 봤습니다")
@@ -309,6 +311,9 @@ def cost_report(by: str) -> None:
         a[5] += r.get("cost_usd") or 0
     print(f"2층 판정 호출 비용 · {LOG}")
     print("  환산 금액은 API 단가 기준 — 구독이라 청구액이 아님")
+    unpriced = sum(1 for r in rows if r.get("ok") and r.get("cost_usd") is None)
+    if unpriced:
+        print(f"  ⚠️ 금액 없는 호출 {unpriced}회(Codex)는 환산에 안 들어감 — 토큰만 셈")
     print(f"  {'묶음':<24}{'호출':>5}{'실패':>5}{'소요(분)':>9}{'입력 토큰':>12}{'출력 토큰':>11}{'환산(달러)':>11}")
     tot = [0, 0, 0.0, 0, 0, 0.0]
     for k in sorted(agg):

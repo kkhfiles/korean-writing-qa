@@ -108,6 +108,15 @@ class CodexDefaultModelTests(unittest.TestCase):
     def test_claude_keeps_opus(self) -> None:
         self.assertEqual((0, judge.DEFAULT_MODEL), self.run_main({"claude", "codex"}))
 
+    def test_codex_call_is_not_shown_as_free(self) -> None:
+        """Codex 는 금액을 안 준다 — 「환산 0.00달러」로 찍으면 공짜로 읽힌다."""
+        out = io.StringIO()
+        with redirect_stdout(out):
+            judge.show({"doc": "d.md", "findings": [], "targets": None,
+                        "calls": [{"seconds": 1, "cost_usd": None, "input_tokens": 9, "output_tokens": 3}]})
+        self.assertIn("금액 없음", out.getvalue())
+        self.assertNotIn("0.00달러", out.getvalue())
+
 
 class GateAsksOnlyWhenAModelExistsTests(unittest.TestCase):
     def setUp(self) -> None:
