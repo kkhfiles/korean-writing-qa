@@ -76,7 +76,7 @@ python "$HOME/.claude/assets/doc-style-check.py" <수정문>
 
    **모르는 플래그는 rc로 멈춘다** — 예전에는 조용히 무시했다. `--relaxd`처럼 한 글자 틀리면 끄려던 검사가 안 꺼진 채 통과로 읽혔다. 검사기 자체 시험은 `python "$HOME/.claude/assets/doc-style-check-test.py"`다.
 
-   **이어서 2층 판정 호출을 돌린다** — 문서와 판단 규칙 전문(`core-rules.md` + 9단계)을 CLAUDE.md 없는 모델 호출에 넘겨 지적 목록을 받는다. 점검표(2026-09-29)에서 이 판정문으로 고칠 어절 47/48을 잡았다. 2층 탐침과 같은 프롬프트를 쓴다.
+   **이어서 2층 판정 호출을 돌린다** — 문서와 판단 규칙 전문(`core-rules.md` + 9단계)을 CLAUDE.md 없는 모델 호출에 넘겨 지적 목록을 받는다. 점검표(2026-09-29)에서 이 판정문으로 고칠 어절 47/48을 잡았다. 2층 탐침과 같은 프롬프트를 쓴다. Claude Code 가 없는 PC 에서는 Codex(sol-high)로 부른다 — 대장 회수와 헛짚음이 Opus 와 같은 수준이었다(2026-10-02).
 
 ```powershell
 python -X utf8 P:/github/korean-writing-qa/scripts/judge_layer2.py <수정문>
