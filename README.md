@@ -29,7 +29,7 @@ python install.py --hooks
 #    (Codex 를 다시 열면 새 훅 승인을 물음 · 승인해야 동작)
 python install.py --hooks --codex
 
-# 3) 설치본이 정본과 같은지 확인
+# 3) 설치본이 원본과 같은지 확인
 python install.py --check
 
 # 4) 전체 시험
@@ -137,8 +137,8 @@ err  = []                                 # 주의에서 오류로 올린다
 
 | 경로 | 담긴 것 |
 |---|---|
-| `assets/doc-style-check.py` | 1층 검사기 정본 |
-| `skills/finalize-korean-document/` | 2층 스킬 정본 |
+| `assets/doc-style-check.py` | 1층 검사기 원본 |
+| `skills/finalize-korean-document/` | 2층 스킬 원본 |
 | `skills/fix-korean-finding/` | 지적 하나를 규칙까지 미는 유지보수 스킬 |
 | `agents/` | 서브에이전트 정의 · 모델·사고 깊이·규칙 파일 적재 여부를 머리말로 고정 |
 | `hooks/` | 발행 직전 검사 · 겹 역슬래시 차단 · 공개 저장소 푸시 게이트 · 매일 건강 검사와 GitHub 반영 확인 |
@@ -149,9 +149,9 @@ err  = []                                 # 주의에서 오류로 올린다
 | `data/` | 사람 판정 · 회귀 시료 · 받은 사례 |
 | `runs/` | 실행별 입력·결과·요약 |
 
-**정본이 이 저장소** — 예전에는 `~/.claude/` 가 정본이고 저장소가 설치본을 불러다 썼습니다. 저장소만 받으신 분이 아무것도 못 돌려서 방향을 뒤집었습니다. 설치본을 직접 고치면 `tests/test_installed_copy_matches.py` 가 잡습니다.
+**원본은 이 저장소** — 예전에는 `~/.claude/` 가 원본이고 저장소가 설치본을 불러다 썼습니다. 저장소만 받으신 분이 아무것도 못 돌려서 방향을 뒤집었습니다. 설치본을 직접 고치면 `tests/test_installed_copy_matches.py` 가 잡습니다.
 
-**GitHub 까지 갔는지도 봄** — 「설치본과 정본이 같다」와 「저장소가 GitHub 과 같다」는 다른 말입니다. 하루 첫 세션에 도는 점검이 설치본 대조와 함께 정본 미커밋 · 안 밀린 커밋 · GitHub 에서 전체 시험의 마지막 결과를 봅니다(`hooks/korean-gate-daily-check.py`). 전체 시험은 5분이 넘어 CI 에서만 돕니다. 깨끗하면 아무 말도 안 합니다.
+**GitHub 까지 갔는지도 봄** — 「설치본과 원본이 같다」와 「저장소가 GitHub 과 같다」는 다른 말입니다. 하루 첫 세션에 도는 점검이 설치본 대조와 함께 원본 미커밋 · 안 밀린 커밋 · GitHub 에서 전체 시험의 마지막 결과를 봅니다(`hooks/korean-gate-daily-check.py`). 전체 시험은 5분이 넘어 CI 에서만 돕니다. 깨끗하면 아무 말도 안 합니다.
 
 ## 라이선스
 
