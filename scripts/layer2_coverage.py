@@ -157,10 +157,16 @@ def _rows(key: str, log: Path, now: float | None, fresh: bool = True):
         yield row
 
 
-def judged(key: str, log: Path | None = None, now: float | None = None) -> set[str]:
-    """이 문서에서 판정기가 이미 본 줄 해시 — 성공한 호출 · 14일 안 것만."""
+def judged(key: str, log: Path | None = None, now: float | None = None,
+           fresh: bool = True) -> set[str]:
+    """이 문서에서 판정기가 이미 본 줄 해시 — 성공한 호출 · `fresh` 면 14일 안 것만.
+
+    `fresh=False` 는 사이트 배포 게이트가 쓴다 — 배포는 git 의 갈라진 지점이 없어
+    「새 줄」을 「판정기가 한 번도 안 본 줄」로 가른다. 기한을 걸면 안 바뀐 페이지를
+    14일마다 통째로 다시 판정해야 한다.
+    """
     out: set[str] = set()
-    for row in _rows(key, log or LOG, now):
+    for row in _rows(key, log or LOG, now, fresh):
         if row.get("ok"):
             out.update(row.get("seen") or [])
     return out

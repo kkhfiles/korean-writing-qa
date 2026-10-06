@@ -572,6 +572,210 @@ def push_block(payload):
     return "\n".join(lines + tail)
 
 
+# ── 사이트 배포 직전 ─────────────────────────────────────────────────────────
+#
+# **배포하는 저장소가 스스로 켠다** — 그 폴더(또는 위 폴더)의 `korean-qa.toml` 에 `[deploy]` 절.
+#
+#     [deploy]
+#     manifest = "sources.json"          # 배포 원본 목록(JSON 배열) · 설정 파일 기준 상대 경로
+#     field = "from"                     # 항목마다 원본 경로가 든 칸
+#     exclude = ["*/.claude/state/*"]    # 사람이 쓴 글이 아닌 원본(개인 보드 등)
+#     pages = []                         # 목록 밖에서 더 볼 원본
+#
+# **왜 생겼나**(2026-10-06 사용자 「디스패치 왜 검사 안함?? 검사하게 만드세요」) — 발행 게이트가
+#   발행으로 보는 것은 노션 · 슬라이드 · PDF 명령과 Artifact 뿐이었다. 사이트 배포 명령은 대상
+#   파일을 적지 않아 한 번도 안 걸렸다 — 7일에 19회 배포했고, 그 사이트에서 사용자가 한글 21건을
+#   짚었다. push 게이트도 `[publish]` 를 둔 저장소(lab-docs)에서만 돌았다.
+# **배포 목록을 그대로 읽는다** — 빌드가 쓰는 목록과 게이트가 보는 목록이 두 벌이면 한쪽이 낡는다.
+# **무엇을 요구하나**
+#   · 모든 원본 — 1층 오류 0 · 답을 못 받은 사람 확인 0
+#   · 지난 통과 뒤 바뀐 원본 — 판정기가 한 번도 안 본 한글 줄 0 · 판단 기록(judgment) ·
+#     주의가 있으면 검토 기록(review). 안 바뀐 원본까지 매번 다시 요구하면 기록이 고무도장이 된다.
+# **통과하면 원본마다 내용 해시를 적는다**(`DEPLOY_PASS`) — 다음 배포는 바뀐 원본만 다시 요구한다.
+# **푸는 길** — 명령 앞에 `KOREAN_PUBLISH_FORCE=1`. 명령문에 남는다.
+# ⚠️ AI 세션의 명령만 본다 — 사람이 터미널에서 직접 배포하면 이 훅은 안 돈다.
+
+DEPLOY = re.compile(r"\bnpm\s+(?:--prefix\s+\S+\s+)?run\s+(?:publish|deploy)\b"
+                    r"|\bwrangler\s+(?:pages\s+)?deploy\b", re.I)
+_DEPLOY_CD = re.compile(r'^\s*(?:cd|Set-Location)\s+(?:"([^"]+)"|\'([^\']+)\'|([^\s&;|]+))\s*(?:&&|;)')
+_DEPLOY_PREFIX = re.compile(r'--prefix\s+(?:"([^"]+)"|\'([^\']+)\'|(\S+))')
+DEPLOY_PASS = Path(os.environ.get("KOREAN_QA_DEPLOY_PASS")
+                   or HOME / ".claude" / "state" / "korean-deploy-pass.jsonl")
+
+
+def deploy_dir(cmd, cwd):
+    """배포 명령이 도는 폴더 — 세션 폴더에서 `cd`·`--prefix` 를 따라간다."""
+    base = cwd or os.getcwd()
+    for pat in (_DEPLOY_CD, _DEPLOY_PREFIX):
+        m = pat.search(cmd) if pat is _DEPLOY_PREFIX else pat.match(cmd)
+        if m:
+            d = resolve(m.group(1) or m.group(2) or m.group(3))
+            base = d if os.path.isabs(d) else os.path.join(base, d)
+    return Path(base)
+
+
+def deploy_config(start):
+    """위로 올라가며 `[deploy]` 를 둔 `korean-qa.toml` 을 찾는다 — (설정 폴더, 절) · 없으면 None ·
+    못 읽으면 그 까닭(문자열). 설정을 못 읽고 조용히 넘기면 켠 게이트가 꺼진다."""
+    cur = Path(start).resolve()
+    for d in (cur, *cur.parents):
+        path = d / "korean-qa.toml"
+        if not path.is_file():
+            continue
+        try:
+            import tomllib
+            conf = tomllib.loads(path.read_text(encoding="utf-8")).get("deploy")
+        except Exception as e:
+            return f"{path} 을 못 읽었습니다 — {type(e).__name__}: {e}"[:300]
+        return (d, conf) if isinstance(conf, dict) else None
+    return None
+
+
+def deploy_pages(root, conf):
+    """배포되는 원본 — 목록(`manifest`)과 `pages` 에서 · md·html 만 · `exclude` 는 뺀다."""
+    from fnmatch import fnmatchcase
+    items = list(conf.get("pages") or [])
+    manifest = conf.get("manifest")
+    if manifest:
+        data = json.loads((root / manifest).read_text(encoding="utf-8"))
+        field = conf.get("field") or "from"
+        items += [it[field] for it in data if isinstance(it, dict) and it.get(field)]
+    out = []
+    for raw in items:
+        p = Path(os.path.expanduser(str(raw)))
+        p = p if p.is_absolute() else root / p
+        if p.suffix.lower() not in (".html", ".htm", ".md"):
+            continue
+        if any(fnmatchcase(p.as_posix(), pat) for pat in conf.get("exclude") or []):
+            continue
+        out.append(p)
+    return list(dict.fromkeys(out))
+
+
+def content_hash(path):
+    """통과 기록(`check_record.py`)과 같은 내용 해시 — 줄 끝 차이는 무시한다."""
+    import hashlib
+    return hashlib.sha256(Path(path).read_bytes().replace(b"\r\n", b"\n")).hexdigest()[:16]
+
+
+def deploy_passed():
+    out = set()
+    try:
+        for raw in DEPLOY_PASS.read_text(encoding="utf-8").splitlines():
+            try:
+                row = json.loads(raw)
+            except ValueError:
+                continue
+            out.add((row.get("page"), row.get("hash")))
+    except OSError:
+        pass
+    return out
+
+
+def deploy_gaps(pages, judge):
+    """원본마다 빠진 것 — [(원본, [빠진 것…])] · 다 갖췄으면 빈 목록."""
+    cov = load_coverage()
+    passed = deploy_passed()
+    out = []
+    for p in pages:
+        if not p.is_file():
+            out.append((p, ["원본이 없습니다 — 배포 목록과 실제 파일이 어긋남"]))
+            continue
+        gaps = []
+        body = run_checker(str(p), False)
+        if body.startswith("⚠️ 전역 문서 검사를 못 돌렸다"):
+            gaps.append("1층 검사를 못 돌림 — 검사되지 않은 원본은 내보내지 않습니다")
+        errs = [l.strip() for l in body.splitlines() if "❌" in l]
+        if errs:
+            gaps.append(f"1층 오류 {len(errs)}건 — {errs[0][:70]}")
+        changed = (p.as_posix(), content_hash(p)) not in passed
+        if cov is not None:
+            lines = cov.read_doc(p).splitlines()
+            key = cov.doc_key(p)
+            if hasattr(cov, "open_asks"):
+                asks = cov.open_asks(key, lines)
+                if asks:
+                    n, ask = asks[0]
+                    gaps.append(f"사용자 답을 못 받은 사람 확인 지적 {len(asks)}개 — "
+                                f"{n}행 「{str(ask.get('phrase') or '')[:30]}」")
+            if changed and judge is not None:
+                left = cov.open_lines(lines, [], cov.judged(key, cov.LOG, fresh=False))
+                if left:
+                    n = left[0]
+                    gaps.append(f"판정기가 아직 안 본 한글 줄 {len(left)}개 — "
+                                f"{n}행 「{lines[n - 1].strip()[:30]}」")
+        if changed:
+            gaps += [f"{s} 기록 없음(지금 내용 기준)" for s in missing_stages(p, ["judgment"])]
+            warns = [l for l in body.splitlines() if "⚠️" in l and "❌" not in l]
+            if warns and not reviewed(p):
+                gaps.append(f"주의 {len(warns)}건 검토 기록 없음 — {warns[0].strip()[:60]}")
+        if gaps:
+            out.append((p, gaps))
+    return out
+
+
+def note_deploy_pass(pages):
+    DEPLOY_PASS.parent.mkdir(parents=True, exist_ok=True)
+    with DEPLOY_PASS.open("a", encoding="utf-8", newline="\n") as f:
+        for p in pages:
+            if p.is_file():
+                f.write(json.dumps({"page": p.as_posix(), "hash": content_hash(p),
+                                    "when": time.time()}, ensure_ascii=False) + "\n")
+
+
+def deploy_block(payload, probe=False):
+    """사이트 배포 직전 — `[deploy]` 를 켠 저장소에서 배포 원본이 검사를 다 거치지 않았으면 막는 글."""
+    if (payload.get("hook_event_name") or "") != "PreToolUse":
+        return ""
+    if (payload.get("tool_name") or "") not in ("Bash", "PowerShell"):
+        return ""
+    cmd = str((payload.get("tool_input") or {}).get("command") or "")
+    # 따옴표 안(커밋 메시지 등)의 배포 명령은 배포가 아니다
+    bare = re.sub(r'"[^"]*"|\'[^\']*\'', '""', cmd)
+    if not DEPLOY.search(bare) or DRYRUN.search(bare) or FORCE in cmd:
+        return ""
+    found = deploy_config(deploy_dir(cmd, payload.get("cwd") or ""))
+    if found is None:
+        return ""
+    head = ["⛔ 배포 보류 — 배포되는 원본이 한글 검사를 다 거치지 않았습니다", ""]
+    tail = ["", f"  정말 그대로 배포해야 하면 명령 앞에 `{FORCE}` 를 붙입니다 — 명령문에 남습니다."]
+    if isinstance(found, str):
+        return "\n".join(head + [f"  {found}"] + tail)
+    root, conf = found
+    try:
+        pages = deploy_pages(root, conf)
+    except (OSError, ValueError, KeyError, TypeError) as e:
+        return "\n".join(head + [f"  배포 목록을 못 읽었습니다 — {type(e).__name__}: {e}"[:300]] + tail)
+    judge = judge_command()
+    try:
+        gaps = deploy_gaps(pages, judge)
+    except Exception as e:
+        # ⛔ 훅이 죽으면 명령은 그대로 돈다 — 검사를 못 한 배포가 나간다. 설치본의 판정 기록
+        #    모듈이 옛 판이라 실제로 죽었다(2026-10-06 첫 시험). 못 돌렸으면 막고 까닭을 보인다.
+        return "\n".join(head + [f"  배포 검사를 못 돌렸습니다 — {type(e).__name__}: {e}"[:300],
+                                 "  설치본이 어긋났으면 korean-writing-qa 에서 `python install.py`."] + tail)
+    if not gaps:
+        if not probe:
+            note_deploy_pass(pages)
+        return ""
+    lines = list(head) + [f"  ({root.name} 의 korean-qa.toml [deploy] · 원본 {len(pages)}개)", ""]
+    for p, why in gaps:
+        lines.append(f"  {p.as_posix()}")
+        lines += [f"    · {w}" for w in why]
+    script = (judge_script() or Path("judge_layer2.py")).as_posix()
+    lines += ["", "  고치는 법 — 원본마다 finalize-korean-document 스킬을 돌립니다:",
+              "    1. 1층 오류를 고칩니다.",
+              (f"    2. python -X utf8 {script} <원본> — 판정기가 안 본 줄을 판정합니다."
+               if judge is not None else
+               "    2. 이 PC 에서는 판정기를 부를 수 없습니다 — 9단계와 core-rules.md 를 직접 읽고 판정합니다."),
+              "    3. 사람 확인 지적은 사용자에게 묻습니다 — 고치거나, 그대로 두면 "
+              f"`{script} <원본> --answer <행> --note \"사용자가 정한 것\"`",
+              "    4. python -X utf8 ~/.claude/assets/check_record.py record <원본> "
+              "--stage judgment --verdict pass --note \"남긴 지적과 까닭\"",
+              "    5. 주의는 읽고 정상이면 --stage review 로 까닭과 함께 적습니다."]
+    return "\n".join(lines + tail)
+
+
 def reviewed(path):
     """이 **내용**에 대한 검토 기록이 있나 — 주의를 읽고 정상으로 판단한 자국."""
     if not RECORDER or not RECORDER.exists():
@@ -1024,8 +1228,9 @@ def main():
     except (ValueError, OSError):
         return 0
 
-    # push 는 문서 파일을 대상으로 잡지 않으므로 먼저 본다 · 상태를 안 쓰므로 시험 통로에서도 돈다
-    stop = push_block(payload)
+    # push · 사이트 배포는 문서 파일을 명령에 적지 않으므로 먼저 본다 · 시험 통로에서도 돈다
+    # (배포 통과 기록만 시험 통로에서 안 쓴다)
+    stop = push_block(payload) or deploy_block(payload, probe="--probe" in sys.argv)
     if stop:
         return deny(stop)
 

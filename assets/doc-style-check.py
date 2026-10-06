@@ -1833,7 +1833,12 @@ FORM_ONLY_STRUCTURED = {
     # RULE_GROUPS 에서 뽑아 이 집합과 대조한다. 새 갈래가 늘면 거기서 걸린다.
     '진입점 형태 확인',
 }
-FORM_VALUES = ('structured', 'prose')
+#: `app` — **문서가 아니라 화면**(2026-10-06). 업무 보드 같은 화면은 `<h1>` 이 문서
+#: 제목이 아니라 머리 띠(제품 이름 · 날짜)이고, 그 아래에 「이 문서를 읽고 무엇을 하게
+#: 되나」 한 줄이 올 자리가 없다. 사이트 배포에 게이트를 걸자 데모 보드가 「진입점
+#: 없음」으로 걸렸다 — 문서 뼈대 규칙(제목 · 진입점 · 서술형 문단)만 빼고 낱말 ·
+#: 문장 규칙은 그대로 본다. 화면 문구도 업무 한국어여야 한다.
+FORM_VALUES = ('structured', 'prose', 'app')
 # 따옴표는 YAML 도구가 자동으로 붙이기도 한다. 안 받아 주면 선언한 사람은
 # 왜 계속 묻는지 모른 채 그대로 둔다.
 FORM_KEY = re.compile(r'''^form\s*:\s*['"]?([A-Za-z_-]+)['"]?\s*$''', re.M)
@@ -1881,11 +1886,25 @@ def prose_share(body):
     return len(flowing) / len(real)
 
 
+def form_spared(form):
+    """그 형식에서 빼는 갈래 — 없으면 빈 집합.
+
+    화면(`app`)은 갈래 목록에서 「제목」·「진입점」 가족을 뽑아 쓴다 — 하나씩 적으면
+    새 갈래가 늘 때 빠진다(산문 쪽이 그 함정에 두 번 걸렸다 · 아래 시험이 대조한다).
+    """
+    if form == 'prose':
+        return FORM_ONLY_STRUCTURED
+    if form == 'app':
+        return {k for k in ALL_KINDS if k.startswith(('제목', '진입점'))} | {'서술형 문단'}
+    return set()
+
+
 def apply_form(err, warn, form):
-    """산문 형식이면 개조식 전제 검사를 뺀다. 형식은 선언으로만 정해진다."""
-    if form != 'prose':
+    """산문은 개조식 전제 검사를, 화면은 문서 뼈대 검사를 뺀다. 형식은 선언으로만 정해진다."""
+    drop = form_spared(form)
+    if not drop:
         return err, warn
-    keep = lambda items: [(k, m) for k, m in items if k not in FORM_ONLY_STRUCTURED]
+    keep = lambda items: [(k, m) for k, m in items if k not in drop]
     return keep(err), keep(warn)
 
 
@@ -2080,6 +2099,8 @@ def list_rules():
     print('    form: prose')
     print(f'개조식을 전제한 {len(FORM_ONLY_STRUCTURED)}갈래가 통째로 빠진다 '
           '— 서술형 종결·서술형 문단·제목 셋·진입점 넷.')
+    print('\n문서가 아니라 화면(업무 보드 등)이면 `<meta name="form" content="app">` —')
+    print('제목·진입점·서술형 문단만 빠지고 낱말·문장 갈래는 그대로 본다.')
 
 
 #: 코드펜스 여는 줄 — 백틱이나 물결표 **셋 이상**. CommonMark 가 그렇게 정한다.

@@ -138,6 +138,32 @@ class GlobalCheckerFormTests(unittest.TestCase):
         leaking = [k for k in family if k not in self.checker.FORM_ONLY_STRUCTURED]
         self.assertEqual([], leaking, f"산문 선언을 뚫고 남습니다: {leaking}")
 
+    def scan_html(self, body: str, meta: str = "") -> tuple[list, list]:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "screen.html"
+            path.write_text(f"<!doctype html><html><head>{meta}</head><body>{body}</body></html>",
+                            encoding="utf-8")
+            errors, warnings, _ = self.checker.scan_html(str(path))
+        return [k for k, _ in errors], [k for k, _ in warnings]
+
+    def test_an_app_screen_is_not_asked_for_a_lede(self) -> None:
+        """화면(업무 보드)의 `<h1>` 은 머리 띠다 — 그 아래 진입점 한 줄을 요구하면 오탐이다."""
+        screen = ("<h1>Dispatch <span>2026-09-10</span></h1>"
+                  "<ul><li>설계서 초안 — 어제 마감을 넘김</li><li>한 줄로 던집니다</li></ul>")
+        plain, _ = self.scan_html(screen)
+        app, _ = self.scan_html(screen, '<meta name="form" content="app">')
+        self.assertIn("진입점 없음", plain, "시료가 진입점 지적을 안 냅니다")
+        self.assertNotIn("진입점 없음", app)
+        self.assertIn("업무 글에 없는 말", app, "화면이라고 낱말 규칙까지 꺼졌습니다")
+
+    def test_no_title_or_lede_kind_leaks_through_an_app_declaration(self) -> None:
+        family = {kind for _, kinds in self.checker.RULE_GROUPS.values() for kind in kinds
+                  if kind.startswith(("제목", "진입점"))}
+        self.assertTrue(family)
+        self.assertEqual(set(), family - self.checker.form_spared("app"))
+        self.assertNotIn("서술형 종결", self.checker.form_spared("app"),
+                         "화면 문구의 서술형 종결은 그대로 봐야 합니다")
+
     def test_a_prose_document_with_a_particle_ending_lede_stays_quiet(self) -> None:
         """증상이 났던 그 모양 그대로 — 조사로 끝나는 첫 줄이 진입점 지적을 냈다."""
         doc = (
