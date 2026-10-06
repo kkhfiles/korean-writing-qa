@@ -181,6 +181,26 @@ class AskRecordTests(unittest.TestCase):
         self.assertEqual(0, rc, out)
         self.assertIn("안 가른 지적 1건", out)
 
+    def test_findings_on_lines_without_hangul_are_dropped(self) -> None:
+        """⛔ 영문 줄의 사람 확인은 답할 길이 없다(답은 한글 줄만 받음) — 막힌 채 풀리지 않는다."""
+        self.doc.write_text(DOC + "\nThis page is also in English.\n", encoding="utf-8")
+        english = {"line": 9, "phrase": "also in English", "category": "-", "fix": "-",
+                   "why": "-", "decide": "ask"}
+        rc, out = self.run_main([str(self.doc)], backend=FakeBackend([english, ASK]).pair())
+        self.assertEqual(0, rc, out)
+        self.assertIn("한글이 없는 줄에 달린 지적 1건", out)
+        row = json.loads(judge.LOG.read_text(encoding="utf-8").splitlines()[-1])
+        self.assertEqual(["기억이 흐려집니다"], [a["phrase"] for a in row["asks"]])
+
+    def test_an_old_ask_on_an_english_line_does_not_block(self) -> None:
+        """이미 기록된 영문 줄의 사람 확인(2026-10-06 첫 전수 판정에서 남음)도 막지 않는다."""
+        self.doc.write_text(DOC + "\nThis page is also in English.\n", encoding="utf-8")
+        judge.LOG.write_text(json.dumps({
+            "ok": True, "key": coverage.doc_key(self.doc), "when": time.time(),
+            "asks": [{"line_key": None, "phrase": "also in English", "fix": "-"}],
+        }, ensure_ascii=False) + "\n", encoding="utf-8")
+        self.assertEqual([], self.open_asks())
+
     def test_the_answer_command_has_a_quoted_posix_path(self) -> None:
         out = self.judged()
         self.assertIn(f"\"{self.doc.as_posix()}\" --answer", out,

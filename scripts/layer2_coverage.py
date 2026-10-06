@@ -208,6 +208,8 @@ def open_asks(key: str, lines: list[str], log: Path | None = None,
             if n is None:
                 continue
             k = line_key(lines[n - 1])
+            if not k:
+                continue            # 한글이 없는 줄 — 이 판정기의 몫이 아니고 답할 길도 없다
             if k in done or (n, ask.get("phrase")) in seen:
                 continue
             seen.add((n, ask.get("phrase")))

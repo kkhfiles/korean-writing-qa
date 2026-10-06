@@ -272,7 +272,7 @@ def judge(path: Path, model: str, timeout: float, backend, targets: list[int] | 
     key = coverage.doc_key(path)
     want = set(targets) if targets is not None else None
     system = probe.SYSTEM.format(rules=probe.rules_for("guided"))
-    found, calls, hidden = [], [], 0
+    found, calls, hidden, foreign = [], [], 0, 0
     for first, part in chunks(lines):
         if want is not None and not any(first <= n < first + len(part) for n in want):
             continue
@@ -314,6 +314,13 @@ def judge(path: Path, model: str, timeout: float, backend, targets: list[int] | 
                 if want is not None and it["line"] is not None and it["line"] not in want:
                     hidden += 1
                     continue
+                # ⛔ 한글이 없는 줄의 지적은 뺀다 — 이 판정기는 한글을 본다. 영문 페이지에서
+                #    영어 문장을 사람 확인으로 냈는데 답 기록은 한글 줄만 받아, 배포가 풀 길
+                #    없이 막힐 뻔했다(2026-10-06 사이트 첫 전수 판정).
+                n = it["line"]
+                if isinstance(n, int) and 0 < n <= len(lines) and not coverage.line_key(lines[n - 1]):
+                    foreign += 1
+                    continue
                 found.append(it)
                 if is_ask(it):
                     n = it["line"]
@@ -331,7 +338,7 @@ def judge(path: Path, model: str, timeout: float, backend, targets: list[int] | 
         it["fix_notes"] = fix_notes(str(it.get("fix") or ""), str(it.get("phrase") or ""),
                                     doc_lemmas, freq)
     return {"doc": str(path), "findings": found, "calls": calls, "fix_checked": freq is not None,
-            "targets": None if want is None else len(want), "hidden": hidden}
+            "targets": None if want is None else len(want), "hidden": hidden, "foreign": foreign}
 
 
 def show(result: dict) -> None:
@@ -351,6 +358,8 @@ def show(result: dict) -> None:
         else:
             print(f"  새 줄 {result['targets']}개만 판정 · 그 밖의 줄에 달린 지적 "
                   f"{result.get('hidden', 0)}건은 숨김(이미 판정했거나 갈라진 지점에 있던 줄)")
+    if result.get("foreign"):
+        print(f"  한글이 없는 줄에 달린 지적 {result['foreign']}건은 뺌 — 이 판정기는 한글을 봄")
     asks = [f for f in result["findings"] if is_ask(f)]
     fixes = [f for f in result["findings"] if not is_ask(f)]
     for title, group in (("사람 확인 — 판정기가 정하지 못해 사용자에게 넘긴 지적", asks),
