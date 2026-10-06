@@ -348,7 +348,7 @@ def report(out: dict) -> None:
         hit = sum(1 for r in pick if r["tight"])
         why = sum(1 for r in pick if r["why_ok"])
         note = ("사용자가 짚음" if tag == "대장"
-                else "규칙이 인용 안 함 · 갈래는 9단계에 있음")
+                else "규칙이 인용 안 함 · 갈래는 9단계나 핵심 규칙에 있음")
         print(f"      {tag} {len(pick):>2}건 — 표현 {hit:>2} · 까닭 {why:>2}"
               f"  ({note})")
     for tag in ("인용", "비인용"):

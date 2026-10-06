@@ -89,14 +89,22 @@ class HeldOutTests(unittest.TestCase):
             "알아보는지 못 재므로, 규칙을 고쳤으면 예문도 바꿉니다")
 
     def test_every_held_out_kind_is_a_real_item(self) -> None:
+        """갈래는 `guided` 가 받는 규칙 글에 있어야 한다 — 9단계 항목이나 핵심 규칙의 원칙.
+
+        2026-10-06 에 핵심 규칙 원칙까지 넓혔다. 사용자가 짚은 말 대부분이
+        「업무에서 쓰는 말로 쓰기」 아래에 들어가는데 9단계 항목에는 없어서,
+        그 갈래의 변형을 예비로 못 넣었다.
+        """
         body = probe.step_body(
             probe.SKILL_MD.read_text(encoding="utf-8"), probe.STEP_TITLE)
         titles = set(re.findall(r"^   - \*\*(.+?)\*\*", body, re.M))
+        titles |= set(re.findall(r"^- \*\*(.+?)\*\*",
+                                 probe.RULES.read_text(encoding="utf-8"), re.M))
         for h in self.held:
             self.assertIn(
                 h["kind"], titles,
-                f"{h['flag_id']} 가 「{h['kind']}」 를 가리키는데 9단계에 "
-                "그런 항목이 없습니다")
+                f"{h['flag_id']} 가 「{h['kind']}」 를 가리키는데 9단계에도 "
+                "핵심 규칙에도 그런 항목이 없습니다")
 
     def test_every_held_out_sentence_sits_in_the_carrier(self) -> None:
         for h in self.held:
