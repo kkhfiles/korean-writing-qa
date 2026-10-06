@@ -112,7 +112,18 @@ SYSTEM = """당신은 한글 업무 문서를 전달 전에 최종 점검한다.
 JSON 배열 하나만 낸다. 다른 말은 붙이지 않는다.
 
 [{{"line": 줄번호, "phrase": "고칠 표현 원문 그대로", "category": "규칙 이름",
-   "fix": "고친 말", "why": "한 줄 근거"}}]
+   "fix": "고친 말", "why": "한 줄 근거", "decide": "fix 또는 ask"}}]
+
+`decide` 는 고칠 문제라는 판단이 서면 "fix" 를 쓴다. "ask" 는 **고칠 문제인지부터
+갈리지 않을 때만** 쓴다 — 사람이 정하도록 넘긴다는 뜻이다.
+- 규칙의 「그대로 두는 것」에도 맞아 문맥에 따라 정상일 수 있음
+- 규칙에 기준이 없어 문제인지 판단할 근거가 부족함
+
+문제인 것은 분명한데 고친 말을 정하려면 원문 확인이 필요하면 "fix" 로 내고,
+`why` 에 무엇을 확인해야 하는지 적는다. 규칙이 예로 든 표현이나 「사용자가 확정한
+대표 수정」에 있는 갈래는 "fix" 다.
+
+확신이 없다는 이유로 지적을 빼지 않는다 — 문제인지 갈리지 않으면 빼지 말고 "ask" 로 낸다.
 
 고칠 것이 없으면 빈 배열 []을 낸다."""
 
@@ -273,11 +284,14 @@ def score(items: list[dict], findings: list, document: str,
         why_ok = None
         if kind and tight:
             why_ok = kind[:8] in str(tight.get("category", ""))
+        got = tight or loose
         rows.append({"flag_id": item["flag_id"], "text": want,
                      "line": want_line, "tight": tight, "loose": loose,
                      "cited": want in cited, "kind": kind, "why_ok": why_ok,
                      "source": item.get("source", "대장"),
-                     "doubt": item.get("doubt")})
+                     "doubt": item.get("doubt"),
+                     # 짚기는 했는데 사람에게 넘겼나 — 사용자가 짚은 것을 넘기면 묻는 일만 는다
+                     "ask": bool(got) and str(got.get("decide", "")).strip() == "ask"})
 
     hit_lines = {r["line"] for r in rows if r["loose"] or r["tight"]}
     extra = [f for f in said
@@ -290,6 +304,7 @@ def score(items: list[dict], findings: list, document: str,
                 "loose": sum(1 for r in pick if r["loose"] or r["tight"])}
 
     return {"rows": rows, "extra": extra,
+            "asks": sum(1 for f in said if str(f.get("decide", "")).strip() == "ask"),
             "tight": sum(1 for r in rows if r["tight"]),
             "loose": sum(1 for r in rows if r["loose"] or r["tight"]),
             "why": sum(1 for r in rows if r["why_ok"]),
@@ -328,6 +343,10 @@ def report(out: dict) -> None:
     print(f"\n── {out['arm']} · {out['model']} · 지적 {out['said']}건 "
           f"· 규칙 {out['rules_chars']:,}자 · {out.get('cost_usd') or 0:.4f}달러")
     print(f"   심은 {out['total']}건 중 — 엄격 {out['tight']} · 느슨 {out['loose']}")
+    if "asks" in out:
+        planted_ask = sum(1 for r in out["rows"] if r.get("ask"))
+        print(f"   사람 확인(ask) — 전체 지적 {out['said']}건 중 {out['asks']}건 · "
+              f"심은 것을 넘긴 것 {planted_ask}건")
     if out["gradable"]:
         print(f"      그중 까닭까지 맞음 {out['why']} "
               f"(항목 이름이 적힌 {out['gradable']}건 기준)")

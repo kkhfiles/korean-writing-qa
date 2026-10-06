@@ -194,6 +194,60 @@ def unverified_block(payload, files):
     return "\n".join(lines)
 
 
+def ask_block(payload, files):
+    """발행 직전 — 판정기가 사람에게 넘긴 지적 중 사용자 답을 못 받은 것이 남았으면 막는 글.
+
+    (2026-10-06 사용자 — 「규칙으로 잡고 llm 판단으로 잡고, 그래도 애매하면 사람한테
+    애스컬레이션」) 판정기가 `decide: ask` 로 낸 지적은 판정 기록에 남는다. 그 줄이 지금
+    내용에 그대로 있고 답 기록이 없으면 막는다. 판정기를 안 돌린 문서는 막지 않는다 —
+    판정을 요구하는 것은 `publish_block`·`push_block` 의 몫이다.
+
+    상태를 안 쓰므로 `--probe` 에서도 돈다. 검토 기록(`review`)으로는 안 열린다 —
+    세션이 판단해 넘기면 사람에게 넘긴 뜻이 없어진다. 줄을 고치거나 답을 적으면 열린다.
+    """
+    if (payload.get("hook_event_name") or "") != "PreToolUse":
+        return ""
+    cmd = str((payload.get("tool_input") or {}).get("command") or "")
+    if FORCE in cmd:
+        return ""
+    cov = load_coverage()
+    if cov is None or not hasattr(cov, "open_asks"):
+        return ""
+    found = []
+    for fp in files:
+        if not os.path.exists(fp):
+            continue
+        p = Path(fp)
+        try:
+            left = cov.open_asks(cov.doc_key(p), cov.read_doc(p).splitlines())
+        except (OSError, ValueError, subprocess.SubprocessError):
+            continue
+        if left:
+            found.append((fp, left))
+    if not found:
+        return ""
+    lines = ["⛔ 발행 보류 — 판정기가 사람에게 넘긴 지적에 아직 사용자 답이 없습니다", ""]
+    for fp, left in found:
+        for n, ask in left[:8]:
+            lines.append(f"  {os.path.basename(fp)} {n}행  「{ask.get('phrase')}」 → {ask.get('fix')}")
+            if ask.get("why"):
+                lines.append(f"      {ask['why']}")
+        if len(left) > 8:
+            lines.append(f"  … 그 밖 {len(left) - 8}건")
+    script = judge_script()
+    judge = script.as_posix() if script else "judge_layer2.py"
+    lines += [
+        "",
+        "  사용자에게 물어 정합니다 — 세션이 대신 정하지 않습니다.",
+        "  · 고치기로 했으면 그 줄을 고칩니다 — 고친 줄은 이 목록에서 빠집니다.",
+        "  · 그대로 두기로 했으면 사용자가 정한 것을 적습니다 —",
+        f"      python -X utf8 {judge} <파일> --answer <행> --note \"사용자가 정한 것\"",
+        "",
+        f"  정말 그대로 내보내야 하면 명령 앞에 `{FORCE}` 를 붙입니다 — 명령문에 남습니다.",
+    ]
+    return "\n".join(lines)
+
+
 def missing_stages(path, require=None):
     """지금 내용이 아직 통과하지 못한 단계. 도구가 없으면 빈 목록(막지 않는다)."""
     require = REQUIRE if require is None else require
@@ -370,17 +424,24 @@ def judge_command():
     override = os.environ.get("KOREAN_QA_JUDGE")
     if override:
         return None if override == "-" else (Path(override) if Path(override).is_file() else None)
+    path = judge_script()
+    if path is None:
+        return None
+    return path if judge_backend_ready() else None
+
+
+def judge_script():
+    """스킬이 세션에게 부르라고 적은 판정기 경로 · 없으면 None. 모델이 있는지는 안 본다 —
+    답 기록(`--answer`)은 모델 없이 돈다."""
     try:
         text = SKILL_MD.read_text(encoding="utf-8")
-    except OSError:
+    except (OSError, AttributeError):
         return None
     m = re.search(r"python -X utf8 (\S+judge_layer2\.py)", text)
     if not m:
         return None
     path = Path(os.path.expanduser(m.group(1)))
-    if not path.is_file():
-        return None
-    return path if judge_backend_ready() else None
+    return path if path.is_file() else None
 
 
 def judge_backend_ready():
@@ -443,6 +504,12 @@ def push_gaps(repo, conf, judge):
                     n = left[0]
                     gaps.append(f"판정기가 아직 안 본 새 줄 {len(left)}개 — "
                                 f"{n}행 「{lines[n - 1].strip()[:30]}」")
+            if hasattr(cov, "open_asks"):
+                asks = cov.open_asks(rel, lines)
+                if asks:
+                    n, ask = asks[0]
+                    gaps.append(f"사용자 답을 못 받은 사람 확인 지적 {len(asks)}개 — "
+                                f"{n}행 「{str(ask.get('phrase') or '')[:30]}」")
         with tempfile.TemporaryDirectory() as tmp:
             # 기록은 내용 해시에 묶인다 — 커밋된 내용을 파일로 꺼내 그 해시로 묻는다
             probe_file = Path(tmp) / f"head{suffix}"
@@ -495,9 +562,12 @@ def push_block(payload):
     else:
         lines += ["    1. 이 PC 에서는 2층 판정기를 부를 수 없습니다 — finalize-korean-document",
                   "       9단계와 판단 규칙(core-rules.md)을 세션이 직접 읽고 새 줄을 판정합니다."]
-    lines += ["    2. python -X utf8 ~/.claude/assets/check_record.py record <파일> \\",
+    lines += ["    2. 사람 확인 지적은 사용자에게 묻습니다 — 고치거나, 그대로 두면 답을 적습니다:",
+              f"       python -X utf8 {(judge_script() or Path('judge_layer2.py')).as_posix()} "
+              "<파일> --answer <행> --note \"사용자가 정한 것\"",
+              "    3. python -X utf8 ~/.claude/assets/check_record.py record <파일> \\",
               "           --stage judgment --verdict pass --note \"남긴 지적과 까닭\"",
-              "    3. 커밋한 뒤 다시 push 합니다 — 확인은 커밋된 내용으로 합니다."]
+              "    4. 커밋한 뒤 다시 push 합니다 — 확인은 커밋된 내용으로 합니다."]
     return "\n".join(lines + tail)
 
 
@@ -1004,7 +1074,8 @@ def main():
     #    발행된 뒤에 읽힌다. 통과 기록이 없으면 여기서 멈춘다.
     #    확인 안 된 표시는 상태를 안 쓰므로 시험 통로에서도 막는다.
     if mode == "always" or korean_files:
-        stop = unverified_block(payload, korean_files or files)
+        stop = (unverified_block(payload, korean_files or files)
+                or ask_block(payload, korean_files or files))
         if stop:
             if not probe:
                 save(state)

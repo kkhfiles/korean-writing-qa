@@ -27,12 +27,20 @@ Codex 쪽은 토큰 수만 남고 금액은 「금액 없음」으로 찍힌다.
 해시를 기록에 남기므로(`layer2_coverage.py`) 고친 줄만 다시 판정된다. 발행 게이트가
 push 직전에 같은 기록으로 「새 줄을 다 봤나」를 가른다.
 
+**사람 확인** (2026-10-06 사용자 결정) — 판정기는 지적마다 `decide` 를 낸다. 분명하면
+`fix`, 문맥에 따라 정상일 수 있거나 규칙에 기준이 없거나 고치면 뜻이 바뀔 수 있으면
+`ask` 다. `ask` 는 **세션이 정하지 않고 사용자에게 묻는다.** 판정 기록에 줄 해시와 함께
+남고, 사용자가 답하면 `--answer` 로 그 줄에 답을 적는다. 답을 못 받은 지적이 남은
+문서는 발행 직전 검사가 막는다(`hooks/doc-style-gate.py`).
+
     python -X utf8 scripts/judge_layer2.py <문서…> [--since REF] [--backend auto|claude|codex]
                                            [--model 별칭] [--json 경로]
+    python -X utf8 scripts/judge_layer2.py <문서> --answer <행> [--answer <행>…] --note "사용자가 정한 것"
+    python -X utf8 scripts/judge_layer2.py <문서…> --asks
     python -X utf8 scripts/judge_layer2.py --cost [--by day|month|doc]
 
-종료 코드 — 0 돌았음(지적은 사람이 본다) · 2 사용법 · 3 호출 백엔드 없음
-(세션이 규칙을 직접 읽는다) · 4 호출 실패
+종료 코드 — 0 돌았음(지적은 사람이 본다) · 1 `--asks` 에서 답을 기다리는 지적이 남음 ·
+2 사용법 · 3 호출 백엔드 없음(세션이 규칙을 직접 읽는다) · 4 호출 실패
 """
 
 from __future__ import annotations
@@ -96,6 +104,51 @@ def relocate(lines: list[str], hint, phrase: str) -> int | None:
     if not hits:
         return hint
     return min(hits, key=lambda n: abs(n - hint)) if hint else hits[0]
+
+
+def is_ask(item: dict) -> bool:
+    """판정기가 사람에게 넘긴 지적인가 — `decide: ask`."""
+    return str(item.get("decide") or "").strip().lower() == "ask"
+
+
+def answer(path: Path, line_nos: list[int], note: str) -> list[str]:
+    """사용자가 사람 확인 지적에 답했다고 줄마다 적는다 — 적은 줄의 앞머리 목록.
+
+    ⛔ **세션이 대신 답하지 않는다** — 이 기록은 사용자가 정한 것을 옮겨 적는 곳이다.
+       까닭(`note`)에는 사용자가 무엇을 골랐는지를 적는다. 까닭이 없으면 받지 않는다 —
+       판정 기록(`check_record.py`)의 검토 단계와 같은 이유다.
+    """
+    if not note.strip():
+        raise ValueError("답 기록에는 --note 로 사용자가 정한 것을 적어야 합니다")
+    lines = read_doc(path).splitlines()
+    key = coverage.doc_key(path)
+    rows = []
+    for n in line_nos:
+        if not 0 < n <= len(lines) or not coverage.line_key(lines[n - 1]):
+            raise ValueError(f"{n}행은 한글이 든 줄이 아닙니다 — 판정 결과의 줄 번호를 적습니다")
+        rows.append({"at": datetime.now().isoformat(timespec="seconds"), "when": time.time(),
+                     "doc": str(path), "key": key, "line": n,
+                     "line_key": coverage.line_key(lines[n - 1]), "note": note.strip()})
+    coverage.ANSWERS.parent.mkdir(parents=True, exist_ok=True)
+    with coverage.ANSWERS.open("a", encoding="utf-8", newline="\n") as f:
+        for row in rows:
+            f.write(json.dumps(row, ensure_ascii=False) + "\n")
+    return [lines[r["line"] - 1].strip()[:40] for r in rows]
+
+
+def show_open_asks(path: Path) -> int:
+    """아직 답을 못 받은 사람 확인 지적을 보이고 그 수를 낸다."""
+    lines = read_doc(path).splitlines()
+    left = coverage.open_asks(coverage.doc_key(path), lines, LOG)
+    if not left:
+        print(f"  {path.name} — 답을 기다리는 사람 확인 지적 없음")
+        return 0
+    print(f"  {path.name} — 사용자 답을 기다리는 지적 {len(left)}건")
+    for n, ask in left:
+        print(f"  {n:>4}행  「{ask.get('phrase')}」 → {ask.get('fix')}")
+        if ask.get("why"):
+            print(f"         {ask['why']}")
+    return len(left)
 
 
 #: 고친 말 점검 — 판정 호출이 낸 **수정안 자체**가 새 문제를 들여오는지 본다(모델을 더 부르지
@@ -248,8 +301,7 @@ def judge(path: Path, model: str, timeout: float, backend, targets: list[int] | 
                    cache_read=usage.get("cache_read_input_tokens", 0),
                    output_tokens=usage.get("output_tokens", 0),
                    cost_usd=r.get("cost_usd"), findings=len(items))
-        log_call(row)
-        calls.append(row)
+        asks = []
         for it in items:
             if isinstance(it, dict):
                 it["line"] = relocate(lines, it.get("line"), str(it.get("phrase") or ""))
@@ -258,6 +310,16 @@ def judge(path: Path, model: str, timeout: float, backend, targets: list[int] | 
                     hidden += 1
                     continue
                 found.append(it)
+                if is_ask(it):
+                    n = it["line"]
+                    asks.append({"line_key": coverage.line_key(lines[n - 1])
+                                 if isinstance(n, int) and 0 < n <= len(lines) else None,
+                                 "line": n, "phrase": it.get("phrase"), "fix": it.get("fix"),
+                                 "why": it.get("why"), "category": it.get("category")})
+        # 발행 직전 검사가 「사용자 답을 아직 못 받은 지적」을 이것으로 가른다
+        row["asks"] = asks
+        log_call(row)
+        calls.append(row)
     freq = load_freq()
     doc_lemmas = set(_lemmas(text)) if freq is not None else set()
     for it in found:
@@ -284,16 +346,28 @@ def show(result: dict) -> None:
         else:
             print(f"  새 줄 {result['targets']}개만 판정 · 그 밖의 줄에 달린 지적 "
                   f"{result.get('hidden', 0)}건은 숨김(이미 판정했거나 갈라진 지점에 있던 줄)")
-    for f in sorted(result["findings"], key=lambda f: (f.get("line") or 0)):
-        print(f"  {str(f.get('line') or '?'):>4}행  「{f.get('phrase')}」 — "
-              f"{f.get('category')} → {f.get('fix')}")
-        if f.get("why"):
-            print(f"         {f['why']}")
-        for note in f.get("fix_notes") or []:
-            print(f"         ⚠️ {note}")
+    asks = [f for f in result["findings"] if is_ask(f)]
+    fixes = [f for f in result["findings"] if not is_ask(f)]
+    for title, group in (("사람 확인 — 판정기가 정하지 못해 사용자에게 넘긴 지적", asks),
+                         ("고칠 지적", fixes)):
+        if not group:
+            continue
+        print(f"  ── {title} {len(group)}건")
+        for f in sorted(group, key=lambda f: (f.get("line") or 0)):
+            print(f"  {str(f.get('line') or '?'):>4}행  「{f.get('phrase')}」 — "
+                  f"{f.get('category')} → {f.get('fix')}")
+            if f.get("why"):
+                print(f"         {f['why']}")
+            for note in f.get("fix_notes") or []:
+                print(f"         ⚠️ {note}")
     if not result.get("fix_checked", True):
         print("  ⚠️ 형태소 분석기가 없어 고친 말의 드문 낱말을 안 봤습니다(지시어·형식은 봄)")
     print("  ⚠️ 지적마다 맞는지 판단한다 — 헛짚음이 섞인다. 고치지 않은 지적은 까닭을 남긴다.")
+    if asks:
+        print("  ⛔ 사람 확인 지적은 세션이 정하지 않는다 — 사용자에게 묻고, 고치거나 답을 적는다:")
+        print(f"     python -X utf8 {Path(__file__).as_posix()} {result['doc']} "
+              "--answer <행> --note \"사용자가 정한 것\"")
+        print("     답을 못 받은 지적이 남으면 발행 직전 검사가 막는다.")
 
 
 def cost_report(by: str) -> None:
@@ -338,6 +412,11 @@ def main(argv=None, backend=None) -> int:
                     help="REF 와 갈라진 뒤 새로 생겼고 아직 판정 안 한 줄만 판정 — 예: origin/main")
     ap.add_argument("--cost", action="store_true", help="누적 비용 보기")
     ap.add_argument("--by", choices=("day", "month", "doc"), default="day")
+    ap.add_argument("--answer", type=int, action="append", metavar="행",
+                    help="사람 확인 지적에 사용자가 답한 줄 — 여러 번 줄 수 있음 · --note 필수")
+    ap.add_argument("--note", default="", help="--answer 와 함께 · 사용자가 정한 것")
+    ap.add_argument("--asks", action="store_true",
+                    help="모델을 부르지 않고 답을 기다리는 사람 확인 지적만 보기")
     a = ap.parse_args(argv)
     if a.cost:
         cost_report(a.by)
@@ -345,6 +424,24 @@ def main(argv=None, backend=None) -> int:
     if not a.docs:
         ap.print_usage()
         return 2
+    if a.answer or a.asks:
+        missing = [d for d in a.docs if not Path(d).is_file()]
+        if missing:
+            print(f"⛔ 파일 없음 — {missing[0]}")
+            return 2
+        if a.answer:
+            if len(a.docs) != 1:
+                print("⛔ --answer 는 문서 하나에만 씁니다 — 줄 번호가 문서마다 다릅니다")
+                return 2
+            try:
+                done = answer(Path(a.docs[0]), a.answer, a.note)
+            except ValueError as e:
+                print(f"⛔ {e}")
+                return 2
+            for head in done:
+                print(f"  답 기록 — 「{head}」")
+        left = sum(show_open_asks(Path(d)) for d in a.docs)
+        return 1 if left and a.asks else 0
     name = pick_backend(a.backend)
     model = a.model or (CODEX_MODEL if name == "codex" else DEFAULT_MODEL)
     backend = backend or (load_backend(name) if name else None)

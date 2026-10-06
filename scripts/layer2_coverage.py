@@ -8,6 +8,12 @@
 **한글이 든 줄만 센다.** 구분선 · 빈 줄 · 코드 줄은 2층이 판정할 글이 아니다.
 
 **기록은 14일까지만 믿는다** — 통과 기록(`check_record.py`)과 같은 기한이다.
+
+**사람 확인** (2026-10-06 사용자 — 「규칙으로 잡고 llm 판단으로 잡고, 그래도 애매하면
+사람한테 애스컬레이션」) — 판정기가 `decide: ask` 로 낸 지적은 판정 기록의 `asks` 에
+줄 해시와 함께 남는다. 사용자가 답하면 답 기록(`ANSWERS`)에 그 줄 해시가 남는다.
+**답은 문서가 아니라 줄에 묶는다** — 다른 줄을 고쳐도 받은 답이 살아 있어야 한 번
+물은 것을 또 묻지 않는다. 짚은 표현을 고치면 그 지적은 사라진다(고친 것이다).
 """
 
 from __future__ import annotations
@@ -23,6 +29,9 @@ from pathlib import Path
 
 LOG = Path(os.environ.get("KOREAN_QA_JUDGE_LOG")
            or Path.home() / ".claude" / "state" / "korean-layer2-judge.jsonl")
+#: 사람 확인 지적에 사용자가 답한 기록 — 비용 장부(`LOG`)와 따로 둔다(장부 합계에 안 섞이게)
+ANSWERS = Path(os.environ.get("KOREAN_QA_ANSWER_LOG")
+               or Path.home() / ".claude" / "state" / "korean-layer2-answers.jsonl")
 FRESH_DAYS = 14
 HANGUL = re.compile(r"[가-힣]")
 
@@ -126,24 +135,68 @@ def base_lines(path: Path, ref: str) -> list[str] | None:
     return visible_text(show.stdout.decode("utf-8", "replace"), path.suffix).splitlines()
 
 
-def judged(key: str, log: Path | None = None, now: float | None = None) -> set[str]:
-    """이 문서에서 판정기가 이미 본 줄 해시 — 성공한 호출 · 14일 안 것만."""
-    log = log or LOG
+def _rows(key: str, log: Path, now: float | None):
+    """이 문서의 기록 줄 — 14일 안 것만. 판정 기록과 답 기록이 같이 쓴다."""
     now = time.time() if now is None else now
-    out: set[str] = set()
     if not log.is_file():
-        return out
+        return
     for raw in log.read_text(encoding="utf-8").splitlines():
         try:
             row = json.loads(raw)
         except ValueError:
             continue
-        if not row.get("ok") or row.get("key") != key:
+        if row.get("key") != key:
             continue
         if now - float(row.get("when") or 0) > FRESH_DAYS * 86400:
             continue
-        out.update(row.get("seen") or [])
+        yield row
+
+
+def judged(key: str, log: Path | None = None, now: float | None = None) -> set[str]:
+    """이 문서에서 판정기가 이미 본 줄 해시 — 성공한 호출 · 14일 안 것만."""
+    out: set[str] = set()
+    for row in _rows(key, log or LOG, now):
+        if row.get("ok"):
+            out.update(row.get("seen") or [])
     return out
+
+
+def answered(key: str, answers: Path | None = None, now: float | None = None) -> set[str]:
+    """사용자가 답한 줄 해시 — 14일 안 것만."""
+    return {row["line_key"] for row in _rows(key, answers or ANSWERS, now) if row.get("line_key")}
+
+
+def open_asks(key: str, lines: list[str], log: Path | None = None,
+              answers: Path | None = None, now: float | None = None) -> list[tuple[int, dict]]:
+    """아직 사용자 답을 못 받은 사람 확인 지적 — (지금 줄 번호, 지적) 목록.
+
+    물은 줄이 그대로 있으면 그 줄에, 바뀌었으면 **짚은 표현이 남아 있는 줄**에 붙인다.
+    표현까지 고쳤으면 뺀다 — 고친 것이다. ⛔ 줄 해시만 보면 같은 줄의 다른 낱말 하나만
+    바꿔도 묻지 않고 지적이 사라진다(2026-10-06 돌연변이 시험이 짚은 빈틈).
+    """
+    where: dict[str, int] = {}
+    for n, line in enumerate(lines, 1):
+        k = line_key(line)
+        if k and k not in where:
+            where[k] = n
+    done = answered(key, answers, now)
+    out, seen = [], set()
+    for row in _rows(key, log or LOG, now):
+        if not row.get("ok"):
+            continue
+        for ask in row.get("asks") or []:
+            n = where.get(ask.get("line_key") or "")
+            if n is None:
+                phrase = str(ask.get("phrase") or "").strip()
+                n = next((i for i, l in enumerate(lines, 1) if phrase and phrase in l), None)
+            if n is None:
+                continue
+            k = line_key(lines[n - 1])
+            if k in done or (n, ask.get("phrase")) in seen:
+                continue
+            seen.add((n, ask.get("phrase")))
+            out.append((n, ask))
+    return sorted(out, key=lambda x: x[0])
 
 
 def open_lines(lines: list[str], base: list[str] | None, seen: set[str]) -> list[int]:
