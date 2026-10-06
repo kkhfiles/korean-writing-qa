@@ -112,8 +112,11 @@ _kiwi = None
 def _lemmas(text: str) -> list[str]:
     global _kiwi
     if _kiwi is None:
-        from kiwipiepy import Kiwi
-        _kiwi = Kiwi()
+        # 검사기와 같은 한 벌을 쓴다 — 따로 띄우면 한 프로세스에 약 490MB 씩 쌓인다(2026-10-06)
+        import kiwipiepy
+        _kiwi = getattr(kiwipiepy, "_korean_qa_shared", None)
+        if _kiwi is None:
+            _kiwi = kiwipiepy._korean_qa_shared = kiwipiepy.Kiwi()
     return [f"{t.form}/{t.tag}" for t in _kiwi.tokenize(text) if t.tag in FIX_TAGS and len(t.form) > 1]
 
 

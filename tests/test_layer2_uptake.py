@@ -140,8 +140,19 @@ class VerdictTests(unittest.TestCase):
         self.assertIn('after["발행 호출"] < 20', source)
 
     def test_the_two_stages_are_measured_apart(self) -> None:
-        """어디서 새는지가 처방을 가른다 — 합치면 무엇을 고칠지 모른다."""
-        result = self.mod.measure(days=1)
+        """어디서 새는지가 처방을 가른다 — 합치면 무엇을 고칠지 모른다.
+
+        ⛔ 실제 대화 기록 폴더를 읽지 않는다 — 수백 MB 기록이 섞여 이 시험 하나가 3.9GB 를
+           쓰고, 메모리가 빠듯한 날 전체 시험이 여기서 `MemoryError` 로 깨졌다(2026-10-06).
+           칸이 갈라져 나오는지만 보면 되므로 빈 폴더로 잰다.
+        """
+        saved = self.mod.TRANSCRIPTS
+        with tempfile.TemporaryDirectory() as d:
+            self.mod.TRANSCRIPTS = Path(d)
+            try:
+                result = self.mod.measure(days=1)
+            finally:
+                self.mod.TRANSCRIPTS = saved
 
         for when in ("붙이기 전", "붙인 뒤"):
             with self.subTest(when=when):
@@ -188,6 +199,45 @@ class WindowTests(unittest.TestCase):
                 self.mod.TRANSCRIPTS = saved
         total = sum(b["발행 호출"] for b in result["buckets"].values())
         self.assertEqual(1, total, "열흘 전 발행이 「최근 사흘」에 들어왔습니다")
+
+
+class StreamingTests(unittest.TestCase):
+    """대화 기록은 한 줄씩 읽는다 — 통째로 읽으면 파일 크기의 몇 배가 든다.
+
+    2026-10-06 실측 — 468MB 기록이 섞인 폴더에서 측정 한 번이 프로세스 하나에 3.9GB.
+    파일 크기에 비례해 늘면 통째로 읽는 것이고, 한 줄 크기에 머물면 흘려 읽는 것이다.
+    """
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.mod = load()
+
+    def test_a_large_transcript_is_not_held_in_memory(self) -> None:
+        import tracemalloc
+
+        filler = json.dumps({"timestamp": "2020-01-01T00:00:00.000Z",
+                             "message": {"content": "가" * 400}}, ensure_ascii=False)
+        with tempfile.TemporaryDirectory() as d:
+            folder = Path(d) / "P--work-other"
+            folder.mkdir()
+            big = folder / "s.jsonl"
+            with big.open("w", encoding="utf-8") as fh:
+                for _ in range(20_000):          # 약 25MB
+                    fh.write(filler + "\n")
+            size = big.stat().st_size
+            saved = self.mod.TRANSCRIPTS
+            self.mod.TRANSCRIPTS = Path(d)
+            tracemalloc.start()
+            try:
+                self.mod.measure(days=1)
+                peak = tracemalloc.get_traced_memory()[1]
+            finally:
+                tracemalloc.stop()
+                self.mod.TRANSCRIPTS = saved
+        # 통째로 읽으면 문자열만으로 파일 크기를 넘는다 — 그 절반도 안 써야 한다
+        self.assertLess(peak, size // 2,
+                        f"파일 {size // 1_048_576}MB 를 재는 데 {peak // 1_048_576}MB 를 썼습니다 — "
+                        "대화 기록을 통째로 읽고 있습니다")
 
 
 class DocumentCountTests(unittest.TestCase):

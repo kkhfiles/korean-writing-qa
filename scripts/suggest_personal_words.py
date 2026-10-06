@@ -69,7 +69,10 @@ def main() -> int:
     except Exception:
         print("형태소 분석기가 없습니다 — python -m pip install kiwipiepy", file=sys.stderr)
         return 1
-    kiwi = Kiwi()
+    # 검사기와 같은 한 벌을 쓴다(rare_words.py 와 같은 까닭)
+    import kiwipiepy
+    kiwi = getattr(kiwipiepy, "_korean_qa_shared", None) or Kiwi()
+    kiwipiepy._korean_qa_shared = kiwi
     d1, ex1, n1 = count(kiwi, args.informal)
     d2, ex2, n2 = count(kiwi, args.formal)
     if not n1 or not n2:

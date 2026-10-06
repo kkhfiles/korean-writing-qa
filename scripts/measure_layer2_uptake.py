@@ -128,6 +128,20 @@ def within(stamp: str, cutoff: float) -> bool:
     return when.timestamp() >= cutoff
 
 
+def lines_of(path: Path):
+    """대화 기록을 한 줄씩 낸다.
+
+    ⛔ 통째로 읽지 않는다 — 대화 기록 하나가 수백 MB(2026-10-06 468MB)라 문자열로 읽고
+       줄로 한 번 더 나누면 프로세스 하나가 3.9GB 를 썼다. 메모리가 빠듯한 날에는
+       전체 시험이 이 시험에서 `MemoryError` 로 깨졌다.
+    """
+    try:
+        with path.open(encoding="utf-8", errors="ignore") as fh:
+            yield from fh
+    except OSError:
+        return
+
+
 def measure(days: int) -> dict:
     cutoff = time.time() - days * 86400
     hook = load_hook()
@@ -141,10 +155,9 @@ def measure(days: int) -> dict:
         try:
             if path.stat().st_mtime < cutoff:
                 continue
-            raw = path.read_text(encoding="utf-8", errors="ignore")
         except OSError:
             continue
-        for row in raw.splitlines():
+        for row in lines_of(path):
             if not row.strip():
                 continue
             try:

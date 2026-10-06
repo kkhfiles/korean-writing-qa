@@ -63,6 +63,16 @@ def written_path(block) -> str:
     return value.strip() if isinstance(value, str) else ""
 
 
+def lines_of(path: Path):
+    """대화 기록을 한 줄씩 낸다 — 통째로 읽으면 수백 MB 파일 하나에 GB 가 든다
+    (`measure_layer2_uptake.py` 의 같은 함수 설명 · 2026-10-06 실측 3.9GB)."""
+    try:
+        with path.open(encoding="utf-8", errors="ignore") as fh:
+            yield from fh
+    except OSError:
+        return
+
+
 def measure(days: int, include_self: bool) -> dict:
     cutoff = time.time() - days * 86400
     hook = load_hook()
@@ -75,10 +85,9 @@ def measure(days: int, include_self: bool) -> dict:
         try:
             if path.stat().st_mtime < cutoff:
                 continue
-            raw = path.read_text(encoding="utf-8", errors="ignore")
         except OSError:
             continue
-        for row in raw.splitlines():
+        for row in lines_of(path):
             if not row.strip():
                 continue
             try:

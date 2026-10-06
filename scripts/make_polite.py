@@ -68,10 +68,19 @@ def checker():
 
 
 def kiwi():
+    """형태소 분석기 — 검사기와 같은 한 벌(`kiwipiepy._korean_qa_shared`)을 쓴다.
+
+    ⛔ 따로 띄우지 않는다 — 한 벌이 약 490MB 라, 검사기를 함께 부르는 시험 프로세스에
+       두 벌이 떠 986MB 를 썼다(2026-10-06 실측). 전체 시험은 한 프로세스라 더 쌓인다.
+    """
     global _kiwi
     if _kiwi is None:
         import kiwipiepy
-        _kiwi = kiwipiepy.Kiwi()
+        shared = getattr(kiwipiepy, "_korean_qa_shared", None)
+        if shared is None:
+            shared = kiwipiepy.Kiwi()
+            kiwipiepy._korean_qa_shared = shared
+        _kiwi = shared
     return _kiwi
 
 
