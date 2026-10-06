@@ -35,12 +35,17 @@ push 직전에 같은 기록으로 「새 줄을 다 봤나」를 가른다.
 
     python -X utf8 scripts/judge_layer2.py <문서…> [--since REF] [--backend auto|claude|codex]
                                            [--model 별칭] [--json 경로]
+    python -X utf8 scripts/judge_layer2.py <문서…> --sheet <저장소 밖 경로>.md
+    python -X utf8 scripts/judge_layer2.py --answers-from <그 표>
     python -X utf8 scripts/judge_layer2.py <문서> --answer <행> [--answer <행>…] --note "사용자가 정한 것"
     python -X utf8 scripts/judge_layer2.py <문서…> --asks
     python -X utf8 scripts/judge_layer2.py --cost [--by day|month|doc]
 
-종료 코드 — 0 돌았음(지적은 사람이 본다) · 1 `--asks` 에서 답을 기다리는 지적이 남음 ·
-2 사용법 · 3 호출 백엔드 없음(세션이 규칙을 직접 읽는다) · 4 호출 실패
+**사용자에게 넘기는 형식은 표 한 장** (2026-10-07 사용자) — `--sheet` 가 md 표를 쓰고 사용자가
+「답」 칸을 채우면 `--answers-from` 이 읽는다. 형식과 답 처리는 `ask_sheet.py` 에 있다.
+
+종료 코드 — 0 돌았음(지적은 사람이 본다) · 1 `--asks` · `--sheet` · `--answers-from` 에서 답을 기다리는 지적이 남음 ·
+2 사용법 · 표를 못 읽음 · 3 호출 백엔드 없음(세션이 규칙을 직접 읽는다) · 4 호출 실패
 """
 
 from __future__ import annotations
@@ -58,6 +63,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
+import ask_sheet  # noqa: E402
 import layer2_coverage as coverage  # noqa: E402
 import probe_layer2_kinds as probe  # noqa: E402
 
@@ -154,6 +160,77 @@ def show_open_asks(path: Path) -> int:
         if ask.get("why"):
             print(f"         {ask['why']}")
     return len(left)
+
+
+def write_sheet(paths: list[Path], out: Path) -> tuple[int, int]:
+    """열린 사람 확인을 md 표 한 장으로 쓴다 — (줄 수, 지적 수). 형식은 `ask_sheet.py`."""
+    docs = []
+    for p in paths:
+        lines = read_doc(p).splitlines()
+        docs.append((p, lines, coverage.open_asks(coverage.doc_key(p), lines, LOG)))
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(ask_sheet.render(docs, coverage.line_key), encoding="utf-8", newline="\n")
+    asks = sum(len(a) for _, _, a in docs)
+    rows = sum(len({n for n, _ in a}) for _, _, a in docs)
+    return rows, asks
+
+
+def read_answers(sheet: Path) -> int:
+    """사용자가 표에 적은 답을 읽는다 — `그대로`는 답 기록에 남기고, 고칠 것은 목록으로 돌려준다.
+
+    ⛔ `고침`·`직접`은 답으로 적지 않는다 — 적으면 고치기 전에 지적이 닫혀 고치지 않은 글이
+       발행·배포를 통과한다. 고치면 짚은 표현이 사라져 지적이 저절로 닫힌다.
+    ⛔ 표를 만든 뒤 바뀐 줄의 답은 받지 않는다 — 사용자가 본 문장과 지금 문장이 다르다.
+    종료 코드 — 0 남은 사람 확인 없음 · 1 남음(고칠 것 · 보류 · 빈칸) · 2 표를 못 읽음
+    """
+    try:
+        keys, answers = ask_sheet.parse(sheet.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as e:
+        print(f"⛔ {e}")
+        return 2
+    kept, edits, waiting, refused = [], [], [], []
+    docs: dict[str, Path] = {}
+    for qid, key in keys.items():
+        raw = answers.get(qid, "")
+        kind = ask_sheet.kind_of(raw)
+        p = docs.setdefault(key["doc"], Path(key["doc"]))
+        if kind in (ask_sheet.BLANK, ask_sheet.HOLD):
+            waiting.append(qid)
+            continue
+        if not p.is_file():
+            refused.append(f"{qid} — 문서가 없습니다: {p}")
+            continue
+        lines = read_doc(p).splitlines()
+        # 표를 만든 뒤 위에 줄이 늘거나 줄었으면 같은 글의 줄을 찾아간다
+        now = next((i for i, l in enumerate(lines, 1) if coverage.line_key(l) == key["line_key"]), None)
+        if now is None:
+            refused.append(f"{qid} {p.name} {key['line']}행 — 표를 만든 뒤 그 줄이 바뀌었습니다 · "
+                           "표를 다시 만들어 다시 묻습니다")
+            continue
+        if kind == ask_sheet.EDIT:
+            phrases = [str(a.get("phrase") or "") for n, a in
+                       coverage.open_asks(coverage.doc_key(p), lines, LOG) if n == now]
+            edits.append(f"{qid} {p.name} {now}행 「{' · '.join(phrases)}」 — 사용자 답: {raw}")
+            continue
+        try:
+            answer(p, [now], f"사용자 답(사람 확인 표 {sheet.name} {qid}): {raw}")
+            kept.append(qid)
+        except ValueError as e:
+            refused.append(f"{qid} {p.name} {now}행 — {e}")
+    print(f"사람 확인 표 읽음 — {sheet.name} · 행 {len(keys)}개")
+    print(f"  그대로 — 답 기록에 남김 {len(kept)}건" + (f" ({' '.join(kept)})" if kept else ""))
+    if edits:
+        print(f"  고칠 것 {len(edits)}건 — 세션이 고친 뒤 --since 로 고친 줄을 다시 판정합니다")
+        for e in edits:
+            print(f"    {e}")
+    if waiting:
+        print(f"  보류 · 빈칸 {len(waiting)}건 — 답이 없는 것으로 남아 발행과 배포가 막힙니다: {' '.join(waiting)}")
+    for r in refused:
+        print(f"  ⛔ {r}")
+    left = sum(len(coverage.open_asks(coverage.doc_key(p), read_doc(p).splitlines(), LOG))
+               for p in docs.values() if p.is_file())
+    print(f"  남은 사람 확인 {left}건")
+    return 1 if left else 0
 
 
 #: 고친 말 점검 — 판정 호출이 낸 **수정안 자체**가 새 문제를 들여오는지 본다(모델을 더 부르지
@@ -382,9 +459,10 @@ def show(result: dict) -> None:
         print(f"  ⚠️ 판정기가 고침·사람 확인을 안 가른 지적 {blank}건 — 고칠 지적으로 셈")
     print("  ⚠️ 지적마다 맞는지 판단한다 — 헛짚음이 섞인다. 고치지 않은 지적은 까닭을 남긴다.")
     if asks:
-        print("  ⛔ 사람 확인 지적은 세션이 정하지 않는다 — 사용자에게 묻고, 고치거나 답을 적는다:")
+        print("  ⛔ 사람 확인 지적은 세션이 정하지 않는다 — 표로 만들어 사용자에게 넘기고, 적은 답을 읽는다:")
         print(f"     python -X utf8 {Path(__file__).as_posix()} \"{Path(result['doc']).as_posix()}\" "
-              "--answer <행> --note \"사용자가 정한 것\"")
+              "--sheet <저장소 밖 경로>.md")
+        print(f"     python -X utf8 {Path(__file__).as_posix()} --answers-from <그 표>")
         print("     답을 못 받은 지적이 남으면 발행 직전 검사가 막는다.")
 
 
@@ -435,13 +513,30 @@ def main(argv=None, backend=None) -> int:
     ap.add_argument("--note", default="", help="--answer 와 함께 · 사용자가 정한 것")
     ap.add_argument("--asks", action="store_true",
                     help="모델을 부르지 않고 답을 기다리는 사람 확인 지적만 보기")
+    ap.add_argument("--sheet", metavar="경로.md",
+                    help="답을 기다리는 사람 확인을 md 표로 씀 — 사용자에게 넘기는 형식 · 모델 안 부름")
+    ap.add_argument("--answers-from", metavar="경로.md",
+                    help="사용자가 답을 적은 사람 확인 표를 읽음 — 그대로만 답 기록에 남김")
     a = ap.parse_args(argv)
     if a.cost:
         cost_report(a.by)
         return 0
+    if a.answers_from:
+        return read_answers(Path(a.answers_from))
     if not a.docs:
         ap.print_usage()
         return 2
+    if a.sheet:
+        missing = [d for d in a.docs if not Path(d).is_file()]
+        if missing:
+            print(f"⛔ 파일 없음 — {missing[0]}")
+            return 2
+        out = Path(a.sheet)
+        rows, asks = write_sheet([Path(d) for d in a.docs], out)
+        print(f"사람 확인 표 — 줄 {rows}개 · 지적 {asks}건 · {out.resolve().as_uri()}")
+        if coverage.repo_of(out) is not None:
+            print("  ⚠️ 표가 git 저장소 안에 있습니다 — 문서 글이 들어 있으니 커밋하지 않습니다")
+        return 1 if asks else 0
     if a.answer or a.asks:
         missing = [d for d in a.docs if not Path(d).is_file()]
         if missing:

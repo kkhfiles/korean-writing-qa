@@ -203,7 +203,7 @@ class AskRecordTests(unittest.TestCase):
 
     def test_the_answer_command_has_a_quoted_posix_path(self) -> None:
         out = self.judged()
-        self.assertIn(f"\"{self.doc.as_posix()}\" --answer", out,
+        self.assertIn(f"\"{self.doc.as_posix()}\" --sheet", out,
                       "안내 명령의 경로가 셸에서 깨지는 꼴입니다")
 
 
@@ -245,7 +245,8 @@ class GateTests(unittest.TestCase):
         rc, out = self.publish()
         self.assertEqual(2, rc, f"답을 못 받은 지적이 있는데 발행이 통과했습니다: {out[:300]}")
         self.assertIn("기억이 흐려집니다", out)
-        self.assertIn("--answer", out, "푸는 길을 안 알려 줍니다")
+        self.assertIn("--sheet", out, "사용자에게 넘길 표를 만드는 길을 안 알려 줍니다")
+        self.assertIn("--answers-from", out, "푸는 길을 안 알려 줍니다")
 
     def test_an_answer_opens_it(self) -> None:
         lines = coverage.read_doc(self.doc).splitlines()

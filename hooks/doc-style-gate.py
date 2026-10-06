@@ -240,9 +240,11 @@ def ask_block(payload, files):
     lines += [
         "",
         "  사용자에게 물어 정합니다 — 세션이 대신 정하지 않습니다.",
-        "  · 고치기로 했으면 그 줄을 고칩니다 — 고친 줄은 이 목록에서 빠집니다.",
-        "  · 그대로 두기로 했으면 사용자가 정한 것을 적습니다 —",
-        f"      python -X utf8 {judge} <파일> --answer <행> --note \"사용자가 정한 것\"",
+        "  · 표로 만들어 사용자에게 넘깁니다 — 사용자가 행마다 「답」 칸을 채웁니다:",
+        f"      python -X utf8 {judge} <파일…> --sheet <저장소 밖 경로>.md",
+        "  · 다 적었으면 읽습니다 — 「그대로」는 답 기록에 남고, 고칠 것은 목록으로 나옵니다:",
+        f"      python -X utf8 {judge} --answers-from <그 표>",
+        "  · 고친 줄은 이 목록에서 빠집니다.",
         "",
         f"  정말 그대로 내보내야 하면 명령 앞에 `{FORCE}` 를 붙입니다 — 명령문에 남습니다.",
     ]
@@ -563,9 +565,11 @@ def push_block(payload):
     else:
         lines += ["    1. 이 PC 에서는 2층 판정기를 부를 수 없습니다 — finalize-korean-document",
                   "       9단계와 판단 규칙(core-rules.md)을 세션이 직접 읽고 새 줄을 판정합니다."]
-    lines += ["    2. 사람 확인 지적은 사용자에게 묻습니다 — 고치거나, 그대로 두면 답을 적습니다:",
+    lines += ["    2. 사람 확인 지적은 표로 만들어 사용자에게 넘기고, 적은 답을 읽습니다:",
               f"       python -X utf8 {(judge_script() or Path('judge_layer2.py')).as_posix()} "
-              "<파일> --answer <행> --note \"사용자가 정한 것\"",
+              "<파일…> --sheet <저장소 밖 경로>.md",
+              f"       python -X utf8 {(judge_script() or Path('judge_layer2.py')).as_posix()} "
+              "--answers-from <그 표>",
               "    3. python -X utf8 ~/.claude/assets/check_record.py record <파일> \\",
               "           --stage judgment --verdict pass --note \"남긴 지적과 까닭\"",
               "    4. 커밋한 뒤 다시 push 합니다 — 확인은 커밋된 내용으로 합니다."]
@@ -768,8 +772,8 @@ def deploy_block(payload, probe=False):
               (f"    2. python -X utf8 {script} <원본> — 판정기가 안 본 줄을 판정합니다."
                if judge is not None else
                "    2. 이 PC 에서는 판정기를 부를 수 없습니다 — 9단계와 core-rules.md 를 직접 읽고 판정합니다."),
-              "    3. 사람 확인 지적은 사용자에게 묻습니다 — 고치거나, 그대로 두면 "
-              f"`{script} <원본> --answer <행> --note \"사용자가 정한 것\"`",
+              "    3. 사람 확인 지적은 표로 만들어 사용자에게 넘기고, 적은 답을 읽습니다 — "
+              f"`{script} <원본…> --sheet <저장소 밖 경로>.md` · `{script} --answers-from <그 표>`",
               "    4. python -X utf8 ~/.claude/assets/check_record.py record <원본> "
               "--stage judgment --verdict pass --note \"남긴 지적과 까닭\"",
               "    5. 주의는 읽고 정상이면 --stage review 로 까닭과 함께 적습니다."]
