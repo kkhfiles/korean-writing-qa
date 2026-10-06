@@ -157,14 +157,34 @@ class AskRecordTests(unittest.TestCase):
         left = self.open_asks()
         self.assertEqual([5], [n for n, _ in left], "줄 해시 없는 지적을 표현으로 못 찾았습니다")
 
-    def test_old_asks_expire(self) -> None:
+    def test_old_asks_do_not_expire(self) -> None:
+        """⛔ 기다리기만 해도 풀리면 안 된다 — 판정 기록의 14일 기한을 사람 확인에 걸지 않는다."""
         judge.LOG.write_text(json.dumps({
             "ok": True, "key": coverage.doc_key(self.doc),
             "when": time.time() - (coverage.FRESH_DAYS + 1) * 86400,
             "asks": [{"line_key": coverage.line_key("일주일이 지나면 작업 내용의 기억이 흐려집니다."),
                       "phrase": ASK["phrase"]}],
         }, ensure_ascii=False) + "\n", encoding="utf-8")
-        self.assertEqual([], self.open_asks())
+        self.assertEqual([5], [n for n, _ in self.open_asks()], "기한이 지나자 묻지 않고 지적이 사라졌습니다")
+
+    def test_an_answer_needs_a_waiting_ask(self) -> None:
+        """⛔ 미리 적어 둔 답이 나중에 그 줄에 생길 지적을 묻기 전에 닫지 않게 한다."""
+        self.judged()
+        rc, out = self.run_main([str(self.doc), "--answer", "3", "--note", "사용자: 그대로"])
+        self.assertEqual(2, rc, "물은 적 없는 줄에 답을 받았습니다")
+        self.assertFalse(coverage.ANSWERS.exists() and coverage.ANSWERS.read_text(encoding="utf-8").strip())
+
+    def test_a_blank_decision_is_shown(self) -> None:
+        """판정기가 칸을 비우면 고칠 지적으로 세되, 그렇게 셌다는 것을 보인다."""
+        bare = {k: v for k, v in FIX.items() if k != "decide"}
+        rc, out = self.run_main([str(self.doc)], backend=FakeBackend([bare]).pair())
+        self.assertEqual(0, rc, out)
+        self.assertIn("안 가른 지적 1건", out)
+
+    def test_the_answer_command_has_a_quoted_posix_path(self) -> None:
+        out = self.judged()
+        self.assertIn(f"\"{self.doc.as_posix()}\" --answer", out,
+                      "안내 명령의 경로가 셸에서 깨지는 꼴입니다")
 
 
 class GateTests(unittest.TestCase):
@@ -225,6 +245,72 @@ class GateTests(unittest.TestCase):
     def test_the_escape_hatch_works(self) -> None:
         rc, out = self.publish(prefix="KOREAN_PUBLISH_FORCE=1 ")
         self.assertNotIn("사용자 답이 없습니다", out)
+
+
+def git(cwd: Path, *args: str) -> str:
+    return subprocess.run(["git", "-c", "user.name=t", "-c", "user.email=t@t", "-C", str(cwd), *args],
+                          check=True, capture_output=True, text=True, encoding="utf-8").stdout
+
+
+class PushAskTests(unittest.TestCase):
+    """`[publish]` 를 켠 저장소의 push 직전 게이트도 답을 못 받은 지적을 막는다."""
+
+    CONFIG = '[publish]\nrequire = ["judgment"]\ntargets = ["docs/*.md"]\nbase = "main"\n'
+
+    def setUp(self) -> None:
+        self.tmp = tempfile.TemporaryDirectory()
+        t = Path(self.tmp.name)
+        self.repo = t / "site"
+        (self.repo / "docs").mkdir(parents=True)
+        self.log, self.answers = t / "judge.jsonl", t / "answers.jsonl"
+        self.env = dict(os.environ, KOREAN_CHECK_RECORD=str(t / "pass.jsonl"),
+                        KOREAN_QA_JUDGE_LOG=str(self.log), KOREAN_QA_ANSWER_LOG=str(self.answers),
+                        KOREAN_QA_RECORDER=str(ROOT / "scripts" / "check_record.py"),
+                        KOREAN_QA_COVERAGE=str(ROOT / "scripts" / "layer2_coverage.py"),
+                        KOREAN_QA_JUDGE=str(ROOT / "scripts" / "judge_layer2.py"))
+        (self.repo / "korean-qa.toml").write_text(self.CONFIG, encoding="utf-8")
+        self.doc = self.repo / "docs" / "a.md"
+        self.doc.write_text("# 소개\n\n업무 목록은 매일 갱신됩니다.\n", encoding="utf-8")
+        git(self.repo, "init", "-b", "main")
+        git(self.repo, "add", ".")
+        git(self.repo, "commit", "-m", "base")
+        git(self.repo, "switch", "-c", "work")
+        self.doc.write_text(DOC, encoding="utf-8")
+        git(self.repo, "commit", "-am", "edit")
+        lines = coverage.read_doc(self.doc).splitlines()
+        self.log.write_text(json.dumps({
+            "ok": True, "when": time.time(), "key": coverage.doc_key(self.doc),
+            "seen": coverage.seen_keys(lines),
+            "asks": [{"line_key": coverage.line_key(lines[4]), "phrase": ASK["phrase"], "fix": ASK["fix"]}],
+        }, ensure_ascii=False) + "\n", encoding="utf-8")
+        subprocess.run([sys.executable, "-X", "utf8", str(ROOT / "scripts" / "check_record.py"), "record",
+                        str(self.doc), "--stage", "judgment", "--verdict", "pass", "--note", "시험"],
+                       check=True, capture_output=True, env=self.env)
+
+    def tearDown(self) -> None:
+        self.tmp.cleanup()
+
+    def push(self) -> tuple[int, str]:
+        payload = {"hook_event_name": "PreToolUse", "tool_name": "Bash", "session_id": "push-ask",
+                   "cwd": str(self.repo), "tool_input": {"command": "git push -u origin HEAD"}}
+        done = subprocess.run([sys.executable, "-X", "utf8", str(GATE), "--probe"],
+                              input=json.dumps(payload, ensure_ascii=False), capture_output=True,
+                              text=True, encoding="utf-8", errors="replace", timeout=120, env=self.env)
+        return gate_result.read(done)
+
+    def test_an_open_ask_blocks_the_push(self) -> None:
+        rc, out = self.push()
+        self.assertEqual(2, rc, out)
+        self.assertIn("사람 확인 지적 1개", out)
+
+    def test_an_answer_lets_the_push_through(self) -> None:
+        lines = coverage.read_doc(self.doc).splitlines()
+        self.answers.write_text(json.dumps({
+            "key": coverage.doc_key(self.doc), "when": time.time(),
+            "line_key": coverage.line_key(lines[4]), "note": "사용자: 그대로 둠",
+        }, ensure_ascii=False) + "\n", encoding="utf-8")
+        rc, out = self.push()
+        self.assertEqual(0, rc, out)
 
 
 if __name__ == "__main__":

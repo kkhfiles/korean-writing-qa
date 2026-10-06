@@ -122,10 +122,15 @@ def answer(path: Path, line_nos: list[int], note: str) -> list[str]:
         raise ValueError("답 기록에는 --note 로 사용자가 정한 것을 적어야 합니다")
     lines = read_doc(path).splitlines()
     key = coverage.doc_key(path)
+    # ⛔ 물은 줄에만 받는다 — 미리 적어 둔 답이 나중에 그 줄에 생길 지적을 묻기 전에 닫는다
+    waiting = {n for n, _ in coverage.open_asks(key, lines, LOG)}
     rows = []
     for n in line_nos:
         if not 0 < n <= len(lines) or not coverage.line_key(lines[n - 1]):
             raise ValueError(f"{n}행은 한글이 든 줄이 아닙니다 — 판정 결과의 줄 번호를 적습니다")
+        if n not in waiting:
+            raise ValueError(f"{n}행에는 답을 기다리는 사람 확인 지적이 없습니다 — "
+                             "--asks 로 줄 번호를 확인합니다")
         rows.append({"at": datetime.now().isoformat(timespec="seconds"), "when": time.time(),
                      "doc": str(path), "key": key, "line": n,
                      "line_key": coverage.line_key(lines[n - 1]), "note": note.strip()})
@@ -362,10 +367,14 @@ def show(result: dict) -> None:
                 print(f"         ⚠️ {note}")
     if not result.get("fix_checked", True):
         print("  ⚠️ 형태소 분석기가 없어 고친 말의 드문 낱말을 안 봤습니다(지시어·형식은 봄)")
+    # 판정기가 칸을 비우면 고칠 지적으로 센다 — 조용히 그렇게 세면 사람에게 갈 것이 묻힌다
+    blank = sum(1 for f in result["findings"] if not str(f.get("decide") or "").strip())
+    if blank:
+        print(f"  ⚠️ 판정기가 고침·사람 확인을 안 가른 지적 {blank}건 — 고칠 지적으로 셈")
     print("  ⚠️ 지적마다 맞는지 판단한다 — 헛짚음이 섞인다. 고치지 않은 지적은 까닭을 남긴다.")
     if asks:
         print("  ⛔ 사람 확인 지적은 세션이 정하지 않는다 — 사용자에게 묻고, 고치거나 답을 적는다:")
-        print(f"     python -X utf8 {Path(__file__).as_posix()} {result['doc']} "
+        print(f"     python -X utf8 {Path(__file__).as_posix()} \"{Path(result['doc']).as_posix()}\" "
               "--answer <행> --note \"사용자가 정한 것\"")
         print("     답을 못 받은 지적이 남으면 발행 직전 검사가 막는다.")
 

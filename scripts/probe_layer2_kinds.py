@@ -291,7 +291,7 @@ def score(items: list[dict], findings: list, document: str,
                      "source": item.get("source", "대장"),
                      "doubt": item.get("doubt"),
                      # 짚기는 했는데 사람에게 넘겼나 — 사용자가 짚은 것을 넘기면 묻는 일만 는다
-                     "ask": bool(got) and str(got.get("decide", "")).strip() == "ask"})
+                     "ask": bool(got) and str(got.get("decide", "")).strip().lower() == "ask"})
 
     hit_lines = {r["line"] for r in rows if r["loose"] or r["tight"]}
     extra = [f for f in said
@@ -304,7 +304,7 @@ def score(items: list[dict], findings: list, document: str,
                 "loose": sum(1 for r in pick if r["loose"] or r["tight"])}
 
     return {"rows": rows, "extra": extra,
-            "asks": sum(1 for f in said if str(f.get("decide", "")).strip() == "ask"),
+            "asks": sum(1 for f in said if str(f.get("decide", "")).strip().lower() == "ask"),
             "tight": sum(1 for r in rows if r["tight"]),
             "loose": sum(1 for r in rows if r["loose"] or r["tight"]),
             "why": sum(1 for r in rows if r["why_ok"]),

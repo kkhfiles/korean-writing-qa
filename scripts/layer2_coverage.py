@@ -14,6 +14,7 @@
 줄 해시와 함께 남는다. 사용자가 답하면 답 기록(`ANSWERS`)에 그 줄 해시가 남는다.
 **답은 문서가 아니라 줄에 묶는다** — 다른 줄을 고쳐도 받은 답이 살아 있어야 한 번
 물은 것을 또 묻지 않는다. 짚은 표현을 고치면 그 지적은 사라진다(고친 것이다).
+사람 확인과 답에는 14일 기한을 걸지 않는다 — 걸면 기다리기만 해도 막힘이 풀린다.
 """
 
 from __future__ import annotations
@@ -135,8 +136,8 @@ def base_lines(path: Path, ref: str) -> list[str] | None:
     return visible_text(show.stdout.decode("utf-8", "replace"), path.suffix).splitlines()
 
 
-def _rows(key: str, log: Path, now: float | None):
-    """이 문서의 기록 줄 — 14일 안 것만. 판정 기록과 답 기록이 같이 쓴다."""
+def _rows(key: str, log: Path, now: float | None, fresh: bool = True):
+    """이 문서의 기록 줄 — `fresh` 면 14일 안 것만. 판정 기록과 답 기록이 같이 쓴다."""
     now = time.time() if now is None else now
     if not log.is_file():
         return
@@ -147,7 +148,11 @@ def _rows(key: str, log: Path, now: float | None):
             continue
         if row.get("key") != key:
             continue
-        if now - float(row.get("when") or 0) > FRESH_DAYS * 86400:
+        try:
+            age = now - float(row.get("when") or 0)
+        except (TypeError, ValueError):
+            continue
+        if fresh and age > FRESH_DAYS * 86400:
             continue
         yield row
 
@@ -162,8 +167,9 @@ def judged(key: str, log: Path | None = None, now: float | None = None) -> set[s
 
 
 def answered(key: str, answers: Path | None = None, now: float | None = None) -> set[str]:
-    """사용자가 답한 줄 해시 — 14일 안 것만."""
-    return {row["line_key"] for row in _rows(key, answers or ANSWERS, now) if row.get("line_key")}
+    """사용자가 답한 줄 해시 — 기한 없음(그 줄 글자가 같은 동안은 사용자가 정한 것이 그대로다)."""
+    return {row["line_key"] for row in _rows(key, answers or ANSWERS, now, fresh=False)
+            if row.get("line_key")}
 
 
 def open_asks(key: str, lines: list[str], log: Path | None = None,
@@ -173,6 +179,10 @@ def open_asks(key: str, lines: list[str], log: Path | None = None,
     물은 줄이 그대로 있으면 그 줄에, 바뀌었으면 **짚은 표현이 남아 있는 줄**에 붙인다.
     표현까지 고쳤으면 뺀다 — 고친 것이다. ⛔ 줄 해시만 보면 같은 줄의 다른 낱말 하나만
     바꿔도 묻지 않고 지적이 사라진다(2026-10-06 돌연변이 시험이 짚은 빈틈).
+
+    ⛔ **기한이 없다** — 판정 기록의 14일 기한을 여기에도 걸면 기다리기만 해도 막힘이
+    풀린다. 판정한 줄(`judged`)은 기한이 지나면 「다시 판정하라」로 막는 쪽이지만, 사람
+    확인은 기한이 지나면 조용히 사라지는 쪽이라 거꾸로 열린다(2026-10-06 재검토).
     """
     where: dict[str, int] = {}
     for n, line in enumerate(lines, 1):
@@ -181,7 +191,7 @@ def open_asks(key: str, lines: list[str], log: Path | None = None,
             where[k] = n
     done = answered(key, answers, now)
     out, seen = [], set()
-    for row in _rows(key, log or LOG, now):
+    for row in _rows(key, log or LOG, now, fresh=False):
         if not row.get("ok"):
             continue
         for ask in row.get("asks") or []:
