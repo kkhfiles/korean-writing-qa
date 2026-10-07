@@ -188,7 +188,7 @@ def read_answers(sheet: Path) -> int:
     except (OSError, ValueError) as e:
         print(f"⛔ {e}")
         return 2
-    kept, edits, waiting, refused = [], [], [], []
+    kept, edits, free, waiting, refused = [], [], [], [], []
     docs: dict[str, Path] = {}
     for qid, key in keys.items():
         raw = answers.get(qid, "")
@@ -207,10 +207,11 @@ def read_answers(sheet: Path) -> int:
             refused.append(f"{qid} {p.name} {key['line']}행 — 표를 만든 뒤 그 줄이 바뀌었습니다 · "
                            "표를 다시 만들어 다시 묻습니다")
             continue
-        if kind == ask_sheet.EDIT:
+        if kind in (ask_sheet.EDIT, ask_sheet.FREE):
             phrases = [str(a.get("phrase") or "") for n, a in
                        coverage.open_asks(coverage.doc_key(p), lines, LOG) if n == now]
-            edits.append(f"{qid} {p.name} {now}행 「{' · '.join(phrases)}」 — 사용자 답: {raw}")
+            (edits if kind == ask_sheet.EDIT else free).append(
+                f"{qid} {p.name} {now}행 「{' · '.join(phrases)}」 — 사용자 답: {raw}")
             continue
         try:
             answer(p, [now], f"사용자 답(사람 확인 표 {sheet.name} {qid}): {raw}")
@@ -222,6 +223,11 @@ def read_answers(sheet: Path) -> int:
     if edits:
         print(f"  고칠 것 {len(edits)}건 — 세션이 고친 뒤 --since 로 고친 줄을 다시 판정합니다")
         for e in edits:
+            print(f"    {e}")
+    if free:
+        print(f"  글로 적은 답 {len(free)}건 — 세션이 원문을 읽고 가립니다 · 고칠 뜻이면 고치고, "
+              "유지하는 뜻이면 --answer <행> --note \"<원문>\" 으로 남깁니다")
+        for e in free:
             print(f"    {e}")
     if waiting:
         print(f"  보류 · 빈칸 {len(waiting)}건 — 답이 없는 것으로 남아 발행과 배포가 막힙니다: {' '.join(waiting)}")

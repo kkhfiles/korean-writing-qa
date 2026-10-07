@@ -10,6 +10,7 @@
 - 칸 안의 `|` 가 표를 깨지 않나
 - `그대로`만 답 기록에 남나 — ⛔ `고침`을 답으로 적으면 고치기 전에 지적이 닫힌다
 - 보류 · 빈칸은 열린 채 남나
+- 넷 가운데 하나로 시작하지 않는 글은 닫지도 고칠 목록에 넣지도 않고 따로 돌려주나
 - 표를 만든 뒤 바뀐 줄의 답은 거절하나 · 위에 줄이 늘어도 같은 글의 줄을 찾아가나
 - 열쇠 주석이 없는 표는 거절하나 — 줄을 짐작해 답을 적지 않는다
 """
@@ -115,6 +116,17 @@ class SheetTests(unittest.TestCase):
         note = json.loads(coverage.ANSWERS.read_text(encoding="utf-8").splitlines()[-1])["note"]
         self.assertIn("그대로 — 정해진 문구", note, "사용자가 적은 답이 기록에 안 남았습니다")
 
+    def test_free_text_is_neither_recorded_nor_listed_as_a_fix(self) -> None:
+        # 2026-10-07 실제 답 — 「이건 그냥 놔두자」가 「고칠 것」 목록에 실렸다
+        self.make_sheet()
+        self.fill({"Q1": "이건 그냥 놔두자", "Q2": "고침"})
+        rc, out = self.run_main(["--answers-from", str(self.sheet)])
+        self.assertEqual(1, rc, out)
+        self.assertEqual([5, 7], self.open_lines(), "글로 적은 답을 낱말로 짐작해 닫았습니다")
+        self.assertIn("고칠 것 1건", out, "유지하라는 글이 고칠 목록에 섞였습니다")
+        self.assertIn("글로 적은 답 1건", out)
+        self.assertIn("이건 그냥 놔두자", out)
+
     def test_hold_and_blank_stay_open(self) -> None:
         self.make_sheet()
         self.fill({"Q1": "보류"})
@@ -158,7 +170,10 @@ class KindTests(unittest.TestCase):
     def test_kinds(self) -> None:
         for raw, want in (("", ask_sheet.BLANK), ("보류", ask_sheet.HOLD), ("`그대로`", ask_sheet.KEEP),
                           ("그대로 — 이름", ask_sheet.KEEP), ("고침", ask_sheet.EDIT),
-                          ("직접: 정확히 기억하기 어렵습니다", ask_sheet.EDIT), ("삭제", ask_sheet.EDIT)):
+                          ("직접: 정확히 기억하기 어렵습니다", ask_sheet.EDIT),
+                          ("고침, 인데 회기라는 말이 틀렸다", ask_sheet.EDIT),
+                          ("삭제", ask_sheet.FREE), ("이건 그냥 놔두자", ask_sheet.FREE),
+                          ("놔두지 말고 고치자", ask_sheet.FREE)):
             self.assertEqual(want, ask_sheet.kind_of(raw), raw)
 
 
