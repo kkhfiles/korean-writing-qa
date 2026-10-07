@@ -33,6 +33,10 @@ LOG = Path(os.environ.get("KOREAN_QA_JUDGE_LOG")
 #: 사람 확인 지적에 사용자가 답한 기록 — 비용 장부(`LOG`)와 따로 둔다(장부 합계에 안 섞이게)
 ANSWERS = Path(os.environ.get("KOREAN_QA_ANSWER_LOG")
                or Path.home() / ".claude" / "state" / "korean-layer2-answers.jsonl")
+#: 사람 확인 표에 사용자가 적은 답 전부(고침까지) — 판정기가 다음 판정에서 따른다.
+#: `ANSWERS` 는 「그대로」만 받아 지적을 닫는 곳이고, 이것은 지적을 닫지 않고 배우는 곳이다.
+DECISIONS = Path(os.environ.get("KOREAN_QA_DECISION_LOG")
+                 or Path.home() / ".claude" / "state" / "korean-layer2-decisions.jsonl")
 FRESH_DAYS = 14
 HANGUL = re.compile(r"[가-힣]")
 
@@ -40,8 +44,10 @@ HANGUL = re.compile(r"[가-힣]")
 class _Text(html.parser.HTMLParser):
     """HTML 에서 사람이 읽는 글만 줄 단위로 뽑는다 — script·style 은 뺀다."""
 
+    # button — 단추 글자가 앞 문장에 붙어 「실제로 걸린 문장 넷멈춤」으로 읽혀 판정기가
+    # 「작업 흔적」이라고 사람에게 넘겼다(2026-10-07 사례집의 슬라이드 멈춤 단추).
     BLOCK = {"p", "li", "dd", "dt", "td", "th", "tr", "h1", "h2", "h3", "h4",
-             "h5", "h6", "div", "section", "article", "br", "pre", "blockquote"}
+             "h5", "h6", "div", "section", "article", "br", "pre", "blockquote", "button"}
 
     def __init__(self) -> None:
         super().__init__()

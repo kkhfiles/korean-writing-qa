@@ -46,14 +46,15 @@ A3 = {"line": 7, "phrase": "맨 위에 표시합니다", "category": "군더더�
       "fix": "맨 위에 | 둡니다", "why": "시험", "decide": "ask"}
 
 
-class SheetTests(unittest.TestCase):
+class _SheetBase(unittest.TestCase):
 
     def setUp(self) -> None:
         self.tmp = tempfile.TemporaryDirectory()
         self.dir = Path(self.tmp.name)
-        self.saved = judge.LOG, coverage.ANSWERS
+        self.saved = judge.LOG, coverage.ANSWERS, coverage.DECISIONS
         judge.LOG = self.dir / "calls.jsonl"
         coverage.ANSWERS = self.dir / "answers.jsonl"
+        coverage.DECISIONS = self.dir / "decisions.jsonl"
         self.doc = self.dir / "d.md"
         self.doc.write_text(DOC, encoding="utf-8")
         self.sheet = self.dir / "asks.md"
@@ -61,7 +62,7 @@ class SheetTests(unittest.TestCase):
         self.assertEqual(0, rc, f"판정 단계가 실패해 시험할 사람 확인이 없습니다: {out[-300:]}")
 
     def tearDown(self) -> None:
-        judge.LOG, coverage.ANSWERS = self.saved
+        judge.LOG, coverage.ANSWERS, coverage.DECISIONS = self.saved
         self.tmp.cleanup()
 
     def run_main(self, argv, backend=None) -> tuple[int, str]:
@@ -88,6 +89,9 @@ class SheetTests(unittest.TestCase):
     def open_lines(self) -> list[int]:
         lines = coverage.read_doc(self.doc).splitlines()
         return sorted({n for n, _ in coverage.open_asks(coverage.doc_key(self.doc), lines, judge.LOG)})
+
+
+class SheetTests(_SheetBase):
 
     def test_one_row_per_line(self) -> None:
         text = self.make_sheet()
@@ -163,6 +167,69 @@ class SheetTests(unittest.TestCase):
         rc, out = self.run_main(["--answers-from", str(self.sheet)])
         self.assertEqual(2, rc, out)
         self.assertFalse(coverage.ANSWERS.exists())
+
+
+class LearningTests(_SheetBase):
+    """(2026-10-07 사용자 — 「내 기본 답변을 기반으로 판단했으면 좋겠는데, 현재 AI가
+    애스컬레이션한 항목이 너무 많다」) 표의 답이 다음 판정에 쓰이나."""
+
+    def decisions(self) -> list[dict]:
+        return judge.load_decisions()
+
+    def rejudge(self, reply) -> str:
+        rc, out = self.run_main([str(self.doc)], backend=FakeBackend(reply).pair())
+        return out
+
+    def test_every_answer_is_learned_without_closing(self) -> None:
+        self.make_sheet()
+        self.fill({"Q1": "고침", "Q2": "이건 그냥 놔두자"})
+        self.run_main(["--answers-from", str(self.sheet)])
+        got = {(d["phrase"], d["kind"]) for d in self.decisions()}
+        self.assertEqual({("기억이 흐려집니다", "고침"), ("일주일이 지나면", "고침"),
+                          ("맨 위에 표시합니다", "글")}, got)
+        self.assertEqual([5, 7], self.open_lines(), "배우는 기록이 지적을 닫았습니다")
+        self.run_main(["--answers-from", str(self.sheet)])
+        self.assertEqual(3, len(self.decisions()), "같은 표를 두 번 읽자 답이 두 번 쌓였습니다")
+
+    def test_hold_and_blank_are_not_learned(self) -> None:
+        self.make_sheet()
+        self.fill({"Q1": "보류"})
+        self.run_main(["--answers-from", str(self.sheet)])
+        self.assertEqual([], self.decisions())
+
+    def _seed(self, kinds: list[str], category: str = "업무에서 쓰는 말로 쓰기") -> None:
+        coverage.DECISIONS.write_text("".join(
+            json.dumps({"category": category, "phrase": f"p{i}", "fix": "f", "answer": k, "kind": k},
+                       ensure_ascii=False) + "\n" for i, k in enumerate(kinds)), encoding="utf-8")
+
+    def test_category_fixed_three_times_is_not_asked_again(self) -> None:
+        self._seed(["고침"] * 3)
+        out = self.rejudge([dict(A1, line=5)])
+        self.assertNotIn("사람 확인 —", out, "같은 갈래를 세 번 고치게 했는데 또 물었습니다")
+        self.assertIn("묻지 않고 고칠 지적으로 셈", out)
+
+    def test_two_edits_are_not_enough(self) -> None:
+        self._seed(["고침"] * 2)
+        self.assertIn("사람 확인 —", self.rejudge([dict(A1, line=5)]))
+
+    def test_one_keep_keeps_asking(self) -> None:
+        self._seed(["고침"] * 5 + ["그대로"])
+        self.assertIn("사람 확인 —", self.rejudge([dict(A1, line=5)]))
+
+    def test_free_text_keeps_asking(self) -> None:
+        self._seed(["고침"] * 5 + ["글"])
+        self.assertIn("사람 확인 —", self.rejudge([dict(A1, line=5)]))
+
+    def test_prompt_carries_the_users_own_words(self) -> None:
+        self.make_sheet()
+        self.fill({"Q2": "이건 그냥 놔두자"})
+        self.run_main(["--answers-from", str(self.sheet)])
+        fake = FakeBackend([])
+        self.run_main([str(self.doc)], backend=fake.pair())
+        system = fake.calls[-1]["system"]
+        self.assertIn("## 사용자가 이미 답한 것", system)
+        self.assertIn("이건 그냥 놔두자", system)
+        self.assertIn("군더더기 지우기 — 글 1", system)
 
 
 class KindTests(unittest.TestCase):

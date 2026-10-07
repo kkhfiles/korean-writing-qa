@@ -24,6 +24,9 @@ import judge_layer2 as judge  # noqa: E402
 import layer2_coverage as coverage  # noqa: E402
 import probe_layer2_kinds as probe  # noqa: E402
 
+# 실제 사용자 답 기록을 읽으면 시험 결과가 그날 기록에 따라 갈린다 — 빈 기록으로 고정
+coverage.DECISIONS = Path(tempfile.mkdtemp()) / "decisions.jsonl"
+
 
 class FakeBackend:
     def __init__(self, reply=None, fail=False):
@@ -174,6 +177,14 @@ class JudgeTests(unittest.TestCase):
         self.assertIn("원인을 알 수 없었습니다.", text)
         self.assertNotIn("숨은 글", text)
         self.assertNotIn("x:y", text)
+
+    def test_button_label_is_not_glued_to_the_sentence(self) -> None:
+        # 2026-10-07 — 「실제로 걸린 문장 넷멈춤」을 작업 흔적으로 읽고 사람에게 넘겼다
+        p = self.doc('<p class="demo-head">실제로 걸린 문장 넷<span class="dots"></span>'
+                     '<button type="button" hidden>멈춤</button></p>', "d.html")
+        lines = judge.read_doc(p).splitlines()
+        self.assertIn("실제로 걸린 문장 넷", lines)
+        self.assertIn("멈춤", lines)
 
 
 def git(cwd: Path, *args: str) -> None:

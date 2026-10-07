@@ -33,6 +33,13 @@ push 직전에 같은 기록으로 「새 줄을 다 봤나」를 가른다.
 남고, 사용자가 답하면 `--answer` 로 그 줄에 답을 적는다. 답을 못 받은 지적이 남은
 문서는 발행 직전 검사가 막는다(`hooks/doc-style-gate.py`).
 
+**사용자 답을 따른다** (2026-10-07 사용자 — 「내 기본 답변을 기반으로 판단했으면 좋겠는데,
+현재 AI가 애스컬레이션한 항목이 너무 많다」) — 처음 사이트 다섯 쪽에서 61건을 넘겼는데
+사용자는 52건을 판정기 제안대로 고치라고 답했다. 그래서 표에서 읽은 답을 모두
+`layer2_coverage.DECISIONS` 에 남기고 다음 판정이 둘을 쓴다 — 프롬프트 끝의 「사용자가 이미
+답한 것」(갈래별 답 수 · 그대로 둔 것과 글로 적은 답 원문), 그리고 같은 갈래를
+`AUTO_FIX_MIN` 번 이상 고치게 했고 다른 답이 없으면 묻지 않고 고칠 지적으로 바꾸는 코드.
+
     python -X utf8 scripts/judge_layer2.py <문서…> [--since REF] [--backend auto|claude|codex]
                                            [--model 별칭] [--json 경로]
     python -X utf8 scripts/judge_layer2.py <문서…> --sheet <저장소 밖 경로>.md
@@ -147,6 +154,103 @@ def answer(path: Path, line_nos: list[int], note: str) -> list[str]:
     return [lines[r["line"] - 1].strip()[:40] for r in rows]
 
 
+#: 사용자가 같은 갈래를 이만큼 고치게 했고 다른 답(그대로 · 글로 적은 답)이 한 번도 없으면
+#: 그 갈래의 사람 확인은 묻지 않고 고칠 지적으로 바꾼다. 모델이 아니라 이 줄이 가른다 —
+#: 프롬프트로만 시키면 판정기가 「다만 ~일 수도」를 붙여 또 넘긴다(2026-10-07 · 61건 중 52건 고침).
+AUTO_FIX_MIN = 3
+#: 프롬프트에 원문 그대로 싣는 답의 수 — 그대로 둔 것과 글로 적은 답만, 최근 것부터
+PROMPT_ANSWERS = 40
+
+
+def asks_on(path: Path, line_key: str) -> list[dict]:
+    """판정 기록에서 그 줄(줄 해시)에 넘긴 사람 확인 지적 — 표현이 겹치면 한 번."""
+    out, seen = [], set()
+    for row in coverage._rows(coverage.doc_key(path), LOG, None, fresh=False):
+        for ask in row.get("asks") or []:
+            if ask.get("line_key") == line_key and ask.get("phrase") not in seen:
+                seen.add(ask.get("phrase"))
+                out.append(ask)
+    return out
+
+
+def record_decision(path: Path, line_key: str, raw: str, kind: str, source: str) -> int:
+    """사용자가 표에 적은 답을 그 줄의 지적마다 남긴다 — 남긴 수. 같은 답을 두 번 적지 않는다.
+
+    ⛔ 지적을 닫지 않는다 — 닫는 것은 `answer`(그대로만)다. 이것은 다음 판정이 따를 기록이다.
+    """
+    have = set()
+    if coverage.DECISIONS.is_file():
+        for line in coverage.DECISIONS.read_text(encoding="utf-8").splitlines():
+            try:
+                d = json.loads(line)
+            except ValueError:
+                continue
+            have.add((d.get("line_key"), d.get("phrase"), d.get("answer")))
+    rows = []
+    for ask in asks_on(path, line_key):
+        if (line_key, ask.get("phrase"), raw) in have:
+            continue
+        rows.append({"at": datetime.now().isoformat(timespec="seconds"), "when": time.time(),
+                     "key": coverage.doc_key(path), "line_key": line_key, "source": source,
+                     "category": str(ask.get("category") or "").strip(), "phrase": ask.get("phrase"),
+                     "fix": ask.get("fix"), "answer": raw, "kind": kind})
+    if rows:
+        coverage.DECISIONS.parent.mkdir(parents=True, exist_ok=True)
+        with coverage.DECISIONS.open("a", encoding="utf-8", newline="\n") as f:
+            for r in rows:
+                f.write(json.dumps(r, ensure_ascii=False) + "\n")
+    return len(rows)
+
+
+def load_decisions() -> list[dict]:
+    if not coverage.DECISIONS.is_file():
+        return []
+    out = []
+    for line in coverage.DECISIONS.read_text(encoding="utf-8").splitlines():
+        try:
+            out.append(json.loads(line))
+        except ValueError:
+            continue
+    return out
+
+
+def category_stats(decisions: list[dict]) -> dict[str, dict[str, int]]:
+    """갈래 → {답 종류: 수}."""
+    stats: dict[str, dict[str, int]] = defaultdict(lambda: defaultdict(int))
+    for d in decisions:
+        stats[d.get("category") or ""][d.get("kind") or ""] += 1
+    return stats
+
+
+def auto_fix(category, stats) -> int:
+    """그 갈래를 묻지 않고 고칠 근거가 된 사용자 답의 수 · 근거가 없으면 0."""
+    c = stats.get(str(category or "").strip())
+    if not c or c.get(ask_sheet.KEEP) or c.get(ask_sheet.FREE):
+        return 0
+    return c.get(ask_sheet.EDIT, 0) if c.get(ask_sheet.EDIT, 0) >= AUTO_FIX_MIN else 0
+
+
+def decisions_prompt(decisions: list[dict]) -> str:
+    """판정기 프롬프트 끝에 붙이는 「사용자가 이미 답한 것」 — 답이 없으면 빈 글."""
+    if not decisions:
+        return ""
+    stats = category_stats(decisions)
+    out = ["", "## 사용자가 이미 답한 것", "",
+           "사람 확인으로 넘긴 지적에 사용자가 답한 기록이다. 같은 갈래 · 같은 경우는 다시 묻지 않고 "
+           "이 답을 따른다. 고침이 많은 갈래는 \"fix\" 로 내고, 그대로 둔 경우와 같은 문맥이면 지적하지 않는다.",
+           "", "갈래별 답"]
+    for cat, c in sorted(stats.items(), key=lambda x: -sum(x[1].values())):
+        parts = [f"{k} {n}" for k, n in sorted(c.items(), key=lambda x: -x[1]) if k]
+        out.append(f"- {cat or '(갈래 없음)'} — {' · '.join(parts)}")
+    shown = [d for d in decisions if d.get("kind") in (ask_sheet.KEEP, ask_sheet.FREE)][-PROMPT_ANSWERS:]
+    if shown:
+        out += ["", "그대로 둔 것과 사용자가 글로 적은 답 — 원문 그대로"]
+        for d in shown:
+            out.append(f"- [{d.get('category')}] 「{d.get('phrase')}」 · 판정기 제안 「{d.get('fix')}」 "
+                       f"· 사용자: {d.get('answer')}")
+    return "\n".join(out)
+
+
 def show_open_asks(path: Path) -> int:
     """아직 답을 못 받은 사람 확인 지적을 보이고 그 수를 낸다."""
     lines = read_doc(path).splitlines()
@@ -189,6 +293,7 @@ def read_answers(sheet: Path) -> int:
         print(f"⛔ {e}")
         return 2
     kept, edits, free, waiting, refused = [], [], [], [], []
+    learned = 0
     docs: dict[str, Path] = {}
     for qid, key in keys.items():
         raw = answers.get(qid, "")
@@ -200,6 +305,9 @@ def read_answers(sheet: Path) -> int:
         if not p.is_file():
             refused.append(f"{qid} — 문서가 없습니다: {p}")
             continue
+        # 다음 판정이 따를 기록 — 사용자가 본 줄(표의 줄 해시)에 단다. 그 뒤 문서가 바뀌어도
+        # 사용자가 그 문장을 보고 정한 것은 그대로다.
+        learned += record_decision(p, key["line_key"], raw, kind, f"{sheet.name} {qid}")
         lines = read_doc(p).splitlines()
         # 표를 만든 뒤 위에 줄이 늘거나 줄었으면 같은 글의 줄을 찾아간다
         now = next((i for i, l in enumerate(lines, 1) if coverage.line_key(l) == key["line_key"]), None)
@@ -219,6 +327,8 @@ def read_answers(sheet: Path) -> int:
         except ValueError as e:
             refused.append(f"{qid} {p.name} {now}행 — {e}")
     print(f"사람 확인 표 읽음 — {sheet.name} · 행 {len(keys)}개")
+    print(f"  다음 판정이 따를 답 기록 {learned}건 추가 — 같은 갈래를 {AUTO_FIX_MIN}번 이상 고치게 했고 "
+          "다른 답이 없으면 묻지 않고 고칩니다")
     print(f"  그대로 — 답 기록에 남김 {len(kept)}건" + (f" ({' '.join(kept)})" if kept else ""))
     if edits:
         print(f"  고칠 것 {len(edits)}건 — 세션이 고친 뒤 --since 로 고친 줄을 다시 판정합니다")
@@ -354,7 +464,10 @@ def judge(path: Path, model: str, timeout: float, backend, targets: list[int] | 
     lines = text.splitlines()
     key = coverage.doc_key(path)
     want = set(targets) if targets is not None else None
-    system = probe.SYSTEM.format(rules=probe.rules_for("guided"))
+    # 사용자가 이미 답한 것 — 탐침과 다른 단 하나의 차이다(답은 사용자마다 다르다)
+    decisions = load_decisions()
+    stats = category_stats(decisions)
+    system = probe.SYSTEM.format(rules=probe.rules_for("guided")) + decisions_prompt(decisions)
     found, calls, hidden, foreign = [], [], 0, 0
     for first, part in chunks(lines):
         if want is not None and not any(first <= n < first + len(part) for n in want):
@@ -404,6 +517,11 @@ def judge(path: Path, model: str, timeout: float, backend, targets: list[int] | 
                 if isinstance(n, int) and 0 < n <= len(lines) and not coverage.line_key(lines[n - 1]):
                     foreign += 1
                     continue
+                # 사용자가 같은 갈래를 거듭 고치게 했으면 다시 묻지 않는다
+                n_auto = auto_fix(it.get("category"), stats) if is_ask(it) else 0
+                if n_auto:
+                    it["decide"] = "fix"
+                    it["auto"] = f"사용자가 같은 갈래를 {n_auto}번 고치게 함"
                 found.append(it)
                 if is_ask(it):
                     n = it["line"]
@@ -455,6 +573,8 @@ def show(result: dict) -> None:
                   f"{f.get('category')} → {f.get('fix')}")
             if f.get("why"):
                 print(f"         {f['why']}")
+            if f.get("auto"):
+                print(f"         ↳ 판정기는 사람 확인으로 냈으나 {f['auto']} — 묻지 않고 고칠 지적으로 셈")
             for note in f.get("fix_notes") or []:
                 print(f"         ⚠️ {note}")
     if not result.get("fix_checked", True):

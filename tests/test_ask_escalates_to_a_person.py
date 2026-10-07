@@ -38,6 +38,9 @@ import repo_paths  # noqa: E402
 import gate_result  # noqa: E402
 import judge_layer2 as judge  # noqa: E402
 import layer2_coverage as coverage  # noqa: E402
+
+# 실제 사용자 답 기록을 읽으면 시험 결과가 그날 기록에 따라 갈린다 — 빈 기록으로 고정
+coverage.DECISIONS = Path(tempfile.mkdtemp()) / "decisions.jsonl"
 import probe_layer2_kinds as probe  # noqa: E402
 from test_judge_layer2 import FakeBackend  # noqa: E402
 
