@@ -479,9 +479,17 @@ def judge(path: Path, model: str, timeout: float, backend, targets: list[int] | 
                "lines": f"{first}-{first + len(part) - 1}", "model": model,
                # 게이트가 「이번 가지의 새 줄을 판정기가 다 봤나」를 이것으로 가른다
                "seen": coverage.seen_keys(part)}
+        user = probe.USER.format(document=numbered(part, first))
+        if want is not None:
+            # 묶음은 문맥으로 통째로 보내되 지적은 새 줄에만 받는다. 전에는 묶음 전체에
+            # 지적을 써 오게 하고 새 줄 밖의 것을 버렸다 — 출력 토큰이 곧 시간이고(상관 0.97)
+            # 지적 하나가 약 206토큰이라, 버리는 지적만큼 시간과 한도를 썼다(2026-10-07 실측).
+            mine = sorted(n for n in want if first <= n < first + len(part))
+            row["targets"] = len(mine)
+            user += ("\n\n이번에는 아래 줄만 점검한다 — 나머지 줄은 문맥으로만 읽고 지적하지 않는다.\n"
+                     + ", ".join(map(str, mine)))
         try:
-            r = call_messages(model=model, system=system,
-                              user=probe.USER.format(document=numbered(part, first)),
+            r = call_messages(model=model, system=system, user=user,
                               max_tokens=12000, temperature=0, timeout=timeout)
         except Exception as e:          # 실패도 기록한다 — 시간은 들었다
             row.update(ok=False, error=f"{type(e).__name__}: {e}"[:200],
@@ -503,6 +511,7 @@ def judge(path: Path, model: str, timeout: float, backend, targets: list[int] | 
                    output_tokens=usage.get("output_tokens", 0),
                    cost_usd=r.get("cost_usd"), findings=len(items))
         asks = []
+        hidden_before = hidden
         for it in items:
             if isinstance(it, dict):
                 it["line"] = relocate(lines, it.get("line"), str(it.get("phrase") or ""))
@@ -531,6 +540,8 @@ def judge(path: Path, model: str, timeout: float, backend, targets: list[int] | 
                                  "why": it.get("why"), "category": it.get("category")})
         # 발행 직전 검사가 「사용자 답을 아직 못 받은 지적」을 이것으로 가른다
         row["asks"] = asks
+        if want is not None:
+            row["hidden"] = hidden - hidden_before   # 새 줄 밖에 달려 버린 지적 — 0 에 가까워야 한다
         log_call(row)
         calls.append(row)
     freq = load_freq()
@@ -550,7 +561,8 @@ def show(result: dict) -> None:
     tout = sum(c.get("output_tokens") or 0 for c in calls)
     # Codex 는 금액을 안 준다 — 0.00달러로 찍으면 공짜로 읽힌다
     priced = any(c.get("cost_usd") is not None for c in calls)
-    money = f"환산 {cost:.2f}달러(구독 · 청구액 아님)" if priced else "금액 없음(Codex 구독 · 토큰만 기록)"
+    money = (f"환산 {cost:.2f}달러(구독 · 청구액 아님)" if priced
+             else "금액 없음(Codex 구독 · 토큰만 기록)" if calls else "호출 없음")
     print(f"── 2층 판정 · {Path(result['doc']).name} · 지적 {len(result['findings'])}건 · "
           f"호출 {len(calls)}회 · {secs:.0f}초 · 토큰 입력 {tin:,} · 출력 {tout:,} · {money}")
     if result.get("targets") is not None:

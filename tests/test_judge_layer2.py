@@ -240,6 +240,18 @@ class SinceTests(unittest.TestCase):
         self.assertIn("101 | ## 둘", fake.calls[0]["user"])
         self.assertIn("새로 썼습니다", fake.calls[0]["user"])
 
+    def test_the_model_is_told_which_lines_to_check(self) -> None:
+        # 묶음 전체에 지적을 써 오게 하고 버리면 버린 만큼 출력 토큰과 시간이 든다(2026-10-07)
+        self.edit("둘 5번 문장입니다.", "둘 5번 문장을 새로 썼습니다.")
+        fake = FakeBackend()
+        self.run_since(fake)
+        self.assertTrue(fake.calls[0]["user"].rstrip().endswith("\n107"),
+                        "새 줄만 점검하라고 알리지 않았습니다")
+        full = FakeBackend()
+        with contextlib.redirect_stdout(io.StringIO()):
+            judge.main([str(self.doc)], backend=full.pair())
+        self.assertNotIn("이번에는 아래 줄만 점검한다", full.calls[0]["user"])
+
     def test_findings_on_other_lines_are_hidden(self) -> None:
         """재판정이 끝나지 않는 것을 막는다 — 안 고친 줄의 새 지적은 보이지 않는다."""
         self.edit("둘 5번 문장입니다.", "둘 5번 문장을 새로 썼습니다.")
