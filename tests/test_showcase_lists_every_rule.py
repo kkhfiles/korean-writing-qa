@@ -109,9 +109,9 @@ class ShowcaseListsEveryRule(unittest.TestCase):
         낡은 곳을 못 찾는다.
         """
         html = SHOWCASE.read_text(encoding="utf-8")
-        m = re.search(r'기계가 보는 유형</p><p class="v">(\d+)가지</p>', html)
+        m = re.search(r'검사기가 검출하는 유형</p><p class="v">(\d+)가지</p>', html)
         self.assertIsNotNone(
-            m, "첫 화면의 「기계가 보는 유형」 카드를 못 찾았습니다 — "
+            m, "첫 화면의 「검사기가 검출하는 유형」 카드를 못 찾았습니다 — "
                "표기를 바꿨으면 이 시험도 같이 고칩니다")
         self.assertEqual(
             len(checker_types()), int(m.group(1)),
@@ -125,7 +125,8 @@ class ShowcaseListsEveryRule(unittest.TestCase):
         2026-09-23 에 「기본으로 꺼 둔 한 가지」(반말)가 빠졌다 — 반말을 문서 전부에 켰다.
         """
         html = SHOWCASE.read_text(encoding="utf-8")
-        m = re.search(r"맨 위의 (\d+)가지에 안내 (\S+?) 가지를 더한 수", html)
+        # 2026-10-07 — 「맨 위의 33가지」가 가리키는 곳이 없어(맨 위 카드는 35가지) 문장을 고침
+        m = re.search(r"지적 유형 (\d+)가지와, [^<]*?안내 (\S+?) 가지", html)
         self.assertIsNotNone(
             m, "구성 셈 문장을 못 찾았습니다 — 문구를 바꿨으면 이 시험도 함께")
         top = int(m.group(1))
