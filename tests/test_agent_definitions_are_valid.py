@@ -25,9 +25,10 @@ import repo_paths  # noqa: E402
 #: 실행 파일의 모델 목록에서 확인한 값. `max` 까지 다섯이다.
 EFFORT_VALUES = {"low", "medium", "high", "xhigh", "max"}
 
-#: `effort` 를 받는 모델. haiku 는 `capabilities` 가 `context_management` 뿐이라
-#: 적어 두어도 안 먹는다 — 적어 두면 「조절했다」는 착각이 남는다.
-MODELS_WITH_EFFORT = {"sonnet", "opus", "fable"}
+#: `effort` 를 받는 모델. haiku 는 5.5 부터 받는다 — Claude Code 2.1.293 에서 별칭
+#: `haiku` 가 5.5 로 바뀌었고 실행 파일의 `capabilities` 에 `effort` 가 있다. 4.5 는
+#: `context_management` 뿐이라 적어 두어도 안 먹었다(별칭이 4.5 로 가는 Bedrock·Vertex 도 같다).
+MODELS_WITH_EFFORT = {"sonnet", "opus", "fable", "haiku"}
 
 
 def frontmatter(path: Path) -> dict[str, str]:

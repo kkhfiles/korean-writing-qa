@@ -1,6 +1,6 @@
 ---
 name: kw-judge-haiku
-description: 단어 점검이 낸 후보 중 고칠 것만 남기고 정상을 걸러 낸다 — haiku · effort 항목 없음(대조군)
+description: 단어 점검이 낸 후보 중 고칠 것만 남기고 정상을 걸러 낸다 — haiku 5.5 · effort 기본값(medium)
 model: haiku
 tools: Read
 omitClaudeMd: true
