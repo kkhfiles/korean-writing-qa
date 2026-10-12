@@ -202,23 +202,19 @@ class LearningTests(_SheetBase):
             json.dumps({"category": category, "phrase": f"p{i}", "fix": "f", "answer": k, "kind": k},
                        ensure_ascii=False) + "\n" for i, k in enumerate(kinds)), encoding="utf-8")
 
-    def test_category_fixed_three_times_is_not_asked_again(self) -> None:
-        self._seed(["고침"] * 3)
+    def test_many_edits_in_a_category_do_not_turn_an_ask_into_a_fix(self) -> None:
+        # 2026-10-12 고리 재현 시험 — 갈래별 고침 횟수로 바뀐 5건이 모두 문서만으로 못 가르는
+        # 사실이었다. 고침 답은 낱말을 고친 것이라 사실 확인의 근거가 못 된다.
+        self._seed(["고침"] * 9)
         out = self.rejudge([dict(A1, line=5)])
-        self.assertNotIn("사람 확인 —", out, "같은 갈래를 세 번 고치게 했는데 또 물었습니다")
-        self.assertIn("묻지 않고 고칠 지적으로 셈", out)
+        self.assertIn("사람 확인 —", out, "고침 답이 많다고 판정기가 넘긴 사람 확인을 고칠 지적으로 바꿨습니다")
+        self.assertEqual([5, 7], self.open_lines())
 
-    def test_two_edits_are_not_enough(self) -> None:
-        self._seed(["고침"] * 2)
-        self.assertIn("사람 확인 —", self.rejudge([dict(A1, line=5)]))
-
-    def test_one_keep_keeps_asking(self) -> None:
-        self._seed(["고침"] * 5 + ["그대로"])
-        self.assertIn("사람 확인 —", self.rejudge([dict(A1, line=5)]))
-
-    def test_free_text_keeps_asking(self) -> None:
-        self._seed(["고침"] * 5 + ["글"])
-        self.assertIn("사람 확인 —", self.rejudge([dict(A1, line=5)]))
+    def test_prompt_says_edit_answers_are_not_evidence_for_facts(self) -> None:
+        self._seed(["고침"] * 3)
+        fake = FakeBackend([])
+        self.run_main([str(self.doc)], backend=fake.pair())
+        self.assertIn("사실은 갈래가 같아도 이 답을 근거로 삼지 않는다", fake.calls[-1]["system"])
 
     def test_prompt_carries_the_users_own_words(self) -> None:
         self.make_sheet()
