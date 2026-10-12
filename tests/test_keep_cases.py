@@ -104,31 +104,31 @@ class SelfTestAcceptsKeepTests(unittest.TestCase):
 
     def test_a_keep_case_that_rewrites_is_rejected(self) -> None:
         """아무 KEEP 이나 받으면 「고치지 말라」 딱지만 붙이고 고치는 시료가 들어온다."""
-        original = CASES.read_text(encoding="utf-8")
+        # 바이트로 읽고 되돌린다 — write_text 는 Windows 에서 줄 끝을 CRLF 로 바꿔, 시험을 돌릴
+        # 때마다 작업 트리가 더러워졌다(2026-10-12 · 작업 트리 정리가 그 때문에 멈춤)
+        original = CASES.read_bytes()
         broken = dict(next(c for c in load_cases() if c["expected_decision"] == "KEEP"))
         broken["case_id"] = "CTX-BROKEN-KEEP"
         broken["revised"] = broken["original"] + " 자율 수행"
         try:
-            CASES.write_text(original + json.dumps(broken, ensure_ascii=False) + "\n",
-                             encoding="utf-8")
+            CASES.write_bytes(original + (json.dumps(broken, ensure_ascii=False) + "\n").encode("utf-8"))
             done = self.run_self_test()
         finally:
-            CASES.write_text(original, encoding="utf-8")
+            CASES.write_bytes(original)
 
         self.assertIn("FAILED", done.stdout, "고치는 KEEP 시료가 통과했습니다")
         self.assertIn("CTX-BROKEN-KEEP", done.stdout)
 
     def test_a_keep_case_without_a_reason_is_rejected(self) -> None:
-        original = CASES.read_text(encoding="utf-8")
+        original = CASES.read_bytes()
         broken = dict(next(c for c in load_cases() if c["expected_decision"] == "KEEP"))
         broken["case_id"] = "CTX-NOREASON-KEEP"
         broken.pop("keep_reason", None)
         try:
-            CASES.write_text(original + json.dumps(broken, ensure_ascii=False) + "\n",
-                             encoding="utf-8")
+            CASES.write_bytes(original + (json.dumps(broken, ensure_ascii=False) + "\n").encode("utf-8"))
             done = self.run_self_test()
         finally:
-            CASES.write_text(original, encoding="utf-8")
+            CASES.write_bytes(original)
 
         self.assertIn("FAILED", done.stdout, "이유 없는 KEEP 시료가 통과했습니다")
 
