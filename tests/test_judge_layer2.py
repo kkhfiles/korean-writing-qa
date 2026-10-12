@@ -245,8 +245,9 @@ class SinceTests(unittest.TestCase):
         self.edit("둘 5번 문장입니다.", "둘 5번 문장을 새로 썼습니다.")
         fake = FakeBackend()
         self.run_since(fake)
-        self.assertTrue(fake.calls[0]["user"].rstrip().endswith("\n107"),
-                        "새 줄만 점검하라고 알리지 않았습니다")
+        # 줄 목록 뒤에는 고친 줄의 기준 판이 붙는다(2026-10-12) — 끝이 아니라 안내 바로 다음 줄을 본다
+        self.assertIn("나머지 줄은 문맥으로만 읽고 지적하지 않는다.\n107\n", fake.calls[0]["user"] + "\n",
+                      "새 줄만 점검하라고 알리지 않았습니다")
         full = FakeBackend()
         with contextlib.redirect_stdout(io.StringIO()):
             judge.main([str(self.doc)], backend=full.pair())

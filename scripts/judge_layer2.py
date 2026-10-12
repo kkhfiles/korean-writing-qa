@@ -26,6 +26,9 @@ Codex 쪽은 토큰 수만 남고 금액은 「금액 없음」으로 찍힌다.
 아직 안 본 줄이 든 묶음만 부르고, 그 줄에 달린 지적만 보여 준다. 호출마다 본 줄의
 해시를 기록에 남기므로(`layer2_coverage.py`) 고친 줄만 다시 판정된다. 발행 게이트가
 push 직전에 같은 기록으로 「새 줄을 다 봤나」를 가른다.
+고친 줄은 기준 판(갈라진 지점의 원래 줄)과 근처에서 지운 줄을 함께 보내 뜻이 바뀌었는지
+대조하게 하고, 같은 줄은 `REJUDGE_CAP` 번까지만 자동 수정 대상으로 둔다 — 넘으면 사람
+확인으로 올린다(`lineage` · 2026-10-12 고리 재현 시험).
 
 **사람 확인** (2026-10-06 사용자 결정) — 판정기는 지적마다 `decide` 를 낸다. 분명하면
 `fix`, 문맥에 따라 정상일 수 있거나 규칙에 기준이 없거나 고치면 뜻이 바뀔 수 있으면
@@ -546,11 +549,96 @@ def open_for(path: Path, since: str) -> tuple[list[int], bool]:
     return coverage.open_lines(lines, base, seen), base is not None
 
 
-def judge(path: Path, model: str, timeout: float, backend, targets: list[int] | None = None) -> dict:
+#: 같은 줄(계보)을 판정하는 상한 — 넘으면 그 줄의 지적을 고칠 지적으로 두지 않고 사람 확인으로
+#: 올리고, 그 줄 자체도 기준 판과 함께 사람 확인에 올린다. 상한에 닿았다고 통과시키지 않는다 —
+#: README 고리 시험에서 5회차에야 원문의 실제 논리 결함을 짚었다(외부 검토 「상한 도달은 보류 ·
+#: 남은 지적만 넘기면 아직 못 찾은 결함은 아무에게도 안 간다」 · 2026-10-12).
+REJUDGE_CAP = 3
+#: 프롬프트에 싣는 지운 줄 — 대상 줄마다 이만큼까지
+DELETED_PER_LINE = 3
+
+
+def lineage(key: str, lines: list[str], targets: list[int], base: list[str] | None) -> dict[int, dict]:
+    """대상 줄마다 {"round": 몇 번째 판정인가, "root": 기준 판 글 | None, "deleted": [지운 기준 판 줄]}.
+
+    **자손 찾기** — 앞선 판정이 남긴 대상 줄 글 가운데 글자가 절반 이상 같은 것을 부모로 본다.
+    고치는 것은 세션의 편집 도구라 판정기가 수정 시점을 못 본다 — 그래서 글자로 잇는다. 한 줄을
+    둘로 나눠도 둘 다 부모를 찾아 판정 횟수를 물려받는다(나눈다고 예산이 새로 생기지 않는다).
+    부모가 없으면 기준 판(갈라진 지점)의 비슷한 줄을 뿌리로, 그것도 없으면 새 줄이다.
+    ⛔ 예전 판으로 되돌린 줄은 이미 본 줄이라 대상이 안 된다 — 그때 남은 고칠 지적이 다시 열려
+       게이트가 막는다(`open_fixes` · 순환을 따로 안 세는 까닭).
+    """
+    prev = []
+    for row in coverage._rows(key, LOG, None):
+        if row.get("ok"):
+            prev += [e for e in row.get("targeted") or [] if e.get("text")]
+    ops = []
+    if base:
+        import difflib
+        ops = difflib.SequenceMatcher(None, base, lines, autojunk=False).get_opcodes()
+    out = {}
+    for n in targets:
+        text = lines[n - 1]
+        # 글자가 절반 이상 같은 앞선 판 가운데 **가장 많이 판정된 것** — 가장 비슷한 것을 고르면
+        # 나눈 줄 한쪽이 더 옛 판을 부모로 잡아 횟수가 줄었다(시험). 틀려도 일찍 멈추는 쪽이다.
+        sims = [(e, coverage._similar(text, e["text"])) for e in prev]
+        near = [(e, s) for e, s in sims if s >= coverage.SUCCESSOR]
+        pred = max(near, key=lambda x: (int(x[0].get("round") or 1), x[1]))[0] if near else None
+        if pred is not None:
+            info = {"round": int(pred.get("round") or 1) + 1, "root": pred.get("root") or pred["text"]}
+        else:
+            root = None
+            if base:
+                cand = max((b for b in base if coverage.line_key(b)),
+                           key=lambda b: coverage._similar(text, b), default=None)
+                if cand is not None and cand != text and coverage._similar(text, cand) >= coverage.SUCCESSOR:
+                    root = cand
+            info = {"round": 1, "root": root}
+        gone = []
+        for tag, i1, i2, j1, j2 in ops:
+            if tag not in ("delete", "replace") or not (j1 - 1 <= n - 1 <= j2):
+                continue
+            for b in base[i1:i2]:
+                if coverage.line_key(b) and not any(coverage._similar(b, l) >= coverage.SUCCESSOR
+                                                    for l in lines[max(0, j1 - 2):j2 + 2]):
+                    gone.append(b)
+        info["deleted"] = gone[:DELETED_PER_LINE]
+        out[n] = info
+    return out
+
+
+def before_after(mine: list[int], info: dict[int, dict]) -> str:
+    """대상 줄의 기준 판과 지운 줄 — 고친 말이 뜻을 바꿨는지 판정기가 대조하게 하는 글."""
+    roots = [(n, info[n]["root"]) for n in mine if info.get(n, {}).get("root")]
+    gone = [(n, d) for n in mine for d in info.get(n, {}).get("deleted") or []]
+    if not roots and not gone:
+        return ""
+    out = ["", "", "아래 줄은 기준 판(고치기 전 글)에서 바뀐 줄이다. 기준 판과 대조해 숫자 · 주체 · 부정 · "
+           "조건 · 범위 · 확실성이 달라졌거나 필요한 정보가 빠졌으면 그것도 지적한다 — 갈래는 「고치다 뜻이 "
+           "바뀐 곳」, 고친 말은 기준 판의 뜻을 살린 글이다. 기준 판에 있던 문제를 다시 짚지는 않는다."]
+    out += [f"- {n}행 기준 판: {r}" for n, r in roots]
+    if gone:
+        out += ["지운 줄(기준 판에만 있고 지금 글에 없음) — 그 정보가 필요하면 가까운 대상 줄에 지적한다."]
+        out += [f"- {n}행 가까이에서 지움: {d}" for n, d in gone]
+    return "\n".join(out)
+
+
+def held_ask(n: int, line: str, info: dict) -> dict:
+    """상한을 넘은 줄을 사람 확인으로 — 짚은 표현은 줄 전체(그 줄이 그대로인 동안 열림)."""
+    why = (f"같은 줄을 {info['round']}번째 판정 — 자동 수정 · 재판정 상한 {REJUDGE_CAP}회를 넘음 · "
+           "기준 판과 대조해 뜻이 맞는지 사람이 확인")
+    return {"line": n, "phrase": line.strip(), "category": "재판정 상한",
+            "fix": f"기준 판: {info['root']}" if info.get("root") else "(새로 쓴 줄 · 기준 판 없음)",
+            "why": why, "decide": "ask", "held": True}
+
+
+def judge(path: Path, model: str, timeout: float, backend, targets: list[int] | None = None,
+          base: list[str] | None = None) -> dict:
     """`targets` 가 있으면 그 줄이 든 묶음만 부르고 그 줄에 달린 지적만 낸다.
 
     ⛔ **지적을 거르는 까닭** — 판정기는 같은 글을 다시 판정해도 지적 수가 평균 16%
-       달랐다(`docs/calibration-20260929.md`). 고친 줄 하나 때문에 묶음을 다시 보내면
+       달랐다(`docs/calibration-20260929.md` · 2026-10-12 고정 문서 두 번은 7% 차이 ·
+       일대일 겹침 87% · 겹친 105건의 fix/ask 는 모두 같음). 고친 줄 하나 때문에 묶음을 다시 보내면
        안 고친 줄에서 새 지적이 나오고, 그것을 고치면 또 다시 판정하게 된다. 프롬프트는
        탐침과 같게 두고 **결과만** 거른다 — 잰 것과 도는 것이 같아야 한다.
     """
@@ -565,7 +653,8 @@ def judge(path: Path, model: str, timeout: float, backend, targets: list[int] | 
     system = probe.SYSTEM.format(rules=rules) + decisions_prompt(decisions)
     # 규칙 글의 판 — 규칙이 바뀐 뒤의 판정과 앞의 판정을 가르는 최소 식별자(외부 검토 · 2026-10-12)
     rules_sha = hashlib.sha256(rules.encode("utf-8")).hexdigest()[:12]
-    found, calls, hidden, foreign = [], [], 0, 0
+    info = lineage(key, lines, sorted(want), base) if want else {}
+    found, calls, hidden, foreign, held = [], [], 0, 0, 0
     for first, part in chunks(lines):
         if want is not None and not any(first <= n < first + len(part) for n in want):
             continue
@@ -583,8 +672,12 @@ def judge(path: Path, model: str, timeout: float, backend, targets: list[int] | 
             # 지적 하나가 약 206토큰이라, 버리는 지적만큼 시간과 한도를 썼다(2026-10-07 실측).
             mine = sorted(n for n in want if first <= n < first + len(part))
             row["targets"] = len(mine)
+            # 다음 판정이 이 줄의 자손을 찾고 판정 횟수를 이어 세는 데 쓴다(저장소 밖 기록)
+            row["targeted"] = [{"key": coverage.line_key(lines[n - 1]), "text": lines[n - 1],
+                                "round": info[n]["round"], "root": info[n]["root"]} for n in mine]
             user += ("\n\n이번에는 아래 줄만 점검한다 — 나머지 줄은 문맥으로만 읽고 지적하지 않는다.\n"
-                     + ", ".join(map(str, mine)))
+                     + ", ".join(map(str, mine)) + before_after(mine, info))
+            over = [n for n in mine if info[n]["round"] > REJUDGE_CAP]
         try:
             r = call_messages(model=model, system=system, user=user,
                               max_tokens=12000, temperature=0, timeout=timeout)
@@ -609,6 +702,10 @@ def judge(path: Path, model: str, timeout: float, backend, targets: list[int] | 
                    cost_usd=r.get("cost_usd"), findings=len(items))
         asks, fixes = [], []
         hidden_before = hidden
+        if want is not None:
+            # 상한을 처음 넘은 줄은 지적이 없어도 사람에게 — 아직 못 찾은 결함도 그 줄에 있을 수 있다
+            items = list(items) + [held_ask(n, lines[n - 1], info[n]) for n in over
+                                   if info[n]["round"] == REJUDGE_CAP + 1]
         for it in items:
             if isinstance(it, dict):
                 it["line"] = relocate(lines, it.get("line"), str(it.get("phrase") or ""))
@@ -623,6 +720,13 @@ def judge(path: Path, model: str, timeout: float, backend, targets: list[int] | 
                 if isinstance(n, int) and 0 < n <= len(lines) and not coverage.line_key(lines[n - 1]):
                     foreign += 1
                     continue
+                if want is not None and n in over and not is_ask(it):
+                    it["decide"] = "ask"
+                    it["why"] = (f"{it.get('why') or ''} · 같은 줄을 {info[n]['round']}번째 판정 — "
+                                 f"상한 {REJUDGE_CAP}회를 넘어 사람 확인으로 올림").lstrip(" ·")
+                    it["held"] = True
+                if it.get("held"):
+                    held += 1
                 found.append(it)
                 ok_line = isinstance(n, int) and 0 < n <= len(lines)
                 rec = {"line_key": coverage.line_key(lines[n - 1]) if ok_line else None,
@@ -646,7 +750,8 @@ def judge(path: Path, model: str, timeout: float, backend, targets: list[int] | 
         it["fix_notes"] = fix_notes(str(it.get("fix") or ""), str(it.get("phrase") or ""),
                                     doc_lemmas, freq)
     return {"doc": str(path), "findings": found, "calls": calls, "fix_checked": freq is not None,
-            "targets": None if want is None else len(want), "hidden": hidden, "foreign": foreign}
+            "targets": None if want is None else len(want), "hidden": hidden, "foreign": foreign,
+            "held": held}
 
 
 def show(result: dict) -> None:
@@ -667,6 +772,9 @@ def show(result: dict) -> None:
         else:
             print(f"  새 줄 {result['targets']}개만 판정 · 그 밖의 줄에 달린 지적 "
                   f"{result.get('hidden', 0)}건은 숨김(이미 판정했거나 갈라진 지점에 있던 줄)")
+    if result.get("held"):
+        print(f"  같은 줄을 {REJUDGE_CAP}번 넘게 판정한 줄의 지적 {result['held']}건은 사람 확인으로 올림 — "
+              "자동 수정을 멈추고 사용자가 기준 판과 대조합니다")
     if result.get("foreign"):
         print(f"  한글이 없는 줄에 달린 지적 {result['foreign']}건은 뺌 — 이 판정기는 한글을 봄")
     asks = [f for f in result["findings"] if is_ask(f)]
@@ -838,17 +946,18 @@ def main(argv=None, backend=None) -> int:
         if not p.is_file():
             print(f"⛔ 파일 없음 — {d}")
             return 2
-        targets = None
+        targets, base = None, None
         if a.since:
             try:
                 targets, in_git = open_for(p, a.since)
+                base = coverage.base_lines(p, a.since) if in_git else None
             except ValueError as e:
                 print(f"⛔ {e}")
                 return 2
             if not in_git:
                 print(f"  {p.name} — git 밖 문서라 갈라진 지점이 없습니다 · 아직 판정 안 한 한글 줄을 모두 봅니다")
         try:
-            results.append(judge(p, model, a.timeout, backend, targets))
+            results.append(judge(p, model, a.timeout, backend, targets, base))
         except Exception as e:
             print(f"⛔ 호출 실패 — {p.name}: {type(e).__name__}: {e}"[:300])
             print("   검사되지 않았습니다 — 세션이 규칙을 직접 읽고 판정합니다.")
