@@ -279,6 +279,8 @@ def open_fixes(key: str, lines: list[str], log: Path | None = None,
     안 맞는 일이 있는데, 그때 닫으면 아무도 안 고친 지적이 사라진다.
     **닫힘** — 표현이 사라짐(고침) · 받지 않음이나 사람 확인으로 올림 기록(줄 해시 + 표현).
     받지 않음은 그 줄이 바뀌면 다시 열린다 — 근거가 바뀌었을 수 있다.
+    **사실 확인 지적**(`needs_check`)은 고쳐도 안 닫힌다 — 고친 줄에 붙어 「확인함」이나 사람
+    확인을 기다린다.
     ⛔ 기한이 없다 — 사람 확인과 같은 까닭이다.
     """
     where: dict[str, int] = {}
@@ -301,6 +303,14 @@ def open_fixes(key: str, lines: list[str], log: Path | None = None,
                 cands = [i for i, l in enumerate(lines, 1) if _plain(phrase) in _plain(l)]
                 if text:
                     cands = [i for i in cands if _similar(lines[i - 1], text) >= SUCCESSOR]
+                if not cands and text and needs_check(fx):
+                    # ⛔ 사실 확인 지적은 고쳐도 안 닫힌다 — 확인 없이 다른 수치로 바꿔도 표현은
+                    #    사라진다(외부 검토 「표현 소멸은 해결 증거가 아님」). 고친 줄에 붙여 둔다.
+                    #    줄을 통째로 지웠으면 닫는다 — 확인 안 된 주장이 안 나가는 쪽이다.
+                    best = max(range(1, len(lines) + 1), key=lambda i: _similar(lines[i - 1], text),
+                               default=None)
+                    if best is not None and _similar(lines[best - 1], text) >= SUCCESSOR:
+                        cands = [best]
                 if not cands:
                     continue                # 표현이 사라짐 — 고쳤다
                 hint = fx.get("line") if isinstance(fx.get("line"), int) else 0

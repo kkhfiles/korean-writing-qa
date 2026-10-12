@@ -223,6 +223,28 @@ class FactTests(_Base):
         self.assertEqual(0, rc, out)
         self.assertEqual([], self.open_asks())
 
+    def test_editing_a_fact_does_not_close_it(self) -> None:
+        # ⛔ 확인 없이 다른 수치로 바꿔도 표현은 사라진다 — 고친 줄에 붙어 확인을 기다린다
+        self.doc.write_text(DOC.replace("매일 갱신됩니다", "매주 월요일에 갱신됩니다"), encoding="utf-8")
+        self.assertEqual([3], self.open_fixes(), "사실 확인 지적이 확인 없이 고친 것만으로 닫혔습니다")
+        rc, out = self.run_main([str(self.doc), "--dismiss", "3", "--reason", "확인함",
+                                 "--note", "scheduler/cron.toml 의 월요일 실행 설정으로 확인"])
+        self.assertEqual(0, rc, out)
+        self.assertEqual([], self.open_fixes())
+
+    def test_deleting_the_claim_closes_it(self) -> None:
+        self.doc.write_text(DOC.replace("업무 목록은 매일 갱신됩니다.\n\n", ""), encoding="utf-8")
+        self.assertEqual([], self.open_fixes(), "확인 안 된 주장을 지웠는데 지적이 엉뚱한 줄에 붙었습니다")
+
+    def test_the_prompt_asks_for_the_fact_to_check(self) -> None:
+        import probe_layer2_kinds as probe
+        self.assertIn('"check"', probe.SYSTEM)
+        self.assertIn("`check` 에 확인할 사실을 적는다", probe.SYSTEM)
+
+    def test_a_filled_check_marks_a_fact_without_hedging_words(self) -> None:
+        self.assertTrue(coverage.needs_check({"why": "시험", "check": "실제 갱신 시각"}))
+        self.assertFalse(coverage.needs_check({"why": "짧은 부정", "check": ""}))
+
     def test_escalation_needs_a_note(self) -> None:
         rc, _ = self.run_main([str(self.doc), "--escalate", "3"])
         self.assertEqual(2, rc)
