@@ -1304,8 +1304,11 @@ def all_quoted(t):
         return True
     # 꼬리 괄호는 출처 표기다 — 「"…한다" (여러 블로그)」의 인용을 가리면 안 된다.
     # 인용 판정에서만 뗀다(값 판정은 drop_tail 이 따로 한다).
+    # 줄바꿈도 지운다 — 목록 항목 안에 틀린 예 · 고친 예 칸이 따로 있으면 그 사이에 줄바꿈이
+    # 남아, 인용뿐인 칸의 끝 인용(「…결과에서」)이 조사 종결로 걸렸다(2026-10-07 사례집 ·
+    # 실문서 1,325개에서 이 수정으로 사라지는 진짜 오류 0건).
     for cand in (base, TAIL.sub('', base).strip(' *_`~')):
-        if PROPER.match(cand) or QUOTE_SPAN.sub(' ', cand).strip(' ≠=·-—*_`~') == '':
+        if PROPER.match(cand) or QUOTE_SPAN.sub(' ', cand).strip(' \t\r\n≠=·-—*_`~') == '':
             return True
     return False
 
