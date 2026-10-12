@@ -49,7 +49,15 @@ push 직전에 같은 기록으로 「새 줄을 다 봤나」를 가른다.
     python -X utf8 scripts/judge_layer2.py --answers-from <그 표>
     python -X utf8 scripts/judge_layer2.py <문서> --answer <행> [--answer <행>…] --note "사용자가 정한 것"
     python -X utf8 scripts/judge_layer2.py <문서…> --asks
+    python -X utf8 scripts/judge_layer2.py <문서…> --fixes
+    python -X utf8 scripts/judge_layer2.py <문서> --dismiss <행> --reason <사유> --note "근거" [--phrase 표현]
+    python -X utf8 scripts/judge_layer2.py <문서> --escalate <행> --note "까닭" [--phrase 표현]
     python -X utf8 scripts/judge_layer2.py --cost [--by day|month|doc]
+
+**고칠 지적도 처리해야 발행된다** (2026-10-12) — 고치거나 · 지적마다 사유 코드와 근거를 적어
+받지 않거나(`--dismiss`) · 세션이 정할 수 없으면 사람 확인으로 올린다(`--escalate`). 근거에 「확인
+필요」가 걸린 지적(`[사실 확인]`)은 자료를 적은 「확인함」이나 사람 확인으로만 닫힌다. 규칙과 까닭은
+`layer2_coverage.py` 머리말.
 
 **사용자에게 넘기는 형식은 표 한 장** (2026-10-07 사용자) — `--sheet` 가 md 표를 쓰고 사용자가
 「답」 칸을 채우면 `--answers-from` 이 읽는다. 형식과 답 처리는 `ask_sheet.py` 에 있다.
@@ -164,11 +172,10 @@ PROMPT_ANSWERS = 40
 def asks_on(path: Path, line_key: str) -> list[dict]:
     """판정 기록에서 그 줄(줄 해시)에 넘긴 사람 확인 지적 — 표현이 겹치면 한 번."""
     out, seen = [], set()
-    for row in coverage._rows(coverage.doc_key(path), LOG, None, fresh=False):
-        for ask in row.get("asks") or []:
-            if ask.get("line_key") == line_key and ask.get("phrase") not in seen:
-                seen.add(ask.get("phrase"))
-                out.append(ask)
+    for ask in coverage.ask_rows(coverage.doc_key(path), LOG):
+        if ask.get("line_key") == line_key and ask.get("phrase") not in seen:
+            seen.add(ask.get("phrase"))
+            out.append(ask)
     return out
 
 
@@ -256,6 +263,103 @@ def show_open_asks(path: Path) -> int:
         if ask.get("why"):
             print(f"         {ask['why']}")
     return len(left)
+
+
+#: 고칠 지적을 받지 않는 사유 — 이 밖의 까닭(번거로움 · 상한에 닿음 · 예전에도 허용 · 아마 맞음)
+#: 으로는 닫지 않는다(외부 검토 · 2026-10-12). 값은 근거 칸에 적어야 할 것이다.
+REASONS = {
+    "대상아님": "규칙의 적용 대상이 아님 — 규칙의 적용 조건과 이 문맥이 어떻게 다른지",
+    "오독": "판정기가 원문을 잘못 읽음 — 반증하는 문장이나 자료",
+    "충족": "문서 안에서 이미 충족함 — 충족하는 줄(「N행」)",
+    "규칙충돌": "다른 규칙을 우선함 — 우선하는 규칙과 그 근거",
+    "확인함": "사실을 자료로 확인함 — 자료 경로 · 명령 · 버전",
+}
+#: 근거에 자료가 적혔나 — 경로 · 명령 · 주소 · 줄 번호 가운데 하나
+EVIDENCE = re.compile(r"[/\\]|`[^`]+`|https?://|\b[\w-]+\.(?:py|md|html|json|toml|txt|js|ts|yml|yaml)\b|\d+\s?행")
+LINE_REF = re.compile(r"\d+\s?행")
+NOTE_MIN = 10
+
+
+def show_open_fixes(path: Path) -> int:
+    """아직 처리 안 된 고칠 지적을 보이고 그 수를 낸다."""
+    lines = read_doc(path).splitlines()
+    left = coverage.open_fixes(coverage.doc_key(path), lines, LOG)
+    if not left:
+        print(f"  {path.name} — 처리 안 된 고칠 지적 없음")
+        return 0
+    print(f"  {path.name} — 처리 안 된 고칠 지적 {len(left)}건")
+    for n, fx in left:
+        tag = " [사실 확인]" if coverage.needs_check(fx) else ""
+        print(f"  {n:>4}행{tag}  「{fx.get('phrase')}」 — {fx.get('category')} → {fx.get('fix')}")
+        if fx.get("check"):
+            print(f"         확인할 사실: {fx['check']}")
+        if fx.get("why"):
+            print(f"         {fx['why']}")
+    return len(left)
+
+
+def _pick_fix(path: Path, n: int, phrase: str | None) -> tuple[list[str], dict]:
+    """그 줄의 열린 고칠 지적 하나 — 둘 이상이면 표현으로 고른다. 못 고르면 ValueError."""
+    lines = read_doc(path).splitlines()
+    mine = [fx for m, fx in coverage.open_fixes(coverage.doc_key(path), lines, LOG) if m == n]
+    if not mine:
+        raise ValueError(f"{n}행에는 처리 안 된 고칠 지적이 없습니다 — --fixes 로 줄 번호를 확인합니다")
+    if phrase:
+        mine = [fx for fx in mine if str(fx.get("phrase") or "") == phrase]
+        if not mine:
+            raise ValueError(f"{n}행에 「{phrase}」 지적이 없습니다 — --fixes 의 표현을 그대로 적습니다")
+    if len(mine) > 1:
+        raise ValueError(f"{n}행에 고칠 지적이 {len(mine)}건입니다 — --phrase 로 하나를 고릅니다: "
+                         + " · ".join(f"「{fx.get('phrase')}」" for fx in mine))
+    return lines, mine[0]
+
+
+def _close_fix(path: Path, lines: list[str], n: int, fx: dict, extra: dict) -> None:
+    row = {"at": datetime.now().isoformat(timespec="seconds"), "when": time.time(),
+           "doc": str(path), "key": coverage.doc_key(path), "line": n,
+           "line_key": coverage.line_key(lines[n - 1]), "phrase": fx.get("phrase"),
+           "fix": fx.get("fix"), "why": fx.get("why"), "category": fx.get("category"),
+           "check": fx.get("check") or ""}
+    row.update(extra)
+    coverage.DISMISSALS.parent.mkdir(parents=True, exist_ok=True)
+    with coverage.DISMISSALS.open("a", encoding="utf-8", newline="\n") as f:
+        f.write(json.dumps(row, ensure_ascii=False) + "\n")
+
+
+def dismiss(path: Path, n: int, reason: str, note: str, phrase: str | None = None) -> str:
+    """고칠 지적 하나를 받지 않기로 적는다 — 닫은 지적의 표현. 규칙에 안 맞으면 ValueError.
+
+    ⛔ 지적 하나에만 듣는다 — 갈래 전체나 앞으로 올 지적을 닫지 않는다. 그 줄이 바뀌면 다시 열린다.
+    ⛔ 사실 확인이 걸린 지적은 「확인함」(자료를 적음)이나 사람 확인으로 올리는 것만 받는다 —
+       「아마 맞음」으로 닫으면 확인 안 된 사실이 나간다.
+    """
+    if reason not in REASONS:
+        raise ValueError("사유는 다음 가운데 하나입니다 — "
+                         + " · ".join(f"{k}({v})" for k, v in REASONS.items()))
+    note = note.strip()
+    if len(note) < NOTE_MIN:
+        raise ValueError(f"--note 에 근거를 적습니다 — {REASONS[reason]}")
+    lines, fx = _pick_fix(path, n, phrase)
+    if coverage.needs_check(fx) and reason != "확인함":
+        raise ValueError("사실 확인이 걸린 지적입니다 — 자료로 확인해 「확인함」으로 닫거나(근거에 자료 경로 · "
+                         "명령), 세션이 확인할 수 없으면 --escalate 로 사람 확인에 올립니다")
+    if reason == "확인함" and not EVIDENCE.search(note):
+        raise ValueError("「확인함」은 근거에 확인한 자료(경로 · 명령 · 주소)를 적어야 받습니다")
+    if reason == "충족" and not LINE_REF.search(note):
+        raise ValueError("「충족」은 근거에 충족하는 줄(「N행」)을 적어야 받습니다")
+    _close_fix(path, lines, n, fx, {"reason": reason, "note": note})
+    return str(fx.get("phrase"))
+
+
+def escalate(path: Path, n: int, note: str, phrase: str | None = None) -> str:
+    """고칠 지적 하나를 사람 확인으로 올린다 — 사용자 답이 있어야 발행된다(세션이 정할 수 없을 때)."""
+    note = note.strip()
+    if len(note) < NOTE_MIN:
+        raise ValueError("--note 에 세션이 정할 수 없는 까닭을 적습니다(무엇을 누가 확인해야 하는지)")
+    lines, fx = _pick_fix(path, n, phrase)
+    why = "; ".join(x for x in (str(fx.get("why") or ""), f"세션이 올림: {note}") if x)
+    _close_fix(path, lines, n, fx, {"reason": "사람확인", "escalate": True, "note": note, "why": why})
+    return str(fx.get("phrase"))
 
 
 def write_sheet(paths: list[Path], out: Path) -> tuple[int, int]:
@@ -457,7 +561,10 @@ def judge(path: Path, model: str, timeout: float, backend, targets: list[int] | 
     want = set(targets) if targets is not None else None
     # 사용자가 이미 답한 것 — 탐침과 다른 단 하나의 차이다(답은 사용자마다 다르다)
     decisions = load_decisions()
-    system =probe.SYSTEM.format(rules=probe.rules_for("guided")) + decisions_prompt(decisions)
+    rules = probe.rules_for("guided")
+    system = probe.SYSTEM.format(rules=rules) + decisions_prompt(decisions)
+    # 규칙 글의 판 — 규칙이 바뀐 뒤의 판정과 앞의 판정을 가르는 최소 식별자(외부 검토 · 2026-10-12)
+    rules_sha = hashlib.sha256(rules.encode("utf-8")).hexdigest()[:12]
     found, calls, hidden, foreign = [], [], 0, 0
     for first, part in chunks(lines):
         if want is not None and not any(first <= n < first + len(part) for n in want):
@@ -466,7 +573,7 @@ def judge(path: Path, model: str, timeout: float, backend, targets: list[int] | 
         row = {"at": datetime.now().isoformat(timespec="seconds"), "when": time.time(),
                "doc": str(path), "key": key,
                "sha256": hashlib.sha256("\n".join(part).encode("utf-8")).hexdigest()[:16],
-               "lines": f"{first}-{first + len(part) - 1}", "model": model,
+               "lines": f"{first}-{first + len(part) - 1}", "model": model, "rules": rules_sha,
                # 게이트가 「이번 가지의 새 줄을 판정기가 다 봤나」를 이것으로 가른다
                "seen": coverage.seen_keys(part)}
         user = probe.USER.format(document=numbered(part, first))
@@ -500,7 +607,7 @@ def judge(path: Path, model: str, timeout: float, backend, targets: list[int] | 
                    cache_read=usage.get("cache_read_input_tokens", 0),
                    output_tokens=usage.get("output_tokens", 0),
                    cost_usd=r.get("cost_usd"), findings=len(items))
-        asks = []
+        asks, fixes = [], []
         hidden_before = hidden
         for it in items:
             if isinstance(it, dict):
@@ -517,14 +624,18 @@ def judge(path: Path, model: str, timeout: float, backend, targets: list[int] | 
                     foreign += 1
                     continue
                 found.append(it)
+                ok_line = isinstance(n, int) and 0 < n <= len(lines)
+                rec = {"line_key": coverage.line_key(lines[n - 1]) if ok_line else None,
+                       "line": n, "phrase": it.get("phrase"), "fix": it.get("fix"),
+                       "why": it.get("why"), "category": it.get("category")}
                 if is_ask(it):
-                    n = it["line"]
-                    asks.append({"line_key": coverage.line_key(lines[n - 1])
-                                 if isinstance(n, int) and 0 < n <= len(lines) else None,
-                                 "line": n, "phrase": it.get("phrase"), "fix": it.get("fix"),
-                                 "why": it.get("why"), "category": it.get("category")})
-        # 발행 직전 검사가 「사용자 답을 아직 못 받은 지적」을 이것으로 가른다
+                    asks.append(rec)
+                else:
+                    # 고친 줄을 이 줄의 자손으로 찾으려면 그때 글이 있어야 한다(저장소 밖 기록)
+                    fixes.append(dict(rec, check=it.get("check") or "", text=lines[n - 1] if ok_line else ""))
+        # 발행 직전 검사가 「사용자 답을 아직 못 받은 지적」 · 「처리 안 된 고칠 지적」을 이것으로 가른다
         row["asks"] = asks
+        row["fixes"] = fixes
         if want is not None:
             row["hidden"] = hidden - hidden_before   # 새 줄 밖에 달려 버린 지적 — 0 에 가까워야 한다
         log_call(row)
@@ -566,8 +677,11 @@ def show(result: dict) -> None:
             continue
         print(f"  ── {title} {len(group)}건")
         for f in sorted(group, key=lambda f: (f.get("line") or 0)):
-            print(f"  {str(f.get('line') or '?'):>4}행  「{f.get('phrase')}」 — "
+            tag = " [사실 확인]" if not is_ask(f) and coverage.needs_check(f) else ""
+            print(f"  {str(f.get('line') or '?'):>4}행{tag}  「{f.get('phrase')}」 — "
                   f"{f.get('category')} → {f.get('fix')}")
+            if f.get("check"):
+                print(f"         확인할 사실: {f['check']}")
             if f.get("why"):
                 print(f"         {f['why']}")
             for note in f.get("fix_notes") or []:
@@ -578,7 +692,13 @@ def show(result: dict) -> None:
     blank = sum(1 for f in result["findings"] if not str(f.get("decide") or "").strip())
     if blank:
         print(f"  ⚠️ 판정기가 고침·사람 확인을 안 가른 지적 {blank}건 — 고칠 지적으로 셈")
-    print("  ⚠️ 지적마다 맞는지 판단한다 — 헛짚음이 섞인다. 고치지 않은 지적은 까닭을 남긴다.")
+    print("  ⚠️ 지적마다 맞는지 판단한다 — 헛짚음이 섞인다.")
+    if fixes:
+        me = Path(__file__).as_posix()
+        print("  ⛔ 고칠 지적은 처리해야 발행된다 — 고치거나(고친 줄은 --since 로 다시 판정), 지적마다 까닭을 적는다:")
+        print(f"     python -X utf8 {me} <문서> --dismiss <행> --reason <{'|'.join(REASONS)}> --note \"근거\"")
+        print(f"     python -X utf8 {me} <문서> --escalate <행> --note \"세션이 정할 수 없는 까닭\"")
+        print("     「[사실 확인]」 지적은 자료로 확인해 「확인함」으로 닫거나 사람 확인으로 올린다.")
     if asks:
         print("  ⛔ 사람 확인 지적은 세션이 정하지 않는다 — 표로 만들어 사용자에게 넘기고, 적은 답을 읽는다:")
         print(f"     python -X utf8 {Path(__file__).as_posix()} \"{Path(result['doc']).as_posix()}\" "
@@ -638,6 +758,14 @@ def main(argv=None, backend=None) -> int:
                     help="답을 기다리는 사람 확인을 md 표로 씀 — 사용자에게 넘기는 형식 · 모델 안 부름")
     ap.add_argument("--answers-from", metavar="경로.md",
                     help="사용자가 답을 적은 사람 확인 표를 읽음 — 그대로만 답 기록에 남김")
+    ap.add_argument("--fixes", action="store_true",
+                    help="모델을 부르지 않고 처리 안 된 고칠 지적만 보기")
+    ap.add_argument("--dismiss", type=int, metavar="행",
+                    help="고칠 지적 하나를 받지 않기로 적음 — --reason · --note 필수")
+    ap.add_argument("--reason", choices=tuple(REASONS), help="--dismiss 의 사유")
+    ap.add_argument("--escalate", type=int, metavar="행",
+                    help="고칠 지적 하나를 사람 확인으로 올림 — --note 필수")
+    ap.add_argument("--phrase", help="--dismiss · --escalate 에서 그 줄의 지적이 둘 이상일 때 고르는 표현")
     a = ap.parse_args(argv)
     if a.cost:
         cost_report(a.by)
@@ -676,6 +804,27 @@ def main(argv=None, backend=None) -> int:
                 print(f"  답 기록 — 「{head}」")
         left = sum(show_open_asks(Path(d)) for d in a.docs)
         return 1 if left and a.asks else 0
+    if a.fixes or a.dismiss is not None or a.escalate is not None:
+        missing = [d for d in a.docs if not Path(d).is_file()]
+        if missing:
+            print(f"⛔ 파일 없음 — {missing[0]}")
+            return 2
+        if a.dismiss is not None or a.escalate is not None:
+            if len(a.docs) != 1:
+                print("⛔ --dismiss · --escalate 는 문서 하나에만 씁니다 — 줄 번호가 문서마다 다릅니다")
+                return 2
+            try:
+                if a.dismiss is not None:
+                    got = dismiss(Path(a.docs[0]), a.dismiss, a.reason or "", a.note, a.phrase)
+                    print(f"  받지 않음 기록 — 「{got}」 · {a.reason}")
+                else:
+                    got = escalate(Path(a.docs[0]), a.escalate, a.note, a.phrase)
+                    print(f"  사람 확인으로 올림 — 「{got}」 · --sheet 로 표를 만들어 사용자에게 넘깁니다")
+            except ValueError as e:
+                print(f"⛔ {e}")
+                return 2
+        left = sum(show_open_fixes(Path(d)) for d in a.docs)
+        return 1 if left and a.fixes else 0
     name = pick_backend(a.backend)
     model = a.model or (CODEX_MODEL if name == "codex" else DEFAULT_MODEL)
     backend = backend or (load_backend(name) if name else None)

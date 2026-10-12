@@ -15,6 +15,13 @@
 **답은 문서가 아니라 줄에 묶는다** — 다른 줄을 고쳐도 받은 답이 살아 있어야 한 번
 물은 것을 또 묻지 않는다. 짚은 표현을 고치면 그 지적은 사라진다(고친 것이다).
 사람 확인과 답에는 14일 기한을 걸지 않는다 — 걸면 기다리기만 해도 막힘이 풀린다.
+
+**고칠 지적도 처리 기록이 있어야 닫힌다** (2026-10-12) — 판정기가 `fix` 로 낸 지적은 판정
+기록의 `fixes` 에 남고, 짚은 표현이 그 줄에 남아 있는 동안 열려 있다. 닫는 길은 셋이다 —
+고침(표현이 사라짐 · 고친 줄은 게이트의 「판정기가 안 본 줄」이 다시 판정을 요구) · 세션이
+지적마다 사유 코드와 근거를 적어 받지 않음(`DISMISSALS`) · 사람 확인으로 올림. 전에는 고칠
+지적이 남아도 발행이 됐고, 그 틈으로 사실 확인이 필요한 지적이 사용자에게 안 갔다(고리 재현
+시험 — 갈래별 자동 전환 5건과 「확인 필요」를 적은 고칠 지적 10건).
 """
 
 from __future__ import annotations
@@ -37,8 +44,18 @@ ANSWERS = Path(os.environ.get("KOREAN_QA_ANSWER_LOG")
 #: `ANSWERS` 는 「그대로」만 받아 지적을 닫는 곳이고, 이것은 지적을 닫지 않고 배우는 곳이다.
 DECISIONS = Path(os.environ.get("KOREAN_QA_DECISION_LOG")
                  or Path.home() / ".claude" / "state" / "korean-layer2-decisions.jsonl")
+#: 고칠 지적을 세션이 받지 않기로 했거나 사람 확인으로 올린 기록 — 지적마다 사유 코드와 근거.
+#: 사람 확인 답(`ANSWERS`)과 따로 둔다 — 세션이 적는 곳이라 사람 확인을 닫지 못해야 한다.
+DISMISSALS = Path(os.environ.get("KOREAN_QA_DISMISS_LOG")
+                  or Path.home() / ".claude" / "state" / "korean-layer2-dismissals.jsonl")
 FRESH_DAYS = 14
 HANGUL = re.compile(r"[가-힣]")
+#: 근거에 이 말이 있으면 문서 밖 자료로 확인할 사실이 걸린 지적으로 본다 — 판정기가 `check`
+#: 칸을 비웠을 때의 보조 장치다(외부 검토 「문자열 검사는 보조로만」 · 2026-10-12).
+NEEDS_CHECK = re.compile(r"확인(?:이)?\s?필요|확인해야|확인할 수 없|원문에서 확인|사람이 정해야"
+                         r"|확인되지 않|검증(?:이)?\s?필요|알 수 없어 사람")
+#: 고친 줄을 예전 줄의 자손으로 보는 글자 유사도 — 표현이 그 자손에 남아 있으면 안 고친 것이다
+SUCCESSOR = 0.5
 
 
 class _Text(html.parser.HTMLParser):
@@ -184,6 +201,17 @@ def answered(key: str, answers: Path | None = None, now: float | None = None) ->
             if row.get("line_key")}
 
 
+def ask_rows(key: str, log: Path | None = None, now: float | None = None,
+             dismissals: Path | None = None):
+    """이 문서의 사람 확인 지적 — 판정기가 넘긴 것과 세션이 고칠 지적에서 올린 것."""
+    for row in _rows(key, log or LOG, now, fresh=False):
+        if row.get("ok"):
+            yield from row.get("asks") or []
+    for row in _rows(key, dismissals or DISMISSALS, now, fresh=False):
+        if row.get("escalate"):
+            yield row
+
+
 def open_asks(key: str, lines: list[str], log: Path | None = None,
               answers: Path | None = None, now: float | None = None) -> list[tuple[int, dict]]:
     """아직 사용자 답을 못 받은 사람 확인 지적 — (지금 줄 번호, 지적) 목록.
@@ -203,23 +231,85 @@ def open_asks(key: str, lines: list[str], log: Path | None = None,
             where[k] = n
     done = answered(key, answers, now)
     out, seen = [], set()
+    for ask in ask_rows(key, log, now):
+        n = where.get(ask.get("line_key") or "")
+        if n is None:
+            phrase = str(ask.get("phrase") or "").strip()
+            n = next((i for i, l in enumerate(lines, 1) if phrase and phrase in l), None)
+        if n is None:
+            continue
+        k = line_key(lines[n - 1])
+        if not k:
+            continue            # 한글이 없는 줄 — 이 판정기의 몫이 아니고 답할 길도 없다
+        if k in done or (n, ask.get("phrase")) in seen:
+            continue
+        seen.add((n, ask.get("phrase")))
+        out.append((n, ask))
+    return sorted(out, key=lambda x: x[0])
+
+
+def needs_check(item: dict) -> bool:
+    """문서 밖 자료로 확인할 사실이 걸린 지적인가 — 판정기의 `check` 칸 · 없으면 근거의 말로."""
+    return bool(str(item.get("check") or "").strip()) or bool(NEEDS_CHECK.search(str(item.get("why") or "")))
+
+
+def _plain(text: str) -> str:
+    """강조 표시를 뺀 글 — 판정기는 `**굵게**` 를 빼고 표현을 옮겨 적는다(2026-10-12 고리 시험)."""
+    return re.sub(r"[*_`]", "", text)
+
+
+def _similar(a: str, b: str) -> float:
+    import difflib
+    m = difflib.SequenceMatcher(None, a, b, autojunk=False)
+    return m.ratio() if m.real_quick_ratio() >= SUCCESSOR and m.quick_ratio() >= SUCCESSOR else 0.0
+
+
+def dismissed(key: str, dismissals: Path | None = None, now: float | None = None) -> set[tuple]:
+    """받지 않음 · 사람 확인으로 올림으로 닫은 고칠 지적 — (줄 해시, 표현)."""
+    return {(row.get("line_key"), row.get("phrase"))
+            for row in _rows(key, dismissals or DISMISSALS, now, fresh=False) if row.get("line_key")}
+
+
+def open_fixes(key: str, lines: list[str], log: Path | None = None,
+               dismissals: Path | None = None, now: float | None = None) -> list[tuple[int, dict]]:
+    """아직 처리 안 된 고칠 지적 — (지금 줄 번호, 지적).
+
+    **열림** — 그 줄이 그대로이거나, 그 줄을 고친 줄(글자가 절반 이상 같음)에 짚은 표현이 남아
+    있음. 줄이 그대로면 표현이 안 맞아도 연다 — 판정기가 강조 표시를 빼고 옮겨 적어 표현이 글자로
+    안 맞는 일이 있는데, 그때 닫으면 아무도 안 고친 지적이 사라진다.
+    **닫힘** — 표현이 사라짐(고침) · 받지 않음이나 사람 확인으로 올림 기록(줄 해시 + 표현).
+    받지 않음은 그 줄이 바뀌면 다시 열린다 — 근거가 바뀌었을 수 있다.
+    ⛔ 기한이 없다 — 사람 확인과 같은 까닭이다.
+    """
+    where: dict[str, int] = {}
+    for n, line in enumerate(lines, 1):
+        k = line_key(line)
+        if k and k not in where:
+            where[k] = n
+    done = dismissed(key, dismissals, now)
+    out, seen = [], set()
     for row in _rows(key, log or LOG, now, fresh=False):
         if not row.get("ok"):
             continue
-        for ask in row.get("asks") or []:
-            n = where.get(ask.get("line_key") or "")
+        for fx in row.get("fixes") or []:
+            phrase = str(fx.get("phrase") or "").strip()
+            n = where.get(fx.get("line_key") or "")
             if n is None:
-                phrase = str(ask.get("phrase") or "").strip()
-                n = next((i for i, l in enumerate(lines, 1) if phrase and phrase in l), None)
-            if n is None:
-                continue
+                if not phrase:
+                    continue
+                text = str(fx.get("text") or "")
+                cands = [i for i, l in enumerate(lines, 1) if _plain(phrase) in _plain(l)]
+                if text:
+                    cands = [i for i in cands if _similar(lines[i - 1], text) >= SUCCESSOR]
+                if not cands:
+                    continue                # 표현이 사라짐 — 고쳤다
+                hint = fx.get("line") if isinstance(fx.get("line"), int) else 0
+                n = min(cands, key=lambda i: abs(i - hint))
             k = line_key(lines[n - 1])
-            if not k:
-                continue            # 한글이 없는 줄 — 이 판정기의 몫이 아니고 답할 길도 없다
-            if k in done or (n, ask.get("phrase")) in seen:
+            if not k or (k, fx.get("phrase")) in done or (n, phrase) in seen:
                 continue
-            seen.add((n, ask.get("phrase")))
-            out.append((n, ask))
+            seen.add((n, phrase))
+            out.append((n, fx))
     return sorted(out, key=lambda x: x[0])
 
 

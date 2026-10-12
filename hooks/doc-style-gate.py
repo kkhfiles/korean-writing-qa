@@ -251,6 +251,61 @@ def ask_block(payload, files):
     return "\n".join(lines)
 
 
+def fix_block(payload, files):
+    """발행 직전 — 판정기가 낸 고칠 지적 중 처리 기록이 없는 것이 남았으면 막는 글.
+
+    (2026-10-12) 전에는 고칠 지적이 남아도 발행이 됐다. 고리 재현 시험에서 갈래별 자동 전환
+    5건과 「확인 필요」를 적은 고칠 지적 10건이 그 틈으로 사용자에게 안 갔다. 닫는 길은 셋 —
+    고침(짚은 표현이 사라짐) · 지적마다 사유 코드와 근거(`--dismiss`) · 사람 확인으로 올림
+    (`--escalate`). 판정기를 안 돌렸거나 이 기록이 생기기 전의 판정은 막지 않는다.
+    상태를 안 쓰므로 `--probe` 에서도 돈다.
+    """
+    if (payload.get("hook_event_name") or "") != "PreToolUse":
+        return ""
+    cmd = str((payload.get("tool_input") or {}).get("command") or "")
+    if FORCE in cmd:
+        return ""
+    cov = load_coverage()
+    if cov is None or not hasattr(cov, "open_fixes"):
+        return ""
+    found = []
+    for fp in files:
+        if not os.path.exists(fp):
+            continue
+        p = Path(fp)
+        try:
+            left = cov.open_fixes(cov.doc_key(p), cov.read_doc(p).splitlines())
+        except (OSError, ValueError, subprocess.SubprocessError):
+            continue
+        if left:
+            found.append((fp, left))
+    if not found:
+        return ""
+    lines = ["⛔ 발행 보류 — 판정기가 낸 고칠 지적에 처리 기록이 없습니다", ""]
+    for fp, left in found:
+        for n, fx in left[:8]:
+            tag = " [사실 확인]" if cov.needs_check(fx) else ""
+            lines.append(f"  {os.path.basename(fp)} {n}행{tag}  「{fx.get('phrase')}」 → {fx.get('fix')}")
+        if len(left) > 8:
+            lines.append(f"  … 그 밖 {len(left) - 8}건")
+    script = judge_script()
+    judge = script.as_posix() if script else "judge_layer2.py"
+    lines += [
+        "",
+        "  지적마다 셋 중 하나로 처리합니다.",
+        "  · 고칩니다 — 고친 줄은 --since 로 다시 판정합니다",
+        "  · 받지 않으면 사유와 근거를 적습니다(대상아님 · 오독 · 충족 · 규칙충돌 · 확인함):",
+        f"      python -X utf8 {judge} <파일> --dismiss <행> --reason <사유> --note \"근거\"",
+        "  · 세션이 정할 수 없으면 사람 확인으로 올립니다:",
+        f"      python -X utf8 {judge} <파일> --escalate <행> --note \"무엇을 누가 확인해야 하는지\"",
+        "  「[사실 확인]」 지적은 자료로 확인한 「확인함」이나 사람 확인으로만 닫힙니다.",
+        f"  목록 — python -X utf8 {judge} <파일…> --fixes",
+        "",
+        f"  정말 그대로 내보내야 하면 명령 앞에 `{FORCE}` 를 붙입니다 — 명령문에 남습니다.",
+    ]
+    return "\n".join(lines)
+
+
 def missing_stages(path, require=None):
     """지금 내용이 아직 통과하지 못한 단계. 도구가 없으면 빈 목록(막지 않는다)."""
     require = REQUIRE if require is None else require
@@ -513,6 +568,12 @@ def push_gaps(repo, conf, judge):
                     n, ask = asks[0]
                     gaps.append(f"사용자 답을 못 받은 사람 확인 지적 {len(asks)}개 — "
                                 f"{n}행 「{str(ask.get('phrase') or '')[:30]}」")
+            if hasattr(cov, "open_fixes"):
+                fixes = cov.open_fixes(rel, lines)
+                if fixes:
+                    n, fx = fixes[0]
+                    gaps.append(f"처리 기록 없는 고칠 지적 {len(fixes)}개 — "
+                                f"{n}행 「{str(fx.get('phrase') or '')[:30]}」 · 고치거나 --dismiss · --escalate")
         with tempfile.TemporaryDirectory() as tmp:
             # 기록은 내용 해시에 묶인다 — 커밋된 내용을 파일로 꺼내 그 해시로 묻는다
             probe_file = Path(tmp) / f"head{suffix}"
@@ -570,9 +631,11 @@ def push_block(payload):
               "<파일…> --sheet <저장소 밖 경로>.md",
               f"       python -X utf8 {(judge_script() or Path('judge_layer2.py')).as_posix()} "
               "--answers-from <그 표>",
-              "    3. python -X utf8 ~/.claude/assets/check_record.py record <파일> \\",
+              "    3. 고칠 지적은 고치거나, 지적마다 사유와 근거를 적거나(--dismiss), 사람 확인으로 올립니다(--escalate):",
+              f"       python -X utf8 {(judge_script() or Path('judge_layer2.py')).as_posix()} <파일…> --fixes",
+              "    4. python -X utf8 ~/.claude/assets/check_record.py record <파일> \\",
               "           --stage judgment --verdict pass --note \"남긴 지적과 까닭\"",
-              "    4. 커밋한 뒤 다시 push 합니다 — 확인은 커밋된 내용으로 합니다."]
+              "    5. 커밋한 뒤 다시 push 합니다 — 확인은 커밋된 내용으로 합니다."]
     return "\n".join(lines + tail)
 
 
@@ -702,6 +765,12 @@ def deploy_gaps(pages, judge):
                     n, ask = asks[0]
                     gaps.append(f"사용자 답을 못 받은 사람 확인 지적 {len(asks)}개 — "
                                 f"{n}행 「{str(ask.get('phrase') or '')[:30]}」")
+            if hasattr(cov, "open_fixes"):
+                fixes = cov.open_fixes(key, lines)
+                if fixes:
+                    n, fx = fixes[0]
+                    gaps.append(f"처리 기록 없는 고칠 지적 {len(fixes)}개 — "
+                                f"{n}행 「{str(fx.get('phrase') or '')[:30]}」 · 고치거나 --dismiss · --escalate")
             if changed and judge is not None:
                 left = cov.open_lines(lines, [], cov.judged(key, cov.LOG, fresh=False))
                 if left:
@@ -774,9 +843,11 @@ def deploy_block(payload, probe=False):
                "    2. 이 PC 에서는 판정기를 부를 수 없습니다 — 9단계와 core-rules.md 를 직접 읽고 판정합니다."),
               "    3. 사람 확인 지적은 표로 만들어 사용자에게 넘기고, 적은 답을 읽습니다 — "
               f"`{script} <원본…> --sheet <저장소 밖 경로>.md` · `{script} --answers-from <그 표>`",
-              "    4. python -X utf8 ~/.claude/assets/check_record.py record <원본> "
+              "    4. 고칠 지적은 고치거나, 지적마다 사유와 근거를 적거나(--dismiss), 사람 확인으로 올립니다"
+              f"(--escalate) — 목록 `{script} <원본…> --fixes`",
+              "    5. python -X utf8 ~/.claude/assets/check_record.py record <원본> "
               "--stage judgment --verdict pass --note \"남긴 지적과 까닭\"",
-              "    5. 주의는 읽고 정상이면 --stage review 로 까닭과 함께 적습니다."]
+              "    6. 주의는 읽고 정상이면 --stage review 로 까닭과 함께 적습니다."]
     return "\n".join(lines + tail)
 
 
@@ -1285,7 +1356,8 @@ def main():
     #    확인 안 된 표시는 상태를 안 쓰므로 시험 통로에서도 막는다.
     if mode == "always" or korean_files:
         stop = (unverified_block(payload, korean_files or files)
-                or ask_block(payload, korean_files or files))
+                or ask_block(payload, korean_files or files)
+                or fix_block(payload, korean_files or files))
         if stop:
             if not probe:
                 save(state)
