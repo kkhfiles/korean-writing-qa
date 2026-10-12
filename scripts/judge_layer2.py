@@ -319,7 +319,7 @@ def _pick_fix(path: Path, n: int, phrase: str | None) -> tuple[list[str], dict]:
 
 def _close_fix(path: Path, lines: list[str], n: int, fx: dict, extra: dict) -> None:
     row = {"at": datetime.now().isoformat(timespec="seconds"), "when": time.time(),
-           "doc": str(path), "key": coverage.doc_key(path), "line": n,
+           "doc": str(path), "key": coverage.doc_key(path), "line": n, "text": lines[n - 1],
            "line_key": coverage.line_key(lines[n - 1]), "phrase": fx.get("phrase"),
            "fix": fx.get("fix"), "why": fx.get("why"), "category": fx.get("category"),
            "check": fx.get("check") or ""}
@@ -607,19 +607,39 @@ def lineage(key: str, lines: list[str], targets: list[int], base: list[str] | No
     return out
 
 
-def before_after(mine: list[int], info: dict[int, dict]) -> str:
-    """대상 줄의 기준 판과 지운 줄 — 고친 말이 뜻을 바꿨는지 판정기가 대조하게 하는 글."""
+def closed_on(key: str, lines: list[str], mine: list[int]) -> list[tuple[int, dict]]:
+    """대상 줄(또는 그 앞 판)에서 세션이 이미 닫은 고칠 지적 — (줄, 기록). 줄마다 최근 것 셋까지."""
+    rows = [r for r in coverage._rows(key, coverage.DISMISSALS, None, fresh=False)
+            if r.get("text") and not r.get("escalate")]
+    out = []
+    for n in mine:
+        near = [r for r in rows if coverage._similar(lines[n - 1], r["text"]) >= coverage.SUCCESSOR]
+        out += [(n, r) for r in near[-3:]]
+    return out
+
+
+def before_after(mine: list[int], info: dict[int, dict], closed: list[tuple[int, dict]] = ()) -> str:
+    """대상 줄의 기준 판과 지운 줄 — 고친 말이 뜻을 바꿨는지 판정기가 대조하게 하는 글.
+
+    세션이 자료로 확인하거나 까닭을 적어 닫은 지적도 함께 싣는다 — 줄이 바뀌면 판정기가 같은 의문을
+    그대로 다시 냈다(2026-10-12 README 재판정 · 확인함으로 닫은 「조건이 빠짐」을 다음 회차에 또 냄).
+    ⛔ 거르개가 아니다 — 판정기가 그래도 내면 게이트는 그대로 막는다(프롬프트로만 억제하지 않는다).
+    """
     roots = [(n, info[n]["root"]) for n in mine if info.get(n, {}).get("root")]
     gone = [(n, d) for n in mine for d in info.get(n, {}).get("deleted") or []]
-    if not roots and not gone:
-        return ""
-    out = ["", "", "아래 줄은 기준 판(고치기 전 글)에서 바뀐 줄이다. 기준 판과 대조해 숫자 · 주체 · 부정 · "
-           "조건 · 범위 · 확실성이 달라졌거나 필요한 정보가 빠졌으면 그것도 지적한다 — 갈래는 「고치다 뜻이 "
-           "바뀐 곳」, 고친 말은 기준 판의 뜻을 살린 글이다. 기준 판에 있던 문제를 다시 짚지는 않는다."]
-    out += [f"- {n}행 기준 판: {r}" for n, r in roots]
-    if gone:
-        out += ["지운 줄(기준 판에만 있고 지금 글에 없음) — 그 정보가 필요하면 가까운 대상 줄에 지적한다."]
-        out += [f"- {n}행 가까이에서 지움: {d}" for n, d in gone]
+    out = []
+    if roots or gone:
+        out += ["", "", "아래 줄은 기준 판(고치기 전 글)에서 바뀐 줄이다. 기준 판과 대조해 숫자 · 주체 · 부정 · "
+                "조건 · 범위 · 확실성이 달라졌거나 필요한 정보가 빠졌으면 그것도 지적한다 — 갈래는 「고치다 뜻이 "
+                "바뀐 곳」, 고친 말은 기준 판의 뜻을 살린 글이다. 기준 판에 있던 문제를 다시 짚지는 않는다."]
+        out += [f"- {n}행 기준 판: {r}" for n, r in roots]
+        if gone:
+            out += ["지운 줄(기준 판에만 있고 지금 글에 없음) — 그 정보가 필요하면 가까운 대상 줄에 지적한다."]
+            out += [f"- {n}행 가까이에서 지움: {d}" for n, d in gone]
+    if closed:
+        out += ["", "앞서 이 줄에서 확인하거나 까닭을 적어 닫은 지적이다. 지금 글에서 그 근거가 달라지지 않았으면 "
+                "같은 지적을 다시 내지 않는다."]
+        out += [f"- {n}행 「{r.get('phrase')}」 — {r.get('reason')}: {r.get('note')}" for n, r in closed]
     return "\n".join(out)
 
 
@@ -628,7 +648,8 @@ def held_ask(n: int, line: str, info: dict) -> dict:
     why = (f"같은 줄을 {info['round']}번째 판정 — 자동 수정 · 재판정 상한 {REJUDGE_CAP}회를 넘음 · "
            "기준 판과 대조해 뜻이 맞는지 사람이 확인")
     return {"line": n, "phrase": line.strip(), "category": "재판정 상한",
-            "fix": f"기준 판: {info['root']}" if info.get("root") else "(새로 쓴 줄 · 기준 판 없음)",
+            # 표의 「고침」은 판정기 제안대로라는 뜻이라, 제안 칸을 「되돌림」으로 적어 뜻을 분명히 한다
+            "fix": f"기준 판으로 되돌림 — {info['root']}" if info.get("root") else "(새로 쓴 줄 · 기준 판 없음)",
             "why": why, "decide": "ask", "held": True}
 
 
@@ -676,7 +697,7 @@ def judge(path: Path, model: str, timeout: float, backend, targets: list[int] | 
             row["targeted"] = [{"key": coverage.line_key(lines[n - 1]), "text": lines[n - 1],
                                 "round": info[n]["round"], "root": info[n]["root"]} for n in mine]
             user += ("\n\n이번에는 아래 줄만 점검한다 — 나머지 줄은 문맥으로만 읽고 지적하지 않는다.\n"
-                     + ", ".join(map(str, mine)) + before_after(mine, info))
+                     + ", ".join(map(str, mine)) + before_after(mine, info, closed_on(key, lines, mine)))
             over = [n for n in mine if info[n]["round"] > REJUDGE_CAP]
         try:
             r = call_messages(model=model, system=system, user=user,
@@ -747,6 +768,9 @@ def judge(path: Path, model: str, timeout: float, backend, targets: list[int] | 
     freq = load_freq()
     doc_lemmas = set(_lemmas(text)) if freq is not None else set()
     for it in found:
+        # 상한을 넘은 줄의 사람 확인은 수정안이 아니라 기준 판을 보여 준다 — 점검할 고친 말이 없다
+        if it.get("category") == "재판정 상한":
+            continue
         it["fix_notes"] = fix_notes(str(it.get("fix") or ""), str(it.get("phrase") or ""),
                                     doc_lemmas, freq)
     return {"doc": str(path), "findings": found, "calls": calls, "fix_checked": freq is not None,
@@ -924,7 +948,7 @@ def main(argv=None, backend=None) -> int:
             try:
                 if a.dismiss is not None:
                     got = dismiss(Path(a.docs[0]), a.dismiss, a.reason or "", a.note, a.phrase)
-                    print(f"  받지 않음 기록 — 「{got}」 · {a.reason}")
+                    print(f"  처리 기록 — 「{got}」 · {a.reason}")
                 else:
                     got = escalate(Path(a.docs[0]), a.escalate, a.note, a.phrase)
                     print(f"  사람 확인으로 올림 — 「{got}」 · --sheet 로 표를 만들어 사용자에게 넘깁니다")

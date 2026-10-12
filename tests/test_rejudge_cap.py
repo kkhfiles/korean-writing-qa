@@ -155,6 +155,15 @@ class PromptTests(_Base):
         _, fake = self.rejudge(BASE[:2] + [VERSIONS[0]], [3])
         self.assertIn("지움: " + BASE[2], fake.calls[-1]["user"], "근처에서 지운 줄을 판정기가 못 봅니다")
 
+    def test_a_closed_fix_on_the_line_is_sent(self) -> None:
+        # 2026-10-12 README 재판정 — 확인함으로 닫은 의문을 줄이 바뀌자 판정기가 또 냈다
+        self.rejudge(BASE[:4] + [VERSIONS[0]], [5])
+        judge.dismiss(self.doc, 5, "대상아님", "제품 화면의 정해진 문구라 규칙 대상이 아님")
+        _, fake = self.rejudge(BASE[:4] + [VERSIONS[1]], [5])
+        user = fake.calls[-1]["user"]
+        self.assertIn("앞서 이 줄에서 확인하거나 까닭을 적어 닫은 지적", user)
+        self.assertIn("제품 화면의 정해진 문구라", user)
+
     def test_an_unchanged_base_adds_nothing(self) -> None:
         _, fake = self.rejudge(BASE + ["", "새로 쓴 안내 문장입니다."], [7])
         self.assertNotIn("기준 판", fake.calls[-1]["user"])
