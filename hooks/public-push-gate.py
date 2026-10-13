@@ -123,6 +123,10 @@ def push_target(command: str) -> tuple[str, str] | None:
     return cd_path, c_path
 
 
+#: 출력 돌리기 — `2>&1` · `> 파일` · `&> 파일` · `< 파일`. 걷어 내지 않으면 `2>&1` 의 `&` 에서 명령을
+#: 자르고 `2>` 를 가지 이름으로 읽어, 정당한 push 를 막았다(2026-10-13 실제 push).
+REDIRECT = re.compile(r"(?:^|\s)(?:\d*|&)(?:>>?|<)(?:&\d+|\s*[^\s;&|]+)")
+
 #: push 뒤 옵션 중 값을 따로 받는 것 — 값을 refspec 으로 잘못 읽지 않게 넘긴다
 _PUSH_OPT_ARG = {"-o", "--push-option", "--repo", "--receive-pack", "--exec"}
 #: 가지를 적지 않고 여럿을 한꺼번에 미는 옵션 — 무엇이 나가는지 refs 무늬로 돌려준다
@@ -144,7 +148,7 @@ def push_sources(command: str) -> list[str] | None:
     if not m:
         w = _wrapped(command)
         return push_sources(w[1]) if w else []
-    rest = command[m.end():]
+    rest = REDIRECT.sub(" ", command[m.end():])
     cut = re.search(r"[;&|\n]", mask_quoted(rest))
     if cut:
         rest = rest[:cut.start()]

@@ -210,6 +210,14 @@ def c_clean():
     return c.push_hook()
 
 
+def c_clean_redirect():
+    """(2026-10-13 실제 push) `2>&1` 의 `&` 에서 잘라 `2>` 를 가지로 읽고 깨끗한 push 를 막았다."""
+    c = Case("10j-clean-redirect")
+    c.commit(with_new(BASE))
+    c.judge([])
+    return c.push_hook("git push origin main 2>&1 | tail -3")
+
+
 def c_one_char():
     c = Case("05-one-char-after-pass")
     c.commit(with_new(BASE))
@@ -454,6 +462,9 @@ CASES = [
     ("10g git commit && git push 한 줄", "deny", "in",
      variant("10g-commit-and-push", lambda c: 'git commit --allow-empty -m "x" && git push')),
     ("10h bash -c 로 감싼 push", "deny", "in", variant("10h-bash-c", lambda c: "bash -c 'git push origin main'")),
+    ("10i 출력 돌리기가 붙은 push", "deny", "in",
+     variant("10i-redirect", lambda c: "git push origin main 2>&1 | tail -3")),
+    ("10j 출력 돌리기가 붙은 push · 깨끗함", "allow", "in", c_clean_redirect),
     ("11 다른 저장소의 같은 이름 문서 처리 기록", "deny", "in", c_cross_repo),
 ]
 

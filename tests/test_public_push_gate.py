@@ -91,6 +91,12 @@ class PublicPushGateTests(unittest.TestCase):
             "git push -o ci.skip origin topic": ["topic"],
             "git push --force-with-lease=main:abc origin topic": ["topic"],
             "git add -A && git push origin topic && echo done": ["topic"],
+            # 2026-10-13 실제 push — `2>&1` 의 `&` 에서 잘라 `2>` 를 가지로 읽고 막았다
+            "git push origin main 2>&1 | tail -3": ["main"],
+            "git push 2>/dev/null": ["HEAD"],
+            "git push origin topic > log.txt": ["topic"],
+            "git push origin topic &> log.txt": ["topic"],
+            "git push &": ["HEAD"],
             "git status": [],
         }
         for cmd, want in cases.items():
