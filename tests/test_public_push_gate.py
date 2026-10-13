@@ -98,6 +98,21 @@ class PublicPushGateTests(unittest.TestCase):
                 self.assertEqual(want, src(cmd))
         self.assertIsNone(src("git push origin 'topic"), "닫히지 않은 따옴표를 그냥 넘겼습니다")
 
+    def test_a_push_wrapped_in_a_shell_is_a_push(self) -> None:
+        """(2026-10-13 게이트 부정 시험) 따옴표 안을 가리고 보아 `bash -c 'git push'` 가 통과했다."""
+        hook = load_hook()
+        for cmd, want in (("bash -c 'git push origin topic'", ["topic"]),
+                          ('pwsh -NoProfile -Command "git push"', ["HEAD"]),
+                          ('cmd /c "git push origin main"', ["main"]),
+                          ("cd /tmp/x && sh -c 'git push'", ["HEAD"])):
+            with self.subTest(cmd):
+                self.assertIsNotNone(hook.push_target(cmd))
+                self.assertEqual(want, hook.push_sources(cmd))
+        self.assertEqual(("/tmp/x", ""), hook.push_target("cd /tmp/x && sh -c 'git push'"))
+        for cmd in ("bash -c 'echo hello'", "pwsh -Command \"Get-ChildItem\"", "bash -c 'git status'"):
+            with self.subTest(cmd):
+                self.assertIsNone(hook.push_target(cmd))
+
     def test_quoted_push_text_is_not_a_push(self) -> None:
         """문자열 안의 `git push` 는 푸시가 아니다.
 

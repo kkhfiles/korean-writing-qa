@@ -76,6 +76,11 @@ C_OPT = re.compile(r"(?:^|\s)-C\s+(?:\"([^\"]*)\"|'([^']*)'|(\S+))")
 CD_CMD = re.compile(r"(?:^|[;&|(]\s*)(?:cd|pushd|Set-Location|sl)\s+(?:-LiteralPath\s+|-Path\s+)?"
                     r"(?:\"([^\"]*)\"|'([^']*)'|([^\s;&|)]+))", re.I)
 
+#: 셸로 감싼 명령 — `bash -c '…'` · `sh -c "…"` · `pwsh -Command "…"` · `cmd /c "…"`. 따옴표 안을
+#: 가리고 보면 안쪽의 push 를 못 본다(2026-10-13 게이트 부정 시험 · `bash -c 'git push'` 가 통과).
+WRAPPED = re.compile(r"(?:^|[\s;&|(])(?:bash|sh|zsh|pwsh|powershell|cmd)(?:\.exe)?\s+(?:-\w+\s+)*?"
+                     r"(?:-c|-Command|/c)\s+(\"[^\"]*\"|'[^']*')", re.I)
+
 HERE = Path(__file__).resolve().parent
 ESCAPE = "KOREAN_PUSH_FORCE"
 
@@ -86,6 +91,15 @@ def mask_quoted(command: str) -> str:
                       command)
 
 
+def _wrapped(command: str) -> tuple[int, str] | None:
+    """셸로 감싼 명령 가운데 push 가 든 것 — (감싼 명령이 시작하는 자리, 안쪽 명령) · 없으면 None."""
+    for m in WRAPPED.finditer(command):
+        inner = m.group(1)[1:-1]
+        if PUSH.search(mask_quoted(inner)) or _wrapped(inner):
+            return m.start(), inner
+    return None
+
+
 def push_target(command: str) -> tuple[str, str] | None:
     """푸시가 아니면 None · 푸시면 (앞서 옮긴 폴더, `-C` 경로) — 없는 것은 빈 문자열.
 
@@ -94,7 +108,13 @@ def push_target(command: str) -> tuple[str, str] | None:
     """
     m = PUSH.search(mask_quoted(command))
     if not m:
-        return None
+        w = _wrapped(command)
+        if w is None:
+            return None
+        cd_in, c_in = push_target(w[1]) or ("", "")
+        cds = list(CD_CMD.finditer(command[:w[0]]))
+        cd_out = next(g for g in cds[-1].groups() if g is not None) if cds else ""
+        return cd_in or cd_out, c_in
     opts = command[m.start(1):m.end(1)]        # 원문에서 꺼내야 따옴표 친 경로가 산다
     c = C_OPT.search(opts)
     c_path = next(g for g in c.groups() if g is not None) if c else ""
@@ -122,7 +142,8 @@ def push_sources(command: str) -> list[str] | None:
     """
     m = PUSH.search(mask_quoted(command))
     if not m:
-        return []
+        w = _wrapped(command)
+        return push_sources(w[1]) if w else []
     rest = command[m.end():]
     cut = re.search(r"[;&|\n]", mask_quoted(rest))
     if cut:
