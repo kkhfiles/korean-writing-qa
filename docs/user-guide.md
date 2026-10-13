@@ -74,11 +74,11 @@ form: structured
 
 | 시점 | 걸리는 도구 | 하는 일 |
 |---|---|---|
-| `PreToolUse` | Edit, Write, MultiEdit | 문서를 처음 편집하기 직전에 그 문서에 있던 띄어 쓴 가운뎃점 줄을 기록하고, 그 뒤 새로 쓴 줄만 오류로 판정함(편집은 막지 않음) |
+| `PreToolUse` | Edit, Write, MultiEdit | 문서를 처음 편집하기 직전에 그 문서에 있던 띄어 쓴 가운뎃점 줄을 기록함(편집은 막지 않음). 검사기는 이후 새로 생긴 띄어 쓴 가운뎃점 줄만 오류로 판정함 |
 | `PostToolUse` | Edit, Write, MultiEdit | 오류만 보여 줌(같은 파일은 세션에 한 번, 새로 쓴 띄어 쓴 가운뎃점은 쓸 때마다) |
 | `PreToolUse` | Artifact, Bash, PowerShell | 발행 직전에 오류와 주의를 전부 보여 줌 |
 
-**이 꾸러미만으로는 막지 않음** — 지적을 보여 줄 뿐 저장이나 발행을 멈추지 않습니다. [korean-writing-qa 저장소](https://github.com/kkhfiles/korean-writing-qa)를 내려받아 `python install.py --hooks` 로 설치하면 발행 직전 검사가 발행을 막습니다. 검사기 오류, 처리하지 않은 수정 지적, 사람이 답하지 않은 확인 지적, 문맥 판정을 거치지 않은 한글 줄 가운데 하나라도 남아 있으면 발행을 보류하고, 보류를 해제하는 방법을 안내합니다.
+**이 꾸러미만으로는 발행을 막지 않음** — 이 꾸러미는 검사기 파일과 스킬 폴더, 훅을 손으로 복사해 설치하는 방식이며, 지적을 보여 줄 뿐 저장이나 발행을 막지 않습니다. [korean-writing-qa 저장소](https://github.com/kkhfiles/korean-writing-qa)를 내려받아 `python install.py --hooks`로 설치하면 발행 직전 검사가 작동합니다. 이 설치 방식에서는 검사기 외에 문맥을 읽어 표현을 판단하는 판정기도 사용합니다. 검사기 오류, 판정기가 고칠 것으로 분류했지만 처리 기록이 없는 지적, 사용자가 답하지 않은 사람 확인, 판정기가 아직 판정하지 않은 한글 줄 가운데 하나라도 남아 있으면 발행을 막고, 해제하는 방법을 안내합니다.
 
 **Codex 는 저장소의 설치 명령으로 연결** — `python install.py --codex` 가 같은 훅을 Codex 에도 설치합니다. 이 꾸러미만으로는 Codex 에서 검사가 동작하지 않습니다.
 
