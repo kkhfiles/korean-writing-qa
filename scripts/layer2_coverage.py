@@ -193,6 +193,21 @@ def base_lines(path: Path, ref: str) -> list[str] | None:
     return visible_text(show.stdout.decode("utf-8", "replace"), path.suffix).splitlines()
 
 
+def base_time(path: Path, ref: str) -> float | None:
+    """`ref` 와 갈라진 지점 커밋의 시각 — 그보다 앞선 판정은 이미 합쳐진 작업이다 · git 밖이면 None."""
+    found = repo_of(path)
+    if not found:
+        return None
+    mb = _git(found[0], "merge-base", "HEAD", ref)
+    if mb.returncode:
+        return None
+    got = _git(found[0], "log", "-1", "--format=%ct", mb.stdout.decode().strip())
+    try:
+        return float(got.stdout.decode().strip())
+    except ValueError:
+        return None
+
+
 def _rows(key: str, log: Path, now: float | None, fresh: bool = True):
     """이 문서의 기록 줄 — `fresh` 면 14일 안 것만. 판정 기록과 답 기록이 같이 쓴다."""
     now = time.time() if now is None else now

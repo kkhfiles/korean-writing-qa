@@ -651,7 +651,8 @@ REJUDGE_CAP = 3
 DELETED_PER_LINE = 3
 
 
-def lineage(key: str, lines: list[str], targets: list[int], base: list[str] | None) -> dict[int, dict]:
+def lineage(key: str, lines: list[str], targets: list[int], base: list[str] | None,
+            since: float | None = None) -> dict[int, dict]:
     """대상 줄마다 {"round": 몇 번째 판정인가, "root": 기준 판 글 | None, "deleted": [지운 기준 판 줄]}.
 
     **자손 찾기** — 앞선 판정이 남긴 대상 줄 글 가운데 글자가 절반 이상 같은 것을 부모로 본다.
@@ -663,7 +664,10 @@ def lineage(key: str, lines: list[str], targets: list[int], base: list[str] | No
     """
     prev = []
     for row in coverage._rows(key, LOG, None):
-        if row.get("ok"):
+        # ⛔ 갈라진 지점 커밋보다 앞선 판정은 이미 합쳐진 작업이다 — 그때 센 횟수를 이어 세면 상한에
+        #    걸렸던 줄은 합쳐진 뒤 정당하게 고쳐도 매번 사람 확인으로 올라간다(2026-10-13 README
+        #    113행 · 전날 4회차로 합쳐진 줄을 고치자 5회차로 셈)
+        if row.get("ok") and (since is None or float(row.get("when") or 0) > since):
             prev += [e for e in row.get("targeted") or [] if e.get("text")]
     ops = []
     if base:
@@ -758,7 +762,8 @@ def held_ask(n: int, line: str, info: dict) -> dict:
 
 
 def judge(path: Path, model: str, timeout: float, backend, targets: list[int] | None = None,
-          base: list[str] | None = None, anchors: dict[int, list[str]] | None = None) -> dict:
+          base: list[str] | None = None, anchors: dict[int, list[str]] | None = None,
+          base_time: float | None = None) -> dict:
     """`targets` 가 있으면 그 줄이 든 묶음만 부르고 그 줄에 달린 지적만 낸다.
 
     ⛔ **지적을 거르는 까닭** — 판정기는 같은 글을 다시 판정해도 지적 수가 평균 16%
@@ -782,7 +787,7 @@ def judge(path: Path, model: str, timeout: float, backend, targets: list[int] | 
     system = probe.SYSTEM.format(rules=rules) + decisions_prompt(decisions)
     # 규칙 글의 판 — 규칙이 바뀐 뒤의 판정과 앞의 판정을 가르는 최소 식별자(외부 검토 · 2026-10-12)
     rules_sha = hashlib.sha256(rules.encode("utf-8")).hexdigest()[:12]
-    info = lineage(key, lines, sorted(want - set(anchors)), base) if want else {}
+    info = lineage(key, lines, sorted(want - set(anchors)), base, base_time) if want else {}
     for n, gone in anchors.items():
         info[n] = {"round": 0, "root": None, "deleted": gone[:DELETED_PER_LINE], "more": len(gone) - DELETED_PER_LINE,
                    "deleted_keys": [coverage.line_key(g) for g in gone], "anchor": True}
@@ -1102,7 +1107,7 @@ def main(argv=None, backend=None) -> int:
         if not p.is_file():
             print(f"⛔ 파일 없음 — {d}")
             return 2
-        targets, base, anchors = None, None, None
+        targets, base, anchors, base_t = None, None, None, None
         if a.since:
             try:
                 targets, in_git = open_for(p, a.since)
@@ -1110,6 +1115,7 @@ def main(argv=None, backend=None) -> int:
             except ValueError as e:
                 print(f"⛔ {e}")
                 return 2
+            base_t = coverage.base_time(p, a.since) if in_git else None
             if base:
                 key = coverage.doc_key(p)
                 anchors = dict(coverage.open_deletions(read_doc(p).splitlines(), base,
@@ -1117,7 +1123,7 @@ def main(argv=None, backend=None) -> int:
             if not in_git:
                 print(f"  {p.name} — git 밖 문서라 갈라진 지점이 없습니다 · 아직 판정 안 한 한글 줄을 모두 봅니다")
         try:
-            results.append(judge(p, model, a.timeout, backend, targets, base, anchors))
+            results.append(judge(p, model, a.timeout, backend, targets, base, anchors, base_t))
         except Exception as e:
             print(f"⛔ 호출 실패 — {p.name}: {type(e).__name__}: {e}"[:300])
             print("   검사되지 않았습니다 — 세션이 규칙을 직접 읽고 판정합니다.")

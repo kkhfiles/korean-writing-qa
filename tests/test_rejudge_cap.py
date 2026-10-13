@@ -92,6 +92,22 @@ class LineageTests(_Base):
         rounds = [e["round"] for e in self.last_row()["targeted"]]
         self.assertEqual([4, 4], rounds, "줄을 나누자 판정 횟수가 처음부터 다시 셌습니다")
 
+    def test_the_count_restarts_after_the_line_is_merged(self) -> None:
+        """(2026-10-13 README 113행) 전날 4회차로 상한에 걸려 합쳐진 줄을 고치자 5회차로 세어 지적이
+        곧장 사람 확인으로 갔다 — 갈라진 지점 커밋보다 앞선 판정은 이미 합쳐진 작업이다."""
+        import time as _time
+        for v in VERSIONS[:4]:
+            self.rejudge(BASE[:4] + [v], [5])
+        merged_at = _time.time() + 1          # 그 뒤에 합쳐짐 — 새 기준 판에 4번째 판이 들어감
+        new_base = BASE[:4] + [VERSIONS[3]]
+        self.write(BASE[:4] + [VERSIONS[4]])
+        fake = FakeBackend([fix_on(VERSIONS[4], 5)])
+        result = judge.judge(self.doc, "opus", 10, fake.pair(), [5], new_base, None, merged_at)
+        entry = self.last_row()["targeted"][0]
+        self.assertEqual((1, VERSIONS[3]), (entry["round"], entry["root"]),
+                         "합쳐지기 전의 판정 횟수를 이어 셌습니다")
+        self.assertEqual(0, result["held"])
+
     def test_a_new_line_starts_at_one_without_a_root(self) -> None:
         self.rejudge(BASE + ["", "새로 쓴 안내 문장입니다."], [7])
         entry = self.last_row()["targeted"][0]
