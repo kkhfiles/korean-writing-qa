@@ -148,6 +148,22 @@ class CheckerRuleTests(unittest.TestCase):
         p.write_text(body, encoding="utf-8")
         self.assertEqual([], self.middot_errors(p))
 
+    def test_dots_between_quotes_or_code_keep_their_spacing(self) -> None:
+        """⛔ 인용 · 코드를 빈칸으로 가리면 붙여 쓴 「A」·「B」가 띄어 쓴 꼴이 된다(2026-10-13 전역 지시 파일을
+        세다 찾음). 가린 뒤에도 붙은 것은 붙은 것으로 본다 — 띄어 쓴 것은 그대로 잡는다."""
+        p = self.dir / "quoted.md"
+        self.checker.middot_baseline(str(p))
+        p.write_text(MD_HEAD
+                     + "- **가** — 「진입점」·「순서」 절이 맡음\n"
+                     + "- **나** — `CLAUDE.md`·`SKILL.md` 는 지시 파일\n"
+                     + "- **다** — 「진입점」 · 「순서」 절이 맡음\n"
+                     + "- **라** — 지시 파일 · `SKILL.md` 는 제외\n", encoding="utf-8")
+        hits = self.middot_errors(p)
+        self.assertEqual(2, len(hits), f"붙은 꼴은 빼고 띄운 꼴 둘만 잡아야 합니다: {hits}")
+        text = " ".join(str(h) for h in hits)
+        self.assertIn("「진입점」 · 「순서」", text)
+        self.assertIn("지시 파일 · `SKILL.md`", text)
+
     def test_other_dot_characters_and_html_entities(self) -> None:
         """가운뎃점 모양 글자와 HTML 개체도 같다 — 글자만 바꿔 빠져나가지 않는다."""
         for name, text in (("katakana.md", MD_HEAD + "- **가** — 하나 ・ 둘은 따로\n"),

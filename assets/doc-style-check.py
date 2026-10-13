@@ -2685,6 +2685,16 @@ MIDDOT_HOW = ('띄어 쓴 가운뎃점을 쓰지 않습니다. 둘 모두인지 
               '걸리는지 먼저 정하고 항목을 나누거나 관계가 드러나게 풀어 씁니다')
 
 
+#: 가린 인용 · 코드 자리에 넣는 글자 — 빈칸으로 가리면 붙여 쓴 「A」·「B」 · `A`·`B` 가 띄어 쓴 꼴이
+#: 되어 오탐이 났다(2026-10-13 전역 지시 파일을 세다 찾음). 빈칸이 아닌 글자로 가려 띄어쓰기를 보존한다.
+MIDDOT_HOLE = '□'
+
+
+def middot_mask(s):
+    """인용 · 인라인 코드를 빈칸이 아닌 글자로 가린다 — 가운뎃점 앞뒤 띄어쓰기는 그대로 남는다."""
+    return QUOTE_SPAN.sub(MIDDOT_HOLE, CODE_SPAN.sub(MIDDOT_HOLE, s))
+
+
 def middot_lines(path, raw=None):
     """띄어 쓴 가운뎃점이 있는 본문 줄 — (줄 번호 또는 None, 줄 글, 열쇠).
 
@@ -2697,14 +2707,14 @@ def middot_lines(path, raw=None):
         rows = md_body(raw)
     else:
         text = re.sub(r'<!--.*?-->', ' ', raw, flags=re.S)
-        text = re.sub(r'<(script|style|code|pre)\b.*?</\1\s*>', ' ', text, flags=re.S | re.I)
+        text = re.sub(r'<(script|style|code|pre)\b.*?</\1\s*>', MIDDOT_HOLE, text, flags=re.S | re.I)
         rows = [(None, html.unescape(l)) for l in strip(text).split('\n')]
     out = []
     for n, line in rows:
         s = line.strip()
         if not s or is_example(s) or (s.startswith('>') and ATTRIB.search(s)):
             continue
-        if not MIDDOT.search(mask(s)):
+        if not MIDDOT.search(middot_mask(s)):
             continue
         flat = ' '.join(s.split())
         out.append((n, flat, hashlib.sha1(flat.encode('utf-8')).hexdigest()[:16]))
@@ -2763,7 +2773,7 @@ def middot_hits(path, raw=None):
     for n, flat, h in rows:
         if h in legacy:
             continue
-        m = MIDDOT.search(mask(flat))
+        m = MIDDOT.search(middot_mask(flat))
         out.append((n, flat[max(0, m.start() - 24):m.end() + 24]))
     return out
 
