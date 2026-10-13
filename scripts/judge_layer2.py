@@ -277,7 +277,13 @@ REASONS = {
     "충족": "문서 안에서 이미 충족함 — 충족하는 줄(「N행」)",
     "규칙충돌": "다른 규칙을 우선함 — 우선하는 규칙과 그 근거",
     "확인함": "사실을 자료로 확인함 — 자료 경로 · 명령 · 버전",
+    "지시반영": "사용자 · 검토자 지시로 일부러 바꾼 뜻 — 지시 원문 인용(「…」)과 누가 · 언제",
 }
+#: 「지시반영」으로만 닫을 수 있는 갈래 — 지시는 편집 의도의 근거이지 사실의 근거가 아니다(외부 검토
+#: 2026-10-13). 실사용 문서 1건에서 「고치다 뜻이 바뀐 곳」 닫기 46건 중 40건이 지시 근거였는데
+#: 모두 「확인함」으로 닫혀, 감사할 때 사실 확인과 갈리지 않았다.
+INTENT_ONLY = "뜻이 바뀐"
+QUOTE = re.compile(r"「[^」]{4,}」")
 #: 근거에 자료가 적혔나 — 경로 · 명령 · 주소 · 줄 번호 가운데 하나
 EVIDENCE = re.compile(r"[/\\]|`[^`]+`|https?://|\b[\w-]+\.(?:py|md|html|json|toml|txt|js|ts|yml|yaml)\b|\d+\s?행")
 LINE_REF = re.compile(r"\d+\s?행")
@@ -400,9 +406,17 @@ def dismiss(path: Path, n: int, reason: str, note: str, phrase: str | None = Non
     if len(note) < NOTE_MIN:
         raise ValueError(f"--note 에 근거를 적습니다 — {REASONS[reason]}")
     lines, fx = _pick_fix(path, n, phrase)
-    if coverage.needs_check(fx) and reason != "확인함":
+    intent = INTENT_ONLY in str(fx.get("category") or "")
+    if reason == "지시반영":
+        if not intent:
+            raise ValueError("「지시반영」은 「고치다 뜻이 바뀐 곳」 지적에만 씁니다 — 지시는 편집 의도의 근거이지 "
+                             "사실의 근거가 아닙니다")
+        if not QUOTE.search(note):
+            raise ValueError("「지시반영」은 근거에 지시 원문을 「」로 옮겨 적어야 받습니다(누가 · 언제와 함께)")
+    elif coverage.needs_check(fx) and reason != "확인함":
         raise ValueError("사실 확인이 걸린 지적입니다 — 자료로 확인해 「확인함」으로 닫거나(근거에 자료 경로 · "
-                         "명령), 세션이 확인할 수 없으면 --escalate 로 사람 확인에 올립니다")
+                         "명령), 일부러 바꾼 뜻이면 「지시반영」, 세션이 확인할 수 없으면 --escalate 로 "
+                         "사람 확인에 올립니다")
     if reason == "확인함" and not EVIDENCE.search(note):
         raise ValueError("「확인함」은 근거에 확인한 자료(경로 · 명령 · 주소)를 적어야 받습니다")
     if reason == "충족" and not LINE_REF.search(note):

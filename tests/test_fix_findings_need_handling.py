@@ -192,6 +192,35 @@ class DismissTests(_Base):
         self.assertEqual(0, self.dismiss("--reason", "충족", "--note", "3행에서 이미 같은 내용을 밝힘")[0])
 
 
+class IntentTests(_Base):
+    """「지시반영」 — 일부러 바꾼 뜻을 「확인함」과 따로 닫는다(2026-10-13 · 감사할 때 갈리게)."""
+
+    MEANING = {"line": 3, "phrase": "매일 갱신됩니다", "category": "고치다 뜻이 바뀐 곳",
+               "fix": "매주 갱신됩니다", "why": "기준 판은 매주였음", "decide": "fix",
+               "check": "갱신 주기를 매일로 바꾼 것이 의도한 변경인지"}
+
+    def test_an_instructed_change_closes_with_the_quote(self) -> None:
+        self.judged(self.MEANING)
+        rc, out = self.run_main([str(self.doc), "--dismiss", "3", "--reason", "지시반영",
+                                 "--note", "검토자 10/13 「갱신은 매일로 바꿔 주세요」"])
+        self.assertEqual(0, rc, out)
+        self.assertEqual([], self.open_fixes())
+
+    def test_an_instruction_needs_its_words(self) -> None:
+        self.judged(self.MEANING)
+        rc, out = self.run_main([str(self.doc), "--dismiss", "3", "--reason", "지시반영",
+                                 "--note", "검토자가 매일로 바꾸라고 했음"])
+        self.assertEqual(2, rc, "지시 원문 없이 받았습니다")
+        self.assertEqual([3], self.open_fixes())
+
+    def test_an_instruction_is_not_evidence_for_a_fact(self) -> None:
+        self.judged(FACT)
+        rc, out = self.run_main([str(self.doc), "--dismiss", "3", "--reason", "지시반영",
+                                 "--note", "검토자 10/13 「매일 갱신된다고 쓰세요」"])
+        self.assertEqual(2, rc, "지시를 사실의 근거로 받았습니다")
+        self.assertIn("사실의 근거가 아닙니다", out)
+
+
 class FactTests(_Base):
 
     def setUp(self) -> None:
