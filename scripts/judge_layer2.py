@@ -365,8 +365,11 @@ def escalate(path: Path, n: int, note: str, phrase: str | None = None) -> str:
     return str(fx.get("phrase"))
 
 
-def write_sheet(paths: list[Path], out: Path) -> tuple[int, int]:
-    """열린 사람 확인을 md 표 한 장으로 쓴다 — (줄 수, 지적 수). 형식은 `ask_sheet.py`."""
+def write_sheet(paths: list[Path], out: Path) -> tuple[int, int, str]:
+    """열린 사람 확인을 md 표 한 장으로 쓴다 — (줄 수, 지적 수, 화면 목록). 형식은 `ask_sheet.py`.
+
+    화면 목록은 표와 같은 번호를 쓴다 — 지적이 적으면 그것을 대화로 보이고 답을 `--reply` 로 받는다.
+    """
     docs = []
     for p in paths:
         lines = read_doc(p).splitlines()
@@ -375,11 +378,14 @@ def write_sheet(paths: list[Path], out: Path) -> tuple[int, int]:
     out.write_text(ask_sheet.render(docs, coverage.line_key), encoding="utf-8", newline="\n")
     asks = sum(len(a) for _, _, a in docs)
     rows = sum(len({n for n, _ in a}) for _, _, a in docs)
-    return rows, asks
+    return rows, asks, ask_sheet.screen(docs)
 
 
-def read_answers(sheet: Path) -> int:
+def read_answers(sheet: Path, replies: list[str] | None = None) -> int:
     """사용자가 표에 적은 답을 읽는다 — `그대로`는 답 기록에 남기고, 고칠 것은 목록으로 돌려준다.
+
+    `replies` 는 대화로 받은 답(`Q1 그대로`) — 표의 답 칸 대신 쓰고, 줄 해시 대조는 표의 것을 그대로
+    쓴다. ⛔ 세션은 사용자가 한 말을 옮겨 적기만 한다 — 묻지 않은 행에 답을 지어 넣지 않는다.
 
     ⛔ `고침`·`직접`은 답으로 적지 않는다 — 적으면 고치기 전에 지적이 닫혀 고치지 않은 글이
        발행·배포를 통과한다. 고치면 짚은 표현이 사라져 지적이 저절로 닫힌다.
@@ -391,6 +397,18 @@ def read_answers(sheet: Path) -> int:
     except (OSError, ValueError) as e:
         print(f"⛔ {e}")
         return 2
+    said: dict[str, str] = {}
+    if replies:
+        try:
+            said = ask_sheet.parse_replies(replies)
+        except ValueError as e:
+            print(f"⛔ {e}")
+            return 2
+        unknown = sorted(set(said) - set(keys))
+        if unknown:
+            print(f"⛔ 표에 없는 번호 — {' '.join(unknown)} · 표를 다시 만들었으면 새 번호로 묻습니다")
+            return 2
+        answers.update(said)
     kept, edits, free, waiting, refused = [], [], [], [], []
     learned = 0
     docs: dict[str, Path] = {}
@@ -406,7 +424,8 @@ def read_answers(sheet: Path) -> int:
             continue
         # 다음 판정이 따를 기록 — 사용자가 본 줄(표의 줄 해시)에 단다. 그 뒤 문서가 바뀌어도
         # 사용자가 그 문장을 보고 정한 것은 그대로다.
-        learned += record_decision(p, key["line_key"], raw, kind, f"{sheet.name} {qid}")
+        src = f"{sheet.name} {qid}" + (" · 대화로 받음" if qid in said else "")
+        learned += record_decision(p, key["line_key"], raw, kind, src)
         lines = read_doc(p).splitlines()
         # 표를 만든 뒤 위에 줄이 늘거나 줄었으면 같은 글의 줄을 찾아간다
         now = next((i for i, l in enumerate(lines, 1) if coverage.line_key(l) == key["line_key"]), None)
@@ -421,7 +440,7 @@ def read_answers(sheet: Path) -> int:
                 f"{qid} {p.name} {now}행 「{' · '.join(phrases)}」 — 사용자 답: {raw}")
             continue
         try:
-            answer(p, [now], f"사용자 답(사람 확인 표 {sheet.name} {qid}): {raw}")
+            answer(p, [now], f"사용자 답(사람 확인 표 {src}): {raw}")
             kept.append(qid)
         except ValueError as e:
             refused.append(f"{qid} {p.name} {now}행 — {e}")
@@ -890,6 +909,8 @@ def main(argv=None, backend=None) -> int:
                     help="답을 기다리는 사람 확인을 md 표로 씀 — 사용자에게 넘기는 형식 · 모델 안 부름")
     ap.add_argument("--answers-from", metavar="경로.md",
                     help="사용자가 답을 적은 사람 확인 표를 읽음 — 그대로만 답 기록에 남김")
+    ap.add_argument("--reply", action="append", metavar="'Q번호 답'",
+                    help="--answers-from 과 함께 · 대화로 받은 답을 사용자 원문 그대로 — 여러 번 줄 수 있음")
     ap.add_argument("--fixes", action="store_true",
                     help="모델을 부르지 않고 처리 안 된 고칠 지적만 보기")
     ap.add_argument("--dismiss", type=int, metavar="행",
@@ -903,7 +924,7 @@ def main(argv=None, backend=None) -> int:
         cost_report(a.by)
         return 0
     if a.answers_from:
-        return read_answers(Path(a.answers_from))
+        return read_answers(Path(a.answers_from), a.reply)
     if not a.docs:
         ap.print_usage()
         return 2
@@ -913,8 +934,18 @@ def main(argv=None, backend=None) -> int:
             print(f"⛔ 파일 없음 — {missing[0]}")
             return 2
         out = Path(a.sheet)
-        rows, asks = write_sheet([Path(d) for d in a.docs], out)
+        rows, asks, listing = write_sheet([Path(d) for d in a.docs], out)
         print(f"사람 확인 표 — 줄 {rows}개 · 지적 {asks}건 · {out.resolve().as_uri()}")
+        if 0 < asks <= ask_sheet.SCREEN_MAX:
+            print(f"  지적이 {ask_sheet.SCREEN_MAX}건 이하라 화면으로 묻습니다 — 아래 목록을 사용자에게 그대로 보이고,")
+            print("  받은 답을 사용자 원문 그대로 옮겨 읽습니다(답: 그대로 · 고침 · 직접: … · 보류):")
+            print(f"    python -X utf8 {Path(__file__).resolve().as_posix()} --answers-from {out.resolve().as_posix()} "
+                  "--reply 'Q1 그대로' --reply 'Q2 직접: …'")
+            print()
+            print(listing)
+        elif asks:
+            print(f"  지적이 {ask_sheet.SCREEN_MAX}건을 넘어 표 파일로 묻습니다 — "
+                  "위 경로를 사용자에게 주고 「답」 칸을 채우게 합니다")
         if coverage.repo_of(out) is not None:
             print("  ⚠️ 표가 git 저장소 안에 있습니다 — 문서 글이 들어 있으니 커밋하지 않습니다")
         return 1 if asks else 0

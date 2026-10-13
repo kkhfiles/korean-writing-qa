@@ -169,6 +169,58 @@ class SheetTests(_SheetBase):
         self.assertFalse(coverage.ANSWERS.exists())
 
 
+class ScreenTests(_SheetBase):
+    """(2026-10-13 사용자 「10개 이하일 경우에는 그냥 화면에서 보여줘도 될 듯」) 지적이 적으면
+    대화로 묻고 답을 `--reply` 로 받는다 — 표는 줄 해시를 지키려고 그대로 만든다."""
+
+    def test_few_asks_are_listed_on_screen_with_the_sheet_numbers(self) -> None:
+        rc, out = self.run_main([str(self.doc), "--sheet", str(self.sheet)])
+        self.assertEqual(1, rc, out)
+        self.assertIn("화면으로 묻습니다", out)
+        self.assertIn("**Q1** · d.md 5행", out)
+        self.assertIn("**Q2** · d.md 7행", out)
+        self.assertIn("**기억이 흐려집니다**", out)
+        self.assertIn("제안: 7일이 지나면", out)
+        self.assertIn("--reply", out)
+        self.assertTrue(self.sheet.is_file(), "줄 해시를 지킬 표를 안 만들었습니다")
+
+    def test_many_asks_go_to_the_file(self) -> None:
+        saved = ask_sheet.SCREEN_MAX
+        ask_sheet.SCREEN_MAX = 2
+        try:
+            rc, out = self.run_main([str(self.doc), "--sheet", str(self.sheet)])
+        finally:
+            ask_sheet.SCREEN_MAX = saved
+        self.assertIn("표 파일로 묻습니다", out)
+        self.assertNotIn("**Q1**", out, "많은 지적을 대화에 풀었습니다 — 하나씩 볼 수 없습니다")
+
+    def test_replies_work_like_the_sheet(self) -> None:
+        self.make_sheet()
+        rc, out = self.run_main(["--answers-from", str(self.sheet),
+                                 "--reply", "Q1 그대로 — 정해진 문구", "--reply", "Q2 고침"])
+        self.assertEqual(1, rc, out)
+        self.assertEqual([7], self.open_lines(), "대화 답의 「그대로」가 안 닫혔거나 「고침」이 미리 닫혔습니다")
+        self.assertIn("고칠 것 1건", out)
+        note = json.loads(coverage.ANSWERS.read_text(encoding="utf-8").splitlines()[-1])["note"]
+        self.assertIn("그대로 — 정해진 문구", note)
+        learned = [json.loads(l) for l in coverage.DECISIONS.read_text(encoding="utf-8").splitlines()]
+        self.assertTrue(learned and all("대화로 받음" in d["source"] for d in learned),
+                        "대화 답이 다음 판정이 따를 기록에 안 남았습니다")
+
+    def test_a_reply_needs_a_known_number(self) -> None:
+        self.make_sheet()
+        for reply in ("Q9 그대로", "그대로"):
+            rc, out = self.run_main(["--answers-from", str(self.sheet), "--reply", reply])
+            self.assertEqual(2, rc, f"「{reply}」 를 받았습니다 — 줄을 짐작해 답을 적습니다")
+        self.assertEqual([5, 7], self.open_lines())
+
+    def test_a_reply_on_a_changed_line_is_refused(self) -> None:
+        self.make_sheet()
+        self.doc.write_text(DOC.replace("기억이 흐려집니다", "기억이 희미해집니다"), encoding="utf-8")
+        rc, out = self.run_main(["--answers-from", str(self.sheet), "--reply", "Q1 그대로"])
+        self.assertIn("그 줄이 바뀌었습니다", out, "사용자가 본 문장과 다른 줄에 답을 적었습니다")
+
+
 class LearningTests(_SheetBase):
     """(2026-10-07 사용자 — 「내 기본 답변을 기반으로 판단했으면 좋겠는데, 현재 AI가
     애스컬레이션한 항목이 너무 많다」) 표의 답이 다음 판정에 쓰이나."""

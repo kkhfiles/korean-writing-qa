@@ -133,6 +133,40 @@ def render(docs: list[tuple[Path, list[str], list[tuple[int, dict]]]],
     return head + "\n".join(body + tail)
 
 
+#: 지적이 이 수 이하면 표 파일을 넘기지 않고 대화 화면에서 묻는다 — 표는 줄 해시를 지키려고
+#: 그대로 만든다(2026-10-13 사용자 「10개 이하일 경우에는 그냥 화면에서 보여줘도 될 듯」).
+#: 많을 때 파일로 넘기는 까닭은 그대로다 — 61건을 대화로 넘겼다가 하나씩 볼 수 없었다(2026-10-07).
+SCREEN_MAX = 10
+
+
+def screen(docs: list[tuple[Path, list[str], list[tuple[int, dict]]]]) -> str:
+    """대화 화면에 그대로 보일 목록 — 표와 같은 번호(Q1…)를 같은 순서로 붙인다."""
+    out: list[str] = []
+    k = 0
+    for path, lines, asks in docs:
+        for n, items in group(lines, asks):
+            k += 1
+            phrases = [str(a.get("phrase") or "").strip() for a in items]
+            kinds = " · ".join(dict.fromkeys(str(a.get("category") or "").strip() for a in items))
+            out.append(f"**Q{k}** · {path.name} {n}행 · {kinds}")
+            out.append(f"   - 문장: {excerpt(lines[n - 1], phrases)}")
+            for p, a in zip(phrases, items):
+                fix = str(a.get("fix") or "").strip() or "없음"
+                out.append(f"   - 「{p}」 → 제안: {fix} · 까닭: {str(a.get('why') or '').strip()}")
+    return "\n".join(out)
+
+
+def parse_replies(replies: list[str]) -> dict[str, str]:
+    """대화로 받은 답 — `Q1 그대로 — 까닭` 꼴 · 번호가 없으면 ValueError(줄을 짐작하지 않는다)."""
+    out: dict[str, str] = {}
+    for r in replies:
+        m = re.match(r"\s*(Q\d+)\s*[:.]?\s*(.*)$", r, re.S)
+        if not m:
+            raise ValueError(f"번호(Q1 …)로 시작하지 않는 답 — 「{r[:40]}」")
+        out[m.group(1)] = m.group(2).strip()
+    return out
+
+
 def _cells(row: str) -> list[str]:
     inner = row.strip()
     inner = inner[1:] if inner.startswith("|") else inner

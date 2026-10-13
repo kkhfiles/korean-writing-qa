@@ -240,10 +240,10 @@ def ask_block(payload, files):
     lines += [
         "",
         "  사용자에게 물어 정합니다 — 세션이 대신 정하지 않습니다.",
-        "  · 표로 만들어 사용자에게 넘깁니다 — 사용자가 행마다 「답」 칸을 채웁니다:",
+        "  · 표를 만듭니다 — 10건 이하면 목록이 화면에 나오니 대화로 묻고, 넘으면 표 경로를 넘깁니다:",
         f"      python -X utf8 {judge} <파일…> --sheet <저장소 밖 경로>.md",
-        "  · 다 적었으면 읽습니다 — 「그대로」는 답 기록에 남고, 고칠 것은 목록으로 나옵니다:",
-        f"      python -X utf8 {judge} --answers-from <그 표>",
+        "  · 답을 읽습니다 — 「그대로」는 답 기록에 남고, 고칠 것은 목록으로 나옵니다:",
+        f"      python -X utf8 {judge} --answers-from <그 표> [--reply 'Q1 그대로' …(대화로 받은 답)]",
         "  · 고친 줄은 이 목록에서 빠집니다.",
         "",
         f"  정말 그대로 내보내야 하면 명령 앞에 `{FORCE}` 를 붙입니다 — 명령문에 남습니다.",
@@ -664,7 +664,7 @@ def push_block(payload):
     else:
         lines += ["    1. 이 PC 에서는 2층 판정기를 부를 수 없습니다 — finalize-korean-document",
                   "       9단계와 판단 규칙(core-rules.md)을 세션이 직접 읽고 새 줄을 판정합니다."]
-    lines += ["    2. 사람 확인 지적은 표로 만들어 사용자에게 넘기고, 적은 답을 읽습니다:",
+    lines += ["    2. 사람 확인 지적은 표를 만들어 묻고(10건 이하면 대화로 · --reply 로 읽음), 답을 읽습니다:",
               f"       python -X utf8 {(judge_script() or Path('judge_layer2.py')).as_posix()} "
               "<파일…> --sheet <저장소 밖 경로>.md",
               f"       python -X utf8 {(judge_script() or Path('judge_layer2.py')).as_posix()} "
@@ -879,7 +879,7 @@ def deploy_block(payload, probe=False):
               (f"    2. python -X utf8 {script} <원본> — 판정기가 안 본 줄을 판정합니다."
                if judge is not None else
                "    2. 이 PC 에서는 판정기를 부를 수 없습니다 — 9단계와 core-rules.md 를 직접 읽고 판정합니다."),
-              "    3. 사람 확인 지적은 표로 만들어 사용자에게 넘기고, 적은 답을 읽습니다 — "
+              "    3. 사람 확인 지적은 표를 만들어 묻고(10건 이하면 대화로 · --reply 로 읽음), 답을 읽습니다 — "
               f"`{script} <원본…> --sheet <저장소 밖 경로>.md` · `{script} --answers-from <그 표>`",
               "    4. 고칠 지적은 고치거나, 지적마다 사유와 근거를 적거나(--dismiss), 사람 확인으로 올립니다"
               f"(--escalate) — 목록 `{script} <원본…> --fixes`",
