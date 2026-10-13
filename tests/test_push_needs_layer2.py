@@ -225,6 +225,34 @@ class PushGateTests(unittest.TestCase):
         self.assertIn("갈라진 지점을 못 찾았습니다", out)
         self.assertIn("git fetch", out)
 
+    def test_pushing_another_branch_checks_that_branch(self) -> None:
+        """(2026-10-13 게이트 부정 시험 · 실경로 재현) HEAD 만 보아서 깨끗한 가지에 선 채로
+        작업 가지를 push 하면 판정 안 한 줄이 그대로 나갔다."""
+        self.add_line()
+        git(self.repo, "switch", "main")
+        for cmd in ("git push origin kkh/work", "git push origin kkh/work:main",
+                    "git push origin +kkh/work:refs/heads/main", "git push --all origin"):
+            rc, out = self.push(cmd)
+            self.assertEqual(2, rc, f"{cmd} — 내보내는 가지를 안 봤습니다")
+            self.assertIn("kkh/work", out)
+
+    def test_pushing_a_clean_branch_from_a_dirty_head_is_fine(self) -> None:
+        self.add_line()
+        self.assertEqual(0, self.push("git push origin main")[0],
+                         "내보내지 않는 HEAD 의 새 줄로 막았습니다")
+
+    def test_a_delete_push_sends_no_content(self) -> None:
+        self.add_line()
+        self.assertEqual(0, self.push("git push origin --delete kkh/old")[0])
+        self.assertEqual(0, self.push("git push origin :kkh/old")[0])
+
+    def test_an_unresolvable_source_blocks_with_a_way_out(self) -> None:
+        self.add_line()
+        rc, out = self.push("git push origin no-such-branch")
+        self.assertEqual(2, rc, out)
+        self.assertIn("가르지 못했습니다", out)
+        self.assertIn("git push origin <가지>", out)
+
     def test_a_gate_crash_blocks_instead_of_passing(self) -> None:
         """(2026-10-13 게이트 부정 시험) 판정 기록 칸 모양이 틀리자 훅이 죽어 push 가 통과했다 —
         Claude Code 는 예외로 끝난 훅을 막음으로 보지 않는다."""

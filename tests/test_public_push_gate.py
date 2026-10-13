@@ -75,6 +75,29 @@ class PublicPushGateTests(unittest.TestCase):
             with self.subTest(cmd):
                 self.assertIsNone(pat.search(cmd))
 
+    def test_push_sources_name_what_leaves(self) -> None:
+        """push 가 내보내는 쪽 — 게이트가 HEAD 대신 이것을 검사한다(2026-10-13)."""
+        src = load_hook().push_sources
+        cases = {
+            "git push": ["HEAD"],
+            "git push -u origin HEAD": ["HEAD"],
+            "git push origin topic": ["topic"],
+            "git push origin topic:main": ["topic"],
+            "git push origin +topic:refs/heads/main a:b": ["topic", "a"],
+            "git push origin :old": [],
+            "git push origin --delete old": [],
+            "git push --all origin": ["refs/heads/*"],
+            "git push --tags": ["refs/tags/*"],
+            "git push -o ci.skip origin topic": ["topic"],
+            "git push --force-with-lease=main:abc origin topic": ["topic"],
+            "git add -A && git push origin topic && echo done": ["topic"],
+            "git status": [],
+        }
+        for cmd, want in cases.items():
+            with self.subTest(cmd):
+                self.assertEqual(want, src(cmd))
+        self.assertIsNone(src("git push origin 'topic"), "닫히지 않은 따옴표를 그냥 넘겼습니다")
+
     def test_quoted_push_text_is_not_a_push(self) -> None:
         """문자열 안의 `git push` 는 푸시가 아니다.
 

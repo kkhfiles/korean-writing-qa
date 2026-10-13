@@ -103,6 +103,71 @@ def push_target(command: str) -> tuple[str, str] | None:
     return cd_path, c_path
 
 
+#: push 뒤 옵션 중 값을 따로 받는 것 — 값을 refspec 으로 잘못 읽지 않게 넘긴다
+_PUSH_OPT_ARG = {"-o", "--push-option", "--repo", "--receive-pack", "--exec"}
+#: 가지를 적지 않고 여럿을 한꺼번에 미는 옵션 — 무엇이 나가는지 refs 무늬로 돌려준다
+_PUSH_MANY = {"--all": ["refs/heads/*"], "--branches": ["refs/heads/*"],
+              "--mirror": ["refs/heads/*", "refs/tags/*"], "--tags": ["refs/tags/*"]}
+
+
+def push_sources(command: str) -> list[str] | None:
+    """push 가 실제로 내보내는 쪽(refspec 의 왼쪽) 목록 · 못 가르면 None · push 가 아니면 [].
+
+    가지를 안 적으면 `HEAD`(지금 가지) · `src:dst` 는 `src` · 지우기(`:dst` · `--delete`)는
+    내보내는 내용이 없어 뺀다 · `--all` 같은 것은 `refs/heads/*` 무늬로 돌려준다.
+
+    ⛔ 왜 필요한가 — push 게이트가 HEAD 만 보아서, 깨끗한 가지에 선 채로
+       `git push origin 작업가지:main` 을 하면 판정 안 한 줄이 원격 main 에 올라갔다
+       (2026-10-13 게이트 부정 시험 · Claude Code 실경로에서도 재현).
+    """
+    m = PUSH.search(mask_quoted(command))
+    if not m:
+        return []
+    rest = command[m.end():]
+    cut = re.search(r"[;&|\n]", mask_quoted(rest))
+    if cut:
+        rest = rest[:cut.start()]
+    import shlex
+    try:
+        words = shlex.split(rest)
+    except ValueError:
+        return None
+    positional, many, delete, it = [], [], False, iter(words)
+    for w in it:
+        if w == "--":
+            positional += list(it)
+            break
+        if w in _PUSH_OPT_ARG:
+            if w == "--repo":
+                positional.insert(0, next(it, ""))
+            else:
+                next(it, None)
+            continue
+        if w.startswith("--repo="):
+            positional.insert(0, w.split("=", 1)[1])
+            continue
+        if w in ("-d", "--delete"):
+            delete = True
+            continue
+        if w in _PUSH_MANY:
+            many += _PUSH_MANY[w]
+            continue
+        if w.startswith("-"):
+            continue
+        positional.append(w)
+    refspecs = positional[1:]
+    if delete:
+        return many
+    if not refspecs:
+        return many or ["HEAD"]
+    out = list(many)
+    for spec in refspecs:
+        src = spec.lstrip("+").split(":", 1)[0]
+        if src:
+            out.append(src)
+    return out
+
+
 def _local_path(step: str) -> Path:
     """명령에 적힌 경로를 이 PC 경로로 — `~` 와 Git Bash 꼴(`/p/github/…` → `P:/github/…`).
 

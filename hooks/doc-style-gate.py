@@ -530,23 +530,24 @@ def load_coverage():
     return mod
 
 
-def push_gaps(repo, conf, judge):
+def push_gaps(repo, conf, judge, commit="HEAD"):
     """새 줄이 있는 대상 문서마다 빠진 것 — [(뿌리 기준 경로, [빠진 것…])].
 
+    `commit` 은 push 가 내보내는 커밋 — HEAD 가 아닐 수 있다(`push_sources`).
     ⛔ 갈라진 지점을 못 찾으면 ValueError — 새 줄을 못 가르면 통과시킬 수 없다.
     """
     import tempfile
-    mb = _git(repo, "merge-base", "HEAD", conf["base"])
+    mb = _git(repo, "merge-base", commit, conf["base"])
     if mb.returncode:
         raise ValueError(mb.stderr.decode("utf-8", "replace").strip()[:200])
     mb = mb.stdout.decode().strip()
-    diff = _git(repo, "diff", "--name-only", "--no-renames", "--diff-filter=AM", mb, "HEAD")
+    diff = _git(repo, "diff", "--name-only", "--no-renames", "--diff-filter=AM", mb, commit)
     changed = [l for l in diff.stdout.decode("utf-8", "replace").splitlines()
                if l and matches(l, conf["targets"])]
     cov = load_coverage()
     out = []
     for rel in changed:
-        blob = _git(repo, "show", f"HEAD:{rel}").stdout
+        blob = _git(repo, "show", f"{commit}:{rel}").stdout
         suffix = Path(rel).suffix
         gaps = []
         if cov is not None:
@@ -585,6 +586,30 @@ def push_gaps(repo, conf, judge):
     return out
 
 
+def push_commits(repo, sources):
+    """push 가 내보내는 쪽 이름을 커밋으로 — [(이름, 커밋)] · 못 풀면 그 까닭(문자열).
+
+    `refs/heads/*` 같은 무늬는 그 아래 가지 · 꼬리표를 모두 편다. 같은 커밋은 한 번만 본다.
+    """
+    if sources is None:
+        return "따옴표가 닫히지 않았습니다"
+    out, seen = [], set()
+    for src in sources:
+        names = [src]
+        if src.endswith("/*"):
+            got = _git(repo, "for-each-ref", "--format=%(refname)", src[:-2])
+            names = got.stdout.decode("utf-8", "replace").split()
+        for name in names:
+            got = _git(repo, "rev-parse", "--verify", "--quiet", f"{name}^{{commit}}")
+            sha = got.stdout.decode().strip()
+            if got.returncode or not sha:
+                return f"`{name}` 을 커밋으로 풀지 못했습니다"
+            if sha not in seen:
+                seen.add(sha)
+                out.append((name, sha))
+    return out
+
+
 def push_block(payload):
     """push 직전 — `[publish]` 를 켠 저장소에서 새 줄의 2층 판정이 안 끝났으면 막는 글."""
     if (payload.get("hook_event_name") or "") != "PreToolUse":
@@ -605,9 +630,21 @@ def push_block(payload):
     tail = ["", f"  정말 그대로 올려야 하면 명령 앞에 `{FORCE}` 을 붙입니다 — 명령문에 남습니다."]
     if isinstance(conf, str):
         return "\n".join(head + [f"  {conf}"] + tail)
+    sources = push_commits(repo, parser.push_sources(cmd) if hasattr(parser, "push_sources")
+                           else ["HEAD"])
+    if isinstance(sources, str):
+        return "\n".join(head + [
+            f"  push 가 내보내는 커밋을 명령에서 가르지 못했습니다 — {sources}",
+            "  내보낼 가지를 이름으로 적어 다시 push 합니다(예: `git push origin <가지>`)."] + tail)
     judge = judge_command()
+    gaps, seen_rel = [], set()
     try:
-        gaps = push_gaps(repo, conf, judge)
+        for src, commit in sources:
+            for rel, why in push_gaps(repo, conf, judge, commit):
+                if rel not in seen_rel:
+                    seen_rel.add(rel)
+                    gaps.append((rel, why if src == "HEAD" else
+                                 [f"push 하는 `{src}` 의 내용 — 그 가지를 체크아웃한 뒤 판정합니다"] + why))
     except ValueError as e:
         return "\n".join(head + [
             f"  `{conf['base']}` 와 갈라진 지점을 못 찾았습니다 — 새 줄을 가를 수 없습니다.",
