@@ -294,7 +294,7 @@ def fix_block(payload, files):
     lines += [
         "",
         "  지적마다 셋 중 하나로 처리합니다.",
-        "  · 고칩니다 — 고친 줄은 --since 로 다시 판정합니다",
+        "  · 고칩니다 — 지적을 다 처리한 뒤 --since 로 한 번에 다시 판정합니다",
         "  · 받지 않으면 사유와 근거를 적습니다(대상아님 · 오독 · 충족 · 규칙충돌 · 확인함):",
         f"      python -X utf8 {judge} <파일> --dismiss <행> --reason <사유> --note \"근거\"",
         "  · 세션이 정할 수 없으면 사람 확인으로 올립니다:",
@@ -305,6 +305,110 @@ def fix_block(payload, files):
         f"  정말 그대로 내보내야 하면 명령 앞에 `{FORCE}` 를 붙입니다 — 명령문에 남습니다.",
     ]
     return "\n".join(lines)
+
+
+def publish_base(cov, path):
+    """판정 안 된 줄을 가를 기준 ref — (ref, 기준 판 줄 | None). git 밖이면 (None, None).
+
+    ⛔ **게이트가 권하는 판정 명령과 같은 기준이어야 한다.** 판정기는 `--since <ref>` 로 갈라진 지점
+       뒤 줄만 본다. 게이트가 다른 기준으로 세면 판정을 돌려도 안 풀리는 막힘이 된다.
+       순서 — 저장소 설정의 발행 대상이면 그 `base` · 아니면 지금 가지가 따라가는 원격 가지 ·
+       그것도 없으면 HEAD(커밋 안 한 줄만 셈).
+    """
+    found = cov.repo_of(path) if hasattr(cov, "repo_of") else None
+    if not found:
+        return None, None
+    top, rel = found
+    refs = []
+    conf = publish_config(top)
+    if isinstance(conf, dict) and matches(rel, conf["targets"]):
+        refs.append(conf["base"])
+    up = _git(top, "rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}")
+    if up.returncode == 0 and up.stdout.decode().strip():
+        refs.append(up.stdout.decode().strip())
+    refs.append("HEAD")
+    for ref in refs:
+        try:
+            return ref, cov.base_lines(path, ref)
+        except ValueError:
+            continue
+    return "HEAD", None
+
+
+def unjudged_block(payload, files):
+    """발행 직전 — 2층 판정을 받은 문서에 판정기가 아직 안 본 한글 줄이 있으면 막는 글.
+
+    (2026-10-13) 이 경로는 처리 안 된 고칠 지적과 사람 확인만 봤다. 판정 뒤에 고친 줄이 다시
+    판정됐는지는 안 봐서 고친 문장이 판정 없이 나갈 수 있었다 — push 와 배포 게이트는 본다.
+    재판정을 몰아서 하게 하면 「마지막 재판정」을 세션이 기억해야 해서 이 빈틈에 더 기댄다.
+
+    **범위** — 판정 기록이 있는 문서와 저장소 설정의 발행 대상. 판정을 한 번도 안 받은 문서까지
+    요구할지는 따로 정한다(`tests/test_publish_needs_judging.py` 가 그 경계를 고정).
+    **판정 기록은 줄 해시에 묶인다** — 한 글자만 고쳐도 그 줄은 판정 안 된 줄이다. 기한은 없다
+    (배포 게이트와 같다 · 안 바뀐 문서를 14일마다 통째로 다시 판정하지 않는다).
+    **판정기를 못 부르는 PC** — 지금 내용의 손 판단 기록(`judgment`)으로 연다.
+    상태를 안 쓰므로 `--probe` 에서도 돈다.
+    """
+    if (payload.get("hook_event_name") or "") != "PreToolUse":
+        return ""
+    cmd = str((payload.get("tool_input") or {}).get("command") or "")
+    if FORCE in cmd:
+        return ""
+    cov = load_coverage()
+    if cov is None or not hasattr(cov, "open_lines"):
+        return ""
+    judge = judge_command()
+    found = []
+    for fp in files:
+        if not os.path.exists(fp):
+            continue
+        p = Path(fp)
+        try:
+            key = cov.doc_key(p)
+            seen = cov.judged(key, cov.LOG, fresh=False)
+            found_repo = cov.repo_of(p) if hasattr(cov, "repo_of") else None
+            conf = publish_config(found_repo[0]) if found_repo else None
+            # 설정을 못 읽으면 문자열(까닭)이 온다 — 그때는 발행 대상으로 안 본다(push 게이트가 그 까닭을 알린다)
+            in_scope = isinstance(conf, dict) and matches(found_repo[1], conf["targets"])
+            if not seen and not in_scope:
+                continue                    # 판정을 한 번도 안 받은 문서 — 이 규칙의 범위 밖
+            lines = cov.read_doc(p).splitlines()
+            ref, base = publish_base(cov, p)
+            left = cov.open_lines(lines, base, seen)
+            gone = (cov.open_deletions(lines, base, cov.deleted_seen(key, cov.LOG))
+                    if base and hasattr(cov, "open_deletions") else [])
+        except (OSError, ValueError, subprocess.SubprocessError):
+            continue
+        if not left and not gone:
+            continue
+        if judge is None:
+            if "judgment" in missing_stages(p, ("judgment",)):
+                found.append((fp, ref, left, gone, lines, True))
+            continue
+        found.append((fp, ref, left, gone, lines, False))
+    if not found:
+        return ""
+    script = judge_script()
+    judge_path = script.as_posix() if script else "judge_layer2.py"
+    out = ["⛔ 발행 보류 — 판정기가 아직 안 본 한글 줄이 있습니다", ""]
+    manual = False
+    for fp, ref, left, gone, lines, need_record in found:
+        name = os.path.basename(fp)
+        if left:
+            n = left[0]
+            out.append(f"  {name} — 새로 쓰거나 고친 뒤 판정 안 한 줄 {len(left)}개 · "
+                       f"{n}행 「{lines[n - 1].strip()[:30]}」")
+        if gone:
+            n, lost = gone[0]
+            out.append(f"  {name} — 판정 안 한 지운 자리 {len(gone)}곳 · {n}행 근처 「{lost[0].strip()[:30]}」")
+        out.append(f"      python -X utf8 {judge_path} \"{fp}\" --since {ref or 'HEAD'}")
+        manual = manual or need_record
+    out += ["", "  판정에서 나온 지적을 처리(고침 · 사유 · 사람 확인)한 뒤 다시 발행합니다."]
+    if manual:
+        out += ["  이 PC 에서는 판정기를 부를 수 없습니다 — 규칙을 직접 읽고 판단한 뒤 지금 내용에 판단 기록(judgment)을 남깁니다:",
+                "    python -X utf8 scripts/check_record.py record <파일> --stage judgment --verdict pass --note \"무엇을 봤나\""]
+    out += ["", f"  정말 그대로 내보내야 하면 명령 앞에 `{FORCE}` 를 붙입니다 — 명령문에 남습니다."]
+    return "\n".join(out)
 
 
 def missing_stages(path, require=None):
@@ -674,7 +778,7 @@ def push_block(payload):
     lines += ["", "  고치는 법"]
     if judge is not None:
         lines += [f"    1. python -X utf8 {judge.as_posix()} {files} --since {conf['base']}",
-                  "       새 줄만 판정합니다. 지적을 반영해 고쳤으면 같은 명령을 한 번 더 부릅니다."]
+                  "       새 줄만 판정합니다. 지적을 한 묶음 처리한 뒤 같은 명령을 한 번 더 부릅니다(지적 하나마다 부르지 않음)."]
     else:
         lines += ["    1. 이 PC 에서는 2층 판정기를 부를 수 없습니다 — finalize-korean-document",
                   "       9단계와 판단 규칙(core-rules.md)을 세션이 직접 읽고 새 줄을 판정합니다."]
@@ -1525,7 +1629,8 @@ def _main(payload):
     if mode == "always" or korean_files:
         stop = (unverified_block(payload, korean_files or files)
                 or ask_block(payload, korean_files or files)
-                or fix_block(payload, korean_files or files))
+                or fix_block(payload, korean_files or files)
+                or unjudged_block(payload, korean_files or files))
         if stop:
             if not probe:
                 save(state)
