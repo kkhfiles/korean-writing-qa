@@ -240,5 +240,60 @@ class CycleTests(_Base):
         self.assertEqual([5], open_now(), "예전 판으로 되돌렸는데 그때 남은 지적이 다시 안 열렸습니다")
 
 
+class BatchWarningTests(_Base):
+    """(2026-10-13) 지적 하나 고칠 때마다 다시 판정하면 호출이 늘고 같은 줄의 횟수가 빨리 쌓인다 —
+    한 문서 58회 중 29회가 대상 3줄 이하였다. 막지 않고 알리며, 얼마나 자주 그러는지 기록에 남긴다."""
+
+    NEW = "새로 넣은 문장도 다듬습니다."
+
+    def first(self) -> list[str]:
+        lines = BASE[:4] + [VERSIONS[0], "", self.NEW]
+        self.write(lines)
+        judge.judge(self.doc, "opus", 10, FakeBackend([fix_on(lines[4], 5), fix_on(self.NEW, 7)]).pair(),
+                    [5, 7], BASE)
+        return lines
+
+    def test_the_first_judgment_does_not_warn(self) -> None:
+        self.first()
+        row = self.last_row()
+        self.assertFalse(row["rejudge_only"])
+        self.assertEqual(0, row["pending_fixes"])
+
+    def test_rejudging_one_fix_while_others_are_open_warns_and_is_recorded(self) -> None:
+        lines = self.first()
+        lines[4] = VERSIONS[1]                       # 5행 지적만 고침 — 7행 지적은 남음
+        self.write(lines)
+        result = judge.judge(self.doc, "opus", 10, FakeBackend([]).pair(), [5], BASE)
+        self.assertEqual(1, result["pending_fixes"], "다른 줄에 남은 고칠 지적을 안 셌습니다")
+        row = self.last_row()
+        self.assertTrue(row["rejudge_only"])
+        self.assertEqual(1, row["pending_fixes"])
+        import contextlib
+        import io
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            judge.show(result)
+        self.assertIn("처리 안 된 고칠 지적 1건", out.getvalue())
+
+    def test_no_warning_once_everything_is_handled(self) -> None:
+        lines = self.first()
+        lines[4] = VERSIONS[1]
+        lines[6] = "새로 쓴 문장도 다듬습니다."           # 두 지적을 다 고친 뒤 한 번에
+        self.write(lines)
+        result = judge.judge(self.doc, "opus", 10, FakeBackend([]).pair(), [5, 7], BASE)
+        self.assertEqual(0, result["pending_fixes"])
+
+    def test_asks_waiting_for_the_user_are_not_counted(self) -> None:
+        """사람 확인은 세션이 못 푼다 — 그것 때문에 경고하면 할 수 있는 일이 없다."""
+        lines = BASE[:4] + [VERSIONS[0], "", self.NEW]
+        self.write(lines)
+        ask = dict(fix_on(self.NEW, 7), decide="ask")
+        judge.judge(self.doc, "opus", 10, FakeBackend([fix_on(lines[4], 5), ask]).pair(), [5, 7], BASE)
+        lines[4] = VERSIONS[1]
+        self.write(lines)
+        result = judge.judge(self.doc, "opus", 10, FakeBackend([]).pair(), [5], BASE)
+        self.assertEqual(0, result["pending_fixes"])
+
+
 if __name__ == "__main__":
     unittest.main()

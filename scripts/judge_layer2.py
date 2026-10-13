@@ -522,7 +522,7 @@ def read_answers(sheet: Path, replies: list[str] | None = None) -> int:
     print(f"  다음 판정이 따를 답 기록 {learned}건 추가 — 판정기 프롬프트에 「사용자가 이미 답한 것」으로 실림")
     print(f"  그대로 — 답 기록에 남김 {len(kept)}건" + (f" ({' '.join(kept)})" if kept else ""))
     if edits:
-        print(f"  고칠 것 {len(edits)}건 — 세션이 고친 뒤 --since 로 고친 줄을 다시 판정합니다")
+        print(f"  고칠 것 {len(edits)}건 — 세션이 모두 고친 뒤 --since 로 한 번에 다시 판정합니다")
         for e in edits:
             print(f"    {e}")
     if free:
@@ -793,6 +793,15 @@ def judge(path: Path, model: str, timeout: float, backend, targets: list[int] | 
     for n, gone in anchors.items():
         info[n] = {"round": 0, "root": None, "deleted": gone[:DELETED_PER_LINE], "more": len(gone) - DELETED_PER_LINE,
                    "deleted_keys": [coverage.line_key(g) for g in gone], "anchor": True}
+    # 묶음 경고(2026-10-13) — 이번 대상이 모두 다시 판정하는 줄인데 다른 줄에 처리 안 된 고칠 지적이
+    # 남았으면, 지적 하나 고칠 때마다 부르는 것이다(한 문서 58회 중 29회가 대상 3줄 이하). 막지는 않는다 —
+    # 막으면 사실 주장을 좁힌 줄의 중간 판정 · 어려운 지적 하나에 문서 전체가 묶이는 부작용이 있다(외부
+    # 검토). 얼마나 자주 이러는지 기록에 남겨 차단이 필요한지 나중에 정한다. 사람 확인은 세지 않는다 —
+    # 세션이 못 푸는 것이다.
+    edited = [n for n in (want or ()) if n not in anchors]
+    rejudge_only = bool(edited) and all(info[n]["round"] >= 2 for n in edited)
+    pending = (sum(1 for n, _ in coverage.open_fixes(key, lines, LOG) if n not in want)
+               if rejudge_only else 0)
     found, calls, hidden, foreign, held = [], [], 0, 0, 0
     for first, part in chunks(lines):
         if want is not None and not any(first <= n < first + len(part) for n in want):
@@ -811,6 +820,8 @@ def judge(path: Path, model: str, timeout: float, backend, targets: list[int] | 
             # 지적 하나가 약 206토큰이라, 버리는 지적만큼 시간과 한도를 썼다(2026-10-07 실측).
             mine = sorted(n for n in want if first <= n < first + len(part))
             row["targets"] = len(mine)
+            row["rejudge_only"] = rejudge_only  # 묶음 경고의 근거 — 얼마나 자주 이러는지 센다
+            row["pending_fixes"] = pending
             row["base_time"] = base_time       # 이 판정을 센 갈라진 지점 — 다음 판정이 같은 지점 것만 센다
             # 다음 판정이 이 줄의 자손을 찾고 판정 횟수를 이어 세는 데 쓴다(저장소 밖 기록)
             row["targeted"] = [{"key": coverage.line_key(lines[n - 1]), "text": lines[n - 1],
@@ -903,7 +914,7 @@ def judge(path: Path, model: str, timeout: float, backend, targets: list[int] | 
                                     doc_lemmas, freq)
     return {"doc": str(path), "findings": found, "calls": calls, "fix_checked": freq is not None,
             "targets": None if want is None else len(want), "hidden": hidden, "foreign": foreign,
-            "held": held}
+            "held": held, "pending_fixes": pending}
 
 
 def show(result: dict) -> None:
@@ -924,6 +935,9 @@ def show(result: dict) -> None:
         else:
             print(f"  새 줄 {result['targets']}개만 판정 · 그 밖의 줄에 달린 지적 "
                   f"{result.get('hidden', 0)}건은 숨김(이미 판정했거나 갈라진 지점에 있던 줄)")
+    if result.get("pending_fixes"):
+        print(f"  ⚠️ 다른 줄에 처리 안 된 고칠 지적 {result['pending_fixes']}건이 남은 채 다시 판정했습니다 — "
+              "다 처리한 뒤 한 번에 다시 판정하면 호출이 줄어듭니다(방향 확인용 중간 판정이면 그대로 둡니다)")
     if result.get("held"):
         print(f"  같은 줄을 {REJUDGE_CAP}번 넘게 판정한 줄의 지적 {result['held']}건은 사람 확인으로 올림 — "
               "자동 수정을 멈추고 사용자가 기준 판과 대조합니다")
@@ -955,7 +969,7 @@ def show(result: dict) -> None:
     print("  ⚠️ 지적마다 맞는지 판단한다 — 헛짚음이 섞인다.")
     if fixes:
         me = Path(__file__).as_posix()
-        print("  ⛔ 고칠 지적은 처리해야 발행된다 — 고치거나(고친 줄은 --since 로 다시 판정), 지적마다 까닭을 적는다:")
+        print("  ⛔ 고칠 지적은 처리해야 발행된다 — 고치거나(다 처리한 뒤 --since 로 한 번에 다시 판정), 지적마다 까닭을 적는다:")
         print(f"     python -X utf8 {me} <문서> --dismiss <행> --reason <{'|'.join(REASONS)}> --note \"근거\"")
         print(f"     python -X utf8 {me} <문서> --escalate <행> --note \"세션이 정할 수 없는 까닭\"")
         print("     「[사실 확인]」 지적은 자료로 확인해 「확인함」으로 닫거나 사람 확인으로 올린다.")
