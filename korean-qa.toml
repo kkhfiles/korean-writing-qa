@@ -1,0 +1,14 @@
+# push 직전 2층 판정 — 이 저장소에서 AI 세션(Claude Code·Codex)이 push 할 때, 이번 가지에서 새로 쓴
+#   원고 줄에 2층 판정 기록이 있는지, 답을 못 받은 사람 확인 · 처리 기록 없는 고칠 지적이 남았는지 본다.
+#   남았으면 막는다(hooks/doc-style-gate.py 의 push_block).
+#
+# 왜 켜나 — 2026-10-13 점검에서 이 저장소에 이 절이 없어, README 를 고칠 지적 2건과 사람 확인 1건이
+#   열린 채 push 했는데 게이트가 아예 돌지 않았다. 다른 저장소에 요구하는 것을 이 저장소가 안 거치고 있었다.
+#
+# 대상 — 사람에게 보이는 문서만. 작업 기록 · 설계 문서(docs/status.md · docs/*-2026*.md · runs/)와
+#   규칙 · 스킬 파일은 뺀다. 사례집의 ❌ 예시가 지적되면 `--dismiss --reason 대상아님` 으로 닫는다.
+#   끄려면 이 절을 지우는 커밋 하나.
+[publish]
+require = ["judgment"]
+targets = ["README.md", "CONTRIBUTING.md", "docs/user-guide.md", "docs/showcase.html"]
+base = "origin/main"
