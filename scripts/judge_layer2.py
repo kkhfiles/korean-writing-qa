@@ -74,6 +74,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import re
 import sys
 import time
@@ -281,6 +282,62 @@ REASONS = {
 EVIDENCE = re.compile(r"[/\\]|`[^`]+`|https?://|\b[\w-]+\.(?:py|md|html|json|toml|txt|js|ts|yml|yaml)\b|\d+\s?행")
 LINE_REF = re.compile(r"\d+\s?행")
 NOTE_MIN = 10
+#: 근거에 적은 파일 경로 — 확장자가 붙은 것만 본다(폴더 · 확장자 없는 이름은 짐작하지 않는다)
+PATH_REF = re.compile(r"(?<![\w.])(?:~|[A-Za-z]:)?[\w./\\~-]*[\w-]\.(?:py|md|html|jsonl?|toml|txt|js|ts|ya?ml)\b")
+#: 경로 바로 뒤의 「인용」 — 그 파일에서 옮겼다는 뜻으로 읽고 글자를 대조한다
+QUOTE_AFTER = re.compile(r"\s*(?:의|에서|:)?\s*「([^」]{4,})」")
+
+
+def _resolve(ref: str, doc: Path) -> Path | None:
+    """근거에 적은 경로를 이 PC 의 파일로 — 절대 · `~` · 문서 저장소 뿌리 · 문서 폴더 · 저장소 안 같은 이름."""
+    raw = Path(os.path.expanduser(ref.replace("\\", "/")))
+    found = coverage.repo_of(doc)
+    tries = [raw] if raw.is_absolute() else [*(([found[0] / raw]) if found else []), doc.parent / raw]
+    for t in tries:
+        if t.is_file():
+            return t
+    if found and "/" not in ref.replace("\\", "/"):
+        got = coverage._git(found[0], "ls-files", "--", f"*/{ref}", ref)
+        hits = got.stdout.decode("utf-8", "replace").split()
+        if len(hits) == 1:
+            return found[0] / hits[0]
+    return None
+
+
+def evidence_problems(doc: Path, note: str, lines: list[str]) -> list[str]:
+    """근거를 기계로 대조한다 — 없는 파일 · 그 파일에 없는 인용 · 문서 밖 줄 번호.
+
+    ⛔ 근거의 모양(경로 · 「N행」)만 보면 지어낸 근거도 받는다(외부 검토 「근거의 형식과 타당성은
+       다르다」 · 2026-10-13). 이것은 존재만 본다 — 그 근거가 주장을 뒷받침하는지는 못 본다.
+    ⛔ 경로 뒤에 붙지 않은 인용(대화로 받은 지시 등)은 대조하지 않는다 — 대조할 파일이 없다.
+    """
+    out, theirs = [], set()
+    norm = lambda t: re.sub(r"\s+", " ", t).strip()
+    for m in PATH_REF.finditer(note):
+        target = _resolve(m.group(0), doc)
+        if target is None:
+            out.append(f"근거의 파일이 없습니다 — {m.group(0)} · 이 PC 의 경로(절대 경로나 저장소 기준)로 적습니다")
+            continue
+        try:
+            raw = target.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            raw = ""
+        # 경로 바로 뒤의 「N행」은 그 파일의 줄이다
+        ln = re.match(r"\s*(?:의\s*)?(\d+)\s?행", note[m.end():])
+        if ln:
+            theirs.add(m.end() + ln.start(1))
+            if not 0 < int(ln.group(1)) <= len(raw.splitlines()):
+                out.append(f"「{ln.group(1)}행」 은 {target.name}({len(raw.splitlines())}행)에 없는 줄입니다")
+        q = QUOTE_AFTER.match(note, m.end())
+        if q:
+            body = norm(raw)
+            parts = [norm(x) for x in q.group(1).split("…") if len(norm(x)) >= 4]
+            if not all(x in body for x in parts):
+                out.append(f"인용 「{q.group(1)[:30]}」 이 {target.name} 에 글자 그대로 없습니다 — 원문을 옮겨 적습니다")
+    for m in re.finditer(r"(\d+)\s?행", note):
+        if m.start(1) not in theirs and not 0 < int(m.group(1)) <= len(lines):
+            out.append(f"「{m.group(0)}」 은 이 문서({len(lines)}행)에 없는 줄입니다")
+    return out
 
 
 def show_open_fixes(path: Path) -> int:
@@ -350,6 +407,9 @@ def dismiss(path: Path, n: int, reason: str, note: str, phrase: str | None = Non
         raise ValueError("「확인함」은 근거에 확인한 자료(경로 · 명령 · 주소)를 적어야 받습니다")
     if reason == "충족" and not LINE_REF.search(note):
         raise ValueError("「충족」은 근거에 충족하는 줄(「N행」)을 적어야 받습니다")
+    problems = evidence_problems(path, note, lines)
+    if problems:
+        raise ValueError(" · ".join(problems))
     _close_fix(path, lines, n, fx, {"reason": reason, "note": note})
     return str(fx.get("phrase"))
 

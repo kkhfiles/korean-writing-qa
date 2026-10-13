@@ -197,6 +197,38 @@ class FactTests(_Base):
     def setUp(self) -> None:
         super().setUp()
         self.judged(FACT)
+        # 「확인함」 근거로 적는 자료 — 근거의 파일은 실제로 있어야 받는다(2026-10-13)
+        (self.dir / "scheduler").mkdir()
+        (self.dir / "scheduler" / "cron.toml").write_text(
+            '[update]\nschedule = "매일 06:00"\nrun = "월요일 실행"\n', encoding="utf-8")
+
+    def test_evidence_files_must_exist(self) -> None:
+        rc, out = self.run_main([str(self.doc), "--dismiss", "3", "--reason", "확인함",
+                                 "--note", "scheduler/no-such.toml 의 갱신 시각 설정으로 확인"])
+        self.assertEqual(2, rc, "없는 파일을 근거로 받았습니다")
+        self.assertIn("근거의 파일이 없습니다", out)
+        self.assertEqual([3], self.open_fixes())
+
+    def test_a_quote_after_a_path_must_be_in_that_file(self) -> None:
+        rc, out = self.run_main([str(self.doc), "--dismiss", "3", "--reason", "확인함",
+                                 "--note", "scheduler/cron.toml 「schedule = \"매주 금요일\"」 로 확인"])
+        self.assertEqual(2, rc, "그 파일에 없는 인용을 근거로 받았습니다")
+        self.assertIn("글자 그대로 없습니다", out)
+        rc, out = self.run_main([str(self.doc), "--dismiss", "3", "--reason", "확인함",
+                                 "--note", "scheduler/cron.toml 「schedule = \"매일 06:00\"」 로 확인"])
+        self.assertEqual(0, rc, out)
+
+    def test_a_quote_without_a_file_is_not_checked(self) -> None:
+        """대화로 받은 지시처럼 대조할 파일이 없는 인용은 받는다 — 막으면 정당한 처리 기록이 막힌다."""
+        rc, out = self.run_main([str(self.doc), "--dismiss", "3", "--reason", "확인함",
+                                 "--note", "운영 담당 10/13 「매일 갱신 맞음」 · scheduler/cron.toml 로 확인"])
+        self.assertEqual(0, rc, out)
+
+    def test_a_line_reference_must_be_in_the_document(self) -> None:
+        rc, out = self.run_main([str(self.doc), "--dismiss", "3", "--reason", "확인함",
+                                 "--note", "scheduler/cron.toml 과 99행으로 확인"])
+        self.assertEqual(2, rc)
+        self.assertIn("없는 줄입니다", out)
 
     def test_a_fact_fix_cannot_be_waved_off(self) -> None:
         rc, out = self.run_main([str(self.doc), "--dismiss", "3", "--reason", "대상아님",
