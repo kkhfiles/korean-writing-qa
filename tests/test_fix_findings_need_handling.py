@@ -384,6 +384,45 @@ class PushFixTests(unittest.TestCase):
         rc, out = self.push()
         self.assertEqual(0, rc, out)
 
+    def dismissal_in(self, doc: Path) -> None:
+        lines = coverage.read_doc(doc).splitlines()
+        with self.dismissals.open("a", encoding="utf-8") as f:
+            f.write(json.dumps({
+                "key": coverage.doc_key(doc), "when": time.time(), "line_key": coverage.line_key(lines[6]),
+                "phrase": FIX["phrase"], "reason": "대상아님", "note": "다른 저장소의 화면 문구",
+            }, ensure_ascii=False) + "\n")
+
+    def test_a_dismissal_in_another_repo_does_not_open_it(self) -> None:
+        """(2026-10-13 게이트 부정 시험) 열쇠가 뿌리 기준 경로뿐이라 다른 저장소의 같은 이름
+        문서에 남긴 처리 기록이 이 저장소의 같은 글줄 지적을 닫았다."""
+        other = Path(self.tmp.name) / "other"
+        (other / "docs").mkdir(parents=True)
+        (other / "docs" / "a.md").write_text(DOC, encoding="utf-8")
+        git(other, "init", "-b", "main")
+        self.assertNotEqual(coverage.doc_key(other / "docs" / "a.md"), coverage.doc_key(self.doc))
+        self.dismissal_in(other / "docs" / "a.md")
+        rc, out = self.push()
+        self.assertEqual(2, rc, "다른 저장소의 처리 기록으로 이 저장소의 지적이 닫혔습니다")
+
+    def test_a_worktree_shares_the_key(self) -> None:
+        """작업 트리에서 판정 · 처리하고 기본 checkout 에서 밀어도 같은 문서로 읽힌다."""
+        wt = Path(self.tmp.name) / "wt"
+        git(self.repo, "worktree", "add", "-q", str(wt), "-b", "wt-branch")
+        self.assertEqual(coverage.doc_key(self.doc), coverage.doc_key(wt / "docs" / "a.md"))
+        self.dismissal_in(wt / "docs" / "a.md")
+        self.assertEqual(0, self.push()[0])
+
+    def test_records_without_a_repo_id_still_count(self) -> None:
+        """열쇠에 저장소 식별자를 넣기 전 기록 — 버리면 같은 줄을 다시 판정하고 다시 닫아야 한다."""
+        lines = coverage.read_doc(self.doc).splitlines()
+        legacy = coverage.doc_key(self.doc).split(coverage.KEY_SEP)[0]
+        self.log.write_text(_fix_row(self.doc).replace(coverage.doc_key(self.doc), legacy), encoding="utf-8")
+        self.dismissals.write_text(json.dumps({
+            "key": legacy, "when": time.time(), "line_key": coverage.line_key(lines[6]),
+            "phrase": FIX["phrase"], "reason": "대상아님", "note": "시험 — 정해진 문구",
+        }, ensure_ascii=False) + "\n", encoding="utf-8")
+        self.assertEqual(0, self.push()[0], "옛 열쇠의 판정 · 처리 기록을 못 읽었습니다")
+
 
 if __name__ == "__main__":
     unittest.main()

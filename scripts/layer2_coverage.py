@@ -130,14 +130,45 @@ def repo_of(path: Path) -> tuple[Path, str] | None:
     return top, path.resolve().relative_to(top.resolve()).as_posix()
 
 
+#: 문서 열쇠에서 뿌리 기준 경로와 저장소 식별자를 가르는 표시
+KEY_SEP = "::"
+
+
+def repo_id(top: Path) -> str:
+    """저장소 식별자 — git 공통 폴더의 해시라 작업 트리와 기본 checkout 이 같은 값이다."""
+    got = _git(top, "rev-parse", "--git-common-dir")
+    common = got.stdout.decode("utf-8").strip() if got.returncode == 0 else ""
+    where = (Path(top) / common).resolve() if common else Path(top).resolve()
+    return hashlib.sha256(where.as_posix().lower().encode("utf-8")).hexdigest()[:10]
+
+
+def key_in(top: Path, rel: str) -> str:
+    """저장소 `top` 안의 `rel` 문서 열쇠 — push 게이트처럼 파일 없이 커밋만 볼 때 쓴다."""
+    return f"{rel}{KEY_SEP}{repo_id(top)}"
+
+
 def doc_key(path: Path) -> str:
-    """판정 기록에서 문서를 가르는 열쇠 — 저장소 안이면 뿌리 기준 경로, 밖이면 절대 경로.
+    """판정 기록에서 문서를 가르는 열쇠 — 저장소 안이면 「뿌리 기준 경로::저장소 식별자」, 밖이면 절대 경로.
 
     뿌리 기준 경로를 쓰는 까닭 — 작업 트리에서 판정하고 같은 가지를 기본 checkout 에서
-    밀어도 같은 문서로 읽혀야 한다.
+    밀어도 같은 문서로 읽혀야 한다. 저장소 식별자를 붙이는 까닭 — 경로만 쓰면 다른 저장소의
+    같은 이름 문서(`README.md`)에 남긴 처리 기록이 이 저장소의 같은 글줄 지적을 닫았다
+    (2026-10-13 게이트 부정 시험).
     """
     found = repo_of(path)
-    return found[1] if found else path.resolve().as_posix()
+    return key_in(*found) if found else path.resolve().as_posix()
+
+
+def key_matches(row_key, key: str) -> bool:
+    """기록 줄의 열쇠가 이 문서인가 — 저장소 식별자가 없던 옛 기록(2026-10-13 전)은 경로만 맞으면 읽는다.
+
+    옛 기록을 버리면 그때까지의 판정 · 처리 기록이 모두 사라져 같은 줄을 다시 판정하고 다시
+    닫아야 한다. 옛 기록끼리의 저장소 혼동은 남지만 새 기록부터는 안 섞인다.
+    """
+    if row_key == key:
+        return True
+    return (isinstance(row_key, str) and KEY_SEP not in row_key and KEY_SEP in key
+            and key.split(KEY_SEP, 1)[0] == row_key)
 
 
 def base_lines(path: Path, ref: str) -> list[str] | None:
@@ -169,7 +200,7 @@ def _rows(key: str, log: Path, now: float | None, fresh: bool = True):
             row = json.loads(raw)
         except ValueError:
             continue
-        if row.get("key") != key:
+        if not key_matches(row.get("key"), key):
             continue
         try:
             age = now - float(row.get("when") or 0)

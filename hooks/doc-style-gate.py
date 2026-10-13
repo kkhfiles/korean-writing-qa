@@ -557,20 +557,21 @@ def push_gaps(repo, conf, judge, commit="HEAD"):
                     if old.returncode == 0 else [])
             if not cov.open_lines(lines, base, set()):
                 continue                    # 새 줄이 없다 — 지우기만 했거나 이미 있던 줄
+            key = cov.key_in(repo, rel) if hasattr(cov, "key_in") else rel
             if judge is not None:
-                left = cov.open_lines(lines, base, cov.judged(rel, cov.LOG))
+                left = cov.open_lines(lines, base, cov.judged(key, cov.LOG))
                 if left:
                     n = left[0]
                     gaps.append(f"판정기가 아직 안 본 새 줄 {len(left)}개 — "
                                 f"{n}행 「{lines[n - 1].strip()[:30]}」")
             if hasattr(cov, "open_asks"):
-                asks = cov.open_asks(rel, lines)
+                asks = cov.open_asks(key, lines)
                 if asks:
                     n, ask = asks[0]
                     gaps.append(f"사용자 답을 못 받은 사람 확인 지적 {len(asks)}개 — "
                                 f"{n}행 「{str(ask.get('phrase') or '')[:30]}」")
             if hasattr(cov, "open_fixes"):
-                fixes = cov.open_fixes(rel, lines)
+                fixes = cov.open_fixes(key, lines)
                 if fixes:
                     n, fx = fixes[0]
                     gaps.append(f"처리 기록 없는 고칠 지적 {len(fixes)}개 — "

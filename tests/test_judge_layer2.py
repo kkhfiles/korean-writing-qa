@@ -304,7 +304,8 @@ class SinceTests(unittest.TestCase):
         self.write(self.lines + ["---", "덧붙인 문장입니다."])
         self.run_since(FakeBackend())
         row = [json.loads(l) for l in judge.LOG.read_text(encoding="utf-8").splitlines()][0]
-        self.assertEqual("d.md", row["key"], "저장소 뿌리 기준 경로여야 작업 트리와 기본 checkout 이 같은 문서로 읽힙니다")
+        self.assertEqual("d.md", row["key"].split(coverage.KEY_SEP)[0],
+                         "저장소 뿌리 기준 경로여야 작업 트리와 기본 checkout 이 같은 문서로 읽힙니다")
         self.assertIn(coverage.line_key("## 둘"), row["seen"])
         self.assertIsNone(coverage.line_key("---"), "한글 없는 줄은 판정 대상이 아닙니다")
 
