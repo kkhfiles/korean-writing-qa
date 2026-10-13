@@ -100,7 +100,8 @@ class DeployGateTests(unittest.TestCase):
         self.assertEqual(2, rc, out)
         self.assertIn("home.html", out)
         self.assertIn("판정기가 아직 안 본 한글 줄", out)
-        self.assertIn("judgment 기록 없음", out)
+        self.assertNotIn("judgment 기록 없음", out,
+                         "판정기를 부를 수 있는데 손 판정 기록까지 요구했습니다(2026-10-13 · 판정기 기록으로 계산)")
         self.assertNotIn("board.html", out, "빼 두라고 적은 원본까지 봤습니다")
         self.assertNotIn("icon.svg", out, "글이 아닌 원본까지 봤습니다")
 

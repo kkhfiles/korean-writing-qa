@@ -115,7 +115,7 @@ class PushGateTests(unittest.TestCase):
         self.assertEqual(2, rc, out)
         self.assertIn("dyn/docs/a.md", out)
         self.assertIn("판정기가 아직 안 본 새 줄 1개", out)
-        self.assertIn("judgment 기록 없음", out)
+        self.assertNotIn("judgment 기록 없음", out, "판정기를 부를 수 있는데 손 판정 기록까지 요구했습니다")
         self.assertIn("--since main", out, "고치는 법에 새 줄만 판정하는 명령이 없습니다")
 
     def test_judged_and_recorded_lets_it_through(self) -> None:
@@ -134,13 +134,14 @@ class PushGateTests(unittest.TestCase):
         self.assertIn("판정기가 아직 안 본 새 줄", out)
         self.assertNotIn("judgment 기록 없음", out)
 
-    def test_judging_without_a_record_still_blocks(self) -> None:
+    def test_judging_is_enough_when_the_judge_runs(self) -> None:
+        """(2026-10-13) 판정기를 부를 수 있으면 게이트가 판정기 기록으로 「새 줄을 다 봤나」를 직접
+        보고, 남긴 지적은 지적마다 처리 기록 · 사용자 답을 요구한다 — 세션의 한 줄 메모(judgment)는
+        겹치고, 잊으면 push 를 한 번 더 막을 뿐이다(그날 README push 에서 그 단계를 빠뜨림)."""
         self.add_line()
         self.judged()
         rc, out = self.push()
-        self.assertEqual(2, rc, out)
-        self.assertIn("judgment 기록 없음", out)
-        self.assertNotIn("안 본 새 줄", out)
+        self.assertEqual(0, rc, out)
 
     def test_without_a_judge_the_record_alone_opens_it(self) -> None:
         """⛔ 열쇠 없는 자물쇠 금지 — 판정기를 못 부르는 PC 에 판정기 기록을 요구하지 않는다."""

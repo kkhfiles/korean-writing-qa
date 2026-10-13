@@ -588,6 +588,12 @@ def push_gaps(repo, conf, judge, commit="HEAD"):
             probe_file = Path(tmp) / f"head{suffix}"
             probe_file.write_bytes(blob)
             missing = missing_stages(probe_file, conf["require"])
+        if judge is not None and cov is not None:
+            # ⛔ 손으로 남기는 판정 기록(judgment)을 요구하지 않는다 — 판정기 기록으로 「새 줄을 다
+            #    봤나 · 지운 자리를 봤나」를 위에서 직접 보고, 남긴 지적은 지적마다 처리 기록이나
+            #    사용자 답을 요구한다. 세션의 한 줄 메모는 겹치고, 잊으면 push 를 한 번 더 막을 뿐이다
+            #    (2026-10-13 README push 에서 그 단계를 빠뜨림 · 외부 검토 「잃는 판단 정보 없음」).
+            missing = [s for s in missing if s != "judgment"]
         gaps += [f"{s} 기록 없음(커밋된 내용 기준)" for s in missing]
         if gaps:
             out.append((rel, gaps))
@@ -678,9 +684,11 @@ def push_block(payload):
               "--answers-from <그 표>",
               "    3. 고칠 지적은 고치거나, 지적마다 사유와 근거를 적거나(--dismiss), 사람 확인으로 올립니다(--escalate):",
               f"       python -X utf8 {(judge_script() or Path('judge_layer2.py')).as_posix()} <파일…> --fixes",
-              "    4. python -X utf8 ~/.claude/assets/check_record.py record <파일> \\",
-              "           --stage judgment --verdict pass --note \"남긴 지적과 까닭\"",
-              "    5. 커밋한 뒤 다시 push 합니다 — 확인은 커밋된 내용으로 합니다."]
+              ]
+    if judge is None:
+        lines += ["    4. python -X utf8 ~/.claude/assets/check_record.py record <파일> \\",
+                  "           --stage judgment --verdict pass --note \"남긴 지적과 까닭\""]
+    lines += ["    5. 커밋한 뒤 다시 push 합니다 — 확인은 커밋된 내용으로 합니다."]
     return "\n".join(lines + tail)
 
 
@@ -822,8 +830,10 @@ def deploy_gaps(pages, judge):
                     n = left[0]
                     gaps.append(f"판정기가 아직 안 본 한글 줄 {len(left)}개 — "
                                 f"{n}행 「{lines[n - 1].strip()[:30]}」")
-        if changed:
+        if changed and (judge is None or cov is None):
+            # 판정기를 부를 수 있으면 위에서 판정기 기록을 직접 본다 — push 게이트와 같은 까닭
             gaps += [f"{s} 기록 없음(지금 내용 기준)" for s in missing_stages(p, ["judgment"])]
+        if changed:
             warns = [l for l in body.splitlines() if "⚠️" in l and "❌" not in l]
             if warns and not reviewed(p):
                 gaps.append(f"주의 {len(warns)}건 검토 기록 없음 — {warns[0].strip()[:60]}")
@@ -890,9 +900,11 @@ def deploy_block(payload, probe=False):
               f"`{script} <원본…> --sheet <저장소 밖 경로>.md` · `{script} --answers-from <그 표>`",
               "    4. 고칠 지적은 고치거나, 지적마다 사유와 근거를 적거나(--dismiss), 사람 확인으로 올립니다"
               f"(--escalate) — 목록 `{script} <원본…> --fixes`",
-              "    5. python -X utf8 ~/.claude/assets/check_record.py record <원본> "
-              "--stage judgment --verdict pass --note \"남긴 지적과 까닭\"",
-              "    6. 주의는 읽고 정상이면 --stage review 로 까닭과 함께 적습니다."]
+              ]
+    if judge is None:
+        lines += ["    5. python -X utf8 ~/.claude/assets/check_record.py record <원본> "
+                  "--stage judgment --verdict pass --note \"남긴 지적과 까닭\""]
+    lines += ["    6. 주의는 읽고 정상이면 --stage review 로 까닭과 함께 적습니다."]
     return "\n".join(lines + tail)
 
 
