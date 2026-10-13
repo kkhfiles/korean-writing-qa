@@ -169,6 +169,41 @@ class PromptTests(_Base):
         self.assertNotIn("기준 판", fake.calls[-1]["user"])
 
 
+class DeletionTests(_Base):
+    """지우기만 한 자리 — 바로 다음 줄을 대표로 판정기에 보이고 뜻 바뀜만 받는다(2026-10-13)."""
+
+    CUT = BASE[:2] + BASE[4:]          # 업무 목록 줄을 지움 · 다음 한글 줄은 3행
+
+    def judge_cut(self, reply) -> tuple[dict, FakeBackend]:
+        self.write(self.CUT)
+        lines = coverage.read_doc(self.doc).splitlines()
+        anchors = dict(coverage.open_deletions(lines, BASE, set()))
+        self.assertEqual({3: [BASE[2]]}, anchors)
+        fake = FakeBackend(reply)
+        return judge.judge(self.doc, "opus", 10, fake.pair(), [], BASE, anchors), fake
+
+    def test_the_deleted_line_is_shown_at_the_anchor(self) -> None:
+        _, fake = self.judge_cut([])
+        user = fake.calls[-1]["user"]
+        self.assertIn("3행 가까이에서 지움: " + BASE[2], user)
+        self.assertIn("고치지 않았다", user)
+        row = self.last_row()
+        self.assertIn(coverage.line_key(BASE[2]), row["deleted_seen"])
+        self.assertEqual([], row.get("targeted"), "대표 줄을 재판정 횟수에 셌습니다 — 안 고친 줄입니다")
+        lines = coverage.read_doc(self.doc).splitlines()
+        self.assertEqual([], coverage.open_deletions(lines, BASE, coverage.deleted_seen(
+            coverage.doc_key(self.doc), judge.LOG)), "판정기가 본 지운 자리를 또 요구합니다")
+
+    def test_the_anchor_takes_only_meaning_changes(self) -> None:
+        meaning = {"line": 3, "phrase": "마감이 가까운", "category": "고치다 뜻이 바뀐 곳",
+                   "fix": "x", "why": "갱신 시각이 빠짐", "decide": "fix"}
+        other = {"line": 3, "phrase": "표시합니다", "category": "군더더기 지우기",
+                 "fix": "y", "why": "시험", "decide": "fix"}
+        result, _ = self.judge_cut([meaning, other])
+        self.assertEqual(["고치다 뜻이 바뀐 곳"], [f["category"] for f in result["findings"]],
+                         "안 고친 대표 줄에서 다른 지적을 받았습니다 — 고리를 만듭니다")
+
+
 class CycleTests(_Base):
 
     def test_reverting_reopens_the_old_fix(self) -> None:

@@ -165,9 +165,26 @@ class PushGateTests(unittest.TestCase):
         self.assertEqual(2, rc, "판정 뒤 커밋한 새 줄이 그대로 나갔습니다")
         self.assertIn("안 본 새 줄 1개", out, "이미 판정한 줄까지 다시 요구했습니다")
 
-    def test_deleting_lines_needs_nothing(self) -> None:
+    def test_deleting_lines_needs_a_look(self) -> None:
+        """(2026-10-13 게이트 부정 시험) 지우기만 하면 아무것도 안 봐서, 필요한 조건을 지워도
+        통과했다 — 지운 자리를 판정기가 봐야 연다."""
         self.commit(["# 진행 현황", "", "- **상태**: 진행 중"])
-        self.assertEqual(0, self.push()[0])
+        rc, out = self.push()
+        self.assertEqual(2, rc, out)
+        self.assertIn("지운 자리 1곳", out)
+        lines = coverage.read_doc(self.doc).splitlines()
+        with self.log.open("a", encoding="utf-8") as f:
+            f.write(json.dumps({"ok": True, "when": time.time(), "key": coverage.doc_key(self.doc),
+                                "seen": coverage.seen_keys(lines),
+                                "deleted_seen": [coverage.line_key("- **다음**: 검토 회의")]},
+                               ensure_ascii=False) + "\n")
+        self.recorded()
+        rc, out = self.push()
+        self.assertEqual(0, rc, out)
+
+    def test_moving_a_line_is_not_deleting_it(self) -> None:
+        self.commit(["# 진행 현황", "", "- **다음**: 검토 회의", "- **상태**: 진행 중"])
+        self.assertEqual(0, self.push()[0], "옮긴 줄을 지운 줄로 보았습니다")
 
     def test_files_outside_the_targets_are_not_gated(self) -> None:
         (self.repo / "dyn" / "docs" / "drafts").mkdir()

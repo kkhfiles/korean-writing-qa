@@ -555,8 +555,9 @@ def push_gaps(repo, conf, judge, commit="HEAD"):
             old = _git(repo, "show", f"{mb}:{rel}")
             base = (cov.visible_text(old.stdout.decode("utf-8", "replace"), suffix).splitlines()
                     if old.returncode == 0 else [])
-            if not cov.open_lines(lines, base, set()):
-                continue                    # 새 줄이 없다 — 지우기만 했거나 이미 있던 줄
+            cut = cov.deletions(lines, base) if hasattr(cov, "deletions") else []
+            if not cov.open_lines(lines, base, set()) and not cut:
+                continue                    # 새 줄도 지운 자리도 없다 — 이미 있던 줄뿐
             key = cov.key_in(repo, rel) if hasattr(cov, "key_in") else rel
             if judge is not None:
                 left = cov.open_lines(lines, base, cov.judged(key, cov.LOG))
@@ -564,6 +565,12 @@ def push_gaps(repo, conf, judge, commit="HEAD"):
                     n = left[0]
                     gaps.append(f"판정기가 아직 안 본 새 줄 {len(left)}개 — "
                                 f"{n}행 「{lines[n - 1].strip()[:30]}」")
+                # 지우기만 한 자리 — 지워서 남은 글의 뜻이 바뀌었는지 판정기가 봐야 한다(2026-10-13)
+                gone = cov.open_deletions(lines, base, cov.deleted_seen(key, cov.LOG)) if cut else []
+                if gone:
+                    n, lost = gone[0]
+                    gaps.append(f"판정기가 아직 안 본 지운 자리 {len(gone)}곳 — "
+                                f"{n}행 근처에서 지운 「{lost[0].strip()[:30]}」")
             if hasattr(cov, "open_asks"):
                 asks = cov.open_asks(key, lines)
                 if asks:

@@ -389,6 +389,43 @@ def open_fixes(key: str, lines: list[str], log: Path | None = None,
     return sorted(out, key=lambda x: x[0])
 
 
+def deletions(lines: list[str], base: list[str] | None) -> list[tuple[int, list[str]]]:
+    """새 줄 없이 지우기만 한 자리 — (그 자리를 대표할 지금 줄 번호, 지운 한글 줄들).
+
+    대표 줄은 지운 자리 바로 다음의 한글 줄(없으면 앞의 한글 줄)이다. 다른 곳으로 옮긴 줄(지금 글에
+    같은 줄이 있음)은 지운 것이 아니다. ⛔ 지우기만 하면 판정기가 아무것도 안 봐서, 필요한 조건을
+    지워도 게이트를 통과했다(2026-10-13 게이트 부정 시험 · 외부 검토 「삭제는 재검증 대상」).
+    """
+    if not base:
+        return []
+    import difflib
+    now = {k for k in map(line_key, lines) if k}
+    out = []
+    for tag, i1, i2, j1, j2 in difflib.SequenceMatcher(None, base, lines, autojunk=False).get_opcodes():
+        if tag != "delete":
+            continue
+        gone = [b for b in base[i1:i2] if (k := line_key(b)) and k not in now]
+        if not gone:
+            continue
+        after = next((n for n in range(j1 + 1, len(lines) + 1) if line_key(lines[n - 1])), None)
+        before = next((n for n in range(j1, 0, -1) if line_key(lines[n - 1])), None)
+        if after or before:
+            out.append((after or before, gone))
+    return out
+
+
+def deleted_seen(key: str, log: Path | None = None, now: float | None = None) -> set[str]:
+    """판정기가 지운 줄로 받아 본 기준 판 줄 해시 — 성공한 호출 · 14일 안 것만."""
+    return {k for row in _rows(key, log or LOG, now) if row.get("ok")
+            for k in row.get("deleted_seen") or []}
+
+
+def open_deletions(lines: list[str], base: list[str] | None, seen: set[str]) -> list[tuple[int, list[str]]]:
+    """판정기가 아직 안 본 지운 자리 — `deletions` 가운데 지운 줄이 하나라도 `seen` 에 없는 것."""
+    return [(n, gone) for n, gone in deletions(lines, base)
+            if not all(line_key(g) in seen for g in gone)]
+
+
 def open_lines(lines: list[str], base: list[str] | None, seen: set[str]) -> list[int]:
     """판정이 필요한 줄 번호(1부터) — 한글이 들었고, 갈라진 지점에 없었고, 아직 안 본 줄."""
     old = {k for k in map(line_key, base or []) if k}

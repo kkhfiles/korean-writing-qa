@@ -622,6 +622,7 @@ def lineage(key: str, lines: list[str], targets: list[int], base: list[str] | No
                                                     for l in lines[max(0, j1 - 2):j2 + 2]):
                     gone.append(b)
         info["deleted"] = gone[:DELETED_PER_LINE]
+        info["deleted_keys"] = [coverage.line_key(b) for b in gone]
         out[n] = info
     return out
 
@@ -645,7 +646,9 @@ def before_after(mine: list[int], info: dict[int, dict], closed: list[tuple[int,
     ⛔ 거르개가 아니다 — 판정기가 그래도 내면 게이트는 그대로 막는다(프롬프트로만 억제하지 않는다).
     """
     roots = [(n, info[n]["root"]) for n in mine if info.get(n, {}).get("root")]
-    gone = [(n, d) for n in mine for d in info.get(n, {}).get("deleted") or []]
+    gone = [(n, d) for n in mine if not info.get(n, {}).get("anchor")
+            for d in info.get(n, {}).get("deleted") or []]
+    anchored = [n for n in mine if info.get(n, {}).get("anchor")]
     out = []
     if roots or gone:
         out += ["", "", "아래 줄은 기준 판(고치기 전 글)에서 바뀐 줄이다. 기준 판과 대조해 숫자 · 주체 · 부정 · "
@@ -655,6 +658,14 @@ def before_after(mine: list[int], info: dict[int, dict], closed: list[tuple[int,
         if gone:
             out += ["지운 줄(기준 판에만 있고 지금 글에 없음) — 그 정보가 필요하면 가까운 대상 줄에 지적한다."]
             out += [f"- {n}행 가까이에서 지움: {d}" for n, d in gone]
+    if anchored:
+        out += ["", "", "아래 줄은 고치지 않았다. 바로 가까이에서 줄을 지웠다 — 지운 줄 때문에 남은 글에서 필요한 "
+                "정보가 빠졌거나 뜻이 바뀌었는지만 본다. 그렇다면 갈래 「고치다 뜻이 바뀐 곳」으로 그 줄에 "
+                "지적하고, 그 밖의 문제는 짚지 않는다."]
+        for n in anchored:
+            out += [f"- {n}행 가까이에서 지움: {d}" for d in info[n]["deleted"]]
+            if info[n].get("more", 0) > 0:
+                out.append(f"- {n}행 가까이에서 지움: (그 밖 {info[n]['more']}줄)")
     if closed:
         out += ["", "앞서 이 줄에서 확인하거나 까닭을 적어 닫은 지적이다. 지금 글에서 그 근거가 달라지지 않았으면 "
                 "같은 지적을 다시 내지 않는다."]
@@ -673,7 +684,7 @@ def held_ask(n: int, line: str, info: dict) -> dict:
 
 
 def judge(path: Path, model: str, timeout: float, backend, targets: list[int] | None = None,
-          base: list[str] | None = None) -> dict:
+          base: list[str] | None = None, anchors: dict[int, list[str]] | None = None) -> dict:
     """`targets` 가 있으면 그 줄이 든 묶음만 부르고 그 줄에 달린 지적만 낸다.
 
     ⛔ **지적을 거르는 까닭** — 판정기는 같은 글을 다시 판정해도 지적 수가 평균 16%
@@ -687,13 +698,20 @@ def judge(path: Path, model: str, timeout: float, backend, targets: list[int] | 
     lines = text.splitlines()
     key = coverage.doc_key(path)
     want = set(targets) if targets is not None else None
+    # 지우기만 한 자리의 대표 줄 — 그 줄은 그대로라 뜻 바뀜만 보고 판정 횟수에도 안 센다
+    anchors = {n: g for n, g in (anchors or {}).items() if want is None or n not in want}
+    if anchors:
+        want = (want or set()) | set(anchors)
     # 사용자가 이미 답한 것 — 탐침과 다른 단 하나의 차이다(답은 사용자마다 다르다)
     decisions = load_decisions()
     rules = probe.rules_for("guided")
     system = probe.SYSTEM.format(rules=rules) + decisions_prompt(decisions)
     # 규칙 글의 판 — 규칙이 바뀐 뒤의 판정과 앞의 판정을 가르는 최소 식별자(외부 검토 · 2026-10-12)
     rules_sha = hashlib.sha256(rules.encode("utf-8")).hexdigest()[:12]
-    info = lineage(key, lines, sorted(want), base) if want else {}
+    info = lineage(key, lines, sorted(want - set(anchors)), base) if want else {}
+    for n, gone in anchors.items():
+        info[n] = {"round": 0, "root": None, "deleted": gone[:DELETED_PER_LINE], "more": len(gone) - DELETED_PER_LINE,
+                   "deleted_keys": [coverage.line_key(g) for g in gone], "anchor": True}
     found, calls, hidden, foreign, held = [], [], 0, 0, 0
     for first, part in chunks(lines):
         if want is not None and not any(first <= n < first + len(part) for n in want):
@@ -714,9 +732,13 @@ def judge(path: Path, model: str, timeout: float, backend, targets: list[int] | 
             row["targets"] = len(mine)
             # 다음 판정이 이 줄의 자손을 찾고 판정 횟수를 이어 세는 데 쓴다(저장소 밖 기록)
             row["targeted"] = [{"key": coverage.line_key(lines[n - 1]), "text": lines[n - 1],
-                                "round": info[n]["round"], "root": info[n]["root"]} for n in mine]
+                                "round": info[n]["round"], "root": info[n]["root"]}
+                               for n in mine if not info[n].get("anchor")]
+            # 게이트가 「지운 자리를 판정기가 봤나」를 이것으로 가른다
+            row["deleted_seen"] = sorted({k for n in mine for k in info[n].get("deleted_keys") or [] if k})
             user += ("\n\n이번에는 아래 줄만 점검한다 — 나머지 줄은 문맥으로만 읽고 지적하지 않는다.\n"
-                     + ", ".join(map(str, mine)) + before_after(mine, info, closed_on(key, lines, mine)))
+                     + ", ".join(map(str, mine))
+                     + before_after(mine, info, closed_on(key, lines, [n for n in mine if not info[n].get("anchor")])))
             over = [n for n in mine if info[n]["round"] > REJUDGE_CAP]
         try:
             r = call_messages(model=model, system=system, user=user,
@@ -751,6 +773,11 @@ def judge(path: Path, model: str, timeout: float, backend, targets: list[int] | 
                 it["line"] = relocate(lines, it.get("line"), str(it.get("phrase") or ""))
                 # 줄을 못 찾은 지적은 남긴다 — 새 줄 것인지 모르면 보이는 쪽으로
                 if want is not None and it["line"] is not None and it["line"] not in want:
+                    hidden += 1
+                    continue
+                # 대표 줄은 그대로인 줄이다 — 지운 줄 때문에 뜻이 바뀐 것만 받는다(안 고친 줄의 새 지적은
+                # 고리를 만든다)
+                if it["line"] in anchors and "뜻이 바뀐" not in str(it.get("category") or ""):
                     hidden += 1
                     continue
                 # ⛔ 한글이 없는 줄의 지적은 뺀다 — 이 판정기는 한글을 본다. 영문 페이지에서
@@ -1001,7 +1028,7 @@ def main(argv=None, backend=None) -> int:
         if not p.is_file():
             print(f"⛔ 파일 없음 — {d}")
             return 2
-        targets, base = None, None
+        targets, base, anchors = None, None, None
         if a.since:
             try:
                 targets, in_git = open_for(p, a.since)
@@ -1009,10 +1036,14 @@ def main(argv=None, backend=None) -> int:
             except ValueError as e:
                 print(f"⛔ {e}")
                 return 2
+            if base:
+                key = coverage.doc_key(p)
+                anchors = dict(coverage.open_deletions(read_doc(p).splitlines(), base,
+                                                       coverage.deleted_seen(key, LOG)))
             if not in_git:
                 print(f"  {p.name} — git 밖 문서라 갈라진 지점이 없습니다 · 아직 판정 안 한 한글 줄을 모두 봅니다")
         try:
-            results.append(judge(p, model, a.timeout, backend, targets, base))
+            results.append(judge(p, model, a.timeout, backend, targets, base, anchors))
         except Exception as e:
             print(f"⛔ 호출 실패 — {p.name}: {type(e).__name__}: {e}"[:300])
             print("   검사되지 않았습니다 — 세션이 규칙을 직접 읽고 판정합니다.")
