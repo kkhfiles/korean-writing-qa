@@ -56,6 +56,9 @@ NEEDS_CHECK = re.compile(r"확인(?:이)?\s?필요|확인해야|확인할 수 �
                          r"|확인되지 않|검증(?:이)?\s?필요|알 수 없어 사람")
 #: 고친 줄을 예전 줄의 자손으로 보는 글자 유사도 — 표현이 그 자손에 남아 있으면 안 고친 것이다
 SUCCESSOR = 0.5
+#: 판정 때와 지금의 줄 순서를 맞대어 찾은 「바뀐 자리」 안에서 자손으로 보는 글자 유사도 —
+#: 자리가 이미 좁혀졌으므로 낮게 둔다(git 이력의 1:1 고친 줄 178쌍 중 97% 가 0.3 이상 · 2026-10-13)
+IN_PLACE = 0.3
 
 
 class _Text(html.parser.HTMLParser):
@@ -295,6 +298,38 @@ def _similar(a: str, b: str) -> float:
     return m.ratio() if m.real_quick_ratio() >= SUCCESSOR and m.quick_ratio() >= SUCCESSOR else 0.0
 
 
+def _ratio(a: str, b: str) -> float:
+    import difflib
+    return difflib.SequenceMatcher(None, a, b, autojunk=False).ratio()
+
+
+def successor(seen, old_key: str, lines: list[str], text: str) -> int | None:
+    """고친 줄(`old_key`)을 이어 받은 지금 줄 번호 · 지웠으면 None.
+
+    판정 때의 줄 순서(`seen` — 그 묶음의 줄 해시 순서)와 지금 줄 순서를 맞대어, 그 줄이 바뀐
+    자리 안에서만 찾는다. ⛔ 문서 전체에서 가장 비슷한 줄을 고르면 지운 줄의 지적이 내용이 다른
+    줄에 붙었다 — 무관한 두 줄이 0.588 로 기준 0.5 를 넘었고(2026-10-13 게이트 부정 시험), git
+    이력에서 지운 줄 18개 중 13개가 그렇게 엉뚱한 줄을 찾았다. 줄 순서가 없는 옛 기록만 전체에서 찾는다.
+    """
+    import difflib
+    now = [(n, line_key(l)) for n, l in enumerate(lines, 1)]
+    now = [(n, k) for n, k in now if k]
+    if isinstance(seen, list) and old_key in seen:
+        i = seen.index(old_key)
+        sm = difflib.SequenceMatcher(None, seen, [k for _, k in now], autojunk=False)
+        for tag, i1, i2, j1, j2 in sm.get_opcodes():
+            if not i1 <= i < i2:
+                continue
+            if tag != "replace":
+                return None                 # 그 자리에서 지웠다
+            block = [now[j][0] for j in range(j1, j2)]
+            best = max(block, key=lambda n: _ratio(lines[n - 1], text))
+            return best if _ratio(lines[best - 1], text) >= IN_PLACE else None
+        return None
+    best = max(range(1, len(lines) + 1), key=lambda n: _similar(lines[n - 1], text), default=None)
+    return best if best is not None and _similar(lines[best - 1], text) >= SUCCESSOR else None
+
+
 def dismissed(key: str, dismissals: Path | None = None, now: float | None = None) -> set[tuple]:
     """받지 않음 · 사람 확인으로 올림으로 닫은 고칠 지적 — (줄 해시, 표현)."""
     return {(row.get("line_key"), row.get("phrase"))
@@ -337,10 +372,10 @@ def open_fixes(key: str, lines: list[str], log: Path | None = None,
                 if not cands and text and needs_check(fx):
                     # ⛔ 사실 확인 지적은 고쳐도 안 닫힌다 — 확인 없이 다른 수치로 바꿔도 표현은
                     #    사라진다(외부 검토 「표현 소멸은 해결 증거가 아님」). 고친 줄에 붙여 둔다.
-                    #    줄을 통째로 지웠으면 닫는다 — 확인 안 된 주장이 안 나가는 쪽이다.
-                    best = max(range(1, len(lines) + 1), key=lambda i: _similar(lines[i - 1], text),
-                               default=None)
-                    if best is not None and _similar(lines[best - 1], text) >= SUCCESSOR:
+                    #    줄을 통째로 지웠으면 닫는다 — 확인 안 된 주장이 안 나가는 쪽이다. 지워서
+                    #    남은 글의 뜻이 바뀌었는지는 지운 자리 판정이 본다.
+                    best = successor(row.get("seen"), fx.get("line_key") or "", lines, text)
+                    if best is not None:
                         cands = [best]
                 if not cands:
                     continue                # 표현이 사라짐 — 고쳤다

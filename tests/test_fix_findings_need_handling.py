@@ -236,6 +236,22 @@ class FactTests(_Base):
         self.doc.write_text(DOC.replace("업무 목록은 매일 갱신됩니다.\n\n", ""), encoding="utf-8")
         self.assertEqual([], self.open_fixes(), "확인 안 된 주장을 지웠는데 지적이 엉뚱한 줄에 붙었습니다")
 
+    def test_a_deleted_claim_does_not_stick_to_a_lookalike_line(self) -> None:
+        """(2026-10-13 게이트 부정 시험) 주장 줄을 지우자 사실 확인 지적이 글자가 비슷할 뿐인
+        다른 줄(유사도 0.588)에 붙었다 — 판정 때와 지금의 줄 순서를 맞대어 바뀐 자리 안에서만 찾는다."""
+        lookalike = "업무 일지는 매주 오전 열 시에 갱신됩니다."
+        self.assertGreaterEqual(coverage._similar(lookalike, "업무 목록은 매일 갱신됩니다."), coverage.SUCCESSOR,
+                                "시험 문장이 옛 기준을 넘지 않아 이 시험이 아무것도 못 지킵니다")
+        self.doc.write_text(DOC.replace("업무 목록은 매일 갱신됩니다.\n\n", "")
+                            + "\n" + lookalike + "\n", encoding="utf-8")
+        self.assertEqual([], self.open_fixes(), "지운 주장의 지적이 다른 줄에 붙었습니다")
+
+    def test_a_split_claim_keeps_the_check(self) -> None:
+        self.doc.write_text(DOC.replace("업무 목록은 매일 갱신됩니다.",
+                                        "업무 목록은 매일 아침에 바뀝니다.\n\n바뀐 목록은 메일로도 보냅니다."),
+                            encoding="utf-8")
+        self.assertEqual([3], self.open_fixes(), "주장 줄을 나누자 사실 확인 지적이 확인 없이 닫혔습니다")
+
     def test_the_prompt_asks_for_the_fact_to_check(self) -> None:
         import probe_layer2_kinds as probe
         self.assertIn('"check"', probe.SYSTEM)
