@@ -1297,12 +1297,53 @@ def deny(reason):
     return 0
 
 
+def gate_error(payload, exc):
+    """게이트가 예외로 죽었을 때 — push · 배포 · 발행이면 막는 글, 아니면 빈 글.
+
+    ⛔ 훅이 예외로 끝나면(종료 코드 1) Claude Code 는 막지 않고 명령을 그대로 실행한다 — 비차단
+       오류로 본다. 판정 기록 칸 하나의 모양이 틀린 것만으로 열린 지적이 있는 문서가 push 를
+       통과했다(2026-10-13 게이트 부정 시험). 판정하지 못하면 막는다.
+    ⛔ 무엇을 하는 명령인지조차 못 가르면 막지 않는다 — 그러면 Bash 명령 전부가 막힌다.
+    """
+    if (payload.get("hook_event_name") or "") != "PreToolUse":
+        return ""
+    cmd = str((payload.get("tool_input") or {}).get("command") or "")
+    if FORCE in cmd:
+        return ""
+    gated = (payload.get("tool_name") or "") == "Artifact" or bool(DEPLOY.search(cmd))
+    for probe in (lambda: _push_parser().push_target(cmd) is not None,
+                  lambda: targets(payload)[2] == "always"):
+        try:
+            gated = gated or bool(probe())
+        except Exception:               # noqa: BLE001 — 가르지 못한 쪽은 막는 근거가 아니다
+            pass
+    if not gated:
+        return ""
+    return "\n".join([
+        "⛔ 보류 — 한글 게이트가 오류로 판정하지 못했습니다",
+        f"   {type(exc).__name__}: {str(exc)[:300]}",
+        "",
+        "  판정하지 못하면 막습니다. 상태 기록(~/.claude/state/korean-layer2-*.jsonl ·",
+        "  korean-check-pass.jsonl)에 깨진 줄이 없는지 먼저 보고, 오류를 고친 뒤 다시 실행합니다.",
+        "",
+        f"  정말 그대로 진행해야 하면 명령 앞에 `{FORCE}` 을 붙입니다 — 명령문에 남습니다."])
+
+
 def main():
     try:
         payload = json.load(sys.stdin)
     except (ValueError, OSError):
         return 0
+    try:
+        return _main(payload)
+    except Exception as e:              # noqa: BLE001
+        import traceback
+        traceback.print_exc()
+        stop = gate_error(payload, e)
+        return deny(stop) if stop else 0
 
+
+def _main(payload):
     # push · 사이트 배포는 문서 파일을 명령에 적지 않으므로 먼저 본다 · 시험 통로에서도 돈다
     # (배포 통과 기록만 시험 통로에서 안 쓴다)
     stop = push_block(payload) or deploy_block(payload, probe="--probe" in sys.argv)

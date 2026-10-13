@@ -225,6 +225,31 @@ class PushGateTests(unittest.TestCase):
         self.assertIn("갈라진 지점을 못 찾았습니다", out)
         self.assertIn("git fetch", out)
 
+    def test_a_gate_crash_blocks_instead_of_passing(self) -> None:
+        """(2026-10-13 게이트 부정 시험) 판정 기록 칸 모양이 틀리자 훅이 죽어 push 가 통과했다 —
+        Claude Code 는 예외로 끝난 훅을 막음으로 보지 않는다."""
+        self.add_line()
+        self.judged()
+        self.recorded()
+        lines = coverage.read_doc(self.doc).splitlines()
+        with self.log.open("a", encoding="utf-8") as f:
+            f.write(json.dumps({"ok": True, "when": time.time(), "key": coverage.doc_key(self.doc),
+                                "seen": coverage.seen_keys(lines), "fixes": "문자열"},
+                               ensure_ascii=False) + "\n")
+        rc, out = self.push()
+        self.assertEqual(2, rc, out)
+        self.assertIn("오류로 판정하지 못했습니다", out)
+        self.assertEqual(0, self.push("KOREAN_PUBLISH_FORCE=1 git push -u origin HEAD")[0])
+
+    def test_a_crash_on_other_commands_does_not_block(self) -> None:
+        gate = _load_gate()
+        payload = {"hook_event_name": "PreToolUse", "tool_name": "Bash", "cwd": str(self.repo),
+                   "tool_input": {"command": "git status"}}
+        self.assertEqual("", gate.gate_error(payload, RuntimeError("시험")),
+                         "push 도 발행도 아닌 명령을 게이트 오류로 막았습니다 — Bash 전부가 막힙니다")
+        payload["tool_input"]["command"] = "git push"
+        self.assertIn("오류로 판정하지 못했습니다", gate.gate_error(payload, RuntimeError("시험")))
+
     def test_target_patterns_count_folders(self) -> None:
         gate = _load_gate()
         self.assertTrue(gate.matches("dynamic/docs/a.md", ["*/docs/*.md"]))
