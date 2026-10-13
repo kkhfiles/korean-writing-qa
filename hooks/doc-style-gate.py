@@ -336,14 +336,20 @@ def publish_base(cov, path):
 
 
 def unjudged_block(payload, files):
-    """발행 직전 — 2층 판정을 받은 문서에 판정기가 아직 안 본 한글 줄이 있으면 막는 글.
+    """발행 직전 — 판정기가 아직 안 본 한글 줄이 있으면 막는 글.
 
     (2026-10-13) 이 경로는 처리 안 된 고칠 지적과 사람 확인만 봤다. 판정 뒤에 고친 줄이 다시
     판정됐는지는 안 봐서 고친 문장이 판정 없이 나갈 수 있었다 — push 와 배포 게이트는 본다.
     재판정을 몰아서 하게 하면 「마지막 재판정」을 세션이 기억해야 해서 이 빈틈에 더 기댄다.
 
-    **범위** — 판정 기록이 있는 문서와 저장소 설정의 발행 대상. 판정을 한 번도 안 받은 문서까지
-    요구할지는 따로 정한다(`tests/test_publish_needs_judging.py` 가 그 경계를 고정).
+    **범위 — 발행하는 문서 전부**(2026-10-13 사용자 결정 「요구」). 처음에는 판정 기록이 있는 문서와
+    설정의 발행 대상에만 걸었는데, 그러면 판정을 한 번도 안 받은 문서가 더 쉽게 나가는 역전이 생긴다
+    (외부 검토 · 한 사이트에서 14일 동안 문서 62개가 나가고 판정 기록은 1건이었다).
+    **기준 — 게이트가 권하는 판정 명령과 같게** — 판정 기록이 있거나 설정의 발행 대상인 git 문서는
+    `--since <ref>` 의 갈라진 지점 뒤 줄만 센다. git 밖 문서는 판정 안 된 한글 줄 전부를 세고
+    `--since HEAD`(판정기는 git 밖이면 판정 안 한 줄만 본다)를 권한다. 판정을 한 번도 안 받은 git
+    문서는 기준 판 없이 전부를 세고 `--since` 없는 전체 판정을 권한다 — 기준이 어긋나면 판정을 돌려도
+    안 풀리는 막힘이 된다.
     **판정 기록은 줄 해시에 묶인다** — 한 글자만 고쳐도 그 줄은 판정 안 된 줄이다. 기한은 없다
     (배포 게이트와 같다 · 안 바뀐 문서를 14일마다 통째로 다시 판정하지 않는다).
     **판정기를 못 부르는 PC** — 지금 내용의 손 판단 기록(`judgment`)으로 연다.
@@ -370,10 +376,13 @@ def unjudged_block(payload, files):
             conf = publish_config(found_repo[0]) if found_repo else None
             # 설정을 못 읽으면 문자열(까닭)이 온다 — 그때는 발행 대상으로 안 본다(push 게이트가 그 까닭을 알린다)
             in_scope = isinstance(conf, dict) and matches(found_repo[1], conf["targets"])
-            if not seen and not in_scope:
-                continue                    # 판정을 한 번도 안 받은 문서 — 이 규칙의 범위 밖
             lines = cov.read_doc(p).splitlines()
-            ref, base = publish_base(cov, p)
+            if seen or in_scope:
+                ref, base = publish_base(cov, p)
+                ref = ref or "HEAD"         # git 밖 — 판정기가 판정 안 한 줄만 본다
+            else:
+                # 판정을 한 번도 안 받은 문서 — 한글 줄 전부. git 문서는 전체 판정, git 밖은 --since HEAD
+                ref, base = (None if found_repo else "HEAD"), None
             left = cov.open_lines(lines, base, seen)
             gone = (cov.open_deletions(lines, base, cov.deleted_seen(key, cov.LOG))
                     if base and hasattr(cov, "open_deletions") else [])
@@ -401,9 +410,11 @@ def unjudged_block(payload, files):
         if gone:
             n, lost = gone[0]
             out.append(f"  {name} — 판정 안 한 지운 자리 {len(gone)}곳 · {n}행 근처 「{lost[0].strip()[:30]}」")
-        out.append(f"      python -X utf8 {judge_path} \"{fp}\" --since {ref or 'HEAD'}")
+        since = f" --since {ref}" if ref else ""
+        out.append(f"      python -X utf8 {judge_path} \"{fp}\"{since}")
         manual = manual or need_record
-    out += ["", "  판정에서 나온 지적을 처리(고침 · 사유 · 사람 확인)한 뒤 다시 발행합니다."]
+    out += ["", "  판정에서 나온 지적을 처리(고침, 사유, 사람 확인)한 뒤 다시 발행합니다.",
+            "  이 문서에 `finalize-korean-document` 스킬을 돌리면 판정부터 처리까지 이어서 합니다."]
     if manual:
         out += ["  이 PC 에서는 판정기를 부를 수 없습니다 — 규칙을 직접 읽고 판단한 뒤 지금 내용에 판단 기록(judgment)을 남깁니다:",
                 "    python -X utf8 scripts/check_record.py record <파일> --stage judgment --verdict pass --note \"무엇을 봤나\""]

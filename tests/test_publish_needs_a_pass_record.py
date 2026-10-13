@@ -22,6 +22,7 @@ import repo_paths  # noqa: E402
 
 sys.path.insert(0, HERE)
 import gate_result  # noqa: E402  막힘을 종료 코드 2 와 deny JSON 둘 다로 읽는다
+import judged  # noqa: E402  발행 게이트가 판정 안 된 줄을 막으므로 판정을 받은 문서로 만든다
 
 GATE = os.path.join(ROOT, "hooks", "doc-style-gate.py")
 TOOL = os.path.join(ROOT, "scripts", "check_record.py")
@@ -45,8 +46,9 @@ class PublishRecordTests(unittest.TestCase):
         with io.open(self.doc, "w", encoding="utf-8", newline="\n") as f:
             f.write(BODY)
         self.store = os.path.join(self.dir, "store.jsonl")
-        self.env = dict(os.environ, KOREAN_CHECK_RECORD=self.store, **STRICT)
-        self.lenient = dict(os.environ, KOREAN_CHECK_RECORD=self.store,
+        self.log = os.path.join(self.dir, "judge.jsonl")
+        self.env = dict(os.environ, KOREAN_CHECK_RECORD=self.store, KOREAN_QA_JUDGE_LOG=self.log, **STRICT)
+        self.lenient = dict(os.environ, KOREAN_CHECK_RECORD=self.store, KOREAN_QA_JUDGE_LOG=self.log,
                             KOREAN_PUBLISH_REQUIRE="structure")
 
     def tearDown(self) -> None:
@@ -60,6 +62,7 @@ class PublishRecordTests(unittest.TestCase):
                            capture_output=True, env=self.env, cwd=ROOT, timeout=60, check=True)
 
     def _publish(self, prefix="", env=None):
+        judged.mark(self.log, self.doc)     # 이 시험은 통과 기록을 잰다 — 판정 안 된 줄 차단은 따로 잰다
         cmd = f"{prefix}python notion.py create --md {self.doc}".strip()
         payload = {"hook_event_name": "PreToolUse", "tool_name": "Bash",
                    "session_id": "pub-session", "tool_input": {"command": cmd}}
@@ -116,6 +119,8 @@ class PublishRecordTests(unittest.TestCase):
         self.assertEqual(0, rc, f"넘기는 길이 막혔습니다: {out[:300]}")
 
     def test_probe_never_blocks(self) -> None:
+        # 판정 안 된 줄 차단은 고칠 지적 차단처럼 상태를 안 써 시험 통로에서도 돈다 — 여기서는 기록 검사만 잰다
+        judged.mark(self.log, self.doc)
         payload = {"hook_event_name": "PreToolUse", "tool_name": "Bash",
                    "session_id": "pub-session",
                    "tool_input": {"command": f"python notion.py create --md {self.doc}"}}

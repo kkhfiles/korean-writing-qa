@@ -244,6 +244,7 @@ class HookTests(unittest.TestCase):
         self.env = dict(os.environ,
                         KOREAN_CHECK_RECORD=os.path.join(self.dir, "store.jsonl"),
                         KOREAN_QA_MIDDOT_LEDGER=os.path.join(self.dir, "ledger.tsv"),
+                        KOREAN_QA_JUDGE_LOG=os.path.join(self.dir, "judge.jsonl"),
                         # 훅은 설치본 검사기를 먼저 쓴다 — 시험은 저장소 판을 잰다
                         KOREAN_QA_CHECKER=str(ROOT / "assets" / "doc-style-check.py"))
 
@@ -309,11 +310,16 @@ class HookTests(unittest.TestCase):
     def test_publishing_a_new_dot_line_is_blocked(self) -> None:
         p = self.doc("share.md", MD_HEAD + "- **기존** — 개발 종료 · 시험 시작\n")
         self.fire("PreToolUse", "Edit", {"file_path": p})
-        # 대조 — 기존 줄만 있으면 발행이 열린다(다른 까닭으로 막혀 아래 단언이 헛도는 것을 막음)
+        # 대조 — 기존 줄만 있으면 발행이 열린다(다른 까닭으로 막혀 아래 단언이 헛도는 것을 막음).
+        # 판정 안 된 줄 차단(2026-10-13)이 먼저 막지 않게 판정을 받은 문서로 만든다.
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        import judged
+        judged.mark(self.env["KOREAN_QA_JUDGE_LOG"], p)
         out = self.fire("PreToolUse", "Artifact", {"file_path": p})
         self.assertNotIn('"deny"', out, f"기존 줄만 있는 문서의 발행을 막았습니다:\n{out[:500]}")
         with io.open(p, "a", encoding="utf-8", newline="\n") as f:
             f.write("- **새 값** — 초안 · 최종본은 공유 폴더\n")
+        judged.mark(self.env["KOREAN_QA_JUDGE_LOG"], p)   # 막는 까닭이 가운뎃점뿐이게
         out = self.fire("PreToolUse", "Artifact", {"file_path": p})
         self.assertIn('"deny"', out, f"새 가운뎃점 줄이 있는 문서의 발행을 안 막았습니다:\n{out[:500]}")
 

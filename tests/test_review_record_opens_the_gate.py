@@ -39,6 +39,7 @@ import repo_paths  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import gate_result  # noqa: E402  막힘을 종료 코드 2 와 deny JSON 둘 다로 읽는다
+import judged  # noqa: E402  발행 게이트가 판정 안 된 줄을 막으므로 판정을 받은 문서로 만든다
 
 GATE = repo_paths.hook("doc-style-gate.py")
 RECORDER = repo_paths.REPO / "scripts" / "check_record.py"
@@ -69,12 +70,14 @@ class ReviewRecordTests(unittest.TestCase):
         self.store = Path(tempfile.mkdtemp()) / "record.jsonl"
         self.env = dict(os.environ)
         self.env["KOREAN_CHECK_RECORD"] = str(self.store)
+        self.env["KOREAN_QA_JUDGE_LOG"] = str(self.store.parent / "judge.jsonl")
         self.doc = self.work / f"{uuid.uuid4().hex[:12]}.md"
 
     def tearDown(self) -> None:
         self.doc.unlink(missing_ok=True)
 
     def publish(self) -> int:
+        judged.mark(self.env["KOREAN_QA_JUDGE_LOG"], self.doc)   # 이 시험은 검토 기록을 잰다
         payload = {"hook_event_name": "PreToolUse", "tool_name": "Bash",
                    "session_id": str(uuid.uuid4()),
                    "tool_input": {
@@ -136,6 +139,7 @@ class ReviewRecordTests(unittest.TestCase):
         적으면** 없는 것과 같다.
         """
         self.doc.write_text(WARN_ONLY, encoding="utf-8")
+        judged.mark(self.env["KOREAN_QA_JUDGE_LOG"], self.doc)
         payload = {"hook_event_name": "PreToolUse", "tool_name": "Bash",
                    "session_id": str(uuid.uuid4()),
                    "tool_input": {

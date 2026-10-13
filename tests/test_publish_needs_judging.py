@@ -5,10 +5,11 @@
 판정 안 된 줄을 본다 — 발행 경로만 빈틈이었다(2026-10-13 · 재판정을 몰아서 하게 하는 방안의 부작용을
 검토하다 찾음 · 외부 검토도 같은 결론).
 
-**범위** — 판정 기록이 있는 문서와 설정에서 발행 대상으로 지정한 문서. 판정을 한 번도 안 받은 문서를
-발행할 때 판정을 요구할지는 따로 정한다(이 시험이 그 경계를 고정한다).
-**막힘이 풀리는 길** — 게이트가 권하는 판정 명령과 같은 기준 커밋으로 가른다. 판정기가 없는 PC 는 손
-판단 기록으로 연다(열쇠 없는 자물쇠 금지).
+**범위 — 발행하는 문서 전부**(2026-10-13 사용자 결정 「요구」). 처음에는 판정 기록이 있는 문서와 설정의
+발행 대상에만 걸었는데, 그러면 판정을 한 번도 안 받은 문서가 더 쉽게 나가는 역전이 생겼다(외부 검토).
+**막힘이 풀리는 길** — 게이트가 권하는 판정 명령과 같은 기준으로 가른다. 판정 기록이 있거나 설정의 발행
+대상인 git 문서는 `--since <ref>`, git 밖 문서는 `--since HEAD`, 판정을 한 번도 안 받은 git 문서는 전체
+판정. 판정기가 없는 PC 는 손 판단 기록으로 연다(열쇠 없는 자물쇠 금지).
 """
 from __future__ import annotations
 
@@ -89,10 +90,32 @@ class PublishNeedsJudgingTests(unittest.TestCase):
     def edit(self) -> None:
         self.write(DOC[:-1] + ["- **계약 기간**: 2년"])
 
-    def test_a_doc_never_judged_is_not_blocked_by_this_rule(self) -> None:
-        """판정을 한 번도 안 받은 문서는 이 규칙으로 막지 않는다 — 범위는 따로 정한다."""
+    def test_a_doc_never_judged_needs_judging_too(self) -> None:
+        """(2026-10-13 사용자 결정 「요구」) 판정을 한 번도 안 받은 문서가 더 쉽게 나가면 안 된다.
+        git 밖 문서는 `--since HEAD` 를 권한다 — 판정기는 git 밖이면 판정 안 한 줄만 본다."""
         out = self.publish()
-        self.assertNotIn('"deny"', out, f"판정 기록이 없는 문서를 이 규칙으로 막았습니다:\n{out[:400]}")
+        self.assertIn('"deny"', out, f"판정을 한 번도 안 받은 문서를 그냥 내보냈습니다:\n{out[:400]}")
+        self.assertIn("판정기가 아직 안 본", out)
+        self.assertIn("--since HEAD", out)
+        self.judged()
+        self.assertNotIn('"deny"', self.publish(), "판정한 뒤에도 막았습니다")
+
+    def test_a_git_doc_never_judged_gets_a_full_judgment_command(self) -> None:
+        """⛔ 판정을 한 번도 안 받은 git 문서에 `--since` 를 권하면 판정기는 갈라진 지점 뒤 줄만 보고,
+        게이트는 전부를 세어 판정을 돌려도 안 풀린다 — 전체 판정을 권한다."""
+        repo = self.dir / "plain"
+        repo.mkdir()
+        doc = repo / "a.md"
+        self.write(DOC, doc)
+        git(repo, "init", "-b", "main")
+        git(repo, "add", ".")
+        git(repo, "commit", "-m", "base")
+        out = self.publish(doc)
+        self.assertIn('"deny"', out)
+        line = next(l for l in out.replace("\\n", "\n").splitlines() if "judge_layer2.py" in l)
+        self.assertNotIn("--since", line, f"전체 판정이 아니라 --since 를 권했습니다: {line}")
+        self.judged(doc)
+        self.assertNotIn('"deny"', self.publish(doc))
 
     def test_an_edit_after_judging_blocks_publishing(self) -> None:
         self.judged()
@@ -174,7 +197,11 @@ class PublishNeedsJudgingTests(unittest.TestCase):
         git(repo, "add", ".")
         git(repo, "commit", "-m", "base")
         out = self.publish(doc)
-        self.assertNotIn('"deny"', out, f"설정이 깨진 저장소의 발행을 막았습니다:\n{out[:400]}")
+        # 판정을 안 받은 문서라 막히는 것은 맞다 — 게이트가 오류로 죽어 막힌 것이면 안 된다
+        self.assertNotIn("오류로 판정하지 못했습니다", out, f"설정이 깨지자 게이트가 오류로 죽었습니다:\n{out[:400]}")
+        self.assertIn("판정기가 아직 안 본", out)
+        self.judged(doc)
+        self.assertNotIn('"deny"', self.publish(doc), "판정한 뒤에도 깨진 설정 때문에 막았습니다")
 
     def test_force_is_the_visible_way_out(self) -> None:
         self.judged()
