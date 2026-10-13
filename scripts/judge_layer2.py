@@ -664,10 +664,12 @@ def lineage(key: str, lines: list[str], targets: list[int], base: list[str] | No
     """
     prev = []
     for row in coverage._rows(key, LOG, None):
-        # ⛔ 갈라진 지점 커밋보다 앞선 판정은 이미 합쳐진 작업이다 — 그때 센 횟수를 이어 세면 상한에
-        #    걸렸던 줄은 합쳐진 뒤 정당하게 고쳐도 매번 사람 확인으로 올라간다(2026-10-13 README
-        #    113행 · 전날 4회차로 합쳐진 줄을 고치자 5회차로 셈)
-        if row.get("ok") and (since is None or float(row.get("when") or 0) > since):
+        # ⛔ 같은 갈라진 지점에서 한 판정만 센다 — 앞선 지점의 판정은 이미 합쳐진 작업이다. 그때 센
+        #    횟수를 이어 세면 상한에 걸렸던 줄은 합쳐진 뒤 정당하게 고쳐도 매번 사람 확인으로 올라간다
+        #    (2026-10-13 README 113행 · 전날 4회차로 합쳐진 줄을 고치자 5회차로 셈). 시각으로 거르면
+        #    지점이 바뀐 뒤 옛 계보로 잘못 센 기록이 남아 이어진다 — 판정할 때의 지점을 기록에 적고 대조한다.
+        #    지점을 안 적은 옛 기록은 횟수를 믿을 수 없어 세지 않는다.
+        if row.get("ok") and row.get("base_time") == since:
             prev += [e for e in row.get("targeted") or [] if e.get("text")]
     ops = []
     if base:
@@ -809,6 +811,7 @@ def judge(path: Path, model: str, timeout: float, backend, targets: list[int] | 
             # 지적 하나가 약 206토큰이라, 버리는 지적만큼 시간과 한도를 썼다(2026-10-07 실측).
             mine = sorted(n for n in want if first <= n < first + len(part))
             row["targets"] = len(mine)
+            row["base_time"] = base_time       # 이 판정을 센 갈라진 지점 — 다음 판정이 같은 지점 것만 센다
             # 다음 판정이 이 줄의 자손을 찾고 판정 횟수를 이어 세는 데 쓴다(저장소 밖 기록)
             row["targeted"] = [{"key": coverage.line_key(lines[n - 1]), "text": lines[n - 1],
                                 "round": info[n]["round"], "root": info[n]["root"]}

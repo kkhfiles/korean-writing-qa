@@ -108,6 +108,12 @@ class LineageTests(_Base):
                          "합쳐지기 전의 판정 횟수를 이어 셌습니다")
         self.assertEqual(0, result["held"])
 
+    def test_rounds_count_within_the_same_base(self) -> None:
+        for k, v in enumerate(VERSIONS[:3], 1):
+            self.write(BASE[:4] + [v])
+            judge.judge(self.doc, "opus", 10, FakeBackend([fix_on(v, 5)]).pair(), [5], BASE, None, 1234.0)
+            self.assertEqual(k, self.last_row()["targeted"][0]["round"], "같은 갈라진 지점의 판정을 못 이어 셌습니다")
+
     def test_a_new_line_starts_at_one_without_a_root(self) -> None:
         self.rejudge(BASE + ["", "새로 쓴 안내 문장입니다."], [7])
         entry = self.last_row()["targeted"][0]
