@@ -64,7 +64,9 @@ def run_checker(sentences: list[str]) -> set[int]:
         p = Path(d) / "t.md"
         p.write_text(HEAD + "".join(f"- {s}\n" for s in sentences), encoding="utf-8")
         out = subprocess.run(
-            [sys.executable, "-X", "utf8", str(repo_paths.CHECKER), str(p), "--no-rules", "-v"],
+            # `--new-doc` — 임시 문서는 가운뎃점 기존 줄 대장 밖이라 새 문서로 본다(2026-10-13)
+            [sys.executable, "-X", "utf8", str(repo_paths.CHECKER), str(p), "--no-rules", "-v",
+             "--new-doc"],
             capture_output=True, text=True, encoding="utf-8").stdout
     return {int(m) for m in re.findall(r"[❌⚠️]\s*\[[^\]]+\]\s*(\d+)행", out)}
 

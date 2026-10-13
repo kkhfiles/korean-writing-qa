@@ -66,7 +66,12 @@ class InstallCodexTests(unittest.TestCase):
         self.install()
         self.install()
         pre = self.commands("PreToolUse")
-        self.assertEqual(1, sum("doc-style-gate.py" in c for c in pre), f"훅이 겹쳤습니다: {pre}")
+        # 셸 명령 · 쓰기 직전 두 갈래에 건다(2026-10-13 쓰기 직전 추가) — 수는 연결 표가 정본
+        sys.path.insert(0, str(ROOT))
+        import install                                  # noqa: PLC0415
+        want = sum(1 for event, _, name, _ in install.CODEX_WIRING
+                   if event == "PreToolUse" and name == "doc-style-gate.py")
+        self.assertEqual(want, sum("doc-style-gate.py" in c for c in pre), f"훅이 겹쳤습니다: {pre}")
 
     def test_other_hooks_and_skills_are_left_alone(self) -> None:
         mine = {"hooks": {"PreToolUse": [{"matcher": "Bash", "hooks": [

@@ -6,7 +6,8 @@
 
 | 이벤트 | 무엇을 검사하나 | 무엇을 내나 |
 |---|---|---|
-| `PostToolUse` Write·Edit·MultiEdit | 방금 쓴 `.md`/`.html` | 오류만 · 같은 파일은 세션에 한 번 |
+| `PostToolUse` Write·Edit·MultiEdit | 방금 쓴 `.md`/`.html` | 오류만 · 같은 파일은 세션에 한 번 · 가운뎃점 새 줄은 매번 |
+| `PreToolUse` Write·Edit·MultiEdit·apply_patch | 고치려는 `.md`/`.html` | 막지 않음 · 처음 고치는 문서의 가운뎃점 줄을 기존 줄로 적음 |
 | `PreToolUse` Artifact·Bash·PowerShell | 발행 대상 파일 | 오류와 주의 전부 |
 | `PreToolUse` Bash·PowerShell `git push` | `[publish]` 를 켠 저장소에서 이번 가지의 새 줄 | 2층 판정이 안 끝났으면 막음 |
 
@@ -1223,6 +1224,65 @@ def in_command(cmd, p):
 #: Claude 모양(`Write`)으로 옮겨 넣었다. 옮기는 사본이 따로 있으면 한쪽만 고쳐진다.
 PATCH_FILE = re.compile(r"^\*\*\* (?:Add|Update) File: (.+?)\s*$", re.I)
 
+#: 쓰기 도구 — Claude 는 Write · Edit · MultiEdit, Codex 는 apply_patch
+WRITE_TOOLS = ("Write", "Edit", "MultiEdit", "apply_patch")
+_CHECKER_MODULE = None
+
+
+def checker_module():
+    """검사기를 모듈로 불러온다 — 가운뎃점 대장은 검사기가 정본이라 판정을 따로 두지 않는다."""
+    global _CHECKER_MODULE
+    if _CHECKER_MODULE is None:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("doc_style_check_for_gate", CHECKER)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        _CHECKER_MODULE = module
+    return _CHECKER_MODULE
+
+
+def write_paths(payload):
+    """이번 쓰기가 건드릴 파일 — **아직 없는 파일도** 낸다(새로 만드는 문서는 첫 줄부터 본다)."""
+    inp = payload.get("tool_input") or {}
+    raw = [str(inp["file_path"]).strip()] if str(inp.get("file_path") or "").strip() else []
+    patch = inp.get("patch") or inp.get("command") or ""
+    if isinstance(patch, str):
+        raw += [m.group(1) for m in map(PATCH_FILE.match, patch.splitlines()) if m]
+    base = Path(payload.get("cwd") or os.getcwd())
+    return sorted({str(Path(r) if Path(r).is_absolute() else base / r) for r in raw})
+
+
+def middot_track(payload):
+    """쓰기 직전 — 처음 고치는 문서의 가운뎃점 줄을 기존 줄로 적는다. 막지 않는다.
+
+    ★ 기존 발행 문서는 고치지 않는다(2026-10-13 사용자) — 그래서 고치기 **전** 모습을 적어 두고
+      검사기가 그 뒤에 생긴 줄만 짚는다. 기록에 실패하면 그 문서는 대장 밖으로 남아 건수만
+      알린다(덜 짚을 뿐 막지는 않는다 — 쓰기를 막을 일이 아니다).
+    """
+    if not CHECKER.exists():
+        return
+    for fp in write_paths(payload):
+        if DOC.search(fp) and not skipped(fp):
+            try:
+                checker_module().middot_baseline(fp)
+            except Exception:           # noqa: BLE001 — 기록 실패로 쓰기를 막지 않는다
+                pass
+
+
+def middot_report(fp):
+    """방금 쓴 문서의 가운뎃점 새 줄 — 「파일당 세션 한 번」과 상관없이 쓸 때마다 낸다.
+
+    ⛔ 그 상한을 따르면 같은 문서에 두 번째로 쓴 가운뎃점은 쓰는 순간에 안 보인다.
+       새 줄만 짚으므로 초안의 소음이 아니다.
+    """
+    if not CHECKER.exists():
+        return []
+    try:
+        found = checker_module().middot_errors(fp, None, numbered=fp.lower().endswith(".md"))
+    except Exception:                   # noqa: BLE001 — 발행 직전 검사가 다시 본다
+        return []
+    return [f"   ❌ [가운뎃점 이음] {msg}" for msg in found]
+
 
 def patch_paths(payload):
     """Codex `apply_patch` 가 건드린 파일 중 실제로 있는 것 — 절대 경로."""
@@ -1401,6 +1461,12 @@ def main():
 
 
 def _main(payload):
+    # 쓰기 직전 — 가운뎃점 기존 줄을 적고 끝(막지 않는다) · 시험 통로에서는 상태를 안 쓴다
+    if ((payload.get("hook_event_name") or "") == "PreToolUse"
+            and (payload.get("tool_name") or "") in WRITE_TOOLS):
+        if "--probe" not in sys.argv:
+            middot_track(payload)
+        return 0
     # push · 사이트 배포는 문서 파일을 명령에 적지 않으므로 먼저 본다 · 시험 통로에서도 돈다
     # (배포 통과 기록만 시험 통로에서 안 쓴다)
     stop = push_block(payload) or deploy_block(payload, probe="--probe" in sys.argv)
@@ -1428,7 +1494,10 @@ def _main(payload):
     for fp in files:
         if not os.path.exists(fp):
             continue
+        middot = middot_report(fp) if mode == "once" else []
         if mode == "once" and fp in seen:
+            if middot:
+                blocks.append(f"{os.path.basename(fp)}\n" + "\n".join(middot))
             continue
         body = run_checker(fp, errors_only)
         if mode == "once":
@@ -1437,7 +1506,8 @@ def _main(payload):
         #    「기억해야 도는 구조」가 된다. 발행 게이트와 정지 장치가 이 기록을
         #    읽어 「지금 내용이 통과했나」를 판정한다(2026-09-16).
         if not probe:
-            note_pass(fp, "structure", "fail" if blocking(fp, body) else "pass")
+            note_pass(fp, "structure", "fail" if (middot or blocking(fp, body)) else "pass")
+        body = "\n".join([body] * bool(body) + middot)
         if body:
             blocks.append(f"{os.path.basename(fp)}\n{body}")
 

@@ -42,6 +42,8 @@ HOOK_WIRING = [
     #   (2026-09-16 사용자 결정: 푸시는 기본 · 공개 저장소만 게이트)
     ("PreToolUse", "Bash|PowerShell", "public-push-gate.py"),
     ("PostToolUse", "Edit|Write|MultiEdit", "doc-style-gate.py"),
+    # 쓰기 직전 — 처음 고치는 문서의 가운뎃점 줄을 기존 줄로 적는다(막지 않음 · 2026-10-13)
+    ("PreToolUse", "Edit|Write|MultiEdit", "doc-style-gate.py"),
     ("SessionStart", "", "korean-gate-daily-check.py"),
 ]
 
@@ -52,6 +54,7 @@ CODEX_WIRING = [
     ("PreToolUse", "Bash", "doc-style-gate.py", 50),
     ("PreToolUse", "Bash", "public-push-gate.py", 40),
     ("PostToolUse", "apply_patch|Edit|Write", "doc-style-gate.py", 50),
+    ("PreToolUse", "apply_patch|Edit|Write", "doc-style-gate.py", 50),
 ]
 CODEX_HOME = Path(os.environ.get("CODEX_HOME") or (Path.home() / ".codex"))
 #: Codex 가 사용자 스킬을 읽는 곳(`~/.codex/skills` 는 호환용 옛 위치)

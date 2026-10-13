@@ -4,6 +4,7 @@
     python assets/doc-style-check.py <파일…|디렉터리> [--relaxed] [--html-only] [-v]
                                      [--form structured|prose]
                                      [--rules <파일>] [--no-rules] [--list-rules]
+                                     [--new-doc] [--middot-baseline <파일…>]
 
 대상: .md · .html — 디렉터리를 주면 둘 다 본다(`--html-only` 로 html만).
 판정 3단계
@@ -20,7 +21,8 @@
 원칙: 판단이 불가능하면 침묵한다. 오탐이 섞이면 아무도 안 본다.
       그래서 확실한 것만 「오류」로, 사람이 봐야 하는 것만 「주의」로 낸다.
 """
-import io, os, re, sys, glob, collections
+import io, os, re, sys, glob, collections, hashlib, html, time
+from pathlib import Path
 
 sys.stdout.reconfigure(encoding='utf-8')
 
@@ -1807,6 +1809,8 @@ def scan_html(path, relaxed=False, form=None, rules=None):
     # HTML 에는 머리말이 없다. 플래그만 받으면 **검사할 때마다 사람이 기억해야 하고**,
     # 기억해야 하는 구조는 실패한다 — `<meta name="form" content="prose">` 로 파일이
     # 자기 형식을 들고 있게 한다. 플래그가 오면 그쪽이 이긴다(그 자리에서 뒤집어 봄).
+    for msg in middot_errors(path, raw, numbered=False):
+        err.append(('가운뎃점 이음', msg))
     err, warn = apply_form(err, warn, form or declared_form(raw))
     err, warn = apply_instruction_file(err, warn, path)
     err, warn = apply_selection(err, warn, rules) if rules else (err, warn)
@@ -1933,6 +1937,7 @@ RULE_GROUPS = {
         '「~하는 자리」', '「~하는 자리」 의심', '지어낸 명사구', '평가 수식어',
         '모호한 지칭', '지시어 확인', '「회기」', '업무 글에 없는 말',
         '말투 섞임', '제품 이름 음차', '다른 낱말로 읽힘', '낯선 사내 용어',
+        '가운뎃점 이음',
     ]),
     '번역투': ('번역에서 옮아온 문형', [
         '이중 피동', '번역투 이중 조사', '번역투 그녀',
@@ -2090,6 +2095,8 @@ def list_rules():
     print('반말 서술형은 문서 전부에 건다 — 문서에는 반말을 쓰지 않는다(2026-09-23).')
     print('Claude 만 읽는 지시 파일(CLAUDE.md · AGENTS.md · SKILL.md · .claude/ · skills/ 아래)만')
     print('뺀다 — 사람이 읽는 문서가 아니라 모델에게 주는 지시라서다.\n')
+    print('가운뎃점 이음은 새로 쓰거나 고친 줄만 본다 — AI 세션이 문서를 처음 고치기 직전에')
+    print('그때 있던 줄을 대장에 적는다(2026-10-13). 손댄 적 없는 문서는 건수만 알린다.\n')
     print('보기 — 표 머리 「비고」를 쓰는 조직, 제목 형식은 자유로 두는 조직\n')
     print('    [rules]')
     print('    off  = ["스캔 가치 없는 라벨", "구조"]')
@@ -2640,16 +2647,145 @@ def scan_md(path, relaxed=False, form=None, rules=None):
             f'코드펜스 안에 사람에게 나갈 것으로 보이는 한글 {buried}줄이 있다 — '
             '검사에서 빠졌다. 실제로 배포되는 글이면 파일로 빼서 따로 검사한다.',
         ))
+    for msg in middot_errors(path, raw, numbered=True):
+        err.append(('가운뎃점 이음', msg))
     err, warn = apply_form(err, warn, resolved)
     err, warn = apply_instruction_file(err, warn, path)
     err, warn = apply_selection(err, warn, rules) if rules else (err, warn)
     return err, warn, slots
 
 
+# ── 가운뎃점 이음 ────────────────────────────────────────────────────────────
+#: ★ **띄어 쓴 가운뎃점으로 사실이나 낱말을 잇지 않는다** (2026-10-13 사용자 결정)
+#
+#  「A 의 B · C 는 세지 않음」 꼴이 「B 와 C 를 모두 세지 않음」으로 읽혀 공유본에 나갔다
+#  (10/12 · 10/13 두 번 · 원문은 사내 자료라 꼴만 적음). 10/12 에 전역 지시 파일 「형식」 절에 「같은 대상의
+#  짧은 사실에만」을 적었는데 다음 날 또 나갔다 — 글 규칙으로는 안 지켜져 기계로 옮긴다.
+#  꼴만 고르는 판별(명사로 끝난 조각 뒤에 제 주어가 있는 서술)은 실문서 표본 25건에서 두 갈래로
+#  읽히는 것 4 · 여지 8 · 아님 13 이라 주의 등급밖에 못 돼 **전면 금지**로 갔다.
+#
+#  ⚠️ **이미 있던 줄은 안 본다**(사용자 같은 날 · 「기존 발행 문서는 고치지 않아도」).
+#     공유본이 있던 폴더는 git 저장소가 아니라 git 기준으로는 새 줄을 못 가른다. 그래서 훅이
+#     AI 세션이 문서를 **처음 고치기 직전**에 그 문서의 가운뎃점 줄을 대장(`MIDDOT_LEDGER`)에
+#     적고, 대장에 오른 문서에서 **대장에 없는 줄만** 오류로 낸다. 대장에 없는 문서(손댄 적 없는
+#     문서)는 건수만 알린다 — 손대지 않은 문서와 lab-docs 빌드는 멈추지 않는다.
+#     기존 줄이라도 다른 글자를 고치면 그 줄은 새 줄이 된다(고친 줄은 규칙을 따른다).
+#  ⚠️ **붙여 쓴 「작성·수정」은 안 본다** — 굳은 짝(「개발·운영」)이 섞여 2층이 문맥으로 가른다
+#     (`core-rules.md` 「and/or로 갈려 읽히는 나열」).
+MIDDOT = re.compile(r'(?<=\S)[ \t\u00a0]+[·・ㆍ][ \t\u00a0]+(?=\S)')
+#: 대장 한 줄 = 문서 열쇠 · 적은 때 · 기존 줄 열쇠(쉼표로 이음)를 탭으로 가름
+MIDDOT_LEDGER = Path(os.environ.get('KOREAN_QA_MIDDOT_LEDGER')
+                     or Path.home() / '.claude' / 'state' / 'korean-middot-legacy.tsv')
+#: `--new-doc` — 대장 없이 모든 가운뎃점 줄을 새 줄로 본다(새 문서 · 시험 문서)
+MIDDOT_ALL_NEW = False
+#: 대장에 없어 오류로 세지 않은 (줄, 문서) — 합계 앞에 알린다
+MIDDOT_UNTRACKED = [0, 0]
+MIDDOT_HOW = ('가운뎃점으로 잇지 않습니다. 사실은 하위 항목이나 「~하고」로, '
+              '낱말 나열은 쉼표나 「와/과」로 잇습니다')
+
+
+def middot_lines(path, raw=None):
+    """띄어 쓴 가운뎃점이 있는 본문 줄 — (줄 번호 또는 None, 줄 글, 열쇠).
+
+    인용(「」 · 따옴표) · 인라인 코드 · 코드펜스 · `<pre>`·`<code>` · 대조 예시 줄 · 출처 있는
+    원문 인용(`>` 줄)은 뺀다. 열쇠는 공백을 접은 줄 글의 해시다 — 같은 줄이면 위치가 바뀌어도 같다.
+    """
+    if raw is None:
+        raw = Path(path).read_text(encoding='utf-8', errors='ignore')
+    if str(path).lower().endswith('.md'):
+        rows = md_body(raw)
+    else:
+        text = re.sub(r'<!--.*?-->', ' ', raw, flags=re.S)
+        text = re.sub(r'<(script|style|code|pre)\b.*?</\1\s*>', ' ', text, flags=re.S | re.I)
+        rows = [(None, html.unescape(l)) for l in strip(text).split('\n')]
+    out = []
+    for n, line in rows:
+        s = line.strip()
+        if not s or is_example(s) or (s.startswith('>') and ATTRIB.search(s)):
+            continue
+        if not MIDDOT.search(mask(s)):
+            continue
+        flat = ' '.join(s.split())
+        out.append((n, flat, hashlib.sha1(flat.encode('utf-8')).hexdigest()[:16]))
+    return out
+
+
+def _middot_key(path):
+    return os.path.normcase(os.path.abspath(str(path)))
+
+
+def middot_ledger():
+    """대장 — {문서 열쇠: 기존 줄 열쇠 집합}. 같은 문서가 두 번 적혔으면 처음 것이 이긴다."""
+    out = {}
+    try:
+        text = MIDDOT_LEDGER.read_text(encoding='utf-8')
+    except OSError:
+        return out
+    for line in text.splitlines():
+        cells = line.split('\t')
+        if len(cells) == 3 and cells[0]:
+            out.setdefault(cells[0], {h for h in cells[2].split(',') if h})
+    return out
+
+
+def middot_baseline(path):
+    """문서를 처음 고치기 직전에 부른다 — 그때 있던 가운뎃점 줄을 기존 줄로 적는다.
+
+    이미 오른 문서는 다시 적지 않는다(그 사이 쓴 새 줄이 기존 줄로 덮이면 안 된다).
+    없는 파일은 기존 줄 없이 오른다 — 새로 쓰는 문서는 첫 줄부터 본다. 적었으면 True.
+    """
+    key = _middot_key(path)
+    if key in middot_ledger():
+        return False
+    legacy = [h for _, _, h in middot_lines(path)] if os.path.isfile(path) else []
+    MIDDOT_LEDGER.parent.mkdir(parents=True, exist_ok=True)
+    row = '\t'.join((key, time.strftime('%Y-%m-%dT%H:%M:%S'), ','.join(legacy)))
+    # 덧붙여 쓴다 — 세션 여럿이 함께 써도 앞 기록을 덮지 않는다
+    with MIDDOT_LEDGER.open('a', encoding='utf-8', newline='\n') as f:
+        f.write(row + '\n')
+    return True
+
+
+def middot_hits(path, raw=None):
+    """오류로 낼 가운뎃점 줄 — (줄 번호 또는 None, 발췌). 대장에 없는 문서는 세기만 한다."""
+    if is_instruction_file(path):
+        return []
+    rows = middot_lines(path, raw)
+    if not rows:
+        return []
+    legacy = set() if MIDDOT_ALL_NEW else middot_ledger().get(_middot_key(path))
+    if legacy is None:
+        MIDDOT_UNTRACKED[0] += len(rows)
+        MIDDOT_UNTRACKED[1] += 1
+        return []
+    out = []
+    for n, flat, h in rows:
+        if h in legacy:
+            continue
+        m = MIDDOT.search(mask(flat))
+        out.append((n, flat[max(0, m.start() - 24):m.end() + 24]))
+    return out
+
+
+def middot_errors(path, raw, numbered):
+    """지적 글 — 마크다운은 「N행」을 붙이고 HTML 은 발췌만. 갈래 이름은 부르는 쪽이 붙인다."""
+    out = []
+    for n, excerpt in middot_hits(path, raw):
+        where = f'{n}행  ' if (numbered and n) else ''
+        out.append(f'{where}「{excerpt}」 — {MIDDOT_HOW}')
+    return out
+
+
 def main():
     argv = sys.argv[1:]
     if '--list-rules' in argv:
         list_rules(); return 0
+    if '--middot-baseline' in argv:
+        # 훅이 쓰는 기록을 손으로 — 이미 있는 문서를 처음 고치기 전에 기존 줄로 적는다
+        for f in [a for a in argv if not a.startswith('-')]:
+            done = middot_baseline(f)
+            print(f'{"기록" if done else "이미 있음"} — {f}')
+        return 0
     form, rules_path, taken = None, None, set()
     for i, a in enumerate(argv):
         if a == '--form' and i + 1 < len(argv):
@@ -2667,7 +2803,7 @@ def main():
     # **모르는 플래그는 멈춘다.** 조용히 무시하면 `--relaxd` 처럼 한 글자 틀렸을 때
     # **끄려던 검사가 안 꺼진 채 통과로 읽힌다** — 사람은 껐다고 알고 있다.
     known = {'--html-only', '--relaxed', '-v', '--form',
-             '--rules', '--no-rules', '--list-rules'}
+             '--rules', '--no-rules', '--list-rules', '--new-doc'}
     for i, a in enumerate(argv):
         if not a.startswith('-') or i in taken:
             continue
@@ -2679,6 +2815,8 @@ def main():
 
     args = [a for i, a in enumerate(argv) if not a.startswith('-') and i not in taken]
     html_only = '--html-only' in argv
+    global MIDDOT_ALL_NEW
+    MIDDOT_ALL_NEW = '--new-doc' in argv
     relaxed = '--relaxed' in argv
     verbose = '-v' in argv
     if not args:
@@ -2771,6 +2909,12 @@ def main():
         print(f'\n제품 이름 목록이 없어 음차는 안 봤습니다 — 이름은 저장소 밖에 둡니다'
               f'\n   만들려면 data/catalog/local-brand-names.example.txt 를 '
               f'{BRAND_FILE} 로 복사하십시오')
+    # ⛔ 대장 밖 문서의 가운뎃점은 오류로 안 셌다 — 말하지 않으면 「오류 0」이 안 본 것인지 갈리지 않는다
+    if MIDDOT_UNTRACKED[0]:
+        tail += f' · 가운뎃점 대장 밖 {MIDDOT_UNTRACKED[0]}줄'
+        print(f'\n가운뎃점 이음 — 손댄 적 없는 문서라 오류로 세지 않은 줄 {MIDDOT_UNTRACKED[0]}개'
+              f'(문서 {MIDDOT_UNTRACKED[1]}개) · AI 세션이 처음 고칠 때부터 새 줄을 봅니다'
+              '\n   새 문서로 보려면 --new-doc')
     print(f'\n합계 — 오류 {total_e} · 주의 {total_w}{tail}')
     return 1 if total_e else 0
 
