@@ -36,7 +36,7 @@ import repo_paths  # noqa: E402
 
 CHECKER = repo_paths.CHECKER
 GATE = ROOT / "hooks" / "doc-style-gate.py"
-KIND = "가운뎃점 이음"
+KIND = "띄어 쓴 가운뎃점"
 
 MD_HEAD = "---\nform: structured\n---\n\n# 정책 요약\n\n**라이선스 정책** — 한 장 조망\n\n"
 HTML_HEAD = '<h1>정책 요약</h1>\n<p class="lede">라이선스 정책 — 한 장 조망</p>\n'

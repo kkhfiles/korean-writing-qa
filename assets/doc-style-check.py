@@ -1810,7 +1810,7 @@ def scan_html(path, relaxed=False, form=None, rules=None):
     # 기억해야 하는 구조는 실패한다 — `<meta name="form" content="prose">` 로 파일이
     # 자기 형식을 들고 있게 한다. 플래그가 오면 그쪽이 이긴다(그 자리에서 뒤집어 봄).
     for msg in middot_errors(path, raw, numbered=False):
-        err.append(('가운뎃점 이음', msg))
+        err.append(('띄어 쓴 가운뎃점', msg))
     err, warn = apply_form(err, warn, form or declared_form(raw))
     err, warn = apply_instruction_file(err, warn, path)
     err, warn = apply_selection(err, warn, rules) if rules else (err, warn)
@@ -1937,7 +1937,7 @@ RULE_GROUPS = {
         '「~하는 자리」', '「~하는 자리」 의심', '지어낸 명사구', '평가 수식어',
         '모호한 지칭', '지시어 확인', '「회기」', '업무 글에 없는 말',
         '말투 섞임', '제품 이름 음차', '다른 낱말로 읽힘', '낯선 사내 용어',
-        '가운뎃점 이음',
+        '띄어 쓴 가운뎃점',
     ]),
     '번역투': ('번역에서 옮아온 문형', [
         '이중 피동', '번역투 이중 조사', '번역투 그녀',
@@ -2095,7 +2095,7 @@ def list_rules():
     print('반말 서술형은 문서 전부에 건다 — 문서에는 반말을 쓰지 않는다(2026-09-23).')
     print('Claude 만 읽는 지시 파일(CLAUDE.md · AGENTS.md · SKILL.md · .claude/ · skills/ 아래)만')
     print('뺀다 — 사람이 읽는 문서가 아니라 모델에게 주는 지시라서다.\n')
-    print('가운뎃점 이음은 새로 쓰거나 고친 줄만 본다 — AI 세션이 문서를 처음 고치기 직전에')
+    print('띄어 쓴 가운뎃점은 새로 쓰거나 고친 줄만 본다 — AI 세션이 문서를 처음 고치기 직전에')
     print('그때 있던 줄을 대장에 적는다(2026-10-13). 손댄 적 없는 문서는 건수만 알린다.\n')
     print('보기 — 표 머리 「비고」를 쓰는 조직, 제목 형식은 자유로 두는 조직\n')
     print('    [rules]')
@@ -2648,14 +2648,14 @@ def scan_md(path, relaxed=False, form=None, rules=None):
             '검사에서 빠졌다. 실제로 배포되는 글이면 파일로 빼서 따로 검사한다.',
         ))
     for msg in middot_errors(path, raw, numbered=True):
-        err.append(('가운뎃점 이음', msg))
+        err.append(('띄어 쓴 가운뎃점', msg))
     err, warn = apply_form(err, warn, resolved)
     err, warn = apply_instruction_file(err, warn, path)
     err, warn = apply_selection(err, warn, rules) if rules else (err, warn)
     return err, warn, slots
 
 
-# ── 가운뎃점 이음 ────────────────────────────────────────────────────────────
+# ── 띄어 쓴 가운뎃점 ────────────────────────────────────────────────────────────
 #: ★ **띄어 쓴 가운뎃점으로 사실이나 낱말을 잇지 않는다** (2026-10-13 사용자 결정)
 #
 #  「A 의 B · C 는 세지 않음」 꼴이 「B 와 C 를 모두 세지 않음」으로 읽혀 공유본에 나갔다
@@ -2912,7 +2912,7 @@ def main():
     # ⛔ 대장 밖 문서의 가운뎃점은 오류로 안 셌다 — 말하지 않으면 「오류 0」이 안 본 것인지 갈리지 않는다
     if MIDDOT_UNTRACKED[0]:
         tail += f' · 가운뎃점 대장 밖 {MIDDOT_UNTRACKED[0]}줄'
-        print(f'\n가운뎃점 이음 — 손댄 적 없는 문서라 오류로 세지 않은 줄 {MIDDOT_UNTRACKED[0]}개'
+        print(f'\n띄어 쓴 가운뎃점 — 손댄 적 없는 문서라 오류로 세지 않은 줄 {MIDDOT_UNTRACKED[0]}개'
               f'(문서 {MIDDOT_UNTRACKED[1]}개) · AI 세션이 처음 고칠 때부터 새 줄을 봅니다'
               '\n   새 문서로 보려면 --new-doc')
     print(f'\n합계 — 오류 {total_e} · 주의 {total_w}{tail}')

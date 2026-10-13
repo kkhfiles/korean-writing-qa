@@ -1281,7 +1281,7 @@ def middot_report(fp):
         found = checker_module().middot_errors(fp, None, numbered=fp.lower().endswith(".md"))
     except Exception:                   # noqa: BLE001 — 발행 직전 검사가 다시 본다
         return []
-    return [f"   ❌ [가운뎃점 이음] {msg}" for msg in found]
+    return [f"   ❌ [띄어 쓴 가운뎃점] {msg}" for msg in found]
 
 
 def patch_paths(payload):
