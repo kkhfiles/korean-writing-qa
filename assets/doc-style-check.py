@@ -1870,16 +1870,20 @@ def declared_form(raw):
     사람이 `--form prose` 를 기억해야 하고, 기억해야 하는 구조는 실패한다.
     `<meta name="form" content="prose">` 한 줄로 파일이 자기 형식을 들고 있게 한다.
     """
-    m = HTML_FORM.search(raw[:4096])
+    # ⛔ **머리말이 먼저다** — HTML 표시를 먼저 찾았더니 마크다운 본문에 코드로 든 설명 예시
+    #    (`<meta name="form" content="prose">`)를 선언으로 읽었다. 사용 안내가 머리말에
+    #    `form: structured` 를 적었는데 산문으로 판정돼 개조식 검사가 꺼진 채 통과했다(2026-10-13 ·
+    #    감춰진 오류 12건 · `docs/architecture.md` 도 같았다). 머리말이 있으면 머리말만 보고,
+    #    HTML 표시는 머리말이 없을 때 코드 밖에서만 찾는다.
+    lines = raw.split('\n')
+    if lines and lines[0].strip() == '---':
+        for j in range(1, min(len(lines), 60)):
+            if lines[j].strip() == '---':
+                m = FORM_KEY.search('\n'.join(lines[1:j]))
+                return m.group(1).lower() if m and m.group(1).lower() in FORM_VALUES else None
+    m = HTML_FORM.search(CODE_SPAN.sub(' ', raw[:4096]))
     if m and m.group(1).lower() in FORM_VALUES:
         return m.group(1).lower()
-    lines = raw.split('\n')
-    if not lines or lines[0].strip() != '---':
-        return None
-    for j in range(1, min(len(lines), 60)):
-        if lines[j].strip() == '---':
-            m = FORM_KEY.search('\n'.join(lines[1:j]))
-            return m.group(1).lower() if m and m.group(1).lower() in FORM_VALUES else None
     return None
 
 
