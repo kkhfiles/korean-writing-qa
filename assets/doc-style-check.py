@@ -2671,7 +2671,7 @@ def scan_md(path, relaxed=False, form=None, rules=None):
 #     문서)는 건수만 알린다 — 손대지 않은 문서와 lab-docs 빌드는 멈추지 않는다.
 #     기존 줄이라도 다른 글자를 고치면 그 줄은 새 줄이 된다(고친 줄은 규칙을 따른다).
 #  ⚠️ **붙여 쓴 「작성·수정」은 안 본다** — 굳은 짝(「개발·운영」)이 섞여 2층이 문맥으로 가른다
-#     (`core-rules.md` 「and/or로 갈려 읽히는 나열」).
+#     (`core-rules.md` 「나열의 관계와 적용 범위 밝히기」).
 MIDDOT = re.compile(r'(?<=\S)[ \t\u00a0]+[·・ㆍ][ \t\u00a0]+(?=\S)')
 #: 대장 한 줄 = 문서 열쇠 · 적은 때 · 기존 줄 열쇠(쉼표로 이음)를 탭으로 가름
 MIDDOT_LEDGER = Path(os.environ.get('KOREAN_QA_MIDDOT_LEDGER')
@@ -2680,8 +2680,9 @@ MIDDOT_LEDGER = Path(os.environ.get('KOREAN_QA_MIDDOT_LEDGER')
 MIDDOT_ALL_NEW = False
 #: 대장에 없어 오류로 세지 않은 (줄, 문서) — 합계 앞에 알린다
 MIDDOT_UNTRACKED = [0, 0]
-MIDDOT_HOW = ('가운뎃점으로 잇지 않습니다. 사실은 하위 항목이나 「~하고」로, '
-              '낱말 나열은 쉼표나 「와/과」로 잇습니다')
+#: 구두점만 바꾸면 같은 모호함이 남는다 — 관계부터 정하게 한다(astra 검토 2026-10-13)
+MIDDOT_HOW = ('띄어 쓴 가운뎃점을 쓰지 않습니다. 둘 모두인지 하나인지, 수식어가 어디까지 '
+              '걸리는지 먼저 정하고 항목을 나누거나 관계가 드러나게 풀어 씁니다')
 
 
 def middot_lines(path, raw=None):
