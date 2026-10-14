@@ -241,13 +241,38 @@ def judged(key: str, log: Path | None = None, now: float | None = None,
     for row in _rows(key, log or LOG, now, fresh):
         if row.get("ok"):
             out.update(row.get("seen") or [])
-    return out
+    return out | approved(key, now=now)
 
 
 def answered(key: str, answers: Path | None = None, now: float | None = None) -> set[str]:
     """사용자가 답한 줄 해시 — 기한 없음(그 줄 글자가 같은 동안은 사용자가 정한 것이 그대로다)."""
     return {row["line_key"] for row in _rows(key, answers or ANSWERS, now, fresh=False)
             if row.get("line_key")}
+
+
+def approved(key: str, answers: Path | None = None, now: float | None = None) -> set[str]:
+    """사용자가 사람 확인에 답한 대로 고친 줄 해시 — 사람이 판정한 줄이라 판정기가 다시 보지 않는다.
+
+    ⛔ 전에는 답대로 고친 줄도 새 줄이라 다시 판정했고, 상한을 넘은 줄은 그 판정의 지적이 모두 사람
+       확인으로 갔다. 판정기는 판정마다 다른 것을 짚어서 한 줄에 네 번을 물었다(2026-10-14 lab-docs ·
+       사람 확인 208건 중 101건이 상한 때문). 고친 글이 사용자가 고른 글과 글자까지 같을 때만 여기
+       오른다 — 1층 검사기는 계속 본다.
+    """
+    return {row["line_key"] for row in _rows(key, answers or ANSWERS, now, fresh=False)
+            if row.get("approved") and row.get("line_key")}
+
+
+def decided(key: str, decisions: Path | None = None, answers: Path | None = None) -> set[tuple]:
+    """사용자가 답한 사람 확인 지적 — (물은 줄 해시, 표현). 보류 · 빈칸은 결정 기록에 안 남는다.
+
+    답 기록에 적힌 「이 답이 닫은 지적」도 넣는다 — 앞 판에서 물어 표현을 따라 뒤 판에 붙은 지적은 뒤 판에
+    답해도 줄 해시가 달라, 줄이 또 바뀌면 다시 붙었다(2026-10-14 README).
+    """
+    out = {(row.get("line_key"), row.get("phrase"))
+           for row in _rows(key, decisions or DECISIONS, None, fresh=False) if row.get("line_key")}
+    for row in _rows(key, answers or ANSWERS, None, fresh=False):
+        out.update(tuple(a) for a in row.get("asks") or [] if isinstance(a, list) and len(a) == 2)
+    return out
 
 
 def ask_rows(key: str, log: Path | None = None, now: float | None = None,
@@ -279,10 +304,17 @@ def open_asks(key: str, lines: list[str], log: Path | None = None,
         if k and k not in where:
             where[k] = n
     done = answered(key, answers, now)
+    told = decided(key)
     out, seen = [], set()
     for ask in ask_rows(key, log, now):
         n = where.get(ask.get("line_key") or "")
         if n is None:
+            # 사용자가 답한 지적은 물은 줄이 바뀌면 닫는다 — 고른 문구 안에 물은 표현이 그대로 들면
+            # 답대로 고쳐도 다시 붙어 같은 것을 또 물었다(2026-10-14 「주제 문서」 → 「주제 문서(…)」).
+            # 답과 다르게 고쳤으면 그 줄은 새 줄이라 판정기가 다시 본다.
+            # `--answer` 로 답한 판도 같다 — 그 판의 줄 해시가 답 기록에 있다
+            if (ask.get("line_key"), ask.get("phrase")) in told or ask.get("line_key") in done:
+                continue
             phrase = str(ask.get("phrase") or "").strip()
             n = next((i for i, l in enumerate(lines, 1) if phrase and phrase in l), None)
         if n is None:
@@ -307,15 +339,27 @@ def _plain(text: str) -> str:
     return re.sub(r"[*_`]", "", text)
 
 
+#: 링크 주소 — 줄이 비슷한지는 보이는 글로 가른다
+LINK_TARGET = re.compile(r"\]\([^)\s]*\)|https?://\S+")
+
+
+def _visible(text: str) -> str:
+    """링크 주소를 뺀 글. ⛔ 같은 출처 주소를 담은 서로 다른 줄이 주소 길이 때문에 글자 절반 이상이
+    같아져 한 계보로 묶였다 — 출처 소개 줄이 원문 목록 줄의 판정 횟수를 물려받아 상한에 일찍 닿고,
+    기준 판도 그 줄로 잡혔다(2026-10-14 lab-docs · 주소를 넣으면 0.57 · 빼면 0.21)."""
+    seen = LINK_TARGET.sub("", text)
+    return seen if seen.strip() else text
+
+
 def _similar(a: str, b: str) -> float:
     import difflib
-    m = difflib.SequenceMatcher(None, a, b, autojunk=False)
+    m = difflib.SequenceMatcher(None, _visible(a), _visible(b), autojunk=False)
     return m.ratio() if m.real_quick_ratio() >= SUCCESSOR and m.quick_ratio() >= SUCCESSOR else 0.0
 
 
 def _ratio(a: str, b: str) -> float:
     import difflib
-    return difflib.SequenceMatcher(None, a, b, autojunk=False).ratio()
+    return difflib.SequenceMatcher(None, _visible(a), _visible(b), autojunk=False).ratio()
 
 
 def successor(seen, old_key: str, lines: list[str], text: str) -> int | None:

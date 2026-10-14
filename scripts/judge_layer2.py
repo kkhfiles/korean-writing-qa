@@ -151,22 +151,69 @@ def answer(path: Path, line_nos: list[int], note: str) -> list[str]:
     lines = read_doc(path).splitlines()
     key = coverage.doc_key(path)
     # ⛔ 물은 줄에만 받는다 — 미리 적어 둔 답이 나중에 그 줄에 생길 지적을 묻기 전에 닫는다
-    waiting = {n for n, _ in coverage.open_asks(key, lines, LOG)}
+    pending = coverage.open_asks(key, lines, LOG)
+    waiting = {n for n, _ in pending}
     rows = []
     for n in line_nos:
         if not 0 < n <= len(lines) or not coverage.line_key(lines[n - 1]):
             raise ValueError(f"{n}행은 한글이 든 줄이 아닙니다 — 판정 결과의 줄 번호를 적습니다")
-        if n not in waiting:
+        # 「직접」 답대로 고친 줄 — 물은 줄은 사라졌고 이 줄이 그 줄을 이어 받았다. 확정하면 다시 판정하지 않는다
+        origin = answered_origin(key, lines, n)
+        if n not in waiting and origin is None:
             raise ValueError(f"{n}행에는 답을 기다리는 사람 확인 지적이 없습니다 — "
                              "--asks 로 줄 번호를 확인합니다")
-        rows.append({"at": datetime.now().isoformat(timespec="seconds"), "when": time.time(),
-                     "doc": str(path), "key": key, "line": n,
-                     "line_key": coverage.line_key(lines[n - 1]), "note": note.strip()})
+        row = {"at": datetime.now().isoformat(timespec="seconds"), "when": time.time(),
+               "doc": str(path), "key": key, "line": n,
+               "line_key": coverage.line_key(lines[n - 1]), "note": note.strip(),
+               # 이 답이 닫은 지적 — 앞 판에서 물어 이 줄로 따라온 지적은 줄 해시로는 못 잇는다
+               "asks": [[a.get("line_key"), a.get("phrase")] for m, a in pending if m == n]}
+        if origin is not None:
+            row.update(approved=True, origin=origin, text=lines[n - 1])
+        rows.append(row)
     coverage.ANSWERS.parent.mkdir(parents=True, exist_ok=True)
     with coverage.ANSWERS.open("a", encoding="utf-8", newline="\n") as f:
         for row in rows:
             f.write(json.dumps(row, ensure_ascii=False) + "\n")
     return [lines[r["line"] - 1].strip()[:40] for r in rows]
+
+
+def answered_origin(key: str, lines: list[str], n: int) -> str | None:
+    """n행이 사용자가 고침 · 직접으로 답한 물은 줄을 이어 받은 줄이면 그 물은 줄의 해시 · 아니면 None.
+
+    물은 줄이 그대로 남아 있으면 아직 안 고친 것이다. 이어 받았는지는 글자로 가른다(재판정 계보와 같은 기준).
+    """
+    now = {k for k in map(coverage.line_key, lines) if k}
+    for d in reversed(load_decisions()):
+        if not coverage.key_matches(d.get("key"), key) or d.get("kind") not in (ask_sheet.EDIT, ask_sheet.FREE):
+            continue
+        if d.get("line_key") in now or not d.get("text"):
+            continue
+        if coverage._similar(lines[n - 1], d["text"]) >= coverage.SUCCESSOR:
+            return d["line_key"]
+    return None
+
+
+def edited_by_answer(line: str, asks: list[dict]) -> str | None:
+    """「고침」 답 — 물은 줄에 판정기 수정안을 그대로 넣은 글. 글자로 넣을 수 없는 수정안이 있으면 None."""
+    out = line
+    for a in asks:
+        if a.get("category") == "재판정 상한":
+            continue                # 줄 전체를 짚은 것 — 같은 줄의 다른 지적에 대한 답이 곧 이 줄의 답이다
+        phrase, fix = str(a.get("phrase") or ""), str(a.get("fix") or "")
+        if not phrase or not fix or fix.startswith("(") or "\n" in fix or "○○" in fix or phrase not in out:
+            return None
+        out = out.replace(phrase, fix, 1)
+    return out if out != line else None
+
+
+def approve(path: Path, text: str, note: str, origin: str) -> None:
+    """사용자가 답한 대로 고친 글을 사람이 판정한 줄로 적는다 — 그 글로 고치면 판정기가 다시 보지 않는다."""
+    row = {"at": datetime.now().isoformat(timespec="seconds"), "when": time.time(), "doc": str(path),
+           "key": coverage.doc_key(path), "line_key": coverage.line_key(text), "text": text,
+           "origin": origin, "note": note, "approved": True}
+    coverage.ANSWERS.parent.mkdir(parents=True, exist_ok=True)
+    with coverage.ANSWERS.open("a", encoding="utf-8", newline="\n") as f:
+        f.write(json.dumps(row, ensure_ascii=False) + "\n")
 
 
 #: 프롬프트에 원문 그대로 싣는 답의 수 — 그대로 둔 것과 글로 적은 답만, 최근 것부터
@@ -183,10 +230,13 @@ def asks_on(path: Path, line_key: str) -> list[dict]:
     return out
 
 
-def record_decision(path: Path, line_key: str, raw: str, kind: str, source: str) -> int:
+def record_decision(path: Path, line_key: str, raw: str, kind: str, source: str,
+                    text: str | None = None) -> int:
     """사용자가 표에 적은 답을 그 줄의 지적마다 남긴다 — 남긴 수. 같은 답을 두 번 적지 않는다.
 
     ⛔ 지적을 닫지 않는다 — 닫는 것은 `answer`(그대로만)다. 이것은 다음 판정이 따를 기록이다.
+    `text` 는 사용자가 본 줄 — 그 줄을 고친 뒤의 판정에 이 답을 싣고(`decided_on`), 답대로 고친 줄을
+    확정할 때(`answered_origin`) 글자로 잇는다.
     """
     have = set()
     if coverage.DECISIONS.is_file():
@@ -203,7 +253,8 @@ def record_decision(path: Path, line_key: str, raw: str, kind: str, source: str)
         rows.append({"at": datetime.now().isoformat(timespec="seconds"), "when": time.time(),
                      "key": coverage.doc_key(path), "line_key": line_key, "source": source,
                      "category": str(ask.get("category") or "").strip(), "phrase": ask.get("phrase"),
-                     "fix": ask.get("fix"), "answer": raw, "kind": kind})
+                     "fix": ask.get("fix"), "answer": raw, "kind": kind,
+                     **({"text": text} if text else {})})
     if rows:
         coverage.DECISIONS.parent.mkdir(parents=True, exist_ok=True)
         with coverage.DECISIONS.open("a", encoding="utf-8", newline="\n") as f:
@@ -499,19 +550,26 @@ def read_answers(sheet: Path, replies: list[str] | None = None) -> int:
         # 다음 판정이 따를 기록 — 사용자가 본 줄(표의 줄 해시)에 단다. 그 뒤 문서가 바뀌어도
         # 사용자가 그 문장을 보고 정한 것은 그대로다.
         src = f"{sheet.name} {qid}" + (" · 대화로 받음" if qid in said else "")
-        learned += record_decision(p, key["line_key"], raw, kind, src)
         lines = read_doc(p).splitlines()
         # 표를 만든 뒤 위에 줄이 늘거나 줄었으면 같은 글의 줄을 찾아간다
         now = next((i for i, l in enumerate(lines, 1) if coverage.line_key(l) == key["line_key"]), None)
+        learned += record_decision(p, key["line_key"], raw, kind, src, lines[now - 1] if now else None)
         if now is None:
             refused.append(f"{qid} {p.name} {key['line']}행 — 표를 만든 뒤 그 줄이 바뀌었습니다 · "
                            "표를 다시 만들어 다시 묻습니다")
             continue
         if kind in (ask_sheet.EDIT, ask_sheet.FREE):
-            phrases = [str(a.get("phrase") or "") for n, a in
-                       coverage.open_asks(coverage.doc_key(p), lines, LOG) if n == now]
+            asks = [a for n, a in coverage.open_asks(coverage.doc_key(p), lines, LOG) if n == now]
+            phrases = [str(a.get("phrase") or "") for a in asks]
+            settled = None
+            if kind == ask_sheet.EDIT and not raw.strip().strip("`").strip().startswith(ask_sheet.DIRECT):
+                settled = edited_by_answer(lines[now - 1], asks)
+                if settled:
+                    approve(p, settled, f"사용자 답(사람 확인 표 {src}): {raw}", key["line_key"])
+            tail = (" · 판정기 제안대로 고치면 다시 판정하지 않음" if settled
+                    else f" · 고친 뒤 --answer {now} --note \"<사용자 답 원문>\" 으로 확정")
             (edits if kind == ask_sheet.EDIT else free).append(
-                f"{qid} {p.name} {now}행 「{' · '.join(phrases)}」 — 사용자 답: {raw}")
+                f"{qid} {p.name} {now}행 「{' · '.join(phrases)}」 — 사용자 답: {raw}{tail}")
             continue
         try:
             answer(p, [now], f"사용자 답(사람 확인 표 {src}): {raw}")
@@ -526,8 +584,8 @@ def read_answers(sheet: Path, replies: list[str] | None = None) -> int:
         for e in edits:
             print(f"    {e}")
     if free:
-        print(f"  글로 적은 답 {len(free)}건 — 세션이 원문을 읽고 가립니다 · 고칠 뜻이면 고치고, "
-              "유지하는 뜻이면 --answer <행> --note \"<원문>\" 으로 남깁니다")
+        print(f"  글로 적은 답 {len(free)}건 — 세션이 원문을 읽고 가립니다 · 고칠 뜻이면 고친 뒤, 유지하는 뜻이면 "
+              "바로 --answer <행> --note \"<원문>\" 으로 남깁니다(답대로 고쳐 확정한 줄은 다시 판정하지 않음)")
         for e in free:
             print(f"    {e}")
     if waiting:
@@ -718,7 +776,22 @@ def closed_on(key: str, lines: list[str], mine: list[int]) -> list[tuple[int, di
     return out
 
 
-def before_after(mine: list[int], info: dict[int, dict], closed: list[tuple[int, dict]] = ()) -> str:
+def decided_on(key: str, lines: list[str], mine: list[int]) -> list[tuple[int, dict]]:
+    """대상 줄(또는 그 앞 판)에 사용자가 사람 확인으로 답한 것 — (줄, 결정 기록). 줄마다 최근 것 셋까지.
+
+    ⛔ 전에는 세션의 처리 기록만 실어서, 판정기가 사용자가 고른 표현을 모른 채 다음 판정에서 그 괄호를
+       다시 빼자 · 다시 넣자를 오갔다(2026-10-14 lab-docs). 줄 글이 없는 옛 기록은 잇지 못해 뺀다.
+    """
+    rows = [d for d in load_decisions() if coverage.key_matches(d.get("key"), key) and d.get("text")]
+    out = []
+    for n in mine:
+        near = [d for d in rows if coverage._similar(lines[n - 1], d["text"]) >= coverage.SUCCESSOR]
+        out += [(n, d) for d in near[-3:]]
+    return out
+
+
+def before_after(mine: list[int], info: dict[int, dict], closed: list[tuple[int, dict]] = (),
+                 decided: list[tuple[int, dict]] = ()) -> str:
     """대상 줄의 기준 판과 지운 줄 — 고친 말이 뜻을 바꿨는지 판정기가 대조하게 하는 글.
 
     세션이 자료로 확인하거나 까닭을 적어 닫은 지적도 함께 싣는다 — 줄이 바뀌면 판정기가 같은 의문을
@@ -750,6 +823,11 @@ def before_after(mine: list[int], info: dict[int, dict], closed: list[tuple[int,
         out += ["", "앞서 이 줄에서 확인하거나 까닭을 적어 닫은 지적이다. 지금 글에서 그 근거가 달라지지 않았으면 "
                 "같은 지적을 다시 내지 않는다."]
         out += [f"- {n}행 「{r.get('phrase')}」 — {r.get('reason')}: {r.get('note')}" for n, r in closed]
+    if decided:
+        out += ["", "앞서 이 줄(고치기 전 판)에서 사람 확인으로 넘긴 지적에 사용자가 답한 것이다. 사용자가 고르거나 "
+                "적은 표현을 되돌리거나 다시 바꾸자는 지적은 내지 않는다. 사실이 틀렸으면 그것만 짚는다."]
+        out += [f"- {n}행 「{d.get('phrase')}」 · 판정기 제안 「{d.get('fix')}」 · 사용자: {d.get('answer')}"
+                for n, d in decided]
     return "\n".join(out)
 
 
@@ -831,7 +909,8 @@ def judge(path: Path, model: str, timeout: float, backend, targets: list[int] | 
             row["deleted_seen"] = sorted({k for n in mine for k in info[n].get("deleted_keys") or [] if k})
             user += ("\n\n이번에는 아래 줄만 점검한다 — 나머지 줄은 문맥으로만 읽고 지적하지 않는다.\n"
                      + ", ".join(map(str, mine))
-                     + before_after(mine, info, closed_on(key, lines, [n for n in mine if not info[n].get("anchor")])))
+                     + before_after(mine, info, closed_on(key, lines, [n for n in mine if not info[n].get("anchor")]),
+                                    decided_on(key, lines, [n for n in mine if not info[n].get("anchor")])))
             over = [n for n in mine if info[n]["round"] > REJUDGE_CAP]
         try:
             r = call_messages(model=model, system=system, user=user,

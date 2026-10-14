@@ -90,6 +90,11 @@ class _SheetBase(unittest.TestCase):
         lines = coverage.read_doc(self.doc).splitlines()
         return sorted({n for n, _ in coverage.open_asks(coverage.doc_key(self.doc), lines, judge.LOG)})
 
+    def kept_note(self) -> str:
+        """「그대로」 답 기록의 까닭 — 「고침」 답대로 고친 글의 승인 기록은 뺀다."""
+        rows = [json.loads(l) for l in coverage.ANSWERS.read_text(encoding="utf-8").splitlines()]
+        return [r for r in rows if not r.get("approved")][-1]["note"]
+
 
 class SheetTests(_SheetBase):
 
@@ -117,7 +122,7 @@ class SheetTests(_SheetBase):
                          "「고침」을 답으로 적어 고치기 전에 지적이 닫혔거나 「그대로」가 안 적혔습니다")
         self.assertIn("고칠 것 1건", out)
         self.assertIn("맨 위에 표시합니다", out)
-        note = json.loads(coverage.ANSWERS.read_text(encoding="utf-8").splitlines()[-1])["note"]
+        note = self.kept_note()
         self.assertIn("그대로 — 정해진 문구", note, "사용자가 적은 답이 기록에 안 남았습니다")
 
     def test_free_text_is_neither_recorded_nor_listed_as_a_fix(self) -> None:
@@ -201,7 +206,7 @@ class ScreenTests(_SheetBase):
         self.assertEqual(1, rc, out)
         self.assertEqual([7], self.open_lines(), "대화 답의 「그대로」가 안 닫혔거나 「고침」이 미리 닫혔습니다")
         self.assertIn("고칠 것 1건", out)
-        note = json.loads(coverage.ANSWERS.read_text(encoding="utf-8").splitlines()[-1])["note"]
+        note = self.kept_note()
         self.assertIn("그대로 — 정해진 문구", note)
         learned = [json.loads(l) for l in coverage.DECISIONS.read_text(encoding="utf-8").splitlines()]
         self.assertTrue(learned and all("대화로 받음" in d["source"] for d in learned),
