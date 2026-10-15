@@ -192,6 +192,65 @@ class LimitWatchTests(unittest.TestCase):
         self.assertEqual(seen, [{"five_hour": 0.11, "seven_day": 0.86}])
 
 
+EDITS = [{"edit_id": "I-1", "before": "배포 일정은 다음 주 화요일로 정했습니다.",
+          "after": "배포 일정은 이번 주 금요일로 정했습니다.", "instruction": "배포를 이번 주 금요일로 당긴다"}]
+I1 = 19      # 정상 문장 뒤 「지시로 고칠 문장」 절의 첫 줄
+
+
+class SessionTests(_Base):
+
+    def session(self, replies, mode="batch") -> tuple[dict, Scripted]:
+        fake = Scripted(replies)
+        got = bench.run_session(self.dir / "run", FLAGGED, CLEAN, EDITS, mode, max_calls=20, backend=fake.pair())
+        return got, fake
+
+    def test_each_kind_of_finding_is_handled_like_a_session(self) -> None:
+        round1 = [{"line": I1, "phrase": "이번 주 금요일", "fix": "다음 주 화요일", "decide": "fix",
+                   "category": "고치다 뜻이 바뀐 곳", "why": "기준 판과 다름", "check": "일정이 바뀌었는지"}]
+        got, fake = self.session([ROUND0, round1, []])
+        t = got["total"]
+        self.assertEqual(t["종료"], "완료")
+        self.assertEqual((t["사람 답"], t["사실 확인 닫기"], t["지시반영 닫기"], t["적용"]), (1, 1, 1, 1))
+        doc = (self.dir / "run" / "bench.md").read_text(encoding="utf-8").splitlines()
+        self.assertEqual(doc[F2 - 1], "- 회의록은 당일 중에 공유합니다.", "사람 확인 답(고침)을 반영하지 않았습니다")
+        self.assertEqual(doc[C1 - 1], "- 배포 일정은 다음 주에 정합니다.", "사실 확인 지적의 수정안을 확인 없이 넣었습니다")
+        self.assertEqual(doc[I1 - 1], "- 배포 일정은 이번 주 금요일로 정했습니다.", "지시 편집이 안 들어갔거나 되돌려졌습니다")
+        # 답대로 고친 줄은 다시 판정하지 않는다 — 1회차 대상은 고친 줄과 지시 편집 줄뿐
+        self.assertIn(f"{F1}, {I1}", fake.calls[1]["user"])
+        self.assertNotIn(f"{F2},", fake.calls[1]["user"])
+
+    def test_one_at_a_time_makes_small_rejudges(self) -> None:
+        two = [fix(F1, "올립니다", "제출합니다"), fix(C1, "정합니다", "확정합니다")]
+        batch, _ = self.session([two, [], []], mode="batch")
+        self.tmp.cleanup()
+        self.tmp = tempfile.TemporaryDirectory()
+        self.dir = Path(self.tmp.name)
+        one, _ = self.session([two, [], [], []], mode="one")
+        self.assertGreater(one["total"]["호출"], batch["total"]["호출"],
+                           "하나씩 처리했는데 재판정 호출이 늘지 않았습니다")
+        self.assertGreaterEqual(one["total"]["대상 3줄 이하 재판정"], 1)
+
+    def test_the_call_budget_stops_the_loop(self) -> None:
+        endless = [[fix(F1, "올립니다", "제출합니다")]] + [[fix(F1, w, w + "다")] for w in ("제출합니", "제출합니다")]
+        fake = Scripted(endless * 5)
+        got = bench.run_session(self.dir / "run", FLAGGED, CLEAN, EDITS, "batch", max_calls=2, backend=fake.pair())
+        self.assertEqual(got["total"]["종료"], "호출 상한")
+        self.assertLessEqual(len(fake.calls), 2)
+
+    def test_work_left_open_is_not_reported_as_done(self) -> None:
+        from unittest import mock
+        with mock.patch.object(bench, "process", return_value=0):
+            fake = Scripted([ROUND0])
+            got = bench.run_session(self.dir / "run", FLAGGED, CLEAN, [], "batch", max_calls=5, backend=fake.pair())
+        self.assertEqual(got["total"]["종료"], "멈춤", "열린 지적이 남았는데 완료로 적었습니다")
+
+    def test_reclosing_the_same_finding_is_counted(self) -> None:
+        log = self.dir / "d.jsonl"
+        rows = [{"phrase": "p", "reason": "확인함", "line_key": k} for k in ("a", "b", "b", "c")]
+        log.write_text("\n".join(json.dumps(r) for r in rows) + "\n", encoding="utf-8")
+        self.assertEqual(bench.reclosed(log), 2)
+
+
 class EndStateTests(unittest.TestCase):
 
     def test_states(self) -> None:
