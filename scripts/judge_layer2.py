@@ -98,6 +98,10 @@ DEFAULT_MODEL = "opus"      # 점검표에서 Sonnet 은 일상 동사 묶음 4/
 #: Codex 쪽 기본 — 2026-10-02 대장 탐침 · 점검표를 Opus 와 나란히 잰 값(`docs/calibration-20260929.md`)
 #: astra-high 와 회수 · 헛짚음이 같고 5시간 한도는 4분의 1(탐침 1회 1~2% · astra 6~7%)
 CODEX_MODEL = "sol-high"
+#: Claude Code 프롬프트 캐시 유지 시간 — 구독 로그인 기본은 1시간(쓰기 단가가 입력의 2배)이고 5분은 1.25배다.
+#: 판정 호출의 93% 가 앞 호출 5분 안에 이어져, 실사용 기록 796회에 단가만 바꾸면 환산 비용이 20% 준다
+#: (2026-10-15 · 판정 결과와 무관 · 사용자 결정 「적용」). 환경 변수를 이미 정했으면 그 값을 따른다.
+CACHE_TTL_ENV, CACHE_TTL = "CLAUDE_CODE_PROMPT_CACHE_TTL", "5m"
 
 
 def chunks(lines: list[str], limit: int = CHUNK_LINES) -> list[tuple[int, list[str]]]:
@@ -853,6 +857,8 @@ def judge(path: Path, model: str, timeout: float, backend, targets: list[int] | 
        탐침과 같게 두고 **결과만** 거른다 — 잰 것과 도는 것이 같아야 한다.
     """
     call_messages, parse_json = backend
+    # CLI 는 이 프로세스의 환경 변수를 물려받는다 — 판정 호출에만 걸고 다른 세션 설정은 안 바꾼다
+    ttl = os.environ.setdefault(CACHE_TTL_ENV, CACHE_TTL)
     text = read_doc(path)
     lines = text.splitlines()
     key = coverage.doc_key(path)
@@ -889,6 +895,7 @@ def judge(path: Path, model: str, timeout: float, backend, targets: list[int] | 
                "doc": str(path), "key": key,
                "sha256": hashlib.sha256("\n".join(part).encode("utf-8")).hexdigest()[:16],
                "lines": f"{first}-{first + len(part) - 1}", "model": model, "rules": rules_sha,
+               "cache_ttl": ttl,       # 적용 전후 비용을 기록으로 가른다
                # 게이트가 「이번 가지의 새 줄을 판정기가 다 봤나」를 이것으로 가른다
                "seen": coverage.seen_keys(part)}
         user = probe.USER.format(document=numbered(part, first))
