@@ -7,22 +7,33 @@
 
 **판정기는 실행마다 크게 흔들린다** — 같은 문서의 0회차 지적이 136건과 169건, 판정기 글 재지적이 17건과
 54건이었다. 그래서 한 번 잰 값으로 효과를 말하지 않는다. 기준과 후보를 각각 세 번 이상 돌리고 아래
-`PREREGISTERED` 의 규칙으로만 견준다. 그 규칙은 기준선을 재기 전에 적었다 — 결과를 보고 고치면 탐색적이다.
+`PREREGISTERED` 의 규칙으로만 견준다. 규칙은 그 판의 기준선을 재기 전에 적는다 — 결과를 보고 고치면 탐색적이다.
+
+**재는 것이 목표 그 자체는 아니다**(2판 · 2026-10-15) — 최종 목표는 구독 사용량과 수행 시간이다. 환산 비용
+(CLI 의 `total_cost_usd` · 청구액 아님)은 대리 지표이고, 구독 사용량과 비례한다는 근거는 없다(외부 검토).
+그래서 셋을 따로 적는다 — 환산 비용과 캐시 쓰기 · 읽기 · 출력, 실제 걸린 시간, 그리고 SDK 가 호출마다 주는
+구독 사용률(5시간 · 7일 창, 1% 단위라 거칠다). 1판은 출력 토큰 하나로 판정했는데 실사용 환산 비용의 약
+60% 가 캐시 쓰기였다.
 
     python -X utf8 scripts/bench_loop.py run <이름> [--times 3] [--policy all|known] [--rounds 6] [--limit N]
     python -X utf8 scripts/bench_loop.py compare <기준 이름> <후보 이름>
 
 - **문서** — 사용자가 짚은 표현 대장의 문장(`data/cases/flagged-rounds.jsonl`)과 기여 시료의 정상 문장
-  (`data/cases/contributed.jsonl` 의 expect=clean). 시료마다 한 줄 · 순서 고정.
+  (`data/cases/contributed.jsonl` 의 expect=clean). 시료마다 한 줄 · 순서 고정. 머리말 `form: prose` —
+  목록 항목이 모두 「~합니다.」라 형식 검사가 줄마다 걸려 1층이 시료를 잡았는지 셀 수 없었다(2판).
 - **고리** — 전체 판정 → 수정안 적용 → 판정 안 한 줄만 다시 판정(`--since main`). 지적이 없거나, 적용할
-  수정안이 없거나, 판정할 새 줄이 없으면 끝.
-- **정책** — all = 고칠 지적의 수정안을 모두 적용(세션이 판정기를 그대로 따를 때) · known = 짚은 문장
-  줄만 적용(정상 줄 지적은 세기만 함).
+  수정안이 없거나, 판정할 새 줄이 없으면 끝. 같은 줄 4번째 재판정의 사람 확인 넘김은 판정기 안에서 일어나
+  실사용과 같다 — 넘긴 지적은 적용하지 않으므로 `--rounds` 는 그 위의 안전 상한이다.
+- **정책** — all = 고칠 지적의 수정안을 모두 적용(세션이 판정기를 그대로 따를 때 · 스트레스 시험) ·
+  known = 짚은 문장 줄만 적용(정상 줄 지적은 세기만 함).
 - **격리** — 판정 · 답 · 사용자 결정 · 처리 기록을 실행 폴더에 따로 둔다. 쌓인 사용자 답이 프롬프트에
   섞이면 실행마다 입력이 달라진다.
 - **결과** — `<--out>/<이름>/<시각>/summary.json`. 기본 폴더는 저장소 밖(`~/.claude/state/korean-bench`).
+- **기준과 후보를 번갈아 돌리려면** — 후보 코드를 다른 작업 트리에 두고 그 트리의 이 파일로 돌린다(각자 자기
+  저장소의 판정기를 불러온다). 같은 시간대에 번갈아 돌려야 한도 · 캐시 상태 차이가 한쪽에 몰리지 않는다.
 - ⛔ **정상 줄 지적은 오탐률이 아니다** — 정상 시료는 1층에서 정상인 문장이라 2층 결함이 섞여 있다.
-- ⛔ **판정기를 실제로 부른다** — 구독 한도를 쓴다(한 번에 출력 6만여 토큰 · 9분 안팎, 2026-10-13 실측).
+- ⛔ **판정기를 실제로 부른다** — 구독 한도를 쓴다(한 번에 출력 6만여 토큰 · 9분 안팎 · 환산 1.7~2.3달러,
+  2026-10-14 실측). 7일 창이 차 있으면 다른 업무 세션까지 멈출 수 있으니 돌리기 전에 사용률을 본다.
 """
 from __future__ import annotations
 
@@ -34,6 +45,7 @@ import os
 import re
 import subprocess
 import sys
+import time
 from datetime import datetime
 from pathlib import Path
 
@@ -46,17 +58,24 @@ import layer2_coverage as coverage  # noqa: E402
 CHECKER = ROOT / "assets" / "doc-style-check.py"
 OUT = Path.home() / ".claude" / "state" / "korean-bench"
 TOTAL = re.compile(r"합계 — 오류 (\d+) · 주의 (\d+)")
+#: 검사기 출력의 지적 줄 — 「   ❌ [갈래] 12행  …」 · 「   ⚠️ [갈래] 12행  …」
+CHECKER_HIT = re.compile(r"^\s*(?:❌|⚠️)\s*\[[^\]]+\]\s*(\d+)행")
+HEAD = ["---", "form: prose", "---"]
 
-#: 비교 규칙 — 기준선을 재기 전에 적었다(2026-10-14). 결과를 본 뒤 고치면 그 뒤 비교는 탐색적이다.
+#: 비교 규칙 2판 — 2판 기준선을 재기 전에 적었다(2026-10-15). 1판(출력 토큰 하나로 판정)은 git 이력에 남는다.
 PREREGISTERED = {
     # 한쪽에 완주한 실행이 이보다 적으면 판정 불가 · 많으면 탐색적(앞 결과를 보고 더 돌린 것일 수 있다)
     "runs": 3,
-    # 낭비 — 낮을수록 좋다. 후보 셋이 모두 기준 셋보다 낮을 확률은 차이가 없을 때 1/20 이다.
-    # 결론은 주 지표 하나로 낸다 — 출력 토큰이 곧 시간이다(상관 0.97 · 2026-10-07 실측).
-    "primary": "출력 토큰",
-    "waste": ["출력 토큰", "호출", "초", "회차", "판정기 글 재지적", "되돌림", "상한 올림"],
-    # 정확도 — 후보 최솟값이 기준 최솟값보다 이만큼 넘게 낮으면 악화(낭비가 줄어도 개선으로 안 봄)
-    "guard_floor": {"0회차 회수(2층)": 2, "0회차 회수(짚음)": 3},
+    # 목표에 가까운 대리 지표 둘 — 낮을수록 좋다. 하나라도 범위가 겹치지 않게 낮고, 어느 쪽도 겹치지 않게
+    # 높지 않을 때만 개선. 셋 대 셋 범위 비겹침은 탐색용의 보수적 규칙이지 통계적 보장이 아니다(외부 검토).
+    "targets": ["환산 비용", "걸린 시간"],
+    # 같이 적되 판정에 안 쓰는 값
+    "report": ["출력 토큰", "캐시 쓰기", "캐시 읽기", "호출", "회차", "판정기 글 재지적", "되돌림", "상한 올림",
+               "사람 확인", "자리표시", "사실 확인", "5시간 사용률 변화"],
+    # 정확도 — 후보 최솟값이 기준 최솟값보다 이만큼 넘게 낮으면 악화(낭비가 줄어도 개선으로 안 봄).
+    # 1판은 1층 담당 시료까지 2층 회수로 세어 두 층의 책임을 섞었다 — 2층 담당은 2층 회수로, 전체는 1층과
+    # 2층을 합친 회수로 본다.
+    "guard_floor": {"0회차 회수(2층)": 2, "통합 회수(짚음)": 1},
     # 끝난 문서의 1층 오류 — 후보 최댓값이 기준 최댓값보다 이만큼 넘게 많으면 악화
     "guard_ceiling": {"1층 오류(끝)": 2},
 }
@@ -72,8 +91,8 @@ def load_samples(limit: int = 0) -> tuple[list[dict], list[dict]]:
 
 def build_doc(flagged: list[dict], clean: list[dict]) -> tuple[list[str], dict[int, dict]]:
     """(줄들, 줄 번호 → 시료). 시료 순서를 바꾸면 다른 일감이 된다."""
-    lines = ["# 회귀 시료 묶음", "", "**검사기 회귀 시료** — 사용자가 짚은 문장과 정상 문장을 한 문서로 모음", "",
-             "## 짚은 문장", ""]
+    lines = HEAD + ["# 회귀 시료 묶음", "", "검사기 회귀 시료 — 사용자가 짚은 문장과 정상 문장을 한 문서로 모았습니다.", "",
+                    "## 짚은 문장", ""]
     meta: dict[int, dict] = {}
     for r in flagged:
         lines.append("- " + " ".join(str(r["sentence"]).split()))
@@ -99,6 +118,35 @@ def isolated(folder: Path):
     finally:
         for (m, name, _), value in zip(spots, saved):
             setattr(m, name, value)
+
+
+@contextlib.contextmanager
+def watch_limits(seen: list[dict]):
+    """SDK 가 호출마다 주는 구독 사용률을 모은다 — `seen` 에 {창: 사용률}. Claude 백엔드가 없으면 빈 채로 둔다.
+
+    판정기 백엔드는 사용량 네 칸만 넘기고 이 사건은 버린다. 그래서 SDK 의 질의 함수를 감싸 엿본다.
+    """
+    try:
+        from llm_playbook.backends import claude_sdk
+    except ImportError:
+        yield
+        return
+    real = claude_sdk.query
+
+    async def spy(*a, **kw):
+        async for m in real(*a, **kw):
+            info = getattr(m, "rate_limit_info", None)
+            raw = getattr(info, "raw", None) if info is not None else None
+            if isinstance(raw, dict):
+                wins = raw.get("unifiedWindows") or {}
+                seen.append({k: v.get("utilization") for k, v in wins.items() if isinstance(v, dict)})
+            yield m
+
+    claude_sdk.query = spy
+    try:
+        yield
+    finally:
+        claude_sdk.query = real
 
 
 def _alive(pid: int) -> bool:
@@ -130,11 +178,27 @@ def locked(folder: Path):
         lock.unlink(missing_ok=True)
 
 
-def layer1_errors(path: Path) -> int | None:
+def layer1(path: Path) -> tuple[int | None, set[int]]:
+    """(1층 오류 수, 오류나 주의가 난 줄 번호)."""
     out = subprocess.run([sys.executable, "-X", "utf8", str(CHECKER), str(path), "--no-rules", "--new-doc"],
                          capture_output=True, text=True, encoding="utf-8").stdout
     m = TOTAL.search(out)
-    return int(m.group(1)) if m else None
+    hits = {int(h.group(1)) for line in out.splitlines() if (h := CHECKER_HIT.match(line))}
+    return (int(m.group(1)) if m else None), hits
+
+
+def end_state(finished: bool, rows: list[dict], rounds: int) -> str:
+    """고리가 어떻게 끝났나 — 싸게 실패한 실행을 개선으로 읽지 않게 함께 적는다."""
+    if not finished:
+        return "실패"
+    last = rows[-1] if rows else {}
+    if not last.get("지적"):
+        return "수렴"
+    if not last.get("적용") and last.get("사람 확인") == last.get("지적"):
+        return "사람 이관"
+    if last.get("적용") and len(rows) == rounds + 1:
+        return "회차 상한"
+    return "적용할 것 없음"
 
 
 def run_once(folder: Path, flagged: list[dict], clean: list[dict], policy: str = "all",
@@ -157,8 +221,10 @@ def run_once(folder: Path, flagged: list[dict], clean: list[dict], policy: str =
     history: dict[int, list[str]] = {}       # 줄 번호 → 거쳐 간 글
     written: dict[int, list[str]] = {}       # 바로 앞 회차에 판정기 수정안으로 쓴 말
     first_hits: set[int] = set()
-    rows, finished, said = [], True, io.StringIO()
-    with isolated(folder):
+    first_fixes: list[dict] = []
+    rows, finished, said, limits = [], True, io.StringIO(), []
+    started = time.time()
+    with isolated(folder), watch_limits(limits):
         for rnd in range(rounds + 1):
             out = folder / f"round{rnd}.json"
             argv = [str(doc), "--json", str(out)] + (["--since", "main"] if rnd else [])
@@ -178,6 +244,8 @@ def run_once(folder: Path, flagged: list[dict], clean: list[dict], policy: str =
                 clean_hits += kind == "정상"
                 if rnd == 0 and isinstance(n, int):
                     first_hits.add(n)
+                    if not judge.is_ask(f):
+                        first_fixes.append(f)
                 if n in written and phrase and any(phrase in w or w in phrase for w in written[n]):
                     own += 1
                 if judge.is_ask(f) or (policy == "known" and kind != "짚음"):
@@ -206,27 +274,47 @@ def run_once(folder: Path, flagged: list[dict], clean: list[dict], policy: str =
                    "뜻 바뀜": sum(1 for f in found if "뜻이 바뀐" in str(f.get("category") or "")),
                    "판정기 글 재지적": own, "되돌림": reverted,
                    "출력 토큰": sum(c.get("output_tokens") or 0 for c in calls),
+                   "캐시 쓰기": sum(c.get("cache_write") or 0 for c in calls),
+                   "캐시 읽기": sum(c.get("cache_read") or 0 for c in calls),
+                   "환산 비용": round(sum(c.get("cost_usd") or 0 for c in calls), 4),
                    "초": round(sum(c.get("seconds") or 0 for c in calls))}
             rows.append(row)
             if echo:
                 echo(json.dumps(row, ensure_ascii=False))
             if not found or not applied:
                 break
+    elapsed = round(time.time() - started)
     (folder / "judge-output.txt").write_text(said.getvalue(), encoding="utf-8")
 
     flagged_at = {n for n, m in meta.items() if m["kind"] == "짚음"}
-    layer2_at = {n for n in flagged_at if meta[n]["owner"] == "2층"}
+    owned = {o: {n for n in flagged_at if meta[n]["owner"] == o} for o in ("2층", "규칙", "단어 점검")}
     clean_at = {n for n, m in meta.items() if m["kind"] == "정상"}
-    total = {"정책": policy, "완주": finished,
-             "시료": {"짚음": len(flagged_at), "짚음(2층)": len(layer2_at), "정상": len(clean_at)},
+    errors_start, checker_hits = layer1(folder / "start.md")
+    errors_end, _ = layer1(doc)
+    five = [w.get("five_hour") for w in limits if w.get("five_hour") is not None]
+    week = [w.get("seven_day") for w in limits if w.get("seven_day") is not None]
+    total = {"정책": policy, "완주": finished, "종료": end_state(finished, rows, rounds),
+             "시료": {"짚음": len(flagged_at), **{f"짚음({o})": len(s) for o, s in owned.items()},
+                    "정상": len(clean_at)},
              "회차": sum(1 for r in rows if r["호출"]),
-             **{k: sum(r[k] for r in rows) for k in ("호출", "출력 토큰", "초", "상한 올림", "판정기 글 재지적", "되돌림")},
+             **{k: sum(r[k] for r in rows) for k in ("호출", "출력 토큰", "캐시 쓰기", "캐시 읽기", "초",
+                                                    "사람 확인", "상한 올림", "판정기 글 재지적", "되돌림")},
+             "환산 비용": round(sum(r["환산 비용"] for r in rows), 4),
+             "걸린 시간": elapsed,
              "0회차 회수(짚음)": len(first_hits & flagged_at),
-             "0회차 회수(2층)": len(first_hits & layer2_at),
+             **{f"0회차 회수({o})": len(first_hits & s) for o, s in owned.items()},
+             # 1층이 시작 문서에서 잡은 줄과 2층이 0회차에 짚은 줄을 합친 것 — 발행 전에 어느 층에서든 짚였나
+             "1층 회수(규칙)": len(checker_hits & owned["규칙"]),
+             "통합 회수(짚음)": len((first_hits | checker_hits) & flagged_at),
              "0회차 정상 줄 지적": len(first_hits & clean_at),
              "정상 줄 지적(전 회차)": sum(r["정상 줄 지적"] for r in rows),
-             "1층 오류(처음)": layer1_errors(folder / "start.md"),
-             "1층 오류(끝)": layer1_errors(doc),
+             # 세션 · 사람 몫으로 넘어가는 일 — 판정기 출력이 줄어도 이것이 늘면 비용이 옮겨 간 것이다
+             "자리표시": sum(1 for f in first_fixes if "○○" in str(f.get("fix") or "")),
+             "사실 확인": sum(1 for f in first_fixes if coverage.needs_check(f)),
+             "1층 오류(처음)": errors_start, "1층 오류(끝)": errors_end,
+             "5시간 사용률": [five[0], five[-1]] if five else None,
+             "5시간 사용률 변화": round(five[-1] - five[0], 2) if len(five) > 1 else None,
+             "7일 사용률": [week[0], week[-1]] if week else None,
              "가장 많이 고친 줄": sorted(([len(v) - 1, n, meta[n]["kind"] if n in meta else "?"]
                                      for n, v in history.items()), reverse=True)[:5]}
     summary = {"rounds": rows, "total": total}
@@ -238,6 +326,10 @@ def runs_of(out: Path, name: str) -> list[dict]:
     return [json.loads(p.read_text(encoding="utf-8"))["total"] for p in sorted((out / name).glob("*/summary.json"))]
 
 
+def _verdict(bv: list, cv: list) -> str:
+    return "줄어듦" if cv[-1] < bv[0] else "늘어남" if cv[0] > bv[-1] else "판정 불가(겹침)"
+
+
 def compare(base: list[dict], cand: list[dict], rule: dict = PREREGISTERED) -> dict:
     """두 실행 묶음(각 실행의 total)을 미리 적은 규칙으로 견준다. 완주 못 한 실행은 뺀다."""
     b = [t for t in base if t.get("완주")]
@@ -245,21 +337,33 @@ def compare(base: list[dict], cand: list[dict], rule: dict = PREREGISTERED) -> d
     if len(b) < rule["runs"] or len(c) < rule["runs"]:
         return {"결론": "판정 불가",
                 "까닭": f"완주한 실행이 기준 {len(b)}회 · 후보 {len(c)}회 — 각 {rule['runs']}회 이상 필요"}
+    missing = [k for k in [*rule["targets"], *rule["guard_floor"], *rule["guard_ceiling"]]
+               if any(t.get(k) is None for t in b + c)]
+    if missing:
+        return {"결론": "판정 불가", "까닭": f"규칙이 보는 값이 없는 실행이 있음 — {', '.join(missing)}(다른 판의 실행)"}
     worse = [f"{k} {min(t[k] for t in c)} < 기준 최솟값 {min(t[k] for t in b)} - {tol}"
              for k, tol in rule["guard_floor"].items() if min(t[k] for t in c) < min(t[k] for t in b) - tol]
     worse += [f"{k} {max(t[k] for t in c)} > 기준 최댓값 {max(t[k] for t in b)} + {tol}"
               for k, tol in rule["guard_ceiling"].items() if max(t[k] for t in c) > max(t[k] for t in b) + tol]
-    metrics = {}
-    for k in rule["waste"]:
-        bv, cv = sorted(t[k] for t in b), sorted(t[k] for t in c)
-        verdict = "줄어듦" if cv[-1] < bv[0] else "늘어남" if cv[0] > bv[-1] else "판정 불가(겹침)"
-        metrics[k] = {"기준": bv, "후보": cv, "판정": verdict}
-    primary = metrics[rule["primary"]]["판정"]
-    result = {"결론": "정확도 악화" if worse else {"줄어듦": "개선", "늘어남": "악화"}.get(primary, "판정 불가"),
-              "정확도": worse or "유지", "지표": metrics}
+    targets = {k: {"기준": sorted(t[k] for t in b), "후보": sorted(t[k] for t in c)} for k in rule["targets"]}
+    for v in targets.values():
+        v["판정"] = _verdict(v["기준"], v["후보"])
+    report = {k: {"기준": sorted(t[k] for t in b if t.get(k) is not None),
+                  "후보": sorted(t[k] for t in c if t.get(k) is not None)} for k in rule["report"]}
+    states = {"기준": [t.get("종료") for t in b], "후보": [t.get("종료") for t in c]}
+    verdicts = [v["판정"] for v in targets.values()]
+    if worse:
+        result = "정확도 악화"
+    elif "늘어남" in verdicts:
+        result = "악화"
+    elif "줄어듦" in verdicts:
+        result = "개선"
+    else:
+        result = "판정 불가"
+    out = {"결론": result, "정확도": worse or "유지", "목표 지표": targets, "종료": states, "참고": report}
     if len(b) > rule["runs"] or len(c) > rule["runs"]:
-        result["탐색적"] = f"미리 정한 {rule['runs']}회보다 많이 돌림 — 앞 결과를 보고 더한 것이면 이 결론은 탐색적"
-    return result
+        out["탐색적"] = f"미리 정한 {rule['runs']}회보다 많이 돌림 — 앞 결과를 보고 더한 것이면 이 결론은 탐색적"
+    return out
 
 
 def main(argv=None) -> int:

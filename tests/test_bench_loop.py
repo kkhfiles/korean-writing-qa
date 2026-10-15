@@ -9,8 +9,11 @@
 - 판정기가 바로 앞 회차에 제 수정안으로 쓴 말을 다시 짚으면 「판정기 글 재지적」, 예전 글로 돌아가면 「되돌림」
 - 사람 확인은 적용하지 않고, known 정책은 정상 줄을 고치지 않는다
 - 판정 · 답 · 결정 · 처리 기록은 실행 폴더에만 쌓이고, 끝나면 원래 경로로 돌아간다
+- 환산 비용 · 캐시 쓰기 · 읽기를 호출에서 모으고, 고리가 어떻게 끝났는지 적는다
+- 회수를 2층 담당과 1층 담당으로 나누고, 1층이 잡은 줄과 합친 통합 회수를 센다
 - 호출이 실패하면 완주하지 않은 실행으로 남고, 비교에서 빠진다
-- 비교는 미리 적은 규칙대로 — 실행 수 부족 · 겹침은 판정 불가, 정확도가 떨어지면 낭비가 줄어도 개선이 아님
+- 비교는 미리 적은 규칙대로 — 실행 수 부족 · 겹침은 판정 불가, 정확도가 떨어지면 낭비가 줄어도 개선이 아님,
+  비용이 줄어도 시간이 늘면 악화, 다른 판의 실행(값 없음)과는 견주지 않음
 """
 from __future__ import annotations
 
@@ -31,16 +34,16 @@ import layer2_coverage as coverage  # noqa: E402
 FLAGGED = [{"flag_id": "F-1", "sentence": "보고서는 매주  금요일에 올립니다.", "owner": "2층"},
            {"flag_id": "F-2", "sentence": "회의록은 당일에 공유합니다.", "owner": "규칙"}]
 CLEAN = [{"case_id": "C-1", "text": "배포 일정은 다음 주에 정합니다."}]
-# build_doc 이 만드는 줄 번호
-F1, F2, C1 = 7, 8, 12
+# build_doc 이 만드는 줄 번호(머리말 세 줄 뒤)
+F1, F2, C1 = 10, 11, 15
 
 
-def fix(n: int, phrase: str, to: str, decide: str = "fix") -> dict:
-    return {"line": n, "phrase": phrase, "fix": to, "decide": decide,
+def fix(n: int, phrase: str, to: str, decide: str = "fix", check: str = "") -> dict:
+    return {"line": n, "phrase": phrase, "fix": to, "decide": decide, "check": check,
             "category": "업무에서 쓰는 말로 쓰기", "why": "시험"}
 
 
-ROUND0 = [fix(F1, "올립니다", "제출합니다"), fix(C1, "정합니다", "확정합니다"),
+ROUND0 = [fix(F1, "올립니다", "제출합니다"), fix(C1, "정합니다", "○○를 확정합니다", check="무엇을 확정하는지"),
           # 사람 확인은 적용할 수 있는 모양이어도 적용하지 않는다
           fix(F2, "당일에", "당일 중에", decide="ask")]
 # 1회차 — 앞 회차에 쓴 「제출합니다」를 다시 짚고 원래 말로 되돌리게 한다
@@ -59,7 +62,8 @@ class Scripted:
             raise TimeoutError("시험용 실패")
         reply = self.replies.pop(0) if self.replies else []
         return {"text": json.dumps(reply, ensure_ascii=False), "model": "fake",
-                "usage": {"output_tokens": 100}, "cost_usd": None}
+                "usage": {"output_tokens": 100, "cache_creation_input_tokens": 50, "cache_read_input_tokens": 400},
+                "cost_usd": 0.25}
 
     def pair(self):
         return self.call, json.loads
@@ -82,9 +86,19 @@ class DocTests(unittest.TestCase):
 
     def test_each_sample_is_one_line_in_a_fixed_order(self) -> None:
         lines, meta = bench.build_doc(FLAGGED, CLEAN)
+        self.assertEqual(lines[:3], ["---", "form: prose", "---"], "형식 검사가 줄마다 걸려 1층 회수를 못 셉니다")
         self.assertEqual(lines[F1 - 1], "- 보고서는 매주 금요일에 올립니다.")   # 빈칸 둘은 하나로
         self.assertEqual([meta[n]["id"] for n in sorted(meta)], ["F-1", "F-2", "C-1"])
         self.assertEqual((meta[F1]["owner"], meta[C1]["kind"]), ("2층", "정상"))
+
+    def test_checker_lines_are_read_from_its_output(self) -> None:
+        with tempfile.TemporaryDirectory() as d:
+            p = Path(d) / "x.md"
+            p.write_text("\n".join(bench.HEAD + ["# 제목", "", "본문은 이렇습니다.", "", "우리 팀이 맡습니다."]) + "\n",
+                         encoding="utf-8")
+            errors, hits = bench.layer1(p)
+        self.assertIsInstance(errors, int)
+        self.assertIn(8, hits, "검사기가 짚은 줄(우리)을 못 읽었습니다")
 
 
 class LoopTests(_Base):
@@ -99,10 +113,24 @@ class LoopTests(_Base):
         self.assertEqual([r["호출"] for r in got["rounds"]], [1, 1, 0])
         self.assertEqual((t["회차"], t["호출"], t["출력 토큰"]), (2, 2, 200))
         self.assertEqual((t["판정기 글 재지적"], t["되돌림"]), (1, 1))
-        self.assertEqual((t["0회차 회수(짚음)"], t["0회차 회수(2층)"], t["0회차 정상 줄 지적"]), (2, 1, 1))
+        self.assertEqual(t["종료"], "수렴")
         self.assertEqual(got["rounds"][0]["사람 확인"], 1)
-        self.assertIsInstance(t["1층 오류(끝)"], int)
+        self.assertIsInstance(t["걸린 시간"], int)
         self.assertTrue((self.dir / "run" / "summary.json").is_file())
+
+    def test_cost_and_cache_are_summed_from_the_calls(self) -> None:
+        t = self.run_loop(Scripted([ROUND0, ROUND1]))["total"]
+        self.assertEqual((t["환산 비용"], t["캐시 쓰기"], t["캐시 읽기"]), (0.5, 100, 800))
+
+    def test_recall_is_split_by_owner_and_joined_with_layer1(self) -> None:
+        t = self.run_loop(Scripted([ROUND0, ROUND1]))["total"]
+        self.assertEqual((t["0회차 회수(짚음)"], t["0회차 회수(2층)"], t["0회차 회수(규칙)"]), (2, 1, 1))
+        self.assertEqual(t["0회차 정상 줄 지적"], 1)
+        self.assertGreaterEqual(t["통합 회수(짚음)"], t["0회차 회수(짚음)"])
+
+    def test_work_moved_to_the_session_is_counted(self) -> None:
+        t = self.run_loop(Scripted([ROUND0, ROUND1]))["total"]
+        self.assertEqual((t["자리표시"], t["사실 확인"]), (1, 1))
 
     def test_only_unjudged_lines_are_sent_after_the_first_round(self) -> None:
         fake = Scripted([ROUND0, ROUND1])
@@ -130,7 +158,48 @@ class LoopTests(_Base):
     def test_a_failed_call_leaves_an_unfinished_run(self) -> None:
         got = self.run_loop(Scripted([ROUND0, ROUND1], fail_at=2))
         self.assertFalse(got["total"]["완주"])
+        self.assertEqual(got["total"]["종료"], "실패")
         self.assertEqual(len(got["rounds"]), 1)
+
+
+class LimitWatchTests(unittest.TestCase):
+
+    def test_usage_rates_are_picked_from_the_sdk_events(self) -> None:
+        try:
+            from llm_playbook.backends import claude_sdk
+        except ImportError:
+            self.skipTest("llm_playbook 없음")
+        import asyncio
+        from types import SimpleNamespace
+
+        async def fake(*a, **kw):
+            raw = {"unifiedWindows": {"five_hour": {"utilization": 0.11}, "seven_day": {"utilization": 0.86}}}
+            yield SimpleNamespace(rate_limit_info=SimpleNamespace(raw=raw))
+            yield SimpleNamespace()
+
+        async def drain():
+            return [m async for m in claude_sdk.query()]
+
+        saved, claude_sdk.query = claude_sdk.query, fake
+        try:
+            seen = []
+            with bench.watch_limits(seen):
+                got = asyncio.run(drain())
+            self.assertIs(claude_sdk.query, fake, "엿보기를 끝낸 뒤 원래 함수를 돌려놓지 않았습니다")
+        finally:
+            claude_sdk.query = saved
+        self.assertEqual(len(got), 2, "엿보다가 메시지를 삼켰습니다")
+        self.assertEqual(seen, [{"five_hour": 0.11, "seven_day": 0.86}])
+
+
+class EndStateTests(unittest.TestCase):
+
+    def test_states(self) -> None:
+        self.assertEqual(bench.end_state(True, [{"지적": 0}], 6), "수렴")
+        self.assertEqual(bench.end_state(True, [{"지적": 3, "적용": 0, "사람 확인": 3}], 6), "사람 이관")
+        self.assertEqual(bench.end_state(True, [{"지적": 2, "적용": 1, "사람 확인": 0}] * 7, 6), "회차 상한")
+        self.assertEqual(bench.end_state(True, [{"지적": 2, "적용": 0, "사람 확인": 1}], 6), "적용할 것 없음")
+        self.assertEqual(bench.end_state(False, [], 6), "실패")
 
 
 class LockTests(_Base):
@@ -149,49 +218,57 @@ class LockTests(_Base):
         self.assertFalse((self.dir / "name" / "bench.lock").exists())
 
 
-def total(tokens: int, recall: int = 73, errors: int = 0, done: bool = True, **more) -> dict:
-    t = {"완주": done, "출력 토큰": tokens, "0회차 회수(2층)": recall, "0회차 회수(짚음)": 120,
-         "1층 오류(끝)": errors}
-    for k in bench.PREREGISTERED["waste"]:
-        t.setdefault(k, more.get(k, 10))
+def total(cost: float, secs: int = 500, recall: int = 73, joined: int = 140, errors: int = 0,
+          done: bool = True) -> dict:
+    t = {"완주": done, "종료": "수렴", "환산 비용": cost, "걸린 시간": secs, "0회차 회수(2층)": recall,
+         "통합 회수(짚음)": joined, "1층 오류(끝)": errors}
+    for k in bench.PREREGISTERED["report"]:
+        t.setdefault(k, 1)
     return t
 
 
 class CompareTests(unittest.TestCase):
 
-    BASE = [total(60000), total(64000), total(70000)]
+    BASE = [total(1.6), total(1.7), total(2.3)]
 
-    def test_all_candidates_below_the_baseline_is_an_improvement(self) -> None:
-        got = bench.compare(self.BASE, [total(40000), total(45000), total(50000)])
+    def test_lower_cost_without_slower_time_is_an_improvement(self) -> None:
+        got = bench.compare(self.BASE, [total(1.0), total(1.2), total(1.4)])
         self.assertEqual(got["결론"], "개선")
         self.assertEqual(got["정확도"], "유지")
 
     def test_overlap_cannot_be_judged(self) -> None:
-        got = bench.compare(self.BASE, [total(50000), total(62000), total(55000)])
-        self.assertEqual(got["결론"], "판정 불가")
+        self.assertEqual(bench.compare(self.BASE, [total(1.0), total(1.8), total(1.4)])["결론"], "판정 불가")
 
-    def test_all_candidates_above_is_worse(self) -> None:
-        self.assertEqual(bench.compare(self.BASE, [total(71000)] * 3)["결론"], "악화")
+    def test_lower_cost_but_slower_is_worse(self) -> None:
+        got = bench.compare(self.BASE, [total(1.0, secs=900), total(1.1, secs=950), total(1.2, secs=990)])
+        self.assertEqual(got["결론"], "악화", "비용만 보고 시간이 늘어난 것을 놓쳤습니다")
 
-    def test_lost_recall_beats_saved_tokens(self) -> None:
-        got = bench.compare(self.BASE, [total(40000), total(40000, recall=70), total(40000)])
+    def test_lost_layer2_recall_beats_saved_cost(self) -> None:
+        got = bench.compare(self.BASE, [total(1.0), total(1.0, recall=70), total(1.0)])
         self.assertEqual(got["결론"], "정확도 악화")
 
     def test_recall_within_the_tolerance_holds(self) -> None:
-        got = bench.compare(self.BASE, [total(40000), total(40000, recall=71), total(40000)])
-        self.assertEqual(got["결론"], "개선")
+        self.assertEqual(bench.compare(self.BASE, [total(1.0), total(1.0, recall=71), total(1.0)])["결론"], "개선")
 
-    def test_new_layer1_errors_beat_saved_tokens(self) -> None:
-        got = bench.compare(self.BASE, [total(40000), total(40000, errors=3), total(40000)])
+    def test_lost_joined_recall_beats_saved_cost(self) -> None:
+        got = bench.compare(self.BASE, [total(1.0), total(1.0, joined=138), total(1.0)])
+        self.assertEqual(got["결론"], "정확도 악화")
+
+    def test_new_layer1_errors_beat_saved_cost(self) -> None:
+        got = bench.compare(self.BASE, [total(1.0), total(1.0, errors=3), total(1.0)])
         self.assertEqual(got["결론"], "정확도 악화")
 
     def test_too_few_finished_runs_cannot_be_judged(self) -> None:
-        cand = [total(40000), total(40000), total(40000, done=False)]
+        cand = [total(1.0), total(1.0), total(1.0, done=False)]
         self.assertEqual(bench.compare(self.BASE, cand)["결론"], "판정 불가")
 
+    def test_runs_from_the_first_version_are_not_compared(self) -> None:
+        old = [{"완주": True, "출력 토큰": 56012, "0회차 회수(2층)": 73}] * 3
+        got = bench.compare(old, [total(1.0)] * 3)
+        self.assertEqual(got["결론"], "판정 불가")
+
     def test_more_runs_than_registered_is_exploratory(self) -> None:
-        got = bench.compare(self.BASE, [total(40000)] * 4)
-        self.assertIn("탐색적", got)
+        self.assertIn("탐색적", bench.compare(self.BASE, [total(1.0)] * 4))
 
 
 if __name__ == "__main__":
