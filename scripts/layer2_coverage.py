@@ -48,6 +48,10 @@ DECISIONS = Path(os.environ.get("KOREAN_QA_DECISION_LOG")
 #: 사람 확인 답(`ANSWERS`)과 따로 둔다 — 세션이 적는 곳이라 사람 확인을 닫지 못해야 한다.
 DISMISSALS = Path(os.environ.get("KOREAN_QA_DISMISS_LOG")
                   or Path.home() / ".claude" / "state" / "korean-layer2-dismissals.jsonl")
+#: 사용자 지시로 뜻을 일부러 바꾼 줄과 그 지시 원문 — 재판정이 지시 안의 뜻 변경은 짚지 않게 한다.
+#: 세션이 적되 사용자가 한 말만 옮긴다(사람 확인 답과 같은 규칙).
+INSTRUCTIONS = Path(os.environ.get("KOREAN_QA_INSTRUCTION_LOG")
+                    or Path.home() / ".claude" / "state" / "korean-layer2-instructions.jsonl")
 FRESH_DAYS = 14
 HANGUL = re.compile(r"[가-힣]")
 #: 근거에 이 말이 있으면 문서 밖 자료로 확인할 사실이 걸린 지적으로 본다 — 판정기가 `check`

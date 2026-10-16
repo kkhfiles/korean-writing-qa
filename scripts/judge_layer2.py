@@ -860,7 +860,7 @@ def replay_dir() -> Path:
     return LOG.parent / "korean-replay"
 
 
-def rejudge_user(piece: dict, info: dict, closed: list, decided: list) -> str:
+def rejudge_user(piece: dict, info: dict, closed: list, decided: list, instructed: list = ()) -> str:
     """재판정 한 조각의 사용자 메시지 — 판정과 재생(`replay_rejudge.py`)이 같이 쓴다(같은 입력이어야 견준다)."""
     mine = piece["mine"]
     plain = {n for n in mine if not info[n].get("anchor")}
@@ -869,11 +869,13 @@ def rejudge_user(piece: dict, info: dict, closed: list, decided: list) -> str:
             + "\n\n이번에는 아래 줄만 점검한다 — 나머지 줄은 문맥으로만 읽고 지적하지 않는다.\n"
             + ", ".join(map(str, mine))
             + before_after(mine, info, [(n, r) for n, r in closed if n in plain],
-                           [(n, d) for n, d in decided if n in plain]))
+                           [(n, d) for n, d in decided if n in plain],
+                           [(n, r) for n, r in instructed if n in plain]))
 
 
 def save_case(path: Path, key: str, text: str, want: set[int], anchors: dict, base, info: dict,
-              rules_sha: str, system: str, model: str, context: str, closed: list, decided: list) -> None:
+              rules_sha: str, system: str, model: str, context: str, closed: list, decided: list,
+              instructed: list = ()) -> None:
     """재판정 한 번의 입력 — 그때 문서 · 대상 · 기준 판 · 계보 · 닫은 지적 · 사용자 답 · 시스템 프롬프트."""
     folder = replay_dir()
     folder.mkdir(parents=True, exist_ok=True)
@@ -886,7 +888,8 @@ def save_case(path: Path, key: str, text: str, want: set[int], anchors: dict, ba
             "info": {str(n): v for n, v in info.items()}, "rules": rules_sha, "model": model, "context": context,
             "system_sha": hashlib.sha256(system.encode("utf-8")).hexdigest()[:12],
             "decisions_prompt": decisions_prompt(load_decisions()),
-            "closed": [[n, r] for n, r in closed], "decided": [[n, d] for n, d in decided]}
+            "closed": [[n, r] for n, r in closed], "decided": [[n, d] for n, d in decided],
+            "instructed": [[n, r] for n, r in instructed]}
     name = f"{datetime.now():%Y%m%d-%H%M%S}-{hashlib.sha256(text.encode('utf-8')).hexdigest()[:8]}.json"
     (folder / name).write_text(json.dumps(case, ensure_ascii=False), encoding="utf-8")
 
@@ -979,6 +982,40 @@ def closed_on(key: str, lines: list[str], mine: list[int]) -> list[tuple[int, di
     return out
 
 
+def instruct(path: Path, n: int, note: str) -> str:
+    """사용자 지시로 n행의 뜻을 일부러 바꿨다고 적는다 — 지시 원문을 옮긴다. 규칙에 안 맞으면 ValueError.
+
+    ⛔ 세션이 지시를 지어내지 않는다 — 사용자가 한 말을 옮긴다. 「지시반영」 닫기(`dismiss`)는 판정기가 짚은
+       뒤에 하나씩 닫는 길이고, 이것은 재판정 전에 지시를 알려 짚지 않게 하는 길이다(사내 문서 1건에서 「뜻이
+       바뀐 곳」 닫기 46건 중 40건이 지시로 바꾼 것이었다 · 2026-10-13).
+    """
+    note = note.strip()
+    if len(note) < NOTE_MIN or not QUOTE.search(note):
+        raise ValueError("--note 에 사용자 지시 원문을 「」로 옮겨 적습니다(누가 · 언제와 함께)")
+    lines = read_doc(path).splitlines()
+    if not 0 < n <= len(lines) or not coverage.line_key(lines[n - 1]):
+        raise ValueError(f"{n}행은 한글이 든 줄이 아닙니다")
+    row = {"at": datetime.now().isoformat(timespec="seconds"), "when": time.time(), "doc": str(path),
+           "key": coverage.doc_key(path), "line": n, "line_key": coverage.line_key(lines[n - 1]),
+           "text": lines[n - 1], "instruction": note}
+    coverage.INSTRUCTIONS.parent.mkdir(parents=True, exist_ok=True)
+    with coverage.INSTRUCTIONS.open("a", encoding="utf-8", newline="\n") as f:
+        f.write(json.dumps(row, ensure_ascii=False) + "\n")
+    return lines[n - 1].strip()[:40]
+
+
+def instructed_on(key: str, lines: list[str], mine: list[int]) -> list[tuple[int, dict]]:
+    """대상 줄(또는 그 앞 판)에 적힌 사용자 지시 — (줄, 기록). 줄마다 최근 것 둘까지."""
+    rows = [r for r in coverage._rows(key, coverage.INSTRUCTIONS, None, fresh=False) if r.get("text")]
+    out = []
+    for n in mine:
+        k = coverage.line_key(lines[n - 1])
+        near = [r for r in rows if r.get("line_key") == k
+                or coverage._similar(lines[n - 1], r["text"]) >= coverage.SUCCESSOR]
+        out += [(n, r) for r in near[-2:]]
+    return out
+
+
 def decided_on(key: str, lines: list[str], mine: list[int]) -> list[tuple[int, dict]]:
     """대상 줄(또는 그 앞 판)에 사용자가 사람 확인으로 답한 것 — (줄, 결정 기록). 줄마다 최근 것 셋까지.
 
@@ -994,7 +1031,7 @@ def decided_on(key: str, lines: list[str], mine: list[int]) -> list[tuple[int, d
 
 
 def before_after(mine: list[int], info: dict[int, dict], closed: list[tuple[int, dict]] = (),
-                 decided: list[tuple[int, dict]] = ()) -> str:
+                 decided: list[tuple[int, dict]] = (), instructed: list[tuple[int, dict]] = ()) -> str:
     """대상 줄의 기준 판과 지운 줄 — 고친 말이 뜻을 바꿨는지 판정기가 대조하게 하는 글.
 
     세션이 자료로 확인하거나 까닭을 적어 닫은 지적도 함께 싣는다 — 줄이 바뀌면 판정기가 같은 의문을
@@ -1031,6 +1068,12 @@ def before_after(mine: list[int], info: dict[int, dict], closed: list[tuple[int,
                 "적은 표현을 되돌리거나 다시 바꾸자는 지적은 내지 않는다. 사실이 틀렸으면 그것만 짚는다."]
         out += [f"- {n}행 「{d.get('phrase')}」 · 판정기 제안 「{d.get('fix')}」 · 사용자: {d.get('answer')}"
                 for n, d in decided]
+    if instructed:
+        # 지시 안의 뜻 변경만 덜 짚는다 — 지시는 편집 의도의 근거이지 새 주장이 참이라는 근거가 아니다(외부 검토)
+        out += ["", "아래 줄은 사용자 지시에 따라 뜻을 일부러 바꾼 줄이다. 지시가 말한 변경은 「고치다 뜻이 바뀐 곳」으로 "
+                "짚지 않는다. 지시가 말하지 않은 변경(수치 · 주체 · 범위 · 조건 · 시점), 확인이 필요한 새 주장, 다른 "
+                "규칙 위반은 그대로 짚는다."]
+        out += [f"- {n}행 지시: {r.get('instruction')}" for n, r in instructed]
     return "\n".join(out)
 
 
@@ -1088,12 +1131,13 @@ def judge(path: Path, model: str, timeout: float, backend, targets: list[int] | 
     found, calls, hidden, foreign, held = [], [], 0, 0, 0
     held_done: set[int] = set()
     queue = parts_for(lines, want, context, path)
-    closed_all, decided_all = [], []
+    closed_all, decided_all, instructed_all = [], [], []
     if want is not None:
         plain = [n for n in sorted(want) if not info[n].get("anchor")]
         closed_all, decided_all = closed_on(key, lines, plain), decided_on(key, lines, plain)
+        instructed_all = instructed_on(key, lines, plain)
         save_case(path, key, text, want, anchors, base, info, rules_sha, system, model, context,
-                  closed_all, decided_all)
+                  closed_all, decided_all, instructed_all)
     while queue:
         piece = queue.pop(0)
         mine, windowed = piece["mine"], piece["mode"] in ("fixed", "block")
@@ -1107,7 +1151,7 @@ def judge(path: Path, model: str, timeout: float, backend, targets: list[int] | 
                "context": piece["mode"],
                # 게이트가 「이번 가지의 새 줄을 판정기가 다 봤나」를 이것으로 가른다 — 창이면 보낸 줄만
                "seen": coverage.seen_keys(piece["seen"])}
-        user = rejudge_user(piece, info, closed_all, decided_all) if want is not None \
+        user = rejudge_user(piece, info, closed_all, decided_all, instructed_all) if want is not None \
             else probe.USER.format(document=piece["document"])
         if want is not None:
             # 묶음은 문맥으로 통째로 보내되 지적은 새 줄에만 받는다. 전에는 묶음 전체에
@@ -1343,6 +1387,8 @@ def main(argv=None, backend=None) -> int:
     ap.add_argument("--escalate", type=int, metavar="행",
                     help="고칠 지적 하나를 사람 확인으로 올림 — --note 필수")
     ap.add_argument("--phrase", help="--dismiss · --escalate 에서 그 줄의 지적이 둘 이상일 때 고르는 표현")
+    ap.add_argument("--instructed", type=int, action="append", metavar="행",
+                    help="사용자 지시로 뜻을 일부러 바꾼 줄 — --note 에 지시 원문(「」) · 재판정이 지시 안의 뜻 변경은 안 짚음")
     a = ap.parse_args(argv)
     if a.cost:
         cost_report(a.by)
@@ -1352,6 +1398,17 @@ def main(argv=None, backend=None) -> int:
     if not a.docs:
         ap.print_usage()
         return 2
+    if a.instructed:
+        if len(a.docs) != 1:
+            print("⛔ --instructed 는 문서 하나에만 씁니다 — 줄 번호가 문서마다 다릅니다")
+            return 2
+        try:
+            for n in a.instructed:
+                print(f"  지시 기록 — {n}행 「{instruct(Path(a.docs[0]), n, a.note)}」 · 재판정이 지시 안의 뜻 변경은 안 짚음")
+        except ValueError as e:
+            print(f"⛔ {e}")
+            return 2
+        return 0
     if a.sheet:
         missing = [d for d in a.docs if not Path(d).is_file()]
         if missing:

@@ -73,7 +73,8 @@ PREREGISTERED = {
     "report": ["출력 토큰", "캐시 쓰기", "캐시 읽기", "호출", "회차", "판정기 글 재지적", "되돌림", "상한 올림",
                "사람 확인", "자리표시", "사실 확인", "5시간 사용률 변화",
                # 세션 흉내에서만 나오는 값 — 사람 · 세션 몫
-               "사람 답", "사실 확인 닫기", "지시반영 닫기", "같은 근거 다시 닫기", "대상 3줄 이하 재판정"],
+               "사람 답", "사실 확인 닫기", "지시반영 닫기", "같은 근거 다시 닫기", "대상 3줄 이하 재판정",
+               "지시 안 뜻 바뀜 짚은 줄", "지시 밖 짚은 줄"],
     # 정확도 — 후보 최솟값이 기준 최솟값보다 이만큼 넘게 낮으면 악화(낭비가 줄어도 개선으로 안 봄).
     # 1판은 1층 담당 시료까지 2층 회수로 세어 두 층의 책임을 섞었다 — 2층 담당은 2층 회수로, 전체는 1층과
     # 2층을 합친 회수로 본다.
@@ -114,7 +115,7 @@ def build_doc(flagged: list[dict], clean: list[dict],
         lines += ["", "## 지시로 고칠 문장", ""]
         for e in edits:
             lines.append("- " + e["before"])
-            meta[len(lines)] = {"kind": "지시", "id": e["edit_id"], "owner": None,
+            meta[len(lines)] = {"kind": "지시", "id": e["edit_id"], "owner": None, "scope": e.get("scope", "in"),
                                 "after": "- " + e["after"], "instruction": e["instruction"]}
     return lines, meta
 
@@ -124,7 +125,7 @@ def isolated(folder: Path):
     """판정 · 답 · 결정 · 처리 기록을 실행 폴더로 돌린다 — 끝나면 원래대로."""
     spots = [(judge, "LOG", "judge.jsonl"), (coverage, "LOG", "judge.jsonl"),
              (coverage, "ANSWERS", "answers.jsonl"), (coverage, "DECISIONS", "decisions.jsonl"),
-             (coverage, "DISMISSALS", "dismissals.jsonl")]
+             (coverage, "DISMISSALS", "dismissals.jsonl"), (coverage, "INSTRUCTIONS", "instructions.jsonl")]
     saved = [getattr(m, name) for m, name, _ in spots]
     for m, name, file in spots:
         setattr(m, name, folder / file)
@@ -377,9 +378,13 @@ def process(doc: Path, meta: dict[int, dict], mode: str, counts: dict) -> int:
         category = str(item.get("category") or "")
         phrase, fix = str(item.get("phrase") or ""), str(item.get("fix") or "")
         if meta.get(n, {}).get("kind") == "지시" and judge.INTENT_ONLY in category:
-            counts["지시반영 닫기"] += 1
-            judge._close_fix(doc, lines, n, item, {"reason": "지시반영",
-                                                   "note": f"사용자 지시 「{meta[n]['instruction']}」(재현 일감)"})
+            if meta[n].get("scope") == "out":     # 지시 밖 변경을 짚은 것 — 세션이 그 부분을 바로잡았다고 본다
+                counts["지시 밖 짚음 처리"] += 1
+                judge._close_fix(doc, lines, n, item, {"reason": "대상아님", "note": "재현 일감 — 지시 밖 변경을 짚음"})
+            else:
+                counts["지시반영 닫기"] += 1
+                judge._close_fix(doc, lines, n, item, {"reason": "지시반영",
+                                                       "note": f"사용자 지시 「{meta[n]['instruction']}」(재현 일감)"})
         elif coverage.needs_check(item):
             counts["사실 확인 닫기"] += 1
             judge._close_fix(doc, lines, n, item, {"reason": "확인함", "note": "재현 일감 — 자료로 확인했다고 본다"})
@@ -405,7 +410,8 @@ def reclosed(dismissals: Path) -> int:
 
 
 def run_session(folder: Path, flagged: list[dict], clean: list[dict], edits: list[dict], mode: str = "batch",
-                max_calls: int = 60, backend=None, echo=None, context: str = "chunk") -> dict:
+                max_calls: int = 60, backend=None, echo=None, context: str = "chunk",
+                instructions: bool = False) -> dict:
     """세션처럼 처리하며 고리를 돈다 — 실사용 흐름 재생(외부 검토의 둘째 트랙). 「전부 적용」은 스트레스 시험이다.
 
     0회차를 처리한 뒤 사용자 지시 편집을 넣는다. `batch` 는 열린 지적을 다 처리하고 다시 판정하고, `one` 은 글을
@@ -425,7 +431,8 @@ def run_session(folder: Path, flagged: list[dict], clean: list[dict], edits: lis
     git("commit", "-q", "-m", "base")
     git("switch", "-q", "-c", "work")
 
-    counts: dict[str, int] = {k: 0 for k in ("사람 답", "사실 확인 닫기", "지시반영 닫기", "적용", "적용 못함 닫기")}
+    counts: dict[str, int] = {k: 0 for k in ("사람 답", "사실 확인 닫기", "지시반영 닫기", "지시 밖 짚음 처리", "적용",
+                                             "적용 못함 닫기")}
     rows, limits, said = [], [], io.StringIO()
     first_hits: set[int] = set()
     first_fixes: list[dict] = []
@@ -457,6 +464,10 @@ def run_session(folder: Path, flagged: list[dict], clean: list[dict], edits: lis
                         cur[n - 1] = m["after"]
                         did += 1
                 doc.write_text("\n".join(cur) + "\n", encoding="utf-8")
+                if instructions:      # 세션이 지시를 기록한 뒤 다시 판정한다(--instructed)
+                    for n, m in meta.items():
+                        if m["kind"] == "지시":
+                            judge.instruct(doc, n, f"사용자 지시 「{m['instruction']}」(재현 일감)")
             row = {"회차": rnd, "호출": len(calls), "대상 줄": res.get("targets") if rnd else "전체",
                    "지적": len(res["findings"]), "글 바꿈": did,
                    "출력 토큰": sum(c.get("output_tokens") or 0 for c in calls),
@@ -474,8 +485,10 @@ def run_session(folder: Path, flagged: list[dict], clean: list[dict], edits: lis
                         or coverage.open_fixes(key, now, judge.LOG) or coverage.open_asks(key, now, judge.LOG))
                 state = "멈춤" if left else "완료"
                 break
-        held = sum(1 for p in folder.glob("round*.json")
-                   for f in json.loads(p.read_text(encoding="utf-8"))[0]["findings"] if f.get("held"))
+        all_found = [f for p in folder.glob("round*.json") for f in json.loads(p.read_text(encoding="utf-8"))[0]["findings"]]
+        held = sum(1 for f in all_found if f.get("held"))
+        # 지시로 바꾼 줄 가운데 「뜻이 바뀐 곳」을 짚은 줄 — 지시 안은 적을수록, 지시 밖은 다 짚어야 좋다
+        moved = {f["line"] for f in all_found if judge.INTENT_ONLY in str(f.get("category") or "")}
         again = reclosed(coverage.DISMISSALS)
     elapsed = round(time.time() - started)
     (folder / "judge-output.txt").write_text(said.getvalue(), encoding="utf-8")
@@ -491,7 +504,11 @@ def run_session(folder: Path, flagged: list[dict], clean: list[dict], edits: lis
              **{k: sum(r[k] for r in rows) for k in ("호출", "출력 토큰", "캐시 쓰기", "캐시 읽기", "초")},
              "환산 비용": round(sum(r["환산 비용"] for r in rows), 4), "걸린 시간": elapsed,
              "대상 3줄 이하 재판정": sum(1 for r in rows[1:] if r["호출"] and (r["대상 줄"] or 0) <= 3),
-             **counts, "상한 올림": held, "같은 근거 다시 닫기": again,
+             **counts, "상한 올림": held, "같은 근거 다시 닫기": again, "지시 기록": instructions,
+             "지시 안 뜻 바뀜 짚은 줄": len({n for n in moved if meta.get(n, {}).get("kind") == "지시"
+                                          and meta[n].get("scope") != "out"}),
+             "지시 밖 짚은 줄": len({n for n in moved if meta.get(n, {}).get("scope") == "out"}),
+             "지시 밖 시료": sum(1 for m in meta.values() if m.get("scope") == "out"),
              "0회차 회수(짚음)": len(first_hits & flagged_at),
              **{f"0회차 회수({o})": len(first_hits & s) for o, s in owned.items()},
              "통합 회수(짚음)": len((first_hits | checker_hits) & flagged_at),
@@ -561,6 +578,7 @@ def main(argv=None) -> int:
                    help="all · known = 수정안 적용 스트레스 시험 · session = 세션처럼 처리(실사용 흐름 재생)")
     r.add_argument("--mode", choices=("batch", "one"), default="batch", help="session 에서 한꺼번에 · 하나씩")
     r.add_argument("--max-calls", type=int, default=60, help="session 의 판정 호출 상한")
+    r.add_argument("--instructions", action="store_true", help="session 에서 지시 편집 뒤 지시를 기록(--instructed)")
     r.add_argument("--rounds", type=int, default=6)
     r.add_argument("--context", choices=judge.CONTEXT_MODES, default="chunk", help="재판정 문맥(판정기 --context)")
     r.add_argument("--limit", type=int, default=0, help="묶음마다 앞에서부터 이만큼(0 = 전부)")
@@ -577,7 +595,8 @@ def main(argv=None) -> int:
             folder = a.out / a.name / datetime.now().strftime("%Y%m%d-%H%M%S")
             print(f"── {i + 1}/{a.times} · {folder}", flush=True)
             echo = lambda s: print(s, flush=True)  # noqa: E731
-            got = (run_session(folder, flagged, clean, load_edits(), a.mode, a.max_calls, echo=echo, context=a.context)
+            got = (run_session(folder, flagged, clean, load_edits(), a.mode, a.max_calls, echo=echo, context=a.context,
+                               instructions=a.instructions)
                    if a.policy == "session"
                    else run_once(folder, flagged, clean, a.policy, a.rounds, echo=echo, context=a.context))
             print(json.dumps(got["total"], ensure_ascii=False), flush=True)

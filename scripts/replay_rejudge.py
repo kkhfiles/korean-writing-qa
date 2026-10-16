@@ -54,6 +54,7 @@ def replay(case: dict, mode: str, backend, model: str, timeout: float = 900) -> 
     info, path = case["info"], Path(case["doc"])
     closed = [tuple(x) for x in case.get("closed") or []]
     decided = [tuple(x) for x in case.get("decided") or []]
+    instructed = [tuple(x) for x in case.get("instructed") or []]
     system = probe.SYSTEM.format(rules=probe.rules_for("guided")) + (case.get("decisions_prompt") or "")
     queue = judge.parts_for(lines, want, mode, path)
     got = {"findings": [], "calls": 0, "cost": 0.0, "cache_write": 0, "cache_read": 0, "output": 0, "short": [],
@@ -62,7 +63,8 @@ def replay(case: dict, mode: str, backend, model: str, timeout: float = 900) -> 
         piece = queue.pop(0)
         windowed = piece["mode"] in ("fixed", "block")
         started = time.time()
-        r = call_messages(model=model, system=system, user=judge.rejudge_user(piece, info, closed, decided),
+        r = call_messages(model=model, system=system,
+                          user=judge.rejudge_user(piece, info, closed, decided, instructed),
                           max_tokens=12000, temperature=0, timeout=timeout)
         usage = r.get("usage") or {}
         got["calls"] += 1

@@ -148,7 +148,7 @@ class LoopTests(_Base):
 
     def test_logs_stay_in_the_run_folder(self) -> None:
         spots = [(judge, "LOG"), (coverage, "LOG"), (coverage, "ANSWERS"), (coverage, "DECISIONS"),
-                 (coverage, "DISMISSALS")]
+                 (coverage, "DISMISSALS"), (coverage, "INSTRUCTIONS")]
         before = [getattr(m, n) for m, n in spots]
         self.run_loop(Scripted([ROUND0, ROUND1]))
         self.assertEqual([getattr(m, n) for m, n in spots], before)
