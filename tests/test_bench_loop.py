@@ -230,6 +230,14 @@ class SessionTests(_Base):
                            "하나씩 처리했는데 재판정 호출이 늘지 않았습니다")
         self.assertGreaterEqual(one["total"]["대상 3줄 이하 재판정"], 1)
 
+    def test_the_context_option_reaches_the_rejudge(self) -> None:
+        fake = Scripted([ROUND0, [], []])
+        got = bench.run_session(self.dir / "run", FLAGGED, CLEAN, EDITS, "batch", max_calls=20,
+                                backend=fake.pair(), context="block")
+        self.assertNotIn("줄 생략)…", fake.calls[0]["user"], "첫 전체 판정까지 창으로 보냈습니다")
+        self.assertIn("줄 생략)…", fake.calls[1]["user"])
+        self.assertEqual("block", got["total"]["문맥"])
+
     def test_the_call_budget_stops_the_loop(self) -> None:
         endless = [[fix(F1, "올립니다", "제출합니다")]] + [[fix(F1, w, w + "다")] for w in ("제출합니", "제출합니다")]
         fake = Scripted(endless * 5)

@@ -217,7 +217,7 @@ def end_state(finished: bool, rows: list[dict], rounds: int) -> str:
 
 
 def run_once(folder: Path, flagged: list[dict], clean: list[dict], policy: str = "all",
-             rounds: int = 6, backend=None, echo=None) -> dict:
+             rounds: int = 6, backend=None, echo=None, context: str = "chunk") -> dict:
     """한 번 돌리고 {"rounds": 회차별 값, "total": 합계}를 `folder/summary.json` 에도 쓴다."""
     folder.mkdir(parents=True)
     lines, meta = build_doc(flagged, clean)
@@ -242,7 +242,7 @@ def run_once(folder: Path, flagged: list[dict], clean: list[dict], policy: str =
     with isolated(folder), watch_limits(limits):
         for rnd in range(rounds + 1):
             out = folder / f"round{rnd}.json"
-            argv = [str(doc), "--json", str(out)] + (["--since", "main"] if rnd else [])
+            argv = [str(doc), "--json", str(out)] + (["--since", "main", "--context", context] if rnd else [])
             with contextlib.redirect_stdout(said):
                 rc = judge.main(argv, backend=backend)
             if rc != 0 or not out.is_file():
@@ -308,7 +308,7 @@ def run_once(folder: Path, flagged: list[dict], clean: list[dict], policy: str =
     errors_end, _ = layer1(doc)
     five = [w.get("five_hour") for w in limits if w.get("five_hour") is not None]
     week = [w.get("seven_day") for w in limits if w.get("seven_day") is not None]
-    total = {"정책": policy, "완주": finished, "종료": end_state(finished, rows, rounds),
+    total = {"정책": policy, "문맥": context, "완주": finished, "종료": end_state(finished, rows, rounds),
              "시료": {"짚음": len(flagged_at), **{f"짚음({o})": len(s) for o, s in owned.items()},
                     "정상": len(clean_at)},
              "회차": sum(1 for r in rows if r["호출"]),
@@ -405,7 +405,7 @@ def reclosed(dismissals: Path) -> int:
 
 
 def run_session(folder: Path, flagged: list[dict], clean: list[dict], edits: list[dict], mode: str = "batch",
-                max_calls: int = 60, backend=None, echo=None) -> dict:
+                max_calls: int = 60, backend=None, echo=None, context: str = "chunk") -> dict:
     """세션처럼 처리하며 고리를 돈다 — 실사용 흐름 재생(외부 검토의 둘째 트랙). 「전부 적용」은 스트레스 시험이다.
 
     0회차를 처리한 뒤 사용자 지시 편집을 넣는다. `batch` 는 열린 지적을 다 처리하고 다시 판정하고, `one` 은 글을
@@ -437,7 +437,7 @@ def run_session(folder: Path, flagged: list[dict], clean: list[dict], edits: lis
                 state = "호출 상한"
                 break
             out = folder / f"round{rnd}.json"
-            argv = [str(doc), "--json", str(out)] + (["--since", "main"] if rnd else [])
+            argv = [str(doc), "--json", str(out)] + (["--since", "main", "--context", context] if rnd else [])
             with contextlib.redirect_stdout(said):
                 rc = judge.main(argv, backend=backend)
             if rc != 0 or not out.is_file():
@@ -486,7 +486,7 @@ def run_session(folder: Path, flagged: list[dict], clean: list[dict], edits: lis
     errors_end, _ = layer1(doc)
     five = [w.get("five_hour") for w in limits if w.get("five_hour") is not None]
     week = [w.get("seven_day") for w in limits if w.get("seven_day") is not None]
-    total = {"정책": f"session-{mode}", "완주": finished, "종료": state,
+    total = {"정책": f"session-{mode}", "문맥": context, "완주": finished, "종료": state,
              "회차": sum(1 for r in rows if r["호출"]),
              **{k: sum(r[k] for r in rows) for k in ("호출", "출력 토큰", "캐시 쓰기", "캐시 읽기", "초")},
              "환산 비용": round(sum(r["환산 비용"] for r in rows), 4), "걸린 시간": elapsed,
@@ -562,6 +562,7 @@ def main(argv=None) -> int:
     r.add_argument("--mode", choices=("batch", "one"), default="batch", help="session 에서 한꺼번에 · 하나씩")
     r.add_argument("--max-calls", type=int, default=60, help="session 의 판정 호출 상한")
     r.add_argument("--rounds", type=int, default=6)
+    r.add_argument("--context", choices=judge.CONTEXT_MODES, default="chunk", help="재판정 문맥(판정기 --context)")
     r.add_argument("--limit", type=int, default=0, help="묶음마다 앞에서부터 이만큼(0 = 전부)")
     c = sub.add_parser("compare", help="미리 적은 규칙으로 두 이름을 견줌")
     c.add_argument("base")
@@ -576,8 +577,9 @@ def main(argv=None) -> int:
             folder = a.out / a.name / datetime.now().strftime("%Y%m%d-%H%M%S")
             print(f"── {i + 1}/{a.times} · {folder}", flush=True)
             echo = lambda s: print(s, flush=True)  # noqa: E731
-            got = (run_session(folder, flagged, clean, load_edits(), a.mode, a.max_calls, echo=echo)
-                   if a.policy == "session" else run_once(folder, flagged, clean, a.policy, a.rounds, echo=echo))
+            got = (run_session(folder, flagged, clean, load_edits(), a.mode, a.max_calls, echo=echo, context=a.context)
+                   if a.policy == "session"
+                   else run_once(folder, flagged, clean, a.policy, a.rounds, echo=echo, context=a.context))
             print(json.dumps(got["total"], ensure_ascii=False), flush=True)
     return 0
 

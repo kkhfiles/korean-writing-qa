@@ -123,6 +123,162 @@ def numbered(lines: list[str], first: int) -> str:
     return "\n".join(f"{n:>3} | {l}" for n, l in enumerate(lines, first))
 
 
+#: 재판정 문맥 — chunk = 대상이 든 180줄 묶음 전부(기본) · fixed = 대상 앞뒤 고정 줄 · block = 대상의 구조 단위와
+#: 제목 사슬, 앞뒤 블록. 재판정 비용의 대부분이 호출마다 새로 쓰는 문서 묶음이라(180줄 묶음 중앙값 약 8,700토큰
+#: · 2026-10-15) 문맥을 줄이는 실험을 옵션으로 둔다. 기본값은 같은 입력 재생으로 지적 차이를 본 뒤에 바꾼다
+#: (외부 검토 — 구조를 자르지 말고 못 담으면 chunk 로 복귀 · HTML 은 chunk · 판단 불가를 따로 받음).
+CONTEXT_MODES = ("chunk", "fixed", "block")
+FIXED_LINES = 20
+#: block 에서 대상의 구조 단위와 제목 사슬이 이보다 길면 자르지 않고 chunk 로 복귀한다
+BLOCK_BUDGET = 120
+#: 판정기가 생략된 곳 때문에 판단하지 못한 줄에 다는 갈래 — 그 줄은 chunk 로 다시 판정한다
+CONTEXT_SHORT = "문맥 부족"
+WINDOWABLE = (".md", ".markdown")
+WINDOW_NOTE = ("\n\n이번에는 문서의 일부만 보낸다. 줄 번호는 원래 문서의 번호이고 「…(N줄 생략)…」 자리에는 보내지 "
+               "않은 줄이 있다. 대상 줄을 판단하는 데 필요한 내용(용어 정의 · 선행사 · 앞서 나온 수치 · 표나 목록의 "
+               f"머리)이 생략된 곳에 있어 판단할 수 없으면 그 줄에 갈래 「{CONTEXT_SHORT}」로 지적을 하나만 내고 다른 "
+               "지적은 내지 않는다. 생략된 곳에 없을 것이라 짐작해 「선행사 없음」 같은 지적을 내지 않는다.")
+
+
+def blocks(lines: list[str]) -> list[tuple[int, int]]:
+    """빈 줄로 나뉜 블록 — (첫 줄, 끝 줄) 1부터. 코드 울타리 안은 빈 줄이 있어도 한 블록이다."""
+    out, start, fence = [], None, False
+    for n, line in enumerate(lines, 1):
+        if line.lstrip().startswith(("```", "~~~")):
+            fence = not fence
+        if not line.strip() and not fence:
+            if start is not None:
+                out.append((start, n - 1))
+                start = None
+        elif start is None:
+            start = n
+    if start is not None:
+        out.append((start, len(lines)))
+    return out
+
+
+def heading_chain(lines: list[str], n: int) -> list[int]:
+    """n행 위의 제목 사슬 — 가까운 제목부터 더 높은 수준의 제목을 거슬러 올라간다."""
+    out, level = [], 7
+    for i in range(n - 1, 0, -1):
+        m = re.match(r"(#{1,6})\s", lines[i - 1])
+        if m and len(m.group(1)) < level:
+            out.append(i)
+            level = len(m.group(1))
+            if level == 1:
+                break
+    return out
+
+
+LIST_ITEM = re.compile(r"^(\s*)(?:[-*+]|\d+[.)])\s")
+
+
+def _indent(line: str) -> int:
+    return len(line) - len(line.lstrip())
+
+
+def list_unit(lines: list[str], a: int, b: int, n: int) -> set[int]:
+    """긴 목록에서 n행의 구조 단위 — 그 항목과 하위 줄, 상위 항목 사슬, 목록 도입문(첫 줄이 항목이 아니면)."""
+    start = n
+    while start > a and not LIST_ITEM.match(lines[start - 1]):
+        start -= 1
+    ind = _indent(lines[start - 1])
+    end = start
+    while end < b and not (LIST_ITEM.match(lines[end]) and _indent(lines[end]) <= ind):
+        end += 1
+    keep = set(range(start, end + 1))
+    cur = ind
+    for i in range(start - 1, a - 1, -1):
+        if LIST_ITEM.match(lines[i - 1]) and _indent(lines[i - 1]) < cur:
+            keep.add(i)
+            cur = _indent(lines[i - 1])
+    if not LIST_ITEM.match(lines[a - 1]):
+        keep.add(a)
+    return keep
+
+
+def table_unit(lines: list[str], a: int, b: int, n: int) -> set[int]:
+    """긴 표에서 n행의 구조 단위 — 머리 두 줄과 그 행 앞뒤 두 행."""
+    return set(range(a, min(b, a + 1) + 1)) | set(range(max(a, n - 2), min(b, n + 2) + 1))
+
+
+def window_lines(lines: list[str], n: int, mode: str) -> set[int] | None:
+    """n행을 판정할 때 보낼 줄 — 구조 단위를 담지 못하면 None(chunk 로 복귀)."""
+    heads = set(heading_chain(lines, n))
+    if mode == "fixed":
+        return set(range(max(1, n - FIXED_LINES), min(len(lines), n + FIXED_LINES) + 1)) | heads
+    bl = blocks(lines)
+    i = next((k for k, (a, b) in enumerate(bl) if a <= n <= b), None)
+    if i is None:                       # 빈 줄 자체 — 앞뒤 블록으로
+        return set(range(max(1, n - 1), min(len(lines), n + 1) + 1)) | heads
+    a, b = bl[i]
+    keep = set(range(a, b + 1)) | heads
+    if len(keep) > BLOCK_BUDGET:
+        # 블록이 길면 구조 단위로 — 목록은 항목 · 상위 항목 · 도입문, 표는 머리와 이웃 행. 그 밖(긴 문단 ·
+        # 코드)은 자르지 않고 chunk 로 돌아간다(외부 검토 「구조를 자르지 말 것」)
+        body = lines[a - 1:b]
+        if sum(1 for l in body if LIST_ITEM.match(l)) * 2 >= len(body):
+            keep = list_unit(lines, a, b, n) | heads
+        elif all(l.lstrip().startswith("|") for l in body):
+            keep = table_unit(lines, a, b, n) | heads
+        else:
+            return None
+        if len(keep) > BLOCK_BUDGET:
+            return None
+    for j in (i - 1, i + 1):            # 앞뒤 블록은 예산이 남을 때만
+        if 0 <= j < len(bl):
+            extra = set(range(bl[j][0], bl[j][1] + 1))
+            if len(keep | extra) <= BLOCK_BUDGET:
+                keep |= extra
+    return keep
+
+
+def excerpt(lines: list[str], keep: list[int]) -> str:
+    """원래 줄 번호를 붙인 발췌 — 빠진 구간은 「…(N줄 생략)…」 한 줄."""
+    out, prev = [], 0
+    for n in keep:
+        if n > prev + 1:
+            out.append(f"…({n - prev - 1}줄 생략)…")
+        out.append(f"{n:>3} | {lines[n - 1]}")
+        prev = n
+    if prev < len(lines):
+        out.append(f"…({len(lines) - prev}줄 생략)…")
+    return "\n".join(out)
+
+
+def parts_for(lines: list[str], want: set[int] | None, mode: str, path: Path) -> list[dict]:
+    """이번에 부를 조각 — {"mine": 대상 줄, "document": 프롬프트에 넣을 글, "seen": 판정기가 본 줄, "label", "mode"}."""
+    def by_chunk(used: str) -> list[dict]:
+        out = []
+        for first, part in chunks(lines):
+            mine = sorted(n for n in (want or ()) if first <= n < first + len(part))
+            if want is not None and not mine:
+                continue
+            out.append({"mine": mine, "document": numbered(part, first), "seen": part,
+                        "label": f"{first}-{first + len(part) - 1}", "mode": used})
+        return out
+    if want is None or mode == "chunk":
+        return by_chunk("chunk")
+    if path.suffix.lower() not in WINDOWABLE:
+        return by_chunk(f"chunk←{mode}")
+    keep: set[int] = set()
+    for n in sorted(want):
+        got = window_lines(lines, n, mode)
+        if got is None:
+            return by_chunk(f"chunk←{mode}")
+        keep |= got
+    if len(keep) > CHUNK_LINES:
+        return by_chunk(f"chunk←{mode}")
+    ordered = sorted(keep)
+    runs, start = [], ordered[0]
+    for a, b in zip(ordered, ordered[1:] + [None]):
+        if b != a + 1:
+            runs.append(f"{start}-{a}")
+            start = b
+    return [{"mine": sorted(want), "document": excerpt(lines, ordered), "seen": [lines[n - 1] for n in ordered],
+             "label": ",".join(runs), "mode": mode}]
+
+
 def relocate(lines: list[str], hint, phrase: str) -> int | None:
     """모델이 낸 줄 번호를 믿지 않고 **표현이 실제로 있는 줄**을 찾는다."""
     phrase = (phrase or "").strip()
@@ -692,6 +848,49 @@ def log_call(row: dict) -> None:
         f.write(json.dumps(row, ensure_ascii=False) + "\n")
 
 
+#: 재판정 입력을 남기는 날수 — 문맥 방식을 같은 입력으로 재생해 지적 차이를 보려고 둔다(외부 검토 2026-10-16)
+REPLAY_DAYS = 30
+
+
+def replay_dir() -> Path:
+    """판정 기록 옆 폴더 — 시험 · 재현 도구가 기록 경로를 돌리면 함께 따라간다(실사용 저장소에 안 섞인다).
+
+    ⛔ 사내 문서 원문이 들어간다 — 이 PC 밖으로 내보내지 않고 저장소에 넣지 않는다.
+    """
+    return LOG.parent / "korean-replay"
+
+
+def rejudge_user(piece: dict, info: dict, closed: list, decided: list) -> str:
+    """재판정 한 조각의 사용자 메시지 — 판정과 재생(`replay_rejudge.py`)이 같이 쓴다(같은 입력이어야 견준다)."""
+    mine = piece["mine"]
+    plain = {n for n in mine if not info[n].get("anchor")}
+    windowed = piece["mode"] in ("fixed", "block")
+    return (probe.USER.format(document=piece["document"]) + (WINDOW_NOTE if windowed else "")
+            + "\n\n이번에는 아래 줄만 점검한다 — 나머지 줄은 문맥으로만 읽고 지적하지 않는다.\n"
+            + ", ".join(map(str, mine))
+            + before_after(mine, info, [(n, r) for n, r in closed if n in plain],
+                           [(n, d) for n, d in decided if n in plain]))
+
+
+def save_case(path: Path, key: str, text: str, want: set[int], anchors: dict, base, info: dict,
+              rules_sha: str, system: str, model: str, context: str, closed: list, decided: list) -> None:
+    """재판정 한 번의 입력 — 그때 문서 · 대상 · 기준 판 · 계보 · 닫은 지적 · 사용자 답 · 시스템 프롬프트."""
+    folder = replay_dir()
+    folder.mkdir(parents=True, exist_ok=True)
+    cutoff = time.time() - REPLAY_DAYS * 86400
+    for old in folder.glob("*.json"):
+        if old.stat().st_mtime < cutoff:
+            old.unlink(missing_ok=True)
+    case = {"at": datetime.now().isoformat(timespec="seconds"), "doc": str(path), "key": key, "text": text,
+            "targets": sorted(want), "anchors": {str(n): g for n, g in anchors.items()}, "base": base,
+            "info": {str(n): v for n, v in info.items()}, "rules": rules_sha, "model": model, "context": context,
+            "system_sha": hashlib.sha256(system.encode("utf-8")).hexdigest()[:12],
+            "decisions_prompt": decisions_prompt(load_decisions()),
+            "closed": [[n, r] for n, r in closed], "decided": [[n, d] for n, d in decided]}
+    name = f"{datetime.now():%Y%m%d-%H%M%S}-{hashlib.sha256(text.encode('utf-8')).hexdigest()[:8]}.json"
+    (folder / name).write_text(json.dumps(case, ensure_ascii=False), encoding="utf-8")
+
+
 def open_for(path: Path, since: str) -> tuple[list[int], bool]:
     """`--since` 로 판정할 줄 — (줄 번호, git 안인가). ref 를 못 풀면 ValueError.
 
@@ -847,7 +1046,7 @@ def held_ask(n: int, line: str, info: dict) -> dict:
 
 def judge(path: Path, model: str, timeout: float, backend, targets: list[int] | None = None,
           base: list[str] | None = None, anchors: dict[int, list[str]] | None = None,
-          base_time: float | None = None) -> dict:
+          base_time: float | None = None, context: str = "chunk") -> dict:
     """`targets` 가 있으면 그 줄이 든 묶음만 부르고 그 줄에 달린 지적만 낸다.
 
     ⛔ **지적을 거르는 까닭** — 판정기는 같은 글을 다시 판정해도 지적 수가 평균 16%
@@ -887,23 +1086,33 @@ def judge(path: Path, model: str, timeout: float, backend, targets: list[int] | 
     pending = (sum(1 for n, _ in coverage.open_fixes(key, lines, LOG) if n not in want)
                if rejudge_only else 0)
     found, calls, hidden, foreign, held = [], [], 0, 0, 0
-    for first, part in chunks(lines):
-        if want is not None and not any(first <= n < first + len(part) for n in want):
-            continue
+    held_done: set[int] = set()
+    queue = parts_for(lines, want, context, path)
+    closed_all, decided_all = [], []
+    if want is not None:
+        plain = [n for n in sorted(want) if not info[n].get("anchor")]
+        closed_all, decided_all = closed_on(key, lines, plain), decided_on(key, lines, plain)
+        save_case(path, key, text, want, anchors, base, info, rules_sha, system, model, context,
+                  closed_all, decided_all)
+    while queue:
+        piece = queue.pop(0)
+        mine, windowed = piece["mine"], piece["mode"] in ("fixed", "block")
+        short: set[int] = set()
         started = time.time()
         row = {"at": datetime.now().isoformat(timespec="seconds"), "when": time.time(),
                "doc": str(path), "key": key,
-               "sha256": hashlib.sha256("\n".join(part).encode("utf-8")).hexdigest()[:16],
-               "lines": f"{first}-{first + len(part) - 1}", "model": model, "rules": rules_sha,
+               "sha256": hashlib.sha256("\n".join(piece["seen"]).encode("utf-8")).hexdigest()[:16],
+               "lines": piece["label"], "model": model, "rules": rules_sha,
                "cache_ttl": ttl,       # 적용 전후 비용을 기록으로 가른다
-               # 게이트가 「이번 가지의 새 줄을 판정기가 다 봤나」를 이것으로 가른다
-               "seen": coverage.seen_keys(part)}
-        user = probe.USER.format(document=numbered(part, first))
+               "context": piece["mode"],
+               # 게이트가 「이번 가지의 새 줄을 판정기가 다 봤나」를 이것으로 가른다 — 창이면 보낸 줄만
+               "seen": coverage.seen_keys(piece["seen"])}
+        user = rejudge_user(piece, info, closed_all, decided_all) if want is not None \
+            else probe.USER.format(document=piece["document"])
         if want is not None:
             # 묶음은 문맥으로 통째로 보내되 지적은 새 줄에만 받는다. 전에는 묶음 전체에
             # 지적을 써 오게 하고 새 줄 밖의 것을 버렸다 — 출력 토큰이 곧 시간이고(상관 0.97)
             # 지적 하나가 약 206토큰이라, 버리는 지적만큼 시간과 한도를 썼다(2026-10-07 실측).
-            mine = sorted(n for n in want if first <= n < first + len(part))
             row["targets"] = len(mine)
             row["rejudge_only"] = rejudge_only  # 묶음 경고의 근거 — 얼마나 자주 이러는지 센다
             row["pending_fixes"] = pending
@@ -914,10 +1123,6 @@ def judge(path: Path, model: str, timeout: float, backend, targets: list[int] | 
                                for n in mine if not info[n].get("anchor")]
             # 게이트가 「지운 자리를 판정기가 봤나」를 이것으로 가른다
             row["deleted_seen"] = sorted({k for n in mine for k in info[n].get("deleted_keys") or [] if k})
-            user += ("\n\n이번에는 아래 줄만 점검한다 — 나머지 줄은 문맥으로만 읽고 지적하지 않는다.\n"
-                     + ", ".join(map(str, mine))
-                     + before_after(mine, info, closed_on(key, lines, [n for n in mine if not info[n].get("anchor")]),
-                                    decided_on(key, lines, [n for n in mine if not info[n].get("anchor")])))
             over = [n for n in mine if info[n]["round"] > REJUDGE_CAP]
         try:
             r = call_messages(model=model, system=system, user=user,
@@ -945,8 +1150,9 @@ def judge(path: Path, model: str, timeout: float, backend, targets: list[int] | 
         hidden_before = hidden
         if want is not None:
             # 상한을 처음 넘은 줄은 지적이 없어도 사람에게 — 아직 못 찾은 결함도 그 줄에 있을 수 있다
-            items = list(items) + [held_ask(n, lines[n - 1], info[n]) for n in over
-                                   if info[n]["round"] == REJUDGE_CAP + 1]
+            fresh_held = [n for n in over if info[n]["round"] == REJUDGE_CAP + 1 and n not in held_done]
+            held_done.update(fresh_held)
+            items = list(items) + [held_ask(n, lines[n - 1], info[n]) for n in fresh_held]
         for it in items:
             if isinstance(it, dict):
                 it["line"] = relocate(lines, it.get("line"), str(it.get("phrase") or ""))
@@ -958,6 +1164,10 @@ def judge(path: Path, model: str, timeout: float, backend, targets: list[int] | 
                 # 고리를 만든다)
                 if it["line"] in anchors and "뜻이 바뀐" not in str(it.get("category") or ""):
                     hidden += 1
+                    continue
+                # 창에서 생략된 곳 때문에 판단하지 못한 줄 — 처리할 지적이 아니라 chunk 로 다시 판정할 줄이다
+                if windowed and it.get("category") == CONTEXT_SHORT and it["line"] in (want or ()):
+                    short.add(it["line"])
                     continue
                 # ⛔ 한글이 없는 줄의 지적은 뺀다 — 이 판정기는 한글을 본다. 영문 페이지에서
                 #    영어 문장을 사람 확인으로 냈는데 답 기록은 한글 줄만 받아, 배포가 풀 길
@@ -988,6 +1198,9 @@ def judge(path: Path, model: str, timeout: float, backend, targets: list[int] | 
         row["fixes"] = fixes
         if want is not None:
             row["hidden"] = hidden - hidden_before   # 새 줄 밖에 달려 버린 지적 — 0 에 가까워야 한다
+        if short:
+            row["context_short"] = sorted(short)    # 창이 모자랐던 줄 — 그 비용도 창 방식의 비용이다
+            queue += [dict(p, mode=f"chunk←{CONTEXT_SHORT}") for p in parts_for(lines, short, "chunk", path)]
         log_call(row)
         calls.append(row)
     freq = load_freq()
@@ -1107,6 +1320,8 @@ def main(argv=None, backend=None) -> int:
     ap.add_argument("--json", help="지적을 JSON 으로도 씀")
     ap.add_argument("--since", metavar="REF",
                     help="REF 와 갈라진 뒤 새로 생겼고 아직 판정 안 한 줄만 판정 — 예: origin/main")
+    ap.add_argument("--context", choices=CONTEXT_MODES, default="chunk",
+                    help="--since 재판정에 보낼 문맥 — chunk(기본 · 180줄 묶음) · fixed · block(실험)")
     ap.add_argument("--cost", action="store_true", help="누적 비용 보기")
     ap.add_argument("--by", choices=("day", "month", "doc"), default="day")
     ap.add_argument("--answer", type=int, action="append", metavar="행",
@@ -1226,7 +1441,7 @@ def main(argv=None, backend=None) -> int:
             if not in_git:
                 print(f"  {p.name} — git 밖 문서라 갈라진 지점이 없습니다 · 아직 판정 안 한 한글 줄을 모두 봅니다")
         try:
-            results.append(judge(p, model, a.timeout, backend, targets, base, anchors, base_t))
+            results.append(judge(p, model, a.timeout, backend, targets, base, anchors, base_t, a.context))
         except Exception as e:
             print(f"⛔ 호출 실패 — {p.name}: {type(e).__name__}: {e}"[:300])
             print("   검사되지 않았습니다 — 세션이 규칙을 직접 읽고 판정합니다.")
