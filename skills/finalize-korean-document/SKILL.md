@@ -76,10 +76,17 @@ python "$HOME/.claude/assets/doc-style-check.py" <수정문>
 
    **모르는 플래그는 rc로 멈춘다** — 예전에는 조용히 무시했다. `--relaxd`처럼 한 글자 틀리면 끄려던 검사가 안 꺼진 채 통과로 읽혔다. 검사기 자체 시험은 `python "$HOME/.claude/assets/doc-style-check-test.py"`다.
 
-   **이어서 2층 판정 스크립트를 실행한다** — 세션이 할 일은 아래 명령 하나다. 스크립트가 문서와 판단 규칙 전문(`core-rules.md` + 9단계)을 모델에 넘겨 지적 목록을 받는다. 지시 파일(CLAUDE.md · AGENTS.md)을 싣지 않는 것과 어느 모델을 부를지(Claude Code 가 있으면 Opus, 없으면 Codex sol-high)는 스크립트가 정한다. **⛔ 세션이 다른 AI 서비스나 모델을 찾아 따로 부르지 않는다** — Codex 세션이 「다른 모델로 검사해야 한다」로 읽고 GPT 밖의 서비스를 쓰려 한 적이 있다(2026-10-15 사용자). 스크립트가 종료 코드 3 · 4 로 끝나면 아래 「종료 코드」 항목대로 세션이 규칙을 직접 읽어 판정한다. 점검표(2026-09-29)에서 이 판정문으로 고칠 어절 47/48을 잡았다. 2층 탐침과 같은 프롬프트를 쓴다. Codex(sol-high)는 대장 회수와 헛짚음이 Opus 와 같은 수준이었다(2026-10-02).
+   **이어서 2층 판정 스크립트를 실행한다** — 스크립트가 문서와 판단 규칙 전문(`core-rules.md` + 9단계)을 모델에 전달해 지적 목록을 받는다. 지시 파일(CLAUDE.md와 AGENTS.md)은 전달하지 않는다. 점검표(2026-09-29)에서 이 판정문으로 고칠 어절 47/48을 잡았다. 2층 탐침과 같은 프롬프트를 쓴다.
+
+   **「별도 호출」은 현재 대화와 분리된 검사 요청을 뜻한다** — 같은 AI 서비스에서 검사할 수 있으며, 다른 서비스나 다른 모델을 사용해야 한다는 뜻이 아니다. **⛔ 세션이 다른 AI 서비스나 모델을 찾아 따로 호출하지 않는다.** 지정된 판정 스크립트를 사용한다.
+
+   **검사 백엔드를 지정하지 않았다면 현재 세션과 같은 서비스를 명시한다** — Codex 세션은 `--backend codex`, Claude Code 세션은 `--backend claude`를 사용한다. `auto`는 현재 세션을 식별하지 않고 설치된 Claude를 먼저 선택하므로, 같은 서비스를 유지하려는 호출에서는 생략하지 않는다. 사용자가 검사 백엔드를 지정했다면 그 지정을 따른다. 호출할 수 없으면 다른 서비스로 임의 전환하지 않고 아래 「종료 코드」 항목대로 직접 판정한다.
 
 ```powershell
-python -X utf8 P:/github/korean-writing-qa/scripts/judge_layer2.py <수정문>
+# Codex
+python -X utf8 P:/github/korean-writing-qa/scripts/judge_layer2.py <수정문> --backend codex
+# Claude Code
+python -X utf8 P:/github/korean-writing-qa/scripts/judge_layer2.py <수정문> --backend claude
 ```
 
    - **git 저장소의 가지에서 고친 문서는 `--since origin/main`** — 그 가지와 갈라진 뒤 새로 생겼고 판정기가 아직 안 본 줄만 판정하고, 그 줄에 달린 지적만 보여 준다. 지적 목록을 **한 묶음으로 처리(고침 · 사유 · 사람 확인)한 뒤 같은 명령을 한 번 더** 부르면 고친 줄만 다시 판정한다. **지적 하나 고칠 때마다 부르지 않는다** — 호출마다 문서 문맥을 다시 실어 토큰이 들고, 같은 줄의 판정 횟수가 빨리 쌓여 재판정 상한(사람 확인)에 먼저 닿는다(2026-10-13 한 문서에서 판정 58회 중 29회가 대상 3줄 이하였다). 고치는 방향이 맞는지 먼저 봐야 하는 대표 수정은 한두 건 고쳐 중간에 판정해도 된다 — 사실 주장을 좁히거나 지운 줄도 확인할 사실이 바뀌므로 「확인함」을 적기 전에 다시 판정해도 된다. 고친 말이 새 문제를 들여오는지 보는 것이 이 재판정의 몫이다(실문서에서 수정안 40건 중 8건이 되돌아옴). 「판정할 새 줄 없음」이 나오면 끝이다.
@@ -103,7 +110,8 @@ python -X utf8 P:/github/korean-writing-qa/scripts/judge_layer2.py <수정문>
    - **읽은 답은 다음 판정이 따른다** (2026-10-07 사용자 「내 기본 답변을 기반으로 판단했으면 좋겠는데, 현재 AI가 애스컬레이션한 항목이 너무 많다」) — `--answers-from` 이 답을 모두 답 기록(`korean-layer2-decisions.jsonl`)에 남기고, 판정기는 그 기록을 프롬프트로 읽는다. ⛔ 갈래별 고침 횟수로 사람 확인을 고칠 지적으로 바꾸던 장치는 뺐다(2026-10-12) — 바뀐 5건이 모두 문서만으로 못 가르는 사실이었고, 고침 답은 낱말을 고친 것이라 그 근거가 못 된다.
 
 ```powershell
-python -X utf8 P:/github/korean-writing-qa/scripts/judge_layer2.py <수정문…> --sheet <저장소 밖 경로>.md
+# Codex 표 생성 예시: Claude Code에서는 --backend claude 사용
+python -X utf8 P:/github/korean-writing-qa/scripts/judge_layer2.py <수정문…> --backend codex --sheet <저장소 밖 경로>.md
 python -X utf8 P:/github/korean-writing-qa/scripts/judge_layer2.py --answers-from <그 표>
 python -X utf8 P:/github/korean-writing-qa/scripts/judge_layer2.py --answers-from <그 표> --reply "Q1 그대로" --reply "Q2 직접: …"
 python -X utf8 P:/github/korean-writing-qa/scripts/judge_layer2.py <수정문…> --asks
