@@ -528,7 +528,7 @@ def evidence_problems(doc: Path, note: str, lines: list[str]) -> list[str]:
        다르다」 · 2026-10-13). 이것은 존재만 본다 — 그 근거가 주장을 뒷받침하는지는 못 본다.
     ⛔ 경로 뒤에 붙지 않은 인용(대화로 받은 지시 등)은 대조하지 않는다 — 대조할 파일이 없다.
     """
-    out, theirs = [], set()
+    out, files = [], []          # files — (경로가 끝나는 곳, 파일 이름, 줄 수)
     norm = lambda t: re.sub(r"\s+", " ", t).strip()
     for m in PATH_REF.finditer(note):
         target = _resolve(m.group(0), doc)
@@ -539,21 +539,24 @@ def evidence_problems(doc: Path, note: str, lines: list[str]) -> list[str]:
             raw = target.read_text(encoding="utf-8", errors="replace")
         except OSError:
             raw = ""
-        # 경로 바로 뒤의 「N행」은 그 파일의 줄이다
-        ln = re.match(r"\s*(?:의\s*)?(\d+)\s?행", note[m.end():])
-        if ln:
-            theirs.add(m.end() + ln.start(1))
-            if not 0 < int(ln.group(1)) <= len(raw.splitlines()):
-                out.append(f"「{ln.group(1)}행」 은 {target.name}({len(raw.splitlines())}행)에 없는 줄입니다")
+        files.append((m.end(), target.name, len(raw.splitlines())))
         q = QUOTE_AFTER.match(note, m.end())
         if q:
             body = norm(raw)
             parts = [norm(x) for x in q.group(1).split("…") if len(norm(x)) >= 4]
             if not all(x in body for x in parts):
                 out.append(f"인용 「{q.group(1)[:30]}」 이 {target.name} 에 글자 그대로 없습니다 — 원문을 옮겨 적습니다")
+    # 「N행」이 가리키는 곳 — 「문서 N행」이면 이 문서, 아니면 앞에 나온 마지막 경로의 파일, 경로가 없으면 이 문서.
+    # ⛔ 전에는 경로 바로 뒤만 그 파일 줄로 봐서, 「<경로> 「인용」 — 원문 965행 6.2 절 안」을 이 문서(363행)의
+    #    없는 줄로 거절했다(2026-10-14 lab-docs). 귀속만 바로잡고 줄이 있는지는 계속 대조한다.
     for m in re.finditer(r"(\d+)\s?행", note):
-        if m.start(1) not in theirs and not 0 < int(m.group(1)) <= len(lines):
-            out.append(f"「{m.group(0)}」 은 이 문서({len(lines)}행)에 없는 줄입니다")
+        n = int(m.group(1))
+        before = [f for f in files if f[0] <= m.start()]
+        if "문서" in note[max(0, m.start() - 6):m.start()] or not before:
+            if not 0 < n <= len(lines):
+                out.append(f"「{m.group(0)}」 은 이 문서({len(lines)}행)에 없는 줄입니다")
+        elif not 0 < n <= before[-1][2]:
+            out.append(f"「{m.group(0)}」 은 {before[-1][1]}({before[-1][2]}행)에 없는 줄입니다")
     return out
 
 
@@ -582,9 +585,14 @@ def _pick_fix(path: Path, n: int, phrase: str | None) -> tuple[list[str], dict]:
     if not mine:
         raise ValueError(f"{n}행에는 처리 안 된 고칠 지적이 없습니다 — --fixes 로 줄 번호를 확인합니다")
     if phrase:
-        mine = [fx for fx in mine if str(fx.get("phrase") or "") == phrase]
+        exact = [fx for fx in mine if str(fx.get("phrase") or "") == phrase]
+        # 표현 일부만 적어도 하나로 정해지면 받는다 — 링크 주소까지 든 긴 표현을 통째로 옮기게 하던 불편(2026-10-14)
+        part = [fx for fx in mine if phrase in str(fx.get("phrase") or "")]
+        mine = exact or (part if len(part) == 1 else [])
         if not mine:
-            raise ValueError(f"{n}행에 「{phrase}」 지적이 없습니다 — --fixes 의 표현을 그대로 적습니다")
+            many = " · ".join(f"「{fx.get('phrase')}」" for fx in part)
+            raise ValueError(f"{n}행에 「{phrase}」 지적이 없습니다 — --fixes 의 표현을 적습니다"
+                             + (f"(일부가 맞는 지적이 여럿: {many})" if many else ""))
     if len(mine) > 1:
         raise ValueError(f"{n}행에 고칠 지적이 {len(mine)}건입니다 — --phrase 로 하나를 고릅니다: "
                          + " · ".join(f"「{fx.get('phrase')}」" for fx in mine))
