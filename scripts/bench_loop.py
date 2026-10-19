@@ -218,7 +218,7 @@ def end_state(finished: bool, rows: list[dict], rounds: int) -> str:
 
 
 def run_once(folder: Path, flagged: list[dict], clean: list[dict], policy: str = "all",
-             rounds: int = 6, backend=None, echo=None, context: str = "chunk") -> dict:
+             rounds: int = 6, backend=None, echo=None, context: str = judge.DEFAULT_CONTEXT) -> dict:
     """한 번 돌리고 {"rounds": 회차별 값, "total": 합계}를 `folder/summary.json` 에도 쓴다."""
     folder.mkdir(parents=True)
     lines, meta = build_doc(flagged, clean)
@@ -436,7 +436,7 @@ def reclosed(dismissals: Path) -> int:
 
 
 def run_session(folder: Path, flagged: list[dict], clean: list[dict], edits: list[dict], mode: str = "batch",
-                max_calls: int = 60, backend=None, echo=None, context: str = "chunk",
+                max_calls: int = 60, backend=None, echo=None, context: str = judge.DEFAULT_CONTEXT,
                 instructions: bool = False) -> dict:
     """세션처럼 처리하며 고리를 돈다 — 실사용 흐름 재생(외부 검토의 둘째 트랙). 「전부 적용」은 스트레스 시험이다.
 
@@ -607,7 +607,7 @@ def main(argv=None) -> int:
     r.add_argument("--max-calls", type=int, default=60, help="session 의 판정 호출 상한")
     r.add_argument("--instructions", action="store_true", help="session 에서 지시 편집 뒤 지시를 기록(--instructed)")
     r.add_argument("--rounds", type=int, default=6)
-    r.add_argument("--context", choices=judge.CONTEXT_MODES, default="chunk", help="재판정 문맥(판정기 --context)")
+    r.add_argument("--context", choices=judge.CONTEXT_MODES, default=judge.DEFAULT_CONTEXT, help="재판정 문맥(판정기 --context)")
     r.add_argument("--limit", type=int, default=0, help="묶음마다 앞에서부터 이만큼(0 = 전부)")
     c = sub.add_parser("compare", help="미리 적은 규칙으로 두 이름을 견줌")
     c.add_argument("base")

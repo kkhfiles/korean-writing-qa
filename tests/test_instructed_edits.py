@@ -103,7 +103,7 @@ class PromptTests(_Base):
         live = self.rejudge()
         case = replay.load_cases(self.dir / "korean-replay")[0]
         fake = Scripted([[]])
-        replay.replay(case, "chunk", fake.pair(), "opus")
+        replay.replay(case, case["context"], fake.pair(), "opus")   # 판정 때 방식 그대로
         self.assertEqual(live.calls[0]["user"], fake.calls[0]["user"])
 
 

@@ -98,6 +98,21 @@ class WindowRuleTests(unittest.TestCase):
         got = judge.window_lines(self.lines, 100, "fixed")
         self.assertEqual(set(range(80, 121)) | {3, 1}, got)
 
+    def test_fixed_edges_widen_to_a_nearby_block_end(self) -> None:
+        """(외부 검토 Argon · 2026-10-20) 창 끝이 블록 중간을 자르면 그 블록 끝까지 — 멀면 그대로."""
+        paras = [f"문단 줄 {i}입니다." for i in range(60)]
+        lines = paras[:15] + [""] + paras[15:45] + [""] + paras[45:]      # 블록 1-15 · 17-46 · 48-62
+        got = judge.window_lines(lines, 30, "fixed")       # 창 10-50 · 앞 블록 첫 줄은 9줄 · 뒤 블록 끝은 12줄 밖
+        self.assertIn(1, got, "가까운 블록 첫 줄까지 넓히지 않았습니다")
+        self.assertEqual(set(range(1, 51)), got, "먼 블록 끝(12줄)까지 넓혔거나 창을 잘못 잡았습니다")
+
+    def test_fixed_cut_table_keeps_its_header(self) -> None:
+        long = ["# 표", "", "| 항목 | 값 |", "|---|---|"] + [f"| 항목 {i} | 값 {i} |" for i in range(150)]
+        got = judge.window_lines(long, 100, "fixed")
+        self.assertTrue({3, 4} <= got, "창이 자른 표의 머리 행이 빠졌습니다")
+        self.assertTrue(set(range(80, 121)) <= got)
+        self.assertLess(len(got), 50)
+
     def test_the_excerpt_keeps_original_numbers_and_marks_gaps(self) -> None:
         text = judge.excerpt(self.lines, [1, 5, 6])
         self.assertIn("  5 | 배포는 매주 화요일에 합니다.", text)
@@ -187,7 +202,7 @@ class JudgeTests(unittest.TestCase):
     def test_context_short_in_chunk_mode_is_an_ordinary_finding(self) -> None:
         short = {"line": 5, "phrase": "배포는", "category": judge.CONTEXT_SHORT, "fix": "배포는", "why": "시험",
                  "decide": "fix"}
-        got = judge.judge(self.doc, "opus", 10, Scripted([[short]]).pair(), [5], self.lines)
+        got = judge.judge(self.doc, "opus", 10, Scripted([[short]]).pair(), [5], self.lines, context="chunk")
         self.assertEqual(1, len(got["findings"]))
 
     def test_the_rejudge_input_is_saved_next_to_the_log(self) -> None:

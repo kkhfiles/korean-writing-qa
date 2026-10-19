@@ -47,7 +47,7 @@ class ReplayTests(unittest.TestCase):
 
     def test_the_replayed_prompt_matches_the_live_one(self) -> None:
         fake = Scripted([[]])
-        replay.replay(self.cases[0], "chunk", fake.pair(), "opus")
+        replay.replay(self.cases[0], self.cases[0]["context"], fake.pair(), "opus")   # 판정 때 방식 그대로
         self.assertEqual(self.live.calls[0]["user"], fake.calls[0]["user"])
         self.assertEqual(self.live.calls[0]["system"], fake.calls[0]["system"])
 

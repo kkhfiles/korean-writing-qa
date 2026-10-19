@@ -130,7 +130,15 @@ def numbered(lines: list[str], first: int) -> str:
 #: · 2026-10-15) 문맥을 줄이는 실험을 옵션으로 둔다. 기본값은 같은 입력 재생으로 지적 차이를 본 뒤에 바꾼다
 #: (외부 검토 — 구조를 자르지 말고 못 담으면 chunk 로 복귀 · HTML 은 chunk · 판단 불가를 따로 받음).
 CONTEXT_MODES = ("chunk", "fixed", "block")
+#: 재판정 기본 문맥 — fixed(2026-10-20). 같은 입력 재생(Markdown 27건 · 두 번씩)에서 처음 부를 때 비용이 chunk
+#: 3.33달러 → 1.79달러(−46%)이고 chunk 와 지적 일치 0.828(chunk 끼리 0.811). 두 번 다 같은 쪽으로 갈린 줄을 사용자가
+#: 판단해 fixed 놓침 1 · 헛짚음 1 · chunk 가 놓친 2줄을 잡음, chunk 놓침 2. block 은 헛짚음 5라 안 골랐다.
+#: HTML 은 창을 못 잡아 chunk 로 간다(`WINDOWABLE`).
+DEFAULT_CONTEXT = "fixed"
 FIXED_LINES = 20
+#: fixed 창 끝이 문단 · 목록 · 표 · 코드 블록 안에 걸리면 블록 끝까지 넓히는 최대 줄 수 — 넘으면 그대로 자른다
+#: (외부 검토 Argon · 2026-10-20 「창 경계가 표나 코드 블록 중간을 자름」)
+FIXED_SNAP = 10
 #: block 에서 대상의 구조 단위와 제목 사슬이 이보다 길면 자르지 않고 chunk 로 복귀한다
 BLOCK_BUDGET = 120
 #: 판정기가 생략된 곳 때문에 판단하지 못한 줄에 다는 갈래 — 그 줄은 chunk 로 다시 판정한다
@@ -204,11 +212,29 @@ def table_unit(lines: list[str], a: int, b: int, n: int) -> set[int]:
     return set(range(a, min(b, a + 1) + 1)) | set(range(max(a, n - 2), min(b, n + 2) + 1))
 
 
+def fixed_lines(lines: list[str], n: int) -> set[int]:
+    """n행 앞뒤 `FIXED_LINES` 줄 — 끝이 블록 안에 걸리면 `FIXED_SNAP` 줄 안에서 블록 끝까지 넓힌다.
+
+    표를 넓혀도 못 담으면 표 머리 두 줄을 따로 싣는다 — 머리 없는 표 행은 칸이 무엇인지 안 읽힌다.
+    """
+    lo, hi = max(1, n - FIXED_LINES), min(len(lines), n + FIXED_LINES)
+    extra: set[int] = set()
+    for a, b in blocks(lines):
+        if a < lo <= b and lo - a <= FIXED_SNAP:
+            lo = a
+        if a <= hi < b and b - hi <= FIXED_SNAP:
+            hi = b
+    for a, b in blocks(lines):
+        if a < lo <= b and all(l.lstrip().startswith("|") for l in lines[a - 1:b]):
+            extra |= set(range(a, min(b, a + 1) + 1))
+    return set(range(lo, hi + 1)) | extra
+
+
 def window_lines(lines: list[str], n: int, mode: str) -> set[int] | None:
     """n행을 판정할 때 보낼 줄 — 구조 단위를 담지 못하면 None(chunk 로 복귀)."""
     heads = set(heading_chain(lines, n))
     if mode == "fixed":
-        return set(range(max(1, n - FIXED_LINES), min(len(lines), n + FIXED_LINES) + 1)) | heads
+        return fixed_lines(lines, n) | heads
     bl = blocks(lines)
     i = next((k for k, (a, b) in enumerate(bl) if a <= n <= b), None)
     if i is None:                       # 빈 줄 자체 — 앞뒤 블록으로
@@ -1153,7 +1179,7 @@ def held_ask(n: int, line: str, info: dict) -> dict:
 
 def judge(path: Path, model: str, timeout: float, backend, targets: list[int] | None = None,
           base: list[str] | None = None, anchors: dict[int, list[str]] | None = None,
-          base_time: float | None = None, context: str = "chunk") -> dict:
+          base_time: float | None = None, context: str = DEFAULT_CONTEXT) -> dict:
     """`targets` 가 있으면 그 줄이 든 묶음만 부르고 그 줄에 달린 지적만 낸다.
 
     ⛔ **지적을 거르는 까닭** — 판정기는 같은 글을 다시 판정해도 지적 수가 평균 16%
@@ -1434,8 +1460,8 @@ def main(argv=None, backend=None) -> int:
     ap.add_argument("--json", help="지적을 JSON 으로도 씀")
     ap.add_argument("--since", metavar="REF",
                     help="REF 와 갈라진 뒤 새로 생겼고 아직 판정 안 한 줄만 판정 — 예: origin/main")
-    ap.add_argument("--context", choices=CONTEXT_MODES, default="chunk",
-                    help="--since 재판정에 보낼 문맥 — chunk(기본 · 180줄 묶음) · fixed · block(실험)")
+    ap.add_argument("--context", choices=CONTEXT_MODES, default=DEFAULT_CONTEXT,
+                    help="--since 재판정에 보낼 문맥 — fixed(기본 · 앞뒤 20줄 + 제목 사슬) · chunk(180줄 묶음) · block(실험)")
     ap.add_argument("--cost", action="store_true", help="누적 비용 보기")
     ap.add_argument("--by", choices=("day", "month", "doc"), default="day")
     ap.add_argument("--answer", type=int, action="append", metavar="행",
