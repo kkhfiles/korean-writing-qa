@@ -1176,7 +1176,7 @@ def judge(path: Path, model: str, timeout: float, backend, targets: list[int] | 
     # 사용자가 이미 답한 것 — 탐침과 다른 단 하나의 차이다(답은 사용자마다 다르다)
     decisions = load_decisions()
     rules = probe.rules_for("guided")
-    system = probe.SYSTEM.format(rules=rules) + decisions_prompt(decisions)
+    system = probe.system_prompt().format(rules=rules) + decisions_prompt(decisions)
     # 규칙 글의 판 — 규칙이 바뀐 뒤의 판정과 앞의 판정을 가르는 최소 식별자(외부 검토 · 2026-10-12)
     rules_sha = hashlib.sha256(rules.encode("utf-8")).hexdigest()[:12]
     info = lineage(key, lines, sorted(want - set(anchors)), base, base_time) if want else {}
@@ -1212,6 +1212,7 @@ def judge(path: Path, model: str, timeout: float, backend, targets: list[int] | 
                "sha256": hashlib.sha256("\n".join(piece["seen"]).encode("utf-8")).hexdigest()[:16],
                "lines": piece["label"], "model": model, "rules": rules_sha,
                "cache_ttl": ttl,       # 적용 전후 비용을 기록으로 가른다
+               "format": os.environ.get(probe.FORMAT_ENV) or "json",   # 출력 형식 실험을 기록으로 가른다
                "context": piece["mode"],
                # 게이트가 「이번 가지의 새 줄을 판정기가 다 봤나」를 이것으로 가른다 — 창이면 보낸 줄만
                "seen": coverage.seen_keys(piece["seen"])}
@@ -1241,9 +1242,7 @@ def judge(path: Path, model: str, timeout: float, backend, targets: list[int] | 
             log_call(row)
             calls.append(row)
             raise
-        items = parse_json(r.get("text") or "") or []
-        if not isinstance(items, list):
-            items = []
+        items = probe.as_findings(parse_json(r.get("text") or "") or [])
         usage = r.get("usage") or {}
         row.update(ok=True, model=r.get("model") or model,
                    seconds=round(time.time() - started, 1),

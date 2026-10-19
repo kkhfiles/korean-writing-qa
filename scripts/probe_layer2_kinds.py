@@ -80,6 +80,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import re
 import sys
 from pathlib import Path
@@ -138,6 +139,38 @@ JSON 배열 하나만 낸다. 다른 말은 붙이지 않는다.
 확신이 없다는 이유로 지적을 빼지 않는다 — 빼지 말고 "fix" 로 내고 `why` 에 까닭을 적는다.
 
 고칠 것이 없으면 빈 배열 []을 낸다."""
+
+#: 실험(2026-10-19) — 키 없는 행 형식 · 근거는 필요할 때만. 이 환경 변수가 `compact` 일 때만 쓴다.
+#   지적 하나에 출력이 약 217토큰이고(측정 문서 · 한꺼번에 처리 10회) 그중 키 이름과 매번 쓰는 근거가 큰 몫이라
+#   출력(= 시간)을 줄이는 후보로 잰다. 판단 기준은 그대로 둔다.
+FORMAT_ENV = "KOREAN_QA_JUDGE_FORMAT"
+COMPACT_FIELDS = ("line", "phrase", "category", "fix", "decide", "check", "why")
+_FORMAT_JSON = """[{{"line": 줄번호, "phrase": "고칠 표현 원문 그대로", "category": "규칙 이름",
+   "fix": "고친 말", "why": "한 줄 근거", "decide": "fix 또는 ask",
+   "check": "문서 밖 자료로 확인할 사실 · 없으면 빈 글"}}]"""
+_FORMAT_COMPACT = """지적 하나는 키 없는 배열 하나이고 칸 순서를 지킨다.
+
+[[줄번호, "고칠 표현 원문 그대로", "규칙 이름", "고친 말", "fix 또는 ask",
+  "문서 밖 자료로 확인할 사실 · 없으면 빈 글", "근거 · 아래 경우만 쓰고 아니면 빈 글"]]
+
+칸 이름은 순서대로 line, phrase, category, fix, decide, check, why 이고 아래 설명은 이 이름으로 부른다.
+`why` 는 "ask" 이거나, `check` 가 찼거나, 망설인 까닭이 있을 때만 한 줄로 적는다. 규칙 이름으로
+까닭이 드러나는 지적은 빈 글로 둔다."""
+
+
+def system_prompt() -> str:
+    """판정기 시스템 프롬프트 틀 — 실험 형식 환경 변수가 없으면 `SYSTEM` 그대로."""
+    if os.environ.get(FORMAT_ENV) == "compact":
+        return SYSTEM.replace(_FORMAT_JSON, _FORMAT_COMPACT)
+    return SYSTEM
+
+
+def as_findings(items) -> list:
+    """행 형식으로 온 지적에 키를 붙인다 — 객체로 온 것은 그대로."""
+    if not isinstance(items, list):
+        return []
+    return [dict(zip(COMPACT_FIELDS, it)) if isinstance(it, list) else it for it in items]
+
 
 USER = """다음 문서를 점검한다. 줄 번호는 1부터 센다.
 

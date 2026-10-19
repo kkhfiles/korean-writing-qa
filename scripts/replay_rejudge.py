@@ -55,7 +55,7 @@ def replay(case: dict, mode: str, backend, model: str, timeout: float = 900) -> 
     closed = [tuple(x) for x in case.get("closed") or []]
     decided = [tuple(x) for x in case.get("decided") or []]
     instructed = [tuple(x) for x in case.get("instructed") or []]
-    system = probe.SYSTEM.format(rules=probe.rules_for("guided")) + (case.get("decisions_prompt") or "")
+    system = probe.system_prompt().format(rules=probe.rules_for("guided")) + (case.get("decisions_prompt") or "")
     queue = judge.parts_for(lines, want, mode, path)
     got = {"findings": [], "calls": 0, "cost": 0.0, "cache_write": 0, "cache_read": 0, "output": 0, "short": [],
            "seconds": 0.0, "modes": []}
@@ -75,7 +75,7 @@ def replay(case: dict, mode: str, backend, model: str, timeout: float = 900) -> 
         got["cache_read"] += usage.get("cache_read_input_tokens", 0)
         got["output"] += usage.get("output_tokens", 0)
         short = set()
-        for it in parse_json(r.get("text") or "") or []:
+        for it in probe.as_findings(parse_json(r.get("text") or "") or []):
             if not isinstance(it, dict):
                 continue
             n = judge.relocate(lines, it.get("line"), str(it.get("phrase") or ""))
