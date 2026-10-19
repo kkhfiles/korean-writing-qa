@@ -140,27 +140,38 @@ JSON 배열 하나만 낸다. 다른 말은 붙이지 않는다.
 
 고칠 것이 없으면 빈 배열 []을 낸다."""
 
-#: 실험(2026-10-19) — 키 없는 행 형식 · 근거는 필요할 때만. 이 환경 변수가 `compact` 일 때만 쓴다.
-#   지적 하나에 출력이 약 217토큰이고(측정 문서 · 한꺼번에 처리 10회) 그중 키 이름과 매번 쓰는 근거가 큰 몫이라
-#   출력(= 시간)을 줄이는 후보로 잰다. 판단 기준은 그대로 둔다.
+#: 출력 형식 — 기본은 키 없는 행 형식 · 근거는 필요할 때만(2026-10-20 기본값). `json` 이면 예전 객체 형식.
+#   지적 하나에 출력이 약 217토큰이고 그중 키 이름과 매번 쓰는 근거가 큰 몫이었다. 행 형식 3회 대 객체 3회에서
+#   걸린 시간 284~323초 → 248~279초 · 출력 토큰 중앙값 −17% · 정확도 가드 같음 · 지적 468건 중 칸 어긋남 0
+#   (2026-10-19 측정 문서 · 한꺼번에 처리). 판단 기준은 그대로 둔다.
+#   **Codex 백엔드에서는 아직 안 쟀다** — 칸이 밀린 행을 `malformed` 로 세어 기록에 남기고, 늘면 `json` 으로 되돌린다.
 FORMAT_ENV = "KOREAN_QA_JUDGE_FORMAT"
 COMPACT_FIELDS = ("line", "phrase", "category", "fix", "decide", "check", "why")
 _FORMAT_JSON = """[{{"line": 줄번호, "phrase": "고칠 표현 원문 그대로", "category": "규칙 이름",
    "fix": "고친 말", "why": "한 줄 근거", "decide": "fix 또는 ask",
    "check": "문서 밖 자료로 확인할 사실 · 없으면 빈 글"}}]"""
+# 일곱 칸을 늘 채우게 한다 — 빈 칸을 건너뛰면 뒤 칸이 앞으로 밀려 근거가 `check` 로 읽힌다(외부 검토 · 2026-10-20).
+# 근거는 문장 구조를 바꾼 수정에도 받는다 — 일반 고칠 지적 335건 중 51건만 근거가 있어 세션이 수정안을
+# 고를 단서가 줄어든다는 지적을 받았다(같은 검토).
 _FORMAT_COMPACT = """지적 하나는 키 없는 배열 하나이고 칸 순서를 지킨다.
 
 [[줄번호, "고칠 표현 원문 그대로", "규칙 이름", "고친 말", "fix 또는 ask",
   "문서 밖 자료로 확인할 사실 · 없으면 빈 글", "근거 · 아래 경우만 쓰고 아니면 빈 글"]]
 
 칸 이름은 순서대로 line, phrase, category, fix, decide, check, why 이고 아래 설명은 이 이름으로 부른다.
-`why` 는 "ask" 이거나, `check` 가 찼거나, 망설인 까닭이 있을 때만 한 줄로 적는다. 규칙 이름으로
-까닭이 드러나는 지적은 빈 글로 둔다."""
+쓸 것이 없는 칸도 빈 글 "" 로 채워 늘 일곱 칸을 낸다.
+`why` 는 "ask" 이거나, `check` 가 찼거나, 망설인 까닭이 있거나, 문장 구조를 바꿔 고쳤을 때만 한 줄로
+적는다. 낱말만 바꾸고 규칙 이름으로 까닭이 드러나는 지적은 빈 글로 둔다."""
+
+
+def output_format() -> str:
+    """지금 쓰는 출력 형식 — `compact`(기본) 또는 `json`."""
+    return "json" if os.environ.get(FORMAT_ENV) == "json" else "compact"
 
 
 def system_prompt() -> str:
-    """판정기 시스템 프롬프트 틀 — 실험 형식 환경 변수가 없으면 `SYSTEM` 그대로."""
-    if os.environ.get(FORMAT_ENV) == "compact":
+    """판정기 시스템 프롬프트 틀 — 판정기와 측정 스크립트가 모두 이것을 쓴다(잰 것과 도는 것이 같게)."""
+    if output_format() == "compact":
         return SYSTEM.replace(_FORMAT_JSON, _FORMAT_COMPACT)
     return SYSTEM
 
@@ -170,6 +181,24 @@ def as_findings(items) -> list:
     if not isinstance(items, list):
         return []
     return [dict(zip(COMPACT_FIELDS, it)) if isinstance(it, list) else it for it in items]
+
+
+def malformed(items) -> int:
+    """칸이 어긋난 행 수 — 일곱 칸이 아니거나, 첫 칸이 줄 번호가 아니거나, 다섯째 칸이 fix · ask 가 아님.
+
+    어긋난 행도 버리지 않는다(지적을 잃는 쪽이 더 비싸다). 기록에 남겨 형식을 되돌릴지 가른다.
+    """
+    if not isinstance(items, list):
+        return 0
+    bad = 0
+    for it in items:
+        if not isinstance(it, list):
+            continue
+        first = it[0] if it else None
+        line_ok = isinstance(first, int) or (isinstance(first, str) and first.strip().isdigit())
+        decide_ok = len(it) > 4 and str(it[4]).strip().lower() in ("fix", "ask")
+        bad += not (len(it) == len(COMPACT_FIELDS) and line_ok and decide_ok)
+    return bad
 
 
 USER = """다음 문서를 점검한다. 줄 번호는 1부터 센다.
@@ -367,15 +396,13 @@ def run_arm(arm: str, model: str, timeout: float, document: str,
 
     result = call_messages(
         model=model,
-        system=SYSTEM.format(rules=rules),
+        system=system_prompt().format(rules=rules),
         user=USER.format(document=numbered(document)),
         max_tokens=4000,
         temperature=0,
         timeout=timeout,
     )
-    findings = parse_json(result.get("text") or "") or []
-    if not isinstance(findings, list):
-        findings = []
+    findings = as_findings(parse_json(result.get("text") or "") or [])
     out = score(items, findings, document, cited_texts(arm))
     out.update({"arm": arm, "model": result.get("model"),
                 "cost_usd": result.get("cost_usd"), "findings": findings,

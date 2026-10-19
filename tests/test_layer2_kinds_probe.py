@@ -152,7 +152,7 @@ class PromptTests(unittest.TestCase):
         rules = (probe.RULES.read_text(encoding="utf-8")
                  + probe.step_body(probe.SKILL_MD.read_text(encoding="utf-8"),
                                    probe.STEP_TITLE))
-        prompt = probe.SYSTEM.format(rules=rules)
+        prompt = probe.system_prompt().format(rules=rules)
         for item in probe.planted():
             self.assertNotIn(item["flag_id"], prompt,
                              f"프롬프트가 깃발 {item['flag_id']} 를 부릅니다")

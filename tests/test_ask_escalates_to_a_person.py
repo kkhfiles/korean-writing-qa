@@ -27,6 +27,7 @@ import tempfile
 import time
 import unittest
 from pathlib import Path
+from unittest import mock
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
@@ -59,10 +60,13 @@ FIX = {"line": 7, "phrase": "맨 위에 표시합니다", "category": "군더더
 class PromptTests(unittest.TestCase):
 
     def test_the_prompt_asks_for_a_decision(self) -> None:
-        self.assertIn('"decide"', probe.SYSTEM)
-        self.assertIn('"ask"', probe.SYSTEM)
-        self.assertIn("빼지 않는다", probe.SYSTEM,
-                      "확신이 없다고 지적을 빼면 사람에게 올라갈 것이 조용히 사라집니다")
+        for fmt in ("compact", "json"):     # 보내는 프롬프트를 본다 — 형식마다
+            with self.subTest(fmt=fmt), mock.patch.dict(os.environ, {probe.FORMAT_ENV: fmt}):
+                prompt = probe.system_prompt()
+                self.assertIn("decide", prompt)
+                self.assertIn('"ask"', prompt)
+                self.assertIn("빼지 않는다", prompt,
+                              "확신이 없다고 지적을 빼면 사람에게 올라갈 것이 조용히 사라집니다")
 
 
 class AskRecordTests(unittest.TestCase):

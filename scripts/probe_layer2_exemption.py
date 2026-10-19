@@ -30,8 +30,10 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT))
+sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
 import repo_paths  # noqa: E402
+import probe_layer2_kinds as kinds  # noqa: E402
 SKILL = repo_paths.SKILL
 RULES = SKILL / "references" / "core-rules.md"
 DOCUMENT = REPO_ROOT / "data" / "raw" / "diagnostic-002" / "doc-002.md"
@@ -40,26 +42,9 @@ DOCUMENT = REPO_ROOT / "data" / "raw" / "diagnostic-002" / "doc-002.md"
 EXEMPT_TERM = "에이전틱"
 EXEMPT_LINE = 14
 
-SYSTEM = """당신은 한글 업무 문서를 전달 전에 최종 점검한다.
-
-아래 규칙을 읽고, 주어진 문서에서 고쳐야 할 표현을 찾는다.
-
-{rules}
-
-## 내는 형식
-
-JSON 배열 하나만 낸다. 다른 말은 붙이지 않는다.
-
-[{{"line": 줄번호, "phrase": "고칠 표현 원문 그대로", "category": "규칙 이름",
-   "fix": "고친 말", "why": "한 줄 근거"}}]
-
-고칠 것이 없으면 빈 배열 []을 낸다."""
-
-USER = """다음 문서를 점검한다. 줄 번호는 1부터 센다.
-
-```
-{document}
-```"""
+# 프롬프트 틀은 판정기와 같은 것을 쓴다 — 여기 따로 둔 사본이 판정기 형식(decide · check · 행 형식)과
+# 어긋나 있었다(2026-10-20 행 형식을 기본으로 바꾸며 맞춤). 「발행 직전 호출과 같은 모양」이어야 시험이다.
+USER = kinds.USER
 
 
 def load_client():
@@ -100,16 +85,14 @@ def main() -> None:
 
     result = call_messages(
         model=args.model,
-        system=SYSTEM.format(rules=RULES.read_text(encoding="utf-8")),
+        system=kinds.system_prompt().format(rules=RULES.read_text(encoding="utf-8")),
         user=USER.format(document=numbered(document)),
         max_tokens=3000,
         temperature=0,
         timeout=args.timeout,
     )
 
-    findings = parse_json(result.get("text") or "") or []
-    if not isinstance(findings, list):
-        findings = []
+    findings = kinds.as_findings(parse_json(result.get("text") or "") or [])
 
     hit = [f for f in findings
            if isinstance(f, dict)

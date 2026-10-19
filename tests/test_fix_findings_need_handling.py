@@ -314,9 +314,14 @@ class FactTests(_Base):
         self.assertEqual([3], self.open_fixes(), "주장 줄을 나누자 사실 확인 지적이 확인 없이 닫혔습니다")
 
     def test_the_prompt_asks_for_the_fact_to_check(self) -> None:
+        import os
+        from unittest import mock
         import probe_layer2_kinds as probe
-        self.assertIn('"check"', probe.SYSTEM)
-        self.assertIn("`check` 에 확인할 사실을 적는다", probe.SYSTEM)
+        for fmt in ("compact", "json"):     # 보내는 프롬프트를 본다 — 형식마다
+            with self.subTest(fmt=fmt), mock.patch.dict(os.environ, {probe.FORMAT_ENV: fmt}):
+                prompt = probe.system_prompt()
+                self.assertIn("확인할 사실", prompt)
+                self.assertIn("`check` 에 확인할 사실을 적는다", prompt)
 
     def test_a_filled_check_marks_a_fact_without_hedging_words(self) -> None:
         self.assertTrue(coverage.needs_check({"why": "시험", "check": "실제 갱신 시각"}))

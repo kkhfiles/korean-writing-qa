@@ -85,7 +85,7 @@ class JudgeTests(unittest.TestCase):
         rc, _ = self.run_main([str(self.doc(text))], backend=fake.pair())
         self.assertEqual(0, rc)
         sent = fake.calls[0]
-        self.assertEqual(probe.SYSTEM.format(rules=probe.rules_for("guided")), sent["system"])
+        self.assertEqual(probe.system_prompt().format(rules=probe.rules_for("guided")), sent["system"])
         self.assertEqual(probe.USER.format(document=probe.numbered(text)), sent["user"])
 
     def test_every_call_leaves_a_cost_line(self) -> None:

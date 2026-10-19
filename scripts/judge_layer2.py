@@ -1212,7 +1212,7 @@ def judge(path: Path, model: str, timeout: float, backend, targets: list[int] | 
                "sha256": hashlib.sha256("\n".join(piece["seen"]).encode("utf-8")).hexdigest()[:16],
                "lines": piece["label"], "model": model, "rules": rules_sha,
                "cache_ttl": ttl,       # 적용 전후 비용을 기록으로 가른다
-               "format": os.environ.get(probe.FORMAT_ENV) or "json",   # 출력 형식 실험을 기록으로 가른다
+               "format": probe.output_format(),   # 출력 형식을 기록으로 가른다(행 형식 기본 · 2026-10-20)
                "context": piece["mode"],
                # 게이트가 「이번 가지의 새 줄을 판정기가 다 봤나」를 이것으로 가른다 — 창이면 보낸 줄만
                "seen": coverage.seen_keys(piece["seen"])}
@@ -1242,7 +1242,8 @@ def judge(path: Path, model: str, timeout: float, backend, targets: list[int] | 
             log_call(row)
             calls.append(row)
             raise
-        items = probe.as_findings(parse_json(r.get("text") or "") or [])
+        raw = parse_json(r.get("text") or "") or []
+        items = probe.as_findings(raw)
         usage = r.get("usage") or {}
         row.update(ok=True, model=r.get("model") or model,
                    seconds=round(time.time() - started, 1),
@@ -1252,7 +1253,9 @@ def judge(path: Path, model: str, timeout: float, backend, targets: list[int] | 
                    cache_write=usage.get("cache_creation_input_tokens", 0),
                    cache_read=usage.get("cache_read_input_tokens", 0),
                    output_tokens=usage.get("output_tokens", 0),
-                   cost_usd=r.get("cost_usd"), findings=len(items))
+                   cost_usd=r.get("cost_usd"), findings=len(items),
+                   # 칸이 어긋난 행 — 늘면 행 형식을 `json` 으로 되돌린다(특히 Codex 백엔드는 안 쟀다)
+                   malformed=probe.malformed(raw))
         asks, fixes = [], []
         hidden_before = hidden
         if want is not None:
@@ -1349,7 +1352,11 @@ def show(result: dict) -> None:
               "자동 수정을 멈추고 사용자가 기준 판과 대조합니다")
     if result.get("foreign"):
         print(f"  한글이 없는 줄에 달린 지적 {result['foreign']}건은 뺌 — 이 판정기는 한글을 봄")
-    asks = [f for f in result["findings"] if is_ask(f)]
+    bad = sum(c.get("malformed") or 0 for c in calls)
+    if bad:
+        print(f"  ⚠️ 칸이 어긋난 지적 {bad}건 — 줄 번호 · 고친 말 · 확인할 사실이 엉뚱한 칸에서 왔을 수 있으니 "
+              f"원문과 대조합니다. 되풀이되면 {probe.FORMAT_ENV}=json 으로 예전 형식을 씁니다")
+    asks =[f for f in result["findings"] if is_ask(f)]
     fixes = [f for f in result["findings"] if not is_ask(f)]
     for title, group in (("사람 확인 — 판정기가 정하지 못해 사용자에게 넘긴 지적", asks),
                          ("고칠 지적", fixes)):
