@@ -252,11 +252,34 @@ class SessionTests(_Base):
             got = bench.run_session(self.dir / "run", FLAGGED, CLEAN, [], "batch", max_calls=5, backend=fake.pair())
         self.assertEqual(got["total"]["종료"], "멈춤", "열린 지적이 남았는데 완료로 적었습니다")
 
+    def test_a_fix_back_to_an_earlier_version_is_closed_not_applied(self) -> None:
+        """(2026-10-19) 하나씩 처리에서 한 줄이 두 판을 오가며 판정기 호출 없이 539회차까지 갔다."""
+        got, fake = self.session([[fix(F1, "올립니다", "제출합니다")], [fix(F1, "제출합니다", "올립니다")], [], []],
+                                 mode="one")
+        t = got["total"]
+        self.assertEqual(1, t["되돌림 닫기"], "앞선 판으로 되돌리는 수정안을 넣었습니다")
+        self.assertIn(t["종료"], ("완료", "멈춤"))
+        self.assertLess(len(got["rounds"]), 10, "고리가 끝나지 않았습니다")
+        doc = (self.dir / "run" / "bench.md").read_text(encoding="utf-8").splitlines()
+        self.assertEqual(doc[F1 - 1], "- 보고서는 매주 금요일에 제출합니다.")
+
     def test_reclosing_the_same_finding_is_counted(self) -> None:
         log = self.dir / "d.jsonl"
         rows = [{"phrase": "p", "reason": "확인함", "line_key": k} for k in ("a", "b", "b", "c")]
         log.write_text("\n".join(json.dumps(r) for r in rows) + "\n", encoding="utf-8")
         self.assertEqual(bench.reclosed(log), 2)
+
+
+class ApplyFixTests(unittest.TestCase):
+
+    def test_a_fix_that_repeats_the_surrounding_words_replaces_them(self) -> None:
+        line = "- 시나리오 1종이 엔진 실행 파일로 끝까지 실행됨"
+        got = bench.apply_fix(line, "엔진 실행 파일로 끝까지 실행", "시나리오 1종이 엔진 실행 파일에서 끝까지 실행됨")
+        self.assertEqual("- 시나리오 1종이 엔진 실행 파일에서 끝까지 실행됨", got)
+
+    def test_a_plain_fix_replaces_only_the_phrase(self) -> None:
+        self.assertEqual("- 보고서는 매주 금요일에 제출합니다.",
+                         bench.apply_fix("- 보고서는 매주 금요일에 올립니다.", "올립니다", "제출합니다"))
 
 
 class EndStateTests(unittest.TestCase):

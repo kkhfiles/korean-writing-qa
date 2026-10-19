@@ -342,7 +342,22 @@ def run_once(folder: Path, flagged: list[dict], clean: list[dict], policy: str =
 SESSION_ANSWER = "고침 — 재현 일감의 답 열쇠"
 
 
-def process(doc: Path, meta: dict[int, dict], mode: str, counts: dict) -> int:
+def apply_fix(line: str, phrase: str, fix: str) -> str:
+    """수정안을 줄에 넣는다 — 수정안이 짚은 표현의 앞뒤 글자까지 담고 있으면 겹친 만큼 넓혀 바꾼다.
+
+    (2026-10-19) 표현 「엔진 실행 파일로 끝까지 실행」에 수정안이 「시나리오 1종이 엔진 실행 파일에서 끝까지
+    실행됨」이었다. 글자 그대로 바꾸자 「시나리오 1종이 시나리오 1종이 … 실행됨됨」이 됐고, 판정기가 되돌리라고
+    짚어 두 판을 오가며 끝나지 않았다. 세션은 이렇게 넣지 않는다.
+    """
+    i = line.index(phrase)
+    before, after = line[:i], line[i + len(phrase):]
+    k = max((n for n in range(1, min(len(before), len(fix)) + 1) if before.endswith(fix[:n])), default=0)
+    m = max((n for n in range(1, min(len(after), len(fix) - k) + 1) if after.startswith(fix[-n:])), default=0)
+    return before[:len(before) - k] + fix + after[m:]
+
+
+def process(doc: Path, meta: dict[int, dict], mode: str, counts: dict,
+            history: dict[int, set] | None = None) -> int:
     """열린 지적을 세션처럼 처리한다 — 글을 바꾼 수. `one` 이면 글을 하나 바꾸면 멈춘다(작은 재판정 재현).
 
     - 사람 확인: 답 열쇠(고침)로 답한다. 수정안을 글자로 넣을 수 있으면 넣고 그 글을 확정(다시 판정 안 함),
@@ -350,9 +365,12 @@ def process(doc: Path, meta: dict[int, dict], mode: str, counts: dict) -> int:
     - 사실 확인 지적: 수정안을 넣지 않고 「확인함」으로 닫는다(자료로 확인했다고 본다)
     - 지시로 바꾼 줄의 「뜻이 바뀐 곳」: 지시 원문을 옮겨 「지시반영」으로 닫는다
     - 그 밖의 고칠 지적: 수정안을 넣는다 · 글자로 못 넣으면 「대상아님」으로 닫는다(세션이 손으로 고친 셈)
+    - 넣으면 그 줄이 이 실행에서 가졌던 판으로 되돌아가는 수정안: 넣지 않고 닫는다(`history` · 줄 번호별
+      지난 판). 예전 판으로 돌아가면 그때 남은 지적이 다시 열려 두 판을 오간다
     """
     key = coverage.doc_key(doc)
     edits = 0
+    history = history if history is not None else {}
     for _ in range(2000):
         lines = doc.read_text(encoding="utf-8").splitlines()
         asks = coverage.open_asks(key, lines, judge.LOG)
@@ -389,8 +407,16 @@ def process(doc: Path, meta: dict[int, dict], mode: str, counts: dict) -> int:
             counts["사실 확인 닫기"] += 1
             judge._close_fix(doc, lines, n, item, {"reason": "확인함", "note": "재현 일감 — 자료로 확인했다고 본다"})
         elif phrase and fix and not fix.startswith("(") and "\n" not in fix and phrase in lines[n - 1]:
+            new = apply_fix(lines[n - 1], phrase, fix)
+            past = history.setdefault(n, set())
+            if new in past:
+                counts["되돌림 닫기"] = counts.get("되돌림 닫기", 0) + 1
+                judge._close_fix(doc, lines, n, item, {"reason": "대상아님",
+                                                       "note": "재현 일감 — 앞선 판으로 되돌리는 수정안"})
+                continue
             counts["적용"] += 1
-            lines[n - 1] = lines[n - 1].replace(phrase, fix, 1)
+            past.add(lines[n - 1])
+            lines[n - 1] = new
             doc.write_text("\n".join(lines) + "\n", encoding="utf-8")
             edits += 1
         else:
@@ -432,7 +458,8 @@ def run_session(folder: Path, flagged: list[dict], clean: list[dict], edits: lis
     git("switch", "-q", "-c", "work")
 
     counts: dict[str, int] = {k: 0 for k in ("사람 답", "사실 확인 닫기", "지시반영 닫기", "지시 밖 짚음 처리", "적용",
-                                             "적용 못함 닫기")}
+                                             "적용 못함 닫기", "되돌림 닫기")}
+    history: dict[int, set] = {}
     rows, limits, said = [], [], io.StringIO()
     first_hits: set[int] = set()
     first_fixes: list[dict] = []
@@ -456,7 +483,7 @@ def run_session(folder: Path, flagged: list[dict], clean: list[dict], edits: lis
             if rnd == 0:
                 first_hits = {f["line"] for f in res["findings"] if isinstance(f.get("line"), int)}
                 first_fixes = [f for f in res["findings"] if not judge.is_ask(f)]
-            did = process(doc, meta, mode, counts)
+            did = process(doc, meta, mode, counts, history)
             if rnd == 0:
                 cur = doc.read_text(encoding="utf-8").splitlines()
                 for n, m in meta.items():
