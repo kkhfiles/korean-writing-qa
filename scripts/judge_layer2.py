@@ -261,6 +261,8 @@ def parts_for(lines: list[str], want: set[int] | None, mode: str, path: Path) ->
         return out
     if want is None or mode == "chunk":
         return by_chunk("chunk")
+    if not want:        # 지운 줄만 있는 판 등 — 창을 잡을 줄이 없다(2026-10-19 재생이 여기서 멈춤)
+        return []
     if path.suffix.lower() not in WINDOWABLE:
         return by_chunk(f"chunk←{mode}")
     keep: set[int] = set()

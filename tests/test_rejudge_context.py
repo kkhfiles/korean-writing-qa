@@ -129,6 +129,11 @@ class PartsTests(unittest.TestCase):
         got = judge.parts_for(self.lines, {5}, "block", Path("d.html"))
         self.assertEqual("chunk←block", got[0]["mode"])
 
+    def test_no_target_means_no_piece_in_every_mode(self) -> None:
+        """(2026-10-19) 대상 0줄 입력을 창 방식으로 재생하다 IndexError 로 멈췄다."""
+        for mode in judge.CONTEXT_MODES:
+            self.assertEqual([], judge.parts_for(self.lines, set(), mode, self.md), mode)
+
     def test_a_window_over_the_chunk_size_falls_back(self) -> None:
         many = set(range(20, 210, 12))      # 고정 창 41줄씩이 흩어져 180줄을 넘는다
         got = judge.parts_for(self.lines, many, "fixed", self.md)
