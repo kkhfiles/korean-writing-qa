@@ -114,6 +114,18 @@ class LineageTests(_Base):
             judge.judge(self.doc, "opus", 10, FakeBackend([fix_on(v, 5)]).pair(), [5], BASE, None, 1234.0)
             self.assertEqual(k, self.last_row()["targeted"][0]["round"], "같은 갈라진 지점의 판정을 못 이어 셌습니다")
 
+    def test_an_unrelated_judged_line_is_not_the_parent(self) -> None:
+        """(2026-10-19 재현 시험) 다른 줄의 앞선 판(유사도 0.5)이 부모로 잡혀 기준 판이 엉뚱한 줄이 됐다 —
+        기준 판에 더 비슷한 실제 조상이 있으면 그것이 뿌리다."""
+        base = ["# 목록", "", "- 한 줄로 던집니다", "- 자료를 두는 곳입니다"]
+        self.write(["# 목록", "", "- 한 줄만 입력하면 됩니다", "- 자료를 두는 곳입니다"])
+        judge.judge(self.doc, "opus", 10, FakeBackend([]).pair(), [3], base)
+        self.write(["# 목록", "", "- 한 줄만 입력하면 됩니다", "- 자료 저장 위치입니다"])
+        judge.judge(self.doc, "opus", 10, FakeBackend([]).pair(), [4], base)
+        entry = self.last_row()["targeted"][0]
+        self.assertEqual((1, "- 자료를 두는 곳입니다"), (entry["round"], entry["root"]),
+                         "다른 줄의 앞선 판정을 부모로 잡았습니다")
+
     def test_a_new_line_starts_at_one_without_a_root(self) -> None:
         self.rejudge(BASE + ["", "새로 쓴 안내 문장입니다."], [7])
         entry = self.last_row()["targeted"][0]

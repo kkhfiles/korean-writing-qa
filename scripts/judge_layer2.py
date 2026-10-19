@@ -952,19 +952,31 @@ def lineage(key: str, lines: list[str], targets: list[int], base: list[str] | No
         text = lines[n - 1]
         # 글자가 절반 이상 같은 앞선 판 가운데 **가장 많이 판정된 것** — 가장 비슷한 것을 고르면
         # 나눈 줄 한쪽이 더 옛 판을 부모로 잡아 횟수가 줄었다(시험). 틀려도 일찍 멈추는 쪽이다.
+        # ⛔ 횟수는 **가장 비슷한 것과 같은 계보 안에서만** 고른다(2026-10-19 재현 시험). 문서 전체의 앞선
+        #    판 가운데 횟수가 큰 것을 고르자, 유사도 0.5 로 겨우 걸린 무관한 줄(「한 줄만 입력하면 됩니다」)이
+        #    「자료 저장 위치입니다」의 부모가 되어 기준 판이 「한 줄로 던집니다」로 잡혔고, 판정기가 없는
+        #    「뜻 바뀜」을 짚어 엉뚱한 수정안을 냈다. 계보는 뿌리(없으면 그 판 글)로 가른다.
         sims = [(e, coverage._similar(text, e["text"])) for e in prev]
         near = [(e, s) for e, s in sims if s >= coverage.SUCCESSOR]
-        pred = max(near, key=lambda x: (int(x[0].get("round") or 1), x[1]))[0] if near else None
+        cand = None
+        if base:
+            cand = max((b for b in base if coverage.line_key(b)),
+                       key=lambda b: coverage._similar(text, b), default=None)
+            if cand is None or cand == text or coverage._similar(text, cand) < coverage.SUCCESSOR:
+                cand = None
+        pred = None
+        if near:
+            best, best_sim = max(near, key=lambda x: x[1])
+            chain = best.get("root") or best["text"]
+            pred = max(((e, s) for e, s in near if (e.get("root") or e["text"]) == chain),
+                       key=lambda x: (int(x[0].get("round") or 1), x[1]))[0]
+            # 기준 판에 그 계보 밖의 더 비슷한 줄이 있으면 앞선 판정은 다른 줄의 것이다
+            if cand is not None and cand != chain and coverage._similar(text, cand) > best_sim:
+                pred = None
         if pred is not None:
             info = {"round": int(pred.get("round") or 1) + 1, "root": pred.get("root") or pred["text"]}
         else:
-            root = None
-            if base:
-                cand = max((b for b in base if coverage.line_key(b)),
-                           key=lambda b: coverage._similar(text, b), default=None)
-                if cand is not None and cand != text and coverage._similar(text, cand) >= coverage.SUCCESSOR:
-                    root = cand
-            info = {"round": 1, "root": root}
+            info = {"round": 1, "root": cand}
         gone = []
         for tag, i1, i2, j1, j2 in ops:
             if tag not in ("delete", "replace") or not (j1 - 1 <= n - 1 <= j2):
