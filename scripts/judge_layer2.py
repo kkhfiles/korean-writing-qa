@@ -21,6 +21,8 @@
 부른다. Codex 는 모델만 부르는 `codex_http` 로 `sol-high` 를 쓴다. 대장 탐침 · 점검표를 Opus 와
 나란히 세 번씩 재서 회수 · 헛짚음이 같은 수준임을 보고 넣었다(2026-10-02 · 점검표 문서).
 Codex 쪽은 토큰 수만 남고 금액은 「금액 없음」으로 찍힌다.
+**막히면 바로 실패한다**(2026-10-19) — 호출은 사다리 `review`(폴백 없음) 한 칸으로 감싼다(`via_review`).
+잰 모델이 아닌 것으로 넘기지 않고, 막힌 엔진(엔진 상태 파일)은 부르지도 않고 「limited」로 올린다.
 
 **새 줄만 판정** — `--since origin/main` 이면 그 가지와 갈라진 뒤 새로 생겼고 판정기가
 아직 안 본 줄이 든 묶음만 부르고, 그 줄에 달린 지적만 보여 준다. 호출마다 본 줄의
@@ -838,11 +840,51 @@ def load_backend(which: str = "claude"):
     """정본은 `llm_playbook.backends` 하나다 — 없으면 None(세션이 직접 읽는다).
 
     부르는 길은 2층 탐침과 같은 것을 쓴다 — 잰 것과 도는 것이 같아야 한다.
+    엔진 상태를 아는 사다리가 있으면 그 길을 사다리 `review` 한 칸으로 감싼다(`via_review`).
     """
     try:
-        return probe.load_client(which)
+        client = probe.load_client(which)
     except Exception:
         return None
+    return via_review(which, client)
+
+
+def via_review(which: str, client):
+    """판정 호출을 사다리 `review`(폴백 없음) 한 칸으로 감싼다 — 모델과 부르는 길은 그대로.
+
+    판정기는 점검표로 잰 모델(Claude `DEFAULT_MODEL` · Codex `CODEX_MODEL`)이어야 그 값이 산다.
+    그래서 막혔을 때 다른 모델로 넘기지 않고 **바로 실패한다** — 막힌 엔진(슬랙 봇과 같은 엔진 상태
+    파일)은 부르지도 않고 「limited · 풀리는 시각」을 사유로 올린다. 한도로 실패하면 막힘을 적고 답하면
+    지운다. 빈 답도 실패로 올린다(예전에는 지적 0건으로 지나갔다).
+    사다리에 `review` 가 없는 옛 llm_playbook 이면 감싸지 않는다(예전과 같다).
+    """
+    try:
+        from llm_playbook import models as lp_models
+        from llm_playbook.ladder import ask
+        if "review" not in lp_models.ladders():
+            return client
+    except Exception:
+        return client
+    call, parse = client
+
+    def call_review(*, model, system, user, max_tokens=4096, timeout=300.0, **kw):
+        def adapter(_alias, system_, user_, timeout_, _effort, max_tokens_, **_):
+            r = call(model=model, system=system_, user=user_, max_tokens=max_tokens_, timeout=timeout_, **kw)
+            return r.get("text") or "", r.get("model") or model, {"cost_usd": r.get("cost_usd"),
+                                                                    "usage": r.get("usage")}
+        # 등급은 칸을 고르는 데만 쓴다 — 실제 모델은 위 `model` 이고 칸 별칭은 안 쓴다
+        r = ask(next(iter(lp_models.tiers())), user, system=system, vendors=(which,), ladder="review",
+                max_tokens=max_tokens,
+                timeout=timeout, label="2층 판정", adapters={which: adapter}, ready=lambda _b: (True, ""))
+        if not r["ok"]:
+            until = r.get("until")
+            when = time.strftime(" · %m-%d %H:%M 풀림", time.localtime(until)) if until else ""
+            why = "; ".join(f"{s['backend']} 막힘" for s in r.get("skipped") or [] if s.get("why") == "blocked")
+            why = why or "; ".join(str(a.get("why")) for a in r.get("attempts") or [])
+            raise RuntimeError(f"{which} {r.get('outcome')}{when} — {why}"[:300])
+        return {"text": r["text"], "model": r.get("model") or model,
+                "cost_usd": r.get("cost_usd") if which == "claude" else None, "usage": r.get("usage")}
+    return call_review, parse
 
 
 def input_total(row: dict) -> int:
