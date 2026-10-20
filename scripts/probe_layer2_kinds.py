@@ -227,8 +227,6 @@ def load_client(backend: str = "claude"):
     from llm_playbook.backends import codex_http
 
     def call_codex(*, model, system, user, timeout, **_):
-        if isinstance(user, list):      # 블록 나눔(프롬프트 캐시용)은 Claude 쪽만 쓴다 — 이어 붙인다
-            user = "\n\n".join(user)
         r = codex_http.call(user, model=model, system_prompt=system,
                             fallback=False, timeout=timeout)
         if r.get("error"):          # 판정기가 실패를 기록하고 넘어가게 예외로 올린다

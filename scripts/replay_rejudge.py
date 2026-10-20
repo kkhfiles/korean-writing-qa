@@ -81,7 +81,8 @@ def replay(case: dict, mode: str, backend, model: str, timeout: float = 900, rea
         windowed = piece["mode"] in ("fixed", "block")
         started = time.time()
         r = call_messages(model=model, system=system,
-                          user=judge.rejudge_user(piece, info, closed, decided, instructed),
+                          user=judge.rejudge_user(piece, info, closed, decided, instructed,
+                                                  case.get("extra") or ""),
                           max_tokens=12000, temperature=0, timeout=timeout)
         usage = r.get("usage") or {}
         got["calls"] += 1

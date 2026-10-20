@@ -129,7 +129,7 @@ def numbered(lines: list[str], first: int) -> str:
 #: 제목 사슬, 앞뒤 블록. 재판정 비용의 대부분이 호출마다 새로 쓰는 문서 묶음이라(180줄 묶음 중앙값 약 8,700토큰
 #: · 2026-10-15) 문맥을 줄이는 실험을 옵션으로 둔다. 기본값은 같은 입력 재생으로 지적 차이를 본 뒤에 바꾼다
 #: (외부 검토 — 구조를 자르지 말고 못 담으면 chunk 로 복귀 · HTML 은 chunk · 판단 불가를 따로 받음).
-CONTEXT_MODES = ("chunk", "fixed", "block", "prefix")
+CONTEXT_MODES = ("chunk", "fixed", "block")
 #: 재판정 기본 문맥 — fixed(2026-10-20). 같은 입력 재생(Markdown 27건 · 두 번씩)에서 처음 부를 때 비용이 chunk
 #: 3.33달러 → 1.79달러(−46%)이고 chunk 와 지적 일치 0.828(chunk 끼리 0.811). 두 번 다 같은 쪽으로 갈린 줄을 사용자가
 #: 판단해 fixed 놓침 1 · 헛짚음 1 · chunk 가 놓친 2줄을 잡음, chunk 놓침 2. block 은 헛짚음 5라 안 골랐다.
@@ -307,8 +307,6 @@ def parts_for(lines: list[str], want: set[int] | None, mode: str, path: Path,
         return by_chunk("chunk")
     if not want:        # 지운 줄만 있는 판 등 — 창을 잡을 줄이 없다(2026-10-19 재생이 여기서 멈춤)
         return []
-    if mode == "prefix":
-        return prefix_parts(coverage.doc_key(path), lines, want, path)
     html = path.suffix.lower() in coverage.HTML_SUFFIXES and mode == "fixed" and WINDOW_HTML
     if path.suffix.lower() not in WINDOWABLE and not html:
         return by_chunk(f"chunk←{mode}")
@@ -332,134 +330,54 @@ def parts_for(lines: list[str], want: set[int] | None, mode: str, path: Path,
              "label": ",".join(runs), "mode": mode}]
 
 
-#: prefix 문맥(실험 · 2026-10-20) — 앞서 보낸 묶음 글(앞 묶음)을 첫 블록으로 **글자까지 그대로** 다시 보내 프롬프트
-#: 캐시에서 읽고, 그 뒤 바뀐 줄만 둘째 블록으로 붙인다. 캐시는 블록 경계에서 끝나는 앞부분만 다시 쓴다 — 실측(Opus
-#: 5.5 · 약 9천 토큰 묶음): 한 덩어리로 다시 보내면 쓰기 9,458(0.052달러), 앞 묶음 + 꼬리 블록이면 읽기 8,825 + 쓰기
-#: 551(0.010달러). 판정기는 고친 줄 둘레만이 아니라 묶음 전체를 본다. 앞 묶음이 캐시 유지 시간(5분) 안쪽에 쓰였을
-#: 때만 쓰고, 아니면 지금 방식(fixed)으로 부른다.
-#: ⛔ 캐시 항목은 **호출의 마지막 블록 끝에만** 생긴다 — [A, 꼬리1] 뒤 [A, 꼬리2] 는 A 를 못 읽었다(실측 쓰기 9,606 →
-#:    9,369). 그래서 앞 묶음은 묶음 글만 보낸 호출(전체 판정)에서만 생긴다.
-#: ⛔ 시스템 프롬프트는 **앞 묶음을 만든 호출의 것을 그대로** 쓴다 — 끝에 붙는 「사용자가 이미 답한 것」은 어느 문서든
-#:    사람 확인에 답하면 바뀌어, 지금 것으로 부르면 앞 묶음까지 처음부터 다시 쓴다(세션 흉내 첫 실행에서 0회차 직후
-#:    답 하나로 재판정 전부가 앞 묶음을 못 씀). 그 뒤 받은 답은 꼬리에 붙인다 — 대상 줄의 답은 원래 꼬리에 실린다.
-PREFIX_FRESH = 240          # 초 — 앞 묶음을 이보다 전에 보냈으면 캐시가 식었을 수 있어 안 쓴다
-PREFIX_KEEP = 3600          # 초 — 이보다 오래된 앞 묶음은 지운다
-PREFIX_NOTE = ("\n\n위 글은 앞서 이 문서를 판정할 때 보낸 판이다. 그 뒤 아래처럼 고쳤다 — 지금 글은 위 판에 이 고침을 "
-               "반영한 것이고, 줄 번호는 지금 문서의 번호다.")
+#: 시스템 프롬프트 재사용(2026-10-20) — 시스템 프롬프트 끝의 「사용자가 이미 답한 것」은 어느 문서든 사람 확인에
+#: 답하면 바뀌어, 다음 호출이 캐시된 시스템 프롬프트(약 16k 토큰)를 처음부터 다시 쓴다. 세션 흉내 6회 중 4회에서 0회차
+#: 직후 답 하나로 첫 재판정이 캐시를 하나도 못 읽었다(호출당 약 0.08~0.10달러 더 · 실행 하나의 약 10%). 그래서 재판정은
+#: 그 문서의 직전 호출이 쓴 시스템 프롬프트를 캐시 유지 시간 안쪽이면 그대로 쓰고, 그 뒤 받은 답은 사용자 메시지 끝에
+#: 붙인다. 대상 줄에 받은 답은 원래 사용자 메시지에 실린다(`decided_on`).
+#: (같은 날 앞 묶음을 캐시에 두고 바뀐 줄만 붙이는 prefix 문맥도 쟀으나 세션 흉내 3회 대 3회에서 이득이 없어 걷어냈다 —
+#:  캐시 항목은 호출의 마지막 블록 끝에만 생겨 앞 묶음이 전체 판정에서만 나오고, 큰 재판정은 기준 판 글이 몫을 차지했다.)
+SYSTEM_FRESH = 240          # 초 — 직전 호출이 이보다 전이면 캐시가 식었을 수 있어 지금 것으로 새로 쓴다
+SYSTEM_KEEP = 3600          # 초 — 이보다 오래된 기록은 지운다(사용자 답 원문이 들어 있다)
 
 
-def prefix_dir() -> Path:
-    """앞 묶음 저장 폴더 — 판정 기록 옆. ⛔ 사내 문서 원문이 들어간다 — 이 PC 밖으로 내보내지 않는다."""
-    return LOG.parent / "korean-prefix"
+def _system_file(key: str) -> Path:
+    """문서별 직전 시스템 프롬프트 — 판정 기록 옆. ⛔ 사용자 답 원문이 들어간다 — 이 PC 밖으로 내보내지 않는다."""
+    return LOG.parent / "korean-system" / (hashlib.sha256(key.encode("utf-8")).hexdigest()[:16] + ".json")
 
 
-def _prefix_file(key: str) -> Path:
-    return prefix_dir() / (hashlib.sha256(key.encode("utf-8")).hexdigest()[:16] + ".json")
-
-
-def load_anchors(key: str) -> dict:
-    p = _prefix_file(key)
-    try:
-        data = json.loads(p.read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        data = {}
-    for k in ("docs", "systems"):
-        data.setdefault(k, {})
-    data.setdefault("anchors", [])
-    return data
-
-
-def _write_anchors(key: str, data: dict) -> None:
-    now = time.time()
-    data["anchors"] = [a for a in data["anchors"] if now - a["used"] <= PREFIX_KEEP]
-    data["docs"] = {k: v for k, v in data["docs"].items() if k in {a["doc"] for a in data["anchors"]}}
-    data["systems"] = {k: v for k, v in data["systems"].items() if k in {a["system"] for a in data["anchors"]}}
-    p = _prefix_file(key)
+def save_system(key: str, system: str, rules_sha: str, made: float, used: float) -> None:
+    """이 문서의 직전 호출이 쓴 시스템 프롬프트 — `made` 는 그 프롬프트의 사용자 답을 읽은 시각."""
+    p = _system_file(key)
     p.parent.mkdir(parents=True, exist_ok=True)
-    for old in p.parent.glob("*.json"):       # 다른 문서의 식은 앞 묶음도 지운다 — 원문이 오래 남지 않게
-        if old != p and old.stat().st_mtime < now - PREFIX_KEEP:
+    for old in p.parent.glob("*.json"):
+        if old != p and old.stat().st_mtime < time.time() - SYSTEM_KEEP:
             old.unlink(missing_ok=True)
-    p.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+    p.write_text(json.dumps({"system": system, "rules": rules_sha, "made": made, "used": used}, ensure_ascii=False),
+                 encoding="utf-8")
 
 
-def save_anchor(key: str, doc_lines: list[str], first: int, count: int, message: str, system: str,
-                used: float) -> None:
-    """묶음 글 하나를 앞 묶음으로 남긴다 — 그때 문서 전체와 시스템 프롬프트도 함께(바뀐 줄을 가르고 캐시를 맞추려고)."""
-    data = load_anchors(key)
-    sha = hashlib.sha256("\n".join(doc_lines).encode("utf-8")).hexdigest()[:16]
-    sys_sha = hashlib.sha256(system.encode("utf-8")).hexdigest()[:16]
-    data["docs"][sha] = doc_lines
-    data["systems"][sys_sha] = system
-    data["anchors"] = [a for a in data["anchors"] if a["message"] != message]
-    data["anchors"].append({"doc": sha, "first": first, "count": count, "message": message,
-                            "system": sys_sha, "made": used, "used": used})
-    _write_anchors(key, data)
-
-
-def touch_anchor(key: str, message: str, used: float) -> None:
-    """앞 묶음을 다시 보냈다 — 캐시를 읽으면 유지 시간이 다시 시작된다."""
-    data = load_anchors(key)
-    for a in data["anchors"]:
-        if a["message"] == message:
-            a["used"] = max(a["used"], used)
-    _write_anchors(key, data)
+def system_for(key: str, current: str, rules_sha: str) -> tuple[str, float] | None:
+    """재판정에 다시 쓸 직전 시스템 프롬프트와 그 답 시각 — 없거나 · 식었거나 · 규칙이 바뀌었거나 · 같으면 None."""
+    try:
+        got = json.loads(_system_file(key).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    if got.get("rules") != rules_sha or time.time() - float(got.get("used") or 0) > SYSTEM_FRESH \
+            or got.get("system") == current:
+        return None
+    return got["system"], float(got["made"])
 
 
 def new_answers(since: float) -> str:
-    """앞 묶음을 만든 뒤 받은 사람 확인 답 — 그때 시스템 프롬프트에 없던 것."""
+    """`since` 뒤에 받은 사람 확인 답 — 다시 쓰는 시스템 프롬프트에 없는 것."""
     rows = [d for d in load_decisions() if float(d.get("when") or 0) > since][-PROMPT_ANSWERS:]
     if not rows:
         return ""
-    return ("\n\n위 판을 판정한 뒤 사람 확인에 사용자가 새로 답한 것이다. 같은 갈래 · 같은 경우는 이 답을 따른다.\n"
+    return ("\n\n사람 확인에 사용자가 새로 답한 것이다(위 「사용자가 이미 답한 것」 뒤에 받음). 같은 갈래 · 같은 경우는 "
+            "이 답을 따른다.\n"
             + "\n".join(f"- [{d.get('category')}] 「{d.get('phrase')}」 · 판정기 제안 「{d.get('fix')}」 · "
                         f"사용자: {d.get('answer')}" for d in rows))
-
-
-def prefix_parts(key: str, lines: list[str], want: set[int], path: Path) -> list[dict]:
-    """prefix 조각 — 캐시가 살아 있을 앞 묶음이 담는 대상은 [앞 묶음, 바뀐 줄] 두 블록, 나머지는 지금 방식."""
-    import difflib
-    data, now = load_anchors(key), time.time()
-    fresh = sorted((a for a in data["anchors"] if now - a["used"] <= PREFIX_FRESH and a["doc"] in data["docs"]
-                    and a.get("system") in data["systems"]),
-                   key=lambda a: -a["used"])
-    left, out, ops_of = set(want), [], {}
-    for a in fresh:
-        if not left:
-            break
-        old = data["docs"][a["doc"]]
-        if a["doc"] not in ops_of:
-            ops_of[a["doc"]] = difflib.SequenceMatcher(None, old, lines, autojunk=False).get_opcodes()
-        lo, hi = a["first"] - 1, a["first"] - 1 + a["count"]
-        covered, changes = set(), []
-        for tag, i1, i2, j1, j2 in ops_of[a["doc"]]:
-            if tag == "equal":
-                s, e = max(i1, lo), min(i2, hi)
-                if s < e:
-                    covered |= set(range(j1 + s - i1, j1 + e - i1))
-            elif (i1 < hi and i2 > lo) or (i1 == i2 and lo < i1 < hi):
-                covered |= set(range(j1, j2))
-                changes.append((i1, i2, j1, j2))
-        mine = sorted(n for n in left if n - 1 in covered)
-        if not mine:
-            continue
-        # 꼬리(바뀐 줄)와 앞 묶음 읽기(쓰기의 약 10분의 1)가 지금 방식이 새로 쓸 글보다 길면 안 쓴다 — 고친 줄이 쌓인 뒤
-        # 대상이 몇 줄뿐이면 fixed 창이 더 싸다(세션 흉내에서 2회차부터 바뀐 줄이 60줄을 넘어 고정 상한으로는 못 씀)
-        changed = sum(max(i2 - i1, j2 - j1) for i1, i2, j1, j2 in changes)
-        if changed + a["count"] // 10 >= sum(len(p["seen"]) for p in parts_for(lines, set(mine), "fixed", path)):
-            continue
-        tail = []
-        for i1, i2, j1, j2 in changes:
-            tail += [f"- 지운 줄(위 판 {i + 1}행): {old[i]}" for i in range(i1, i2)] if j1 == j2 else \
-                [f"- 위 판 {i1 + 1}–{i2}행을 고침" if i2 > i1 else f"- 위 판 {i1}행 뒤에 줄을 넣음"] + \
-                [f"  {j + 1:>3} | {lines[j]}" for j in range(j1, j2)]
-        out.append({"mine": mine, "prefix": a["message"], "system": data["systems"][a["system"]],
-                    "changes": "\n".join(tail) + new_answers(a.get("made", a["used"])), "document": a["message"],
-                    "seen": old[lo:hi] + [lines[j] for _, _, j1, j2 in changes for j in range(j1, j2)],
-                    "label": f"{mine[0]}-{mine[-1]}", "mode": "prefix"})
-        left -= set(mine)
-    if left:
-        out += parts_for(lines, left, "fixed", path)      # 창이 180줄을 넘으면 그 안에서 chunk 로 간다
-    return out
 
 
 def relocate(lines: list[str], hint, phrase: str) -> int | None:
@@ -1094,7 +1012,7 @@ def replay_dir() -> Path:
     return LOG.parent / "korean-replay"
 
 
-def rejudge_user(piece: dict, info: dict, closed: list, decided: list, instructed: list = ()) -> str:
+def rejudge_user(piece: dict, info: dict, closed: list, decided: list, instructed: list = (), extra: str = "") -> str:
     """재판정 한 조각의 사용자 메시지 — 판정과 재생(`replay_rejudge.py`)이 같이 쓴다(같은 입력이어야 견준다)."""
     mine = piece["mine"]
     plain = {n for n in mine if not info[n].get("anchor")}
@@ -1103,15 +1021,15 @@ def rejudge_user(piece: dict, info: dict, closed: list, decided: list, instructe
             + ", ".join(map(str, mine))
             + before_after(mine, info, [(n, r) for n, r in closed if n in plain],
                            [(n, d) for n, d in decided if n in plain],
-                           [(n, r) for n, r in instructed if n in plain]))
-    if piece["mode"] == "prefix":       # 앞 묶음은 글자까지 그대로 — 한 글자라도 다르면 캐시를 못 읽는다
-        return [piece["prefix"], PREFIX_NOTE.lstrip("\n") + "\n" + piece["changes"] + rest]
+                           [(n, r) for n, r in instructed if n in plain])
+            + extra)        # 다시 쓰는 시스템 프롬프트 뒤에 받은 답(`new_answers`)
     return probe.USER.format(document=piece["document"]) + (WINDOW_NOTE if windowed else "") + rest
 
 
 def save_case(path: Path, key: str, text: str, want: set[int], anchors: dict, base, info: dict,
               rules_sha: str, system: str, model: str, context: str, closed: list, decided: list,
-              instructed: list = (), heads: dict | None = None) -> None:
+              instructed: list = (), heads: dict | None = None, decisions_text: str | None = None,
+              extra: str = "") -> None:
     """재판정 한 번의 입력 — 그때 문서 · 대상 · 기준 판 · 계보 · 닫은 지적 · 사용자 답 · 시스템 프롬프트."""
     folder = replay_dir()
     folder.mkdir(parents=True, exist_ok=True)
@@ -1123,7 +1041,8 @@ def save_case(path: Path, key: str, text: str, want: set[int], anchors: dict, ba
             "targets": sorted(want), "anchors": {str(n): g for n, g in anchors.items()}, "base": base,
             "info": {str(n): v for n, v in info.items()}, "rules": rules_sha, "model": model, "context": context,
             "system_sha": hashlib.sha256(system.encode("utf-8")).hexdigest()[:12],
-            "decisions_prompt": decisions_prompt(load_decisions()),
+            "decisions_prompt": decisions_prompt(load_decisions()) if decisions_text is None else decisions_text,
+            "extra": extra,
             "closed": [[n, r] for n, r in closed], "decided": [[n, d] for n, d in decided],
             "instructed": [[n, r] for n, r in instructed],
             # HTML 제목 줄 — 재생 때 파일이 바뀌어 있어도 같은 창을 잡게
@@ -1417,6 +1336,13 @@ def judge(path: Path, model: str, timeout: float, backend, targets: list[int] | 
     system = probe.system_prompt().format(rules=rules) + decisions_prompt(decisions)
     # 규칙 글의 판 — 규칙이 바뀐 뒤의 판정과 앞의 판정을 가르는 최소 식별자(외부 검토 · 2026-10-12)
     rules_sha = hashlib.sha256(rules.encode("utf-8")).hexdigest()[:12]
+    base_system = probe.system_prompt().format(rules=rules)
+    made, extra = time.time(), ""
+    if want is not None:        # 재판정 — 직전 호출의 시스템 프롬프트를 캐시에서 읽게(`system_for`)
+        reused = system_for(key, system, rules_sha)
+        if reused:
+            system, made = reused
+            extra = new_answers(made)
     info = lineage(key, lines, sorted(want - set(anchors)), base, base_time) if want else {}
     root_findings(key, info)
     for n, gone in anchors.items():
@@ -1441,7 +1367,8 @@ def judge(path: Path, model: str, timeout: float, backend, targets: list[int] | 
         instructed_all = instructed_on(key, lines, plain)
         save_case(path, key, text, want, anchors, base, info, rules_sha, system, model, context,
                   closed_all, decided_all, instructed_all,
-                  coverage.html_heads(path, lines) if path.suffix.lower() in coverage.HTML_SUFFIXES else None)
+                  coverage.html_heads(path, lines) if path.suffix.lower() in coverage.HTML_SUFFIXES else None,
+                  system[len(base_system):] if system.startswith(base_system) else None, extra)
     while queue:
         piece = queue.pop(0)
         mine, windowed = piece["mine"], piece["mode"] in ("fixed", "block")
@@ -1456,7 +1383,7 @@ def judge(path: Path, model: str, timeout: float, backend, targets: list[int] | 
                "context": piece["mode"],
                # 게이트가 「이번 가지의 새 줄을 판정기가 다 봤나」를 이것으로 가른다 — 창이면 보낸 줄만
                "seen": coverage.seen_keys(piece["seen"])}
-        user = rejudge_user(piece, info, closed_all, decided_all, instructed_all) if want is not None \
+        user = rejudge_user(piece, info, closed_all, decided_all, instructed_all, extra) if want is not None \
             else probe.USER.format(document=piece["document"])
         if want is not None:
             # 묶음은 문맥으로 통째로 보내되 지적은 새 줄에만 받는다. 전에는 묶음 전체에
@@ -1474,8 +1401,7 @@ def judge(path: Path, model: str, timeout: float, backend, targets: list[int] | 
             row["deleted_seen"] = sorted({k for n in mine for k in info[n].get("deleted_keys") or [] if k})
             over = [n for n in mine if info[n]["round"] > REJUDGE_CAP]
         try:
-            # prefix 는 앞 묶음을 만든 호출의 시스템 프롬프트 그대로 — 지금 것으로 부르면 캐시를 못 읽는다
-            r = call_messages(model=model, system=piece.get("system") or system, user=user,
+            r = call_messages(model=model, system=system, user=user,
                               max_tokens=12000, temperature=0, timeout=timeout)
         except Exception as e:          # 실패도 기록한다 — 시간은 들었다
             row.update(ok=False, error=f"{type(e).__name__}: {e}"[:200],
@@ -1497,12 +1423,7 @@ def judge(path: Path, model: str, timeout: float, backend, targets: list[int] | 
                    cost_usd=r.get("cost_usd"), findings=len(items),
                    # 칸이 어긋난 행 — 늘면 행 형식을 `json` 으로 되돌린다(특히 Codex 백엔드는 안 쟀다)
                    malformed=probe.malformed(raw))
-        # 앞 묶음 — 묶음 글만 보낸 전체 판정은 다음 prefix 재판정이 캐시에서 읽을 첫 블록으로 남긴다
-        if piece["mode"] == "prefix":
-            touch_anchor(key, piece["prefix"], started)
-        elif want is None:
-            save_anchor(key, lines, int(piece["label"].split("-")[0]), len(piece["seen"]),
-                        probe.USER.format(document=piece["document"]), system, started)
+        save_system(key, system, rules_sha, made, started)
         asks, fixes = [], []
         hidden_before = hidden
         if want is not None:
