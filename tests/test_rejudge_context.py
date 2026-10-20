@@ -19,6 +19,7 @@ import json
 import sys
 import tempfile
 import unittest
+from unittest import mock
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -143,6 +144,9 @@ class PartsTests(unittest.TestCase):
     def test_html_never_uses_a_window(self) -> None:
         got = judge.parts_for(self.lines, {5}, "block", Path("d.html"))
         self.assertEqual("chunk←block", got[0]["mode"])
+        with mock.patch.object(judge, "WINDOW_HTML", False):    # 끄면 예전처럼 묶음
+            got = judge.parts_for(self.lines, {5}, "fixed", Path("d.html"))
+        self.assertEqual("chunk←fixed", got[0]["mode"])
 
     def test_no_target_means_no_piece_in_every_mode(self) -> None:
         """(2026-10-19) 대상 0줄 입력을 창 방식으로 재생하다 IndexError 로 멈췄다."""
@@ -153,6 +157,38 @@ class PartsTests(unittest.TestCase):
         many = set(range(20, 210, 12))      # 고정 창 41줄씩이 흩어져 180줄을 넘는다
         got = judge.parts_for(self.lines, many, "fixed", self.md)
         self.assertTrue(all(p["mode"] == "chunk←fixed" for p in got))
+
+
+class HtmlWindowTests(unittest.TestCase):
+    """(2026-10-20) HTML 은 보이는 글만 보내는데 창을 못 써 재판정 비용의 62% 였다 — 제목은 <h1>~<h6> 줄로 잡는다."""
+
+    HTML = ("<html><head><style>p{}</style></head><body><h1>안내</h1>"
+            + "".join(f"<p>앞 문단 {i}번입니다.</p>" for i in range(30))
+            + "<h2>일정</h2>" + "".join(f"<p>일정 문단 {i}번입니다.</p>" for i in range(60))
+            + "<h2>마무리</h2><p>끝 문단입니다.</p></body></html>")
+
+    def test_heading_lines_are_found_and_the_text_is_unchanged(self) -> None:
+        import layer2_coverage as cov
+        lines, heads = cov.visible_lines(self.HTML)
+        self.assertEqual("\n".join(lines), cov.visible_text(self.HTML, ".html"))
+        self.assertEqual({1: 1, 32: 2, 93: 2}, heads)
+        self.assertEqual("일정", lines[31])
+        self.assertNotIn(cov.HEAD_MARK, "".join(lines))
+
+    def test_the_fixed_window_carries_the_heading_chain(self) -> None:
+        import tempfile
+        import layer2_coverage as cov
+        with tempfile.TemporaryDirectory() as d:
+            path = Path(d) / "d.html"
+            path.write_text(self.HTML, encoding="utf-8")
+            lines = cov.read_doc(path).splitlines()
+            with mock.patch.object(judge, "WINDOW_HTML", True):
+                [piece] = judge.parts_for(lines, {80}, "fixed", path)
+                [given] = judge.parts_for(lines, {80}, "fixed", Path(d) / "gone.html", {1: 1, 32: 2})
+        self.assertEqual("fixed", piece["mode"])
+        self.assertTrue({1, 32} <= {lines.index(l) + 1 for l in piece["seen"]}, "제목 사슬이 빠졌습니다")
+        self.assertLess(len(piece["seen"]), 50)
+        self.assertEqual(piece["seen"], given["seen"], "남겨 둔 제목 줄로도 같은 창이어야 합니다")
 
 
 class JudgeTests(unittest.TestCase):

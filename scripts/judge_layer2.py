@@ -144,6 +144,13 @@ BLOCK_BUDGET = 120
 #: 판정기가 생략된 곳 때문에 판단하지 못한 줄에 다는 갈래 — 그 줄은 chunk 로 다시 판정한다
 CONTEXT_SHORT = "문맥 부족"
 WINDOWABLE = (".md", ".markdown")
+#: HTML 에도 fixed 창을 쓴다(실험 · 2026-10-20) — HTML 은 보이는 글만 보내는데도 창을 못 써 늘 180줄 묶음을 다시 보내,
+#: 재판정 비용의 62% 가 HTML 이었다. 보이는 글에는 `#` 과 빈 줄이 없어 제목은 `<h1>`~`<h6>` 줄로 잡는다. 표는 칸마다
+#: 한 줄이라 창이 머리 칸을 자를 수 있어 재생으로 잰 뒤 켰다(2026-10-20 · 공개 HTML 6쪽 앞 360줄을 실제로 0회차
+#: 판정하고 수정안을 넣어 만든 입력 · 두 번씩): 대상 2줄 재판정은 처음 부를 때 쓰기 36.8k → 21.6k(−41%) · 환산
+#: −18%(출력이 조금 늘어서), 두 번 다 한쪽만 짚은 줄은 fixed 쪽 1줄(정당한 지적)뿐. 대상 15~29줄은 창이 180줄을 넘어
+#: 전부 chunk 로 복귀해 차이 없음. 표본이 작다(대상 12줄) — 판정 기록의 `context` 로 계속 본다.
+WINDOW_HTML = True
 WINDOW_NOTE = ("\n\n이번에는 문서의 일부만 보낸다. 줄 번호는 원래 문서의 번호이고 「…(N줄 생략)…」 자리에는 보내지 "
                "않은 줄이 있다. 대상 줄을 판단하는 데 필요한 내용(용어 정의 · 선행사 · 앞서 나온 수치 · 표나 목록의 "
                f"머리)이 생략된 곳에 있어 판단할 수 없으면 그 줄에 갈래 「{CONTEXT_SHORT}」로 지적을 하나만 내고 다른 "
@@ -167,14 +174,21 @@ def blocks(lines: list[str]) -> list[tuple[int, int]]:
     return out
 
 
-def heading_chain(lines: list[str], n: int) -> list[int]:
-    """n행 위의 제목 사슬 — 가까운 제목부터 더 높은 수준의 제목을 거슬러 올라간다."""
+def heading_chain(lines: list[str], n: int, heads: dict[int, int] | None = None) -> list[int]:
+    """n행 위의 제목 사슬 — 가까운 제목부터 더 높은 수준의 제목을 거슬러 올라간다.
+
+    `heads` 는 HTML 의 제목 줄(줄 번호 → 수준) — 보이는 글에는 `#` 이 없어 따로 받는다.
+    """
     out, level = [], 7
     for i in range(n - 1, 0, -1):
-        m = re.match(r"(#{1,6})\s", lines[i - 1])
-        if m and len(m.group(1)) < level:
+        if heads is not None:
+            got = heads.get(i)
+        else:
+            m = re.match(r"(#{1,6})\s", lines[i - 1])
+            got = len(m.group(1)) if m else None
+        if got and got < level:
             out.append(i)
-            level = len(m.group(1))
+            level = got
             if level == 1:
                 break
     return out
@@ -230,9 +244,9 @@ def fixed_lines(lines: list[str], n: int) -> set[int]:
     return set(range(lo, hi + 1)) | extra
 
 
-def window_lines(lines: list[str], n: int, mode: str) -> set[int] | None:
-    """n행을 판정할 때 보낼 줄 — 구조 단위를 담지 못하면 None(chunk 로 복귀)."""
-    heads = set(heading_chain(lines, n))
+def window_lines(lines: list[str], n: int, mode: str, html_heads: dict[int, int] | None = None) -> set[int] | None:
+    """n행을 판정할 때 보낼 줄 — 구조 단위를 담지 못하면 None(chunk 로 복귀). HTML 은 `html_heads` 로 제목을 안다."""
+    heads = set(heading_chain(lines, n, html_heads))
     if mode == "fixed":
         return fixed_lines(lines, n) | heads
     bl = blocks(lines)
@@ -274,8 +288,12 @@ def excerpt(lines: list[str], keep: list[int]) -> str:
     return "\n".join(out)
 
 
-def parts_for(lines: list[str], want: set[int] | None, mode: str, path: Path) -> list[dict]:
-    """이번에 부를 조각 — {"mine": 대상 줄, "document": 프롬프트에 넣을 글, "seen": 판정기가 본 줄, "label", "mode"}."""
+def parts_for(lines: list[str], want: set[int] | None, mode: str, path: Path,
+              html_heads: dict[int, int] | None = None) -> list[dict]:
+    """이번에 부를 조각 — {"mine": 대상 줄, "document": 프롬프트에 넣을 글, "seen": 판정기가 본 줄, "label", "mode"}.
+
+    `html_heads` 는 HTML 의 제목 줄 — 안 주면 그 파일에서 읽는다(재생은 남겨 둔 것을 준다).
+    """
     def by_chunk(used: str) -> list[dict]:
         out = []
         for first, part in chunks(lines):
@@ -291,11 +309,14 @@ def parts_for(lines: list[str], want: set[int] | None, mode: str, path: Path) ->
         return []
     if mode == "prefix":
         return prefix_parts(coverage.doc_key(path), lines, want, path)
-    if path.suffix.lower() not in WINDOWABLE:
+    html = path.suffix.lower() in coverage.HTML_SUFFIXES and mode == "fixed" and WINDOW_HTML
+    if path.suffix.lower() not in WINDOWABLE and not html:
         return by_chunk(f"chunk←{mode}")
+    if html and html_heads is None:
+        html_heads = coverage.html_heads(path, lines)
     keep: set[int] = set()
     for n in sorted(want):
-        got = window_lines(lines, n, mode)
+        got = window_lines(lines, n, mode, html_heads if html else None)
         if got is None:
             return by_chunk(f"chunk←{mode}")
         keep |= got
@@ -315,7 +336,7 @@ def parts_for(lines: list[str], want: set[int] | None, mode: str, path: Path) ->
 #: 캐시에서 읽고, 그 뒤 바뀐 줄만 둘째 블록으로 붙인다. 캐시는 블록 경계에서 끝나는 앞부분만 다시 쓴다 — 실측(Opus
 #: 5.5 · 약 9천 토큰 묶음): 한 덩어리로 다시 보내면 쓰기 9,458(0.052달러), 앞 묶음 + 꼬리 블록이면 읽기 8,825 + 쓰기
 #: 551(0.010달러). 판정기는 고친 줄 둘레만이 아니라 묶음 전체를 본다. 앞 묶음이 캐시 유지 시간(5분) 안쪽에 쓰였을
-#: 때만 쓰고, 아니면 지금 방식(Markdown 은 fixed · HTML 은 chunk)으로 부른다.
+#: 때만 쓰고, 아니면 지금 방식(fixed)으로 부른다.
 #: ⛔ 캐시 항목은 **호출의 마지막 블록 끝에만** 생긴다 — [A, 꼬리1] 뒤 [A, 꼬리2] 는 A 를 못 읽었다(실측 쓰기 9,606 →
 #:    9,369). 그래서 앞 묶음은 묶음 글만 보낸 호출(전체 판정)에서만 생긴다.
 #: ⛔ 시스템 프롬프트는 **앞 묶음을 만든 호출의 것을 그대로** 쓴다 — 끝에 붙는 「사용자가 이미 답한 것」은 어느 문서든
@@ -437,7 +458,7 @@ def prefix_parts(key: str, lines: list[str], want: set[int], path: Path) -> list
                     "label": f"{mine[0]}-{mine[-1]}", "mode": "prefix"})
         left -= set(mine)
     if left:
-        out += parts_for(lines, left, "fixed", path)      # HTML 은 그 안에서 chunk 로 간다
+        out += parts_for(lines, left, "fixed", path)      # 창이 180줄을 넘으면 그 안에서 chunk 로 간다
     return out
 
 
@@ -1090,7 +1111,7 @@ def rejudge_user(piece: dict, info: dict, closed: list, decided: list, instructe
 
 def save_case(path: Path, key: str, text: str, want: set[int], anchors: dict, base, info: dict,
               rules_sha: str, system: str, model: str, context: str, closed: list, decided: list,
-              instructed: list = ()) -> None:
+              instructed: list = (), heads: dict | None = None) -> None:
     """재판정 한 번의 입력 — 그때 문서 · 대상 · 기준 판 · 계보 · 닫은 지적 · 사용자 답 · 시스템 프롬프트."""
     folder = replay_dir()
     folder.mkdir(parents=True, exist_ok=True)
@@ -1104,7 +1125,9 @@ def save_case(path: Path, key: str, text: str, want: set[int], anchors: dict, ba
             "system_sha": hashlib.sha256(system.encode("utf-8")).hexdigest()[:12],
             "decisions_prompt": decisions_prompt(load_decisions()),
             "closed": [[n, r] for n, r in closed], "decided": [[n, d] for n, d in decided],
-            "instructed": [[n, r] for n, r in instructed]}
+            "instructed": [[n, r] for n, r in instructed],
+            # HTML 제목 줄 — 재생 때 파일이 바뀌어 있어도 같은 창을 잡게
+            "heads": {str(n): v for n, v in (heads or {}).items()}}
     name = f"{datetime.now():%Y%m%d-%H%M%S}-{hashlib.sha256(text.encode('utf-8')).hexdigest()[:8]}.json"
     (folder / name).write_text(json.dumps(case, ensure_ascii=False), encoding="utf-8")
 
@@ -1417,7 +1440,8 @@ def judge(path: Path, model: str, timeout: float, backend, targets: list[int] | 
         closed_all, decided_all = closed_on(key, lines, plain), decided_on(key, lines, plain)
         instructed_all = instructed_on(key, lines, plain)
         save_case(path, key, text, want, anchors, base, info, rules_sha, system, model, context,
-                  closed_all, decided_all, instructed_all)
+                  closed_all, decided_all, instructed_all,
+                  coverage.html_heads(path, lines) if path.suffix.lower() in coverage.HTML_SUFFIXES else None)
     while queue:
         piece = queue.pop(0)
         mine, windowed = piece["mine"], piece["mode"] in ("fixed", "block")

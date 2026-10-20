@@ -7,7 +7,7 @@
 **지키는 것**
 
 - 전체 판정한 묶음이 앞 묶음으로 남고, 4분 안의 재판정은 [그 글 그대로, 바뀐 줄 · 대상 · 기준 판] 두 블록
-- 앞 묶음이 식었으면 쓰지 않음 — Markdown 은 fixed · HTML 은 chunk
+- 앞 묶음이 식었으면 쓰지 않음 — 지금 방식(fixed)
 - 사용자 답이 늘어도 앞 묶음을 만든 호출의 시스템 프롬프트 그대로 · 새 답은 꼬리에
 - HTML 도 전체 판정 묶음을 다시 씀(앞 묶음은 전체 판정에서만 생김)
 - 줄을 끼워 넣어 번호가 밀려도 대상 줄을 앞 묶음에 잇고, 바뀐 줄이 많으면 쓰지 않음
@@ -140,8 +140,8 @@ class PrefixTests(_Base):
         with mock.patch.object(judge, "PREFIX_FRESH", -1):
             stale = Scripted([[]])
             judge.judge(self.doc, "opus", 10, stale.pair(), [n], text, context="prefix")
-        self.assertIsInstance(stale.calls[0]["user"], str, "식은 앞 묶음 대신 지금 방식(chunk)이어야 합니다")
-        self.assertTrue(self.last_row()["context"].startswith("chunk"))
+        self.assertIsInstance(stale.calls[0]["user"], str, "식은 앞 묶음 대신 지금 방식(fixed)이어야 합니다")
+        self.assertEqual("fixed", self.last_row()["context"])
 
     def test_old_anchor_files_are_removed(self) -> None:
         self.full(BASE)

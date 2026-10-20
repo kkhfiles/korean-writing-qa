@@ -72,7 +72,8 @@ def replay(case: dict, mode: str, backend, model: str, timeout: float = 900, rea
     decided = [tuple(x) for x in case.get("decided") or []]
     instructed = [tuple(x) for x in case.get("instructed") or []]
     system = probe.system_prompt().format(rules=probe.rules_for("guided")) + (case.get("decisions_prompt") or "")
-    queue = judge.parts_for(lines, want, mode, path)
+    heads = {int(k): v for k, v in case["heads"].items()} if case.get("heads") is not None else None
+    queue = judge.parts_for(lines, want, mode, path, heads)
     got = {"findings": [], "calls": 0, "cost": 0.0, "cache_write": 0, "cache_read": 0, "output": 0, "short": [],
            "seconds": 0.0, "modes": []}
     while queue:
@@ -205,6 +206,7 @@ def main(argv=None) -> int:
     r.add_argument("--repeat", type=int, default=2)
     r.add_argument("--limit", type=int, default=0)
     r.add_argument("--model", default=judge.DEFAULT_MODEL)
+    r.add_argument("--html-window", action="store_true", help="HTML 에도 fixed 창(judge.WINDOW_HTML)")
     s = sub.add_parser("sheet")
     s.add_argument("name")
     a = ap.parse_args(argv)
@@ -230,6 +232,7 @@ def main(argv=None) -> int:
         return 3
     import os
     os.environ.setdefault(judge.CACHE_TTL_ENV, judge.CACHE_TTL)
+    judge.WINDOW_HTML = judge.WINDOW_HTML or a.html_window
     print(f"결과 — {run(a.name, cases, a.modes.split(','), a.repeat, backend, a.model, a.out)}")
     return 0
 

@@ -81,6 +81,8 @@ class _Text(html.parser.HTMLParser):
     def handle_starttag(self, tag, attrs):
         if tag in ("script", "style"):
             self.skip += 1
+        elif tag in HEADINGS:           # 제목 줄 표시 — 글에서는 지우고 줄 번호만 남긴다(`visible_lines`)
+            self.parts.append("\n" + HEAD_MARK + tag[1])
         elif tag in self.BLOCK:
             self.parts.append("\n")
 
@@ -95,14 +97,45 @@ class _Text(html.parser.HTMLParser):
             self.parts.append(data)
 
 
+HTML_SUFFIXES = (".html", ".htm")
+HEADINGS = {"h1", "h2", "h3", "h4", "h5", "h6"}
+HEAD_MARK = "\x00H"
+
+
+def visible_lines(text: str) -> tuple[list[str], dict[int, int]]:
+    """HTML 의 보이는 글 줄과 제목 줄 — (줄들, 줄 번호(1부터) → 제목 수준). 줄들은 `visible_text` 와 같다.
+
+    재판정 창(fixed)이 HTML 에서도 제목 사슬을 실으려고 둔다 — 보이는 글에는 `#` 같은 표시가 없다(2026-10-20).
+    """
+    p = _Text()
+    p.feed(text)
+    lines, heads = [], {}
+    for raw in "".join(p.parts).splitlines():
+        level = None
+        if raw.startswith(HEAD_MARK) and raw[len(HEAD_MARK):len(HEAD_MARK) + 1].isdigit():
+            level, raw = int(raw[len(HEAD_MARK)]), raw[len(HEAD_MARK) + 1:]
+        line = re.sub(r"\s+", " ", raw.replace(HEAD_MARK, "")).strip()
+        if line:
+            lines.append(line)
+            if level:
+                heads[len(lines)] = level
+    return lines, heads
+
+
 def visible_text(text: str, suffix: str) -> str:
     """판정에 넘기는 글 — HTML 은 보이는 글만, 나머지는 그대로."""
-    if suffix.lower() in (".html", ".htm"):
-        p = _Text()
-        p.feed(text)
-        lines = [re.sub(r"\s+", " ", l).strip() for l in "".join(p.parts).splitlines()]
-        return "\n".join(l for l in lines if l)
+    if suffix.lower() in HTML_SUFFIXES:
+        return "\n".join(visible_lines(text)[0])
     return text
+
+
+def html_heads(path: Path, lines: list[str]) -> dict[int, int]:
+    """그 HTML 파일의 제목 줄 — 지금 파일의 보이는 글이 `lines` 와 다르면(재생 등) 빈 사전."""
+    try:
+        got, heads = visible_lines(path.read_text(encoding="utf-8", errors="replace"))
+    except OSError:
+        return {}
+    return heads if got == lines else {}
 
 
 def read_doc(path: Path) -> str:
