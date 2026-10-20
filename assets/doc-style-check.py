@@ -891,6 +891,41 @@ NO_WORK_WORD = [
 #: 받침 없는 ㅏ·ㅐ·ㅓ·ㅕ·ㅘ·ㅝ 음절 — 연결 어미 「-아/-어」로 끝난 낱말의 끝 글자(떼어·찾아·해·밝혀)
 _AUX_EOMI = '[' + ''.join(chr(0xAC00 + (cho * 21 + jung) * 28)
                           for cho in range(19) for jung in (0, 1, 4, 6, 9, 14)) + ']'
+
+#: ★ **개인 항목** (2026-10-20 사용자 판정) — 업무 글에서도 흔히 쓰는데 한 사람이 고른 표현이라,
+#:   이 검사기를 받아 쓰는 다른 사람에게는 기본으로 꺼 둔다. 개인 설정 파일이 있을 때만 켠다.
+#:   판정 기준은 「표준어인가」가 아니라 「한국 회사의 업무 보고서와 메일에서 그렇게 쓰는가」이고
+#:   목록과 근거는 `docs/check-inventory-personal.md`. 2층 규칙 문서의 개인 행(`<!-- 개인 -->`)도
+#:   같은 스위치를 따른다(`scripts/probe_layer2_kinds.py` 의 `rules_for`).
+#:   찾는 곳 — 환경 변수 `KOREAN_QA_PERSONAL_RULES`(on · off · 경로) · 설치본 데이터 · 저장소 안 · 검사기 옆.
+PROFILE_FILE = 'local-personal-rules.txt'
+
+
+def personal_profile():
+    """개인 항목을 켜나 — 설정 파일이 있으면 켠다. 환경 변수 on/off 가 가장 앞선다."""
+    pinned = os.environ.get('KOREAN_QA_PERSONAL_RULES', '').strip()
+    if pinned.lower() in ('on', '1'):
+        return True
+    if pinned.lower() in ('off', '0'):
+        return False
+    here = os.path.dirname(os.path.abspath(__file__))
+    cands = [pinned] if pinned else [
+        os.path.join(os.path.expanduser('~'), '.claude', 'data', 'catalog', PROFILE_FILE),
+        os.path.join(here, '..', 'data', 'catalog', PROFILE_FILE),
+        os.path.join(here, PROFILE_FILE)]
+    return any(os.path.isfile(c) for c in cands)
+
+
+PROFILE = personal_profile()
+_PERSONAL_IDS = set()
+
+
+def _personal(entry):
+    """개인 항목 표시 — 개인 설정이 없으면 목록에서 뺀다."""
+    _PERSONAL_IDS.add(id(entry))
+    return entry
+
+
 NO_WORK_WORD_WARN = [
     (re.compile(r'(?:프로세스|파이썬|워커|배치|스크립트|세션|서버)[^\n]{0,6}'
                 r'죽(?!이|인|일|임|여|였)'), '종료·중단·응답 없음 중 맞는 것'),
@@ -909,7 +944,8 @@ NO_WORK_WORD_WARN = [
     #      동료가 쓴 일감의 「매일 밤 자동 빌드가 되어여 한다」다. **정당한 요구사항
     #      문장이고 내 규칙이 그것을 막았을 것이다.** 같은 꼴이라 모양으로 못 가른다.
     #      판정이 갈리면 등급을 내린다.
-    (re.compile(r'매일\s*밤'), '매일 자정 · 야간'),
+    #   ⚠️ 개인 항목(2026-10-20 사용자 판정) — 「매일 밤 배치 실행」은 IT 운영 문서에서 흔하다.
+    _personal((re.compile(r'매일\s*밤'), '매일 자정 · 야간')),
     # ── 2026-09-28 기술 조사 보고서 세션 · 사용자 직접 지적(인계) ──────────────
     #   셋 다 회사 색인(동료 글 포함)에 쓰임이 있거나 좁혀도 모양이 겹쳐 주의다.
     #   같이 들어온 「진탐」은 쓰임이 0곳이라 오류 쪽(NO_WORK_WORD)에 있다.
@@ -939,8 +975,9 @@ NO_WORK_WORD_WARN = [
     # F-126·F-133 「늘 있었습니다」·「그 칸은 늘 비어 있습니다」 — 늘/MAG 는 기준선 40회
     #   이하(항상 776회) · 한 글자라 단어 점검이 원리적으로 못 본다.
     #   ⛔ 동사 「늘다」의 ㄹ 탈락 꼴을 뺀다 — 「늘 수 있다」·「인원이 늘 것으로」·「늘 때」.
-    (re.compile(r'(?<![가-힣])늘(?=\s)(?!\s*(?:수|것|지|때|만큼|뿐|리|듯|거|까))'),
-     '항상·대부분 중 맞는 말'),
+    #   ⚠️ 개인 항목(2026-10-20 사용자 판정) — 「늘 감사드립니다」처럼 업무 메일에서 어색하지 않다.
+    _personal((re.compile(r'(?<![가-힣])늘(?=\s)(?!\s*(?:수|것|지|때|만큼|뿐|리|듯|거|까))'),
+               '항상·대부분 중 맞는 말')),
     # F-129 「아무 데도 안 적혀 있습니다」 — 구어체. 업무 글은 「어디에도」·「표시되지 않음」.
     (re.compile(r'아무\s*데도'), '어디에도·표시되지 않음'),
     # F-125 「목록을 열어도 답이 안 나오는 질문들」 — 막힌 상황을 비유하는 입말.
@@ -951,6 +988,8 @@ NO_WORK_WORD_WARN = [
                 r'(?=(?:이|을|은|에서|에|의|도|만|과|으로|마다|부터|까지)?(?![가-힣]))'),
      '버전·차수·회차 중 맞는 것'),
 ]
+if not PROFILE:
+    NO_WORK_WORD_WARN = [e for e in NO_WORK_WORD_WARN if id(e) not in _PERSONAL_IDS]
 
 # 낯선 사내 용어 — 사내 문서·지시 파일에서는 정해 둔 말이지만 **읽는 사람이 그 관례를
 #   모르는** 말. 갈래를 따로 둔 까닭은 Claude 지시 파일을 빼기 위해서다 — 지시 파일에서
@@ -1025,6 +1064,9 @@ HOEGI_OK = re.compile(
 #   판정이 갈리는 것은 사람이 본다 — 그래서 오류가 아니라 주의다.
 JARI_OK = re.compile(
     r'(?:같은|제|자기|첫|앞|뒷|옆|빈|윗|아랫|앉는|드나드는)\s*자리')
+#   ⚠️ 모임 뜻 「자리」는 2026-10-20 사용자 판정으로 개인 항목이지만 개인 스위치에 넣지 않았다 —
+#      같은 어간이 은유에도 쓰여(「말하는 자리」 대화방 은유 · 「받는 자리」 은유) 개인 설정이 없을 때
+#      예외로 되돌리면 은유까지 놓친다. 주의라 사람이 가른다(미탐보다 오탐).
 # 인용 블록의 출처 표기 — 이게 있어야 「남의 말 원문」이고, 그때만 검사에서 빠진다
 ATTRIB = re.compile(
     r'`\[[^`]*\]`'

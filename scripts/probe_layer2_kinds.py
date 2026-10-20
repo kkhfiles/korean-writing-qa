@@ -254,9 +254,21 @@ def step_body(text: str, title: str) -> str:
     return body.lstrip('. ')
 
 
+#: 개인 항목 표시(2026-10-20 사용자 판정) — 개인 설정이 있으면 표시만 떼고(그때 판정기에 가는 글은
+#: 표시를 넣기 전과 글자까지 같다), 없으면 그 행을 뺀다. 스위치는 1층 검사기와 같다(`repo_paths.personal_profile`).
+PERSONAL_MARK = " <!-- 개인 -->"
+
+
+def personal_rows(text: str) -> str:
+    """규칙 글에서 개인 행을 개인 설정에 따라 남기거나 뺀다."""
+    if repo_paths.personal_profile():
+        return text.replace(PERSONAL_MARK, "")
+    return "".join(l for l in text.splitlines(keepends=True) if PERSONAL_MARK not in l)
+
+
 def rules_for(arm: str, core: str | None = None, skill: str | None = None) -> str:
     """그 갈래가 실제로 받는 규칙 글 전체 — `core` 와 `skill` 을 주면 그 글로 조립한다(규칙 전후 비교용)."""
-    text = RULES.read_text(encoding="utf-8") if core is None else core
+    text = personal_rows(RULES.read_text(encoding="utf-8") if core is None else core)
     if arm == "guided":
         text += ("\n\n## 줄 하나만 봐서는 못 가르는 것\n\n"
                  + step_body(SKILL_MD.read_text(encoding="utf-8") if skill is None else skill, STEP_TITLE))

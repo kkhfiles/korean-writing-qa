@@ -91,6 +91,28 @@ NO_CONFIG_REPO = (
     "`data/catalog/local-config-repo.txt` 에 경로 한 줄을 적으십시오.")
 
 
+#: 개인 항목 스위치 파일 — 검사기의 `PROFILE_FILE` 과 같은 이름 · `.gitignore` 대상.
+PROFILE_FILE = "local-personal-rules.txt"
+
+
+def personal_profile() -> bool:
+    """개인 항목을 켜나 — 검사기(`assets/doc-style-check.py` 의 `personal_profile`)와 같은 판정.
+
+    검사기는 설치본 하나만 받아 쓰는 사람도 있어 이 모듈을 못 부른다. 두 판정이 같은지는
+    `tests/test_personal_profile.py` 가 본다.
+    """
+    pinned = os.environ.get("KOREAN_QA_PERSONAL_RULES", "").strip()
+    if pinned.lower() in ("on", "1"):
+        return True
+    if pinned.lower() in ("off", "0"):
+        return False
+    cands = [Path(pinned)] if pinned else [
+        INSTALLED / "data" / "catalog" / PROFILE_FILE,
+        REPO / "data" / "catalog" / PROFILE_FILE,
+        Path(CHECKER).parent / PROFILE_FILE]
+    return any(c.is_file() for c in cands)
+
+
 def hook(name: str) -> Path:
     """훅 파일 하나를 가리킨다 — 예: `hook("doc-style-gate.py")`."""
     return HOOKS / name

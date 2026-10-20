@@ -31,7 +31,23 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 import add_case  # noqa: E402
 import repo_paths  # noqa: E402
 
-CASES = repo_paths.REPO / "data" / "cases" / "contributed.jsonl"
+#: 사례 일부(「늘」, 「매일 밤」)는 개인 항목이라 개인 설정이 켜진 검사기로 본다 — 이 시험이 지키는 것은
+#: 작성자 기계에서 사례가 잡히는가다. 꺼졌을 때는 `test_personal_profile.py` 가 본다.
+from unittest import mock  # noqa: E402
+import os  # noqa: E402
+
+_PERSONAL_ON = mock.patch.dict(os.environ, {"KOREAN_QA_PERSONAL_RULES": "on"})
+
+
+def setUpModule() -> None:
+    _PERSONAL_ON.start()
+
+
+def tearDownModule() -> None:
+    _PERSONAL_ON.stop()
+
+
+CASES =repo_paths.REPO / "data" / "cases" / "contributed.jsonl"
 
 
 def load() -> list[dict]:

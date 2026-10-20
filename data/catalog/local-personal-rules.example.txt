@@ -1,0 +1,16 @@
+# 개인 항목 켜기 — 본보기
+#
+# 이 파일을 `local-personal-rules.txt` 로 복사하면 개인 항목이 켜집니다. 내용은 읽지 않고
+# 파일이 있는지만 봅니다.
+#
+#     cp data/catalog/local-personal-rules.example.txt data/catalog/local-personal-rules.txt
+#
+# 복사본은 `.gitignore` 에 있어 저장소에 올라가지 않습니다. 찾는 곳은 설치본 데이터 폴더
+# (`~/.claude/data/catalog/`), 저장소의 `data/catalog/`, 검사기 옆입니다. 환경 변수
+# `KOREAN_QA_PERSONAL_RULES` 에 on 또는 off 를 적으면 파일보다 앞섭니다.
+#
+# 개인 항목은 업무 글에서도 흔히 쓰는데 이 검사기 작성자가 고른 표현입니다. 기본으로 꺼져
+# 있습니다. 목록과 근거는 `docs/check-inventory-personal.md` 에 있습니다.
+#
+# - 1층 검사기: 「늘」, 「매일 밤」
+# - 2층 규칙 문서: 「사용자가 확정한 대표 수정」 표에서 끝에 `<!-- 개인 -->` 이 붙은 행

@@ -20,7 +20,7 @@ description: AI가 생성하거나 수정한 한글 문서 산출물을 전달�
    - Markdown·HTML·텍스트에서 다른 형식으로 변환했다면 편집 원본만 검사한다.
    - Word·PowerPoint를 직접 만들거나 고쳤다면 해당 형식 스킬로 표시 문구를 추출해 임시 UTF-8 텍스트로 검사한다.
    - PDF만 있고 편집 원본이 없다면 PDF 스킬로 텍스트를 추출하되, 추출 오류 가능성을 결과에 밝힌다.
-3. `references/core-rules.md`와 선택한 문서 종류 규칙을 읽는다.
+3. `references/core-rules.md`와 선택한 문서 종류 규칙을 읽는다. 표에서 끝 칸에 `<!-- 개인 -->` 이 붙은 행은 개인 항목이다 — 개인 설정 파일(`local-personal-rules.txt`, 찾는 곳은 `data/catalog/local-personal-rules.example.txt`)이 있을 때만 적용하고 없으면 그 행을 건너뛴다. 판정 스크립트는 이것을 스스로 가른다.
 4. `python scripts/check.py <대상> --profile <문서-종류>`로 확정 표현과 비유 후보를 검사한다.
 5. **단어 점검을 돌린다** — 업무 글에서 드물게 쓰는 낱말을 목록으로 받는다.
 

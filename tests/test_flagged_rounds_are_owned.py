@@ -37,7 +37,23 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import repo_paths  # noqa: E402
 
-LEDGER = repo_paths.REPO / "data" / "cases" / "flagged-rounds.jsonl"
+#: 대장 일부(「늘」, 「매일 밤」, 개인 행)는 개인 항목이라 개인 설정이 켜진 검사기로 본다 — 이 시험이
+#: 지키는 것은 작성자 기계에서 짚은 말이 잡히는가다. 꺼졌을 때는 `test_personal_profile.py` 가 본다.
+from unittest import mock  # noqa: E402
+import os  # noqa: E402
+
+_PERSONAL_ON = mock.patch.dict(os.environ, {"KOREAN_QA_PERSONAL_RULES": "on"})
+
+
+def setUpModule() -> None:
+    _PERSONAL_ON.start()
+
+
+def tearDownModule() -> None:
+    _PERSONAL_ON.stop()
+
+
+LEDGER =repo_paths.REPO / "data" / "cases" / "flagged-rounds.jsonl"
 CASES = repo_paths.REPO / "data" / "cases" / "contributed.jsonl"
 SWEEP = repo_paths.REPO / "scripts" / "rare_words.py"
 OWNERS = {"규칙", "단어 점검", "2층", "대기"}
