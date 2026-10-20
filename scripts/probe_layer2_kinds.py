@@ -230,7 +230,13 @@ def load_client(backend: str = "claude"):
         r = codex_http.call(user, model=model, system_prompt=system,
                             fallback=False, timeout=timeout)
         if r.get("error"):          # 판정기가 실패를 기록하고 넘어가게 예외로 올린다
-            raise RuntimeError(f"Codex 호출 실패({model}): {r['error']}")
+            # 「모든 모델 시도 실패」만으로는 네트워크 · 한도 · 인증이 안 갈린다 — 갈래와 마지막 실패 글을 함께.
+            # Codex 에이전트 샌드박스(network_access false)에서 아홉 번 그 한 줄로만 끝났다(2026-10-14~20).
+            detail = str(r.get("detail") or "")
+            why = " · ".join(x for x in (r.get("kind") or "", detail) if x)
+            # 안내는 앞에 — 사다리와 `via_review` 가 오류 글을 250~300자에서 자른다
+            hint = " · 네트워크 오류(Codex 샌드박스 안이면 밖에서 실행)" if "Network error" in detail else ""
+            raise RuntimeError(f"Codex 호출 실패({model}){hint}: {r['error']}" + (f" · {why[:300]}" if why else ""))
         return {"text": r.get("text"), "model": r.get("model"),
                 "cost_usd": None, "usage": r.get("usage")}
     return call_codex, parse_json_from_text
