@@ -97,6 +97,13 @@ class JudgeReviewLadderTests(unittest.TestCase):
         self.assertEqual(self.oks, ["codex"])
 
 
+    def test_사용량_보류는_실제로_부르는_모델의_칸으로_가른다(self):
+        """(2026-10-20) 첫 등급 칸(astra)을 골라 sol-high 를 부르면서 GPT 5시간 사용률 보류로 막혔다."""
+        fake = FakeClient({"text": "[]", "model": "gpt-astra", "cost_usd": None, "usage": {}})
+        with self.assertRaisesRegex(RuntimeError, "codex"):
+            self.wrap("codex", fake)(model="astra-medium", system="s", user="u", timeout=10)
+        self.assertEqual(fake.calls, [], "보류할 모델(astra)인데 불렀습니다")
+
     def test_판정기가_고른_클라이언트를_감싼다(self):
         client = (FakeClient({"text": "[]"}).call, "파서")
         with patch.object(judge.probe, "load_client", lambda which: client):

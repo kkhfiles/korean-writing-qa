@@ -1032,8 +1032,11 @@ def via_review(which: str, client):
             r = call(model=model, system=system_, user=user_, max_tokens=max_tokens_, timeout=timeout_, **kw)
             return r.get("text") or "", r.get("model") or model, {"cost_usd": r.get("cost_usd"),
                                                                     "usage": r.get("usage")}
-        # 등급은 칸을 고르는 데만 쓴다 — 실제 모델은 위 `model` 이고 칸 별칭은 안 쓴다
-        r = ask(next(iter(lp_models.tiers())), user, system=system, vendors=(which,), ladder="review",
+        # 등급은 칸을 고르는 데만 쓴다 — 실제 모델은 위 `model` 이고 칸 별칭은 안 쓴다. 다만 칸의 별칭으로 사용량
+        # 보류(reserve · astra 칸만 GPT 5시간 사용률을 봄)를 가르므로, 부를 모델이 든 등급의 칸을 고른다 — 첫 등급을
+        # 고르면 sol-high 를 부르면서 astra 칸으로 막혔다(2026-10-20 llm-playbook c4ded67 뒤 시험이 깨짐)
+        tier = model if lp_models.tier_of(model) else next(iter(lp_models.tiers()))
+        r = ask(tier, user, system=system, vendors=(which,), ladder="review",
                 max_tokens=max_tokens,
                 timeout=timeout, label="2층 판정", adapters={which: adapter}, ready=lambda _b: (True, ""))
         if not r["ok"]:
