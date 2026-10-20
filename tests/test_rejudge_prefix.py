@@ -7,8 +7,9 @@
 **지키는 것**
 
 - 전체 판정한 묶음이 앞 묶음으로 남고, 4분 안의 재판정은 [그 글 그대로, 바뀐 줄 · 대상 · 기준 판] 두 블록
-- 앞 묶음이 식었거나 시스템 프롬프트가 바뀌었으면 쓰지 않음 — Markdown 은 fixed
-- HTML 은 묶음을 블록으로 보내 다음 재판정의 앞 묶음으로 남김
+- 앞 묶음이 식었으면 쓰지 않음 — Markdown 은 fixed · HTML 은 chunk
+- 사용자 답이 늘어도 앞 묶음을 만든 호출의 시스템 프롬프트 그대로 · 새 답은 꼬리에
+- HTML 도 전체 판정 묶음을 다시 씀(앞 묶음은 전체 판정에서만 생김)
 - 줄을 끼워 넣어 번호가 밀려도 대상 줄을 앞 묶음에 잇고, 바뀐 줄이 많으면 쓰지 않음
 - 앞 묶음을 다시 보내면 쓴 시각이 새로 됨 · 오래된 앞 묶음 파일은 지워짐
 """
@@ -71,12 +72,19 @@ class PrefixTests(_Base):
         self.assertIsInstance(fake.calls[0]["user"], str)
         self.assertEqual("fixed", self.last_row()["context"])
 
-    def test_a_changed_system_prompt_does_not_reuse(self) -> None:
-        self.full(BASE)
+    def test_a_new_answer_keeps_the_old_system_and_rides_in_the_tail(self) -> None:
+        """(2026-10-20 세션 흉내) 0회차 직후 답 하나로 시스템이 바뀌어 재판정 전부가 앞 묶음을 못 썼다."""
+        round0 = self.full(BASE)
+        judge.coverage.DECISIONS.write_text(json.dumps(
+            {"when": time.time() + 1, "category": "업무에서 쓰는 말로 쓰기", "phrase": "갱신됩니다", "fix": "바뀝니다",
+             "answer": "그대로"}, ensure_ascii=False) + "\n", encoding="utf-8")
         edited = BASE[:4] + ["마감이 가까운 업무를 맨 위에 둡니다."] + BASE[5:]
-        with mock.patch.object(judge, "decisions_prompt", lambda _d: "\n\n## 사용자가 이미 답한 것\n- 새 답"):
-            fake = self.rejudge_prefix(edited, [5])
-        self.assertIsInstance(fake.calls[0]["user"], str, "시스템이 바뀌면 앞 묶음 캐시도 못 읽습니다")
+        fake = self.rejudge_prefix(edited, [5])
+        self.assertIsInstance(fake.calls[0]["user"], list, "답이 늘었다고 앞 묶음을 버렸습니다")
+        self.assertEqual(round0.calls[0]["system"], fake.calls[0]["system"], "앞 묶음과 다른 시스템이면 캐시를 못 읽습니다")
+        self.assertNotIn("갱신됩니다", fake.calls[0]["system"])
+        self.assertIn("새로 답한 것", fake.calls[0]["user"][1])
+        self.assertIn("「갱신됩니다」 · 판정기 제안 「바뀝니다」 · 사용자: 그대로", fake.calls[0]["user"][1])
 
     def test_an_inserted_line_still_maps_to_the_chunk(self) -> None:
         round0 = self.full(BASE)
@@ -105,25 +113,28 @@ class PrefixTests(_Base):
         self.rejudge_prefix(edited, [5])
         self.assertGreater(judge.load_anchors(key)["anchors"][0]["used"], time.time() - 60)
 
-    def test_html_sends_the_chunk_as_blocks_then_reuses_it(self) -> None:
+    def test_html_reuses_the_full_judgment_and_falls_back_to_chunk(self) -> None:
+        """창을 못 잡는 HTML 이 가장 큰 몫이다(재판정 비용의 62%). 앞 묶음은 전체 판정에서만 생긴다 — [A, 꼬리] 호출은
+        캐시 항목을 꼬리 끝에만 남겨 다음 호출이 A 를 못 읽는다(2026-10-20 실측)."""
         self.doc = self.dir / "d.html"
         html = ["<html><body>", "<h1>안내</h1>", "<p>업무 목록은 매일 갱신됩니다.</p>",
                 "<p>마감이 가까운 업무를 맨 위에 표시합니다.</p>", "</body></html>"]
         self.doc.write_text("\n".join(html) + "\n", encoding="utf-8")
         text = judge.read_doc(self.doc).splitlines()
         n = next(i for i, l in enumerate(text, 1) if "표시합니다" in l)
-        with mock.patch.object(judge, "PREFIX_FRESH", -1):
-            first = Scripted([[]])
-            html[3] = "<p>마감이 가까운 업무를 맨 위에 둡니다.</p>"
-            self.doc.write_text("\n".join(html) + "\n", encoding="utf-8")
-            judge.judge(self.doc, "opus", 10, first.pair(), [n], text, context="prefix")
-        self.assertIsInstance(first.calls[0]["user"], list, "HTML 묶음을 블록으로 안 보내 앞 묶음이 안 남습니다")
-        html[3] = "<p>마감이 가까운 업무를 목록 맨 위에 둡니다.</p>"
+        round0 = Scripted([[]])
+        judge.judge(self.doc, "opus", 10, round0.pair())
+        html[3] = "<p>마감이 가까운 업무를 맨 위에 둡니다.</p>"
         self.doc.write_text("\n".join(html) + "\n", encoding="utf-8")
         second = Scripted([[]])
         judge.judge(self.doc, "opus", 10, second.pair(), [n], text, context="prefix")
-        self.assertEqual(first.calls[0]["user"][0], second.calls[0]["user"][0], "앞 묶음을 다시 쓰지 않았습니다")
+        self.assertEqual(round0.calls[0]["user"], second.calls[0]["user"][0], "전체 판정 묶음을 다시 쓰지 않았습니다")
         self.assertEqual("prefix", self.last_row()["context"])
+        with mock.patch.object(judge, "PREFIX_FRESH", -1):
+            stale = Scripted([[]])
+            judge.judge(self.doc, "opus", 10, stale.pair(), [n], text, context="prefix")
+        self.assertIsInstance(stale.calls[0]["user"], str, "식은 앞 묶음 대신 지금 방식(chunk)이어야 합니다")
+        self.assertTrue(self.last_row()["context"].startswith("chunk"))
 
     def test_old_anchor_files_are_removed(self) -> None:
         self.full(BASE)
