@@ -1458,9 +1458,9 @@ def scan_html(path, relaxed=False, form=None, rules=None):
     slots = 0
     if buried:
         warn.append((
-            '펜스 안 배포 문구',
+            '코드 블록 안 배포 문구',
             f'`<pre><code>` 안에 사람에게 나갈 것으로 보이는 한글 {buried}줄이 있다 — '
-            '검사에서 빠졌다. 실제로 배포되는 글이면 파일로 빼서 따로 검사한다.',
+            '검사에서 빠졌다. 실제로 배포되는 글이면 파일로 빼서 별도로 검사한다.',
         ))
 
     # 1. 값·목록·표 칸의 서술형 종결
@@ -1953,7 +1953,7 @@ RULE_GROUPS = {
         '절 번호로 가리킴', '문장 끝 괄호 속 이름',
     ]),
     '안내': ('지적이 아니라 물음 — 형식을 안 적은 문서에 한 줄', [
-        '형식 미표기', '펜스 안 배포 문구',
+        '형식 미표기', '코드 블록 안 배포 문구',
     ]),
 }
 ALL_KINDS = {k: g for g, (_, kinds) in RULE_GROUPS.items() for k in kinds}
@@ -2647,9 +2647,9 @@ def scan_md(path, relaxed=False, form=None, rules=None):
     buried = fenced_prose(raw.split('\n'))
     if buried:
         warn.append((
-            '펜스 안 배포 문구',
-            f'코드펜스 안에 사람에게 나갈 것으로 보이는 한글 {buried}줄이 있다 — '
-            '검사에서 빠졌다. 실제로 배포되는 글이면 파일로 빼서 따로 검사한다.',
+            '코드 블록 안 배포 문구',
+            f'코드 블록 안에 사람에게 나갈 것으로 보이는 한글 {buried}줄이 있다 — '
+            '검사에서 빠졌다. 실제로 배포되는 글이면 파일로 빼서 별도로 검사한다.',
         ))
     for msg in middot_errors(path, raw, numbered=True):
         err.append(('띄어 쓴 가운뎃점', msg))

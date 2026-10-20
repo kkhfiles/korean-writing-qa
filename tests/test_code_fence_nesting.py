@@ -99,7 +99,7 @@ class FencedProseNoticeTests(unittest.TestCase):
        규약이 공지문에 걸린다 — 공지문은 산문이 정상이다.
     """
 
-    NOTICE = "펜스 안 배포 문구"
+    NOTICE = "코드 블록 안 배포 문구"
     DRAFT = ("````markdown\n"
              "안녕하세요. 사내 공유 행사를 안내드립니다.\n"
              "응모는 9월 30일까지 받습니다.\n"

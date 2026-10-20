@@ -209,6 +209,27 @@ class Layer2OwnedTests(unittest.TestCase):
                 f"{r['flag_id']} 가 core-rules.md 「{table.group(1)}」 를 "
                 "가리키는데 그런 절이 없습니다")
 
+    def test_confirmed_fixes_still_quote_the_flagged_words(self) -> None:
+        """확정 수정 표를 가리키면 **그 표에 짚은 말이 있어야** 한다.
+
+        절이 있는지만 보면 표에서 그 줄을 지워도 시험이 초록이다(2026-10-20 돌연변이로
+        확인 · F-145 「따로」 줄을 지워도 안 깨졌다). 2층이 읽는 곳은 그 줄뿐이다.
+        """
+        core = (repo_paths.SKILL / "references"
+                / "core-rules.md").read_text(encoding="utf-8")
+        head = "## 사용자가 확정한 대표 수정"
+        self.assertIn(head, core)
+        table = core.split(head, 1)[1].split("\n## ", 1)[0]
+        rows = [r for r in LEDGER_ROWS
+                if r["owner"] == "2층" and "core-rules.md 「사용자가 확정한 대표 수정」" in r["note"]]
+        if not rows:
+            self.skipTest("확정 수정 표를 가리키는 지적이 없다")
+        missing = [r for r in rows if r["text"] not in table]
+        self.assertFalse(
+            missing,
+            "확정 수정 표를 가리키는데 표에 짚은 말이 없습니다 — 줄이 지워졌거나 대장이 틀렸습니다:\n"
+            + "\n".join(f"  {r['flag_id']} 「{r['text']}」" for r in missing))
+
     def test_the_skill_names_the_defect_kinds(self) -> None:
         """스킬 본문이 문맥 결함 갈래를 실제로 적고 있는지."""
         rows = [r for r in LEDGER_ROWS if r["owner"] == "2층"]
