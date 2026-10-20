@@ -254,12 +254,12 @@ def step_body(text: str, title: str) -> str:
     return body.lstrip('. ')
 
 
-def rules_for(arm: str) -> str:
-    """그 갈래가 실제로 받는 규칙 글 전체."""
-    text = RULES.read_text(encoding="utf-8")
+def rules_for(arm: str, core: str | None = None, skill: str | None = None) -> str:
+    """그 갈래가 실제로 받는 규칙 글 전체 — `core` 와 `skill` 을 주면 그 글로 조립한다(규칙 전후 비교용)."""
+    text = RULES.read_text(encoding="utf-8") if core is None else core
     if arm == "guided":
         text += ("\n\n## 줄 하나만 봐서는 못 가르는 것\n\n"
-                 + step_body(SKILL_MD.read_text(encoding="utf-8"), STEP_TITLE))
+                 + step_body(SKILL_MD.read_text(encoding="utf-8") if skill is None else skill, STEP_TITLE))
     return text
 
 
