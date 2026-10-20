@@ -96,12 +96,19 @@ class PrefixTests(_Base):
         self.assertIn("  5 | 목록은 메일로도 보냅니다.", user[1])
         self.assertEqual(1, len(fake.calls), "한 앞 묶음 안의 대상인데 나눠 불렀습니다")
 
-    def test_many_changes_do_not_use_the_prefix(self) -> None:
-        self.full(BASE)
-        edited = BASE[:4] + ["마감이 가까운 업무를 맨 위에 둡니다."] + BASE[5:]
-        with mock.patch.object(judge, "PREFIX_MAX_CHANGED", 0):
-            fake = self.rejudge_prefix(edited, [5])
-        self.assertIsInstance(fake.calls[0]["user"], str)
+    def test_a_tail_longer_than_the_window_uses_fixed(self) -> None:
+        """고친 줄이 쌓인 뒤 대상이 한 줄이면 꼬리(바뀐 줄 31 + 읽기 몫 10)가 fixed 창(41줄)보다 길다."""
+        long = ["# 긴 문서", ""] + [f"채움 문단 {i}번입니다." for i in range(98)]
+        self.full(long)
+        edited = list(long)
+        for i in range(60, 90):
+            edited[i] = edited[i] + " 고침"
+        edited[20] = "채움 문단 열여덟번입니다."
+        fake = self.rejudge_prefix(edited, [21], base=long)
+        self.assertIsInstance(fake.calls[0]["user"], str, "꼬리가 창보다 긴데 앞 묶음을 썼습니다")
+        self.assertEqual("fixed", self.last_row()["context"])
+        fake = self.rejudge_prefix(edited, list(range(61, 91)) + [21], base=long)
+        self.assertIsInstance(fake.calls[0]["user"], list, "대상이 많아 창이 길면 앞 묶음이 싸다")
 
     def test_reuse_refreshes_the_time(self) -> None:
         self.full(BASE)

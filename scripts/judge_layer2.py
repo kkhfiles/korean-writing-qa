@@ -323,7 +323,6 @@ def parts_for(lines: list[str], want: set[int] | None, mode: str, path: Path) ->
 #:    답 하나로 재판정 전부가 앞 묶음을 못 씀). 그 뒤 받은 답은 꼬리에 붙인다 — 대상 줄의 답은 원래 꼬리에 실린다.
 PREFIX_FRESH = 240          # 초 — 앞 묶음을 이보다 전에 보냈으면 캐시가 식었을 수 있어 안 쓴다
 PREFIX_KEEP = 3600          # 초 — 이보다 오래된 앞 묶음은 지운다
-PREFIX_MAX_CHANGED = 60     # 앞 묶음 뒤 바뀐 줄이 이보다 많으면 꼬리가 길어 안 쓴다
 PREFIX_NOTE = ("\n\n위 글은 앞서 이 문서를 판정할 때 보낸 판이다. 그 뒤 아래처럼 고쳤다 — 지금 글은 위 판에 이 고침을 "
                "반영한 것이고, 줄 번호는 지금 문서의 번호다.")
 
@@ -420,7 +419,12 @@ def prefix_parts(key: str, lines: list[str], want: set[int], path: Path) -> list
                 covered |= set(range(j1, j2))
                 changes.append((i1, i2, j1, j2))
         mine = sorted(n for n in left if n - 1 in covered)
-        if not mine or sum(max(i2 - i1, j2 - j1) for i1, i2, j1, j2 in changes) > PREFIX_MAX_CHANGED:
+        if not mine:
+            continue
+        # 꼬리(바뀐 줄)와 앞 묶음 읽기(쓰기의 약 10분의 1)가 지금 방식이 새로 쓸 글보다 길면 안 쓴다 — 고친 줄이 쌓인 뒤
+        # 대상이 몇 줄뿐이면 fixed 창이 더 싸다(세션 흉내에서 2회차부터 바뀐 줄이 60줄을 넘어 고정 상한으로는 못 씀)
+        changed = sum(max(i2 - i1, j2 - j1) for i1, i2, j1, j2 in changes)
+        if changed + a["count"] // 10 >= sum(len(p["seen"]) for p in parts_for(lines, set(mine), "fixed", path)):
             continue
         tail = []
         for i1, i2, j1, j2 in changes:
