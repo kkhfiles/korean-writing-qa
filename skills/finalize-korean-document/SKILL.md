@@ -82,6 +82,8 @@ python "$HOME/.claude/assets/doc-style-check.py" <수정문>
 
    **검사 백엔드를 지정하지 않았다면 현재 세션과 같은 서비스를 명시한다** — Codex 세션은 `--backend codex`, Claude Code 세션은 `--backend claude`를 사용한다. `auto`는 현재 세션을 식별하지 않고 설치된 Claude를 먼저 선택하므로, 같은 서비스를 유지하려는 호출에서는 생략하지 않는다. 사용자가 검사 백엔드를 지정했다면 그 지정을 따른다. 호출할 수 없으면 다른 서비스로 임의 전환하지 않고 아래 「종료 코드」 항목대로 직접 판정한다.
 
+   **Codex 세션은 판정 명령만 샌드박스 밖 실행으로 승인을 요청한다** `[2026-10-20 사용자 결정]` — Codex 샌드박스(`network_access: false`)는 판정기의 모델 호출을 막는다. 10-14~10-20 Codex 세션의 판정이 매번 「모든 모델 시도 실패」로 끝났고, 같은 세션의 다른 HTTP 요청도 연결 거부였다. 네트워크를 전역으로 열지 않고, 판정 명령을 부를 때마다 샌드박스 밖 실행을 요청한다. 실패 글에 「네트워크 오류(Codex 샌드박스 안이면 밖에서 실행)」가 보이면 이 경우다.
+
 ```powershell
 # Codex
 python -X utf8 P:/github/korean-writing-qa/scripts/judge_layer2.py <수정문> --backend codex
