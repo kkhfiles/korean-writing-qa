@@ -156,6 +156,9 @@ WINDOW_NOTE = ("\n\n이번에는 문서의 일부만 보낸다. 줄 번호는 �
                f"머리)이 생략된 곳에 있어 판단할 수 없으면 그 줄에 갈래 「{CONTEXT_SHORT}」로 지적을 하나만 내고 다른 "
                "지적은 내지 않는다. 생략된 곳에 없을 것이라 짐작해 「선행사 없음」 같은 지적을 내지 않는다.")
 
+#: (2026-10-20) 창 옆에 문서 전체에서 뽑은 목적, 독자, 용어를 붙여 보는 실험은 폐기했다 — 시료 문서에서는 놓친 줄을
+#: 살렸지만(「지적 대상 모음」이라는 힌트가 됨) 실제 문서 8건 × 2회에서 붙인 쪽에만 나온 맞는 지적이 1건 이하였다.
+
 
 def blocks(lines: list[str]) -> list[tuple[int, int]]:
     """빈 줄로 나뉜 블록 — (첫 줄, 끝 줄) 1부터. 코드 울타리 안은 빈 줄이 있어도 한 블록이다."""
@@ -1355,8 +1358,11 @@ def judge(path: Path, model: str, timeout: float, backend, targets: list[int] | 
     # 세션이 못 푸는 것이다.
     edited = [n for n in (want or ()) if n not in anchors]
     rejudge_only = bool(edited) and all(info[n]["round"] >= 2 for n in edited)
-    pending = (sum(1 for n, _ in coverage.open_fixes(key, lines, LOG) if n not in want)
-               if rejudge_only else 0)
+    # 다른 줄에 남은 고칠 지적은 첫 재판정에도 센다(2026-10-20) — 경고는 두 번째 이상만 내지만, 첫 재판정이
+    # 지적을 모아 고친 뒤인지 하나씩 고친 뒤인지는 이 수가 있어야 실사용 기록으로 가른다.
+    open_elsewhere = (sum(1 for n, _ in coverage.open_fixes(key, lines, LOG) if n not in want)
+                      if want is not None else 0)
+    pending = open_elsewhere if rejudge_only else 0
     found, calls, hidden, foreign, held = [], [], 0, 0, 0
     held_done: set[int] = set()
     queue = parts_for(lines, want, context, path)
@@ -1392,6 +1398,7 @@ def judge(path: Path, model: str, timeout: float, backend, targets: list[int] | 
             row["targets"] = len(mine)
             row["rejudge_only"] = rejudge_only  # 묶음 경고의 근거 — 얼마나 자주 이러는지 센다
             row["pending_fixes"] = pending
+            row["open_elsewhere"] = open_elsewhere  # 첫 재판정 포함 — 처리 묶음 실사용 몫을 센다
             row["base_time"] = base_time       # 이 판정을 센 갈라진 지점 — 다음 판정이 같은 지점 것만 센다
             # 다음 판정이 이 줄의 자손을 찾고 판정 횟수를 이어 세는 데 쓴다(저장소 밖 기록)
             row["targeted"] = [{"key": coverage.line_key(lines[n - 1]), "text": lines[n - 1],

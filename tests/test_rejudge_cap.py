@@ -295,6 +295,24 @@ class BatchWarningTests(_Base):
         result = judge.judge(self.doc, "opus", 10, FakeBackend([]).pair(), [5, 7], BASE)
         self.assertEqual(0, result["pending_fixes"])
 
+    def test_the_first_rejudge_records_open_fixes_without_warning(self) -> None:
+        """(2026-10-20) 첫 재판정이 다른 지적을 남긴 채 불렸는지도 기록한다 — 경고는 그대로 두 번째부터."""
+        lines = BASE[:4] + [VERSIONS[0], "", self.NEW]
+        self.write(lines)
+        judge.judge(self.doc, "opus", 10, FakeBackend([fix_on(lines[4], 5), fix_on(self.NEW, 7)]).pair())
+        lines[4] = VERSIONS[1]                       # 전체 판정 뒤 5행만 고침 — 7행 지적은 남음
+        self.write(lines)
+        result = judge.judge(self.doc, "opus", 10, FakeBackend([]).pair(), [5], BASE)
+        row = self.last_row()
+        self.assertFalse(row["rejudge_only"])
+        self.assertEqual(0, result["pending_fixes"], "첫 재판정에는 경고하지 않습니다")
+        self.assertEqual(1, row["open_elsewhere"], "첫 재판정이 남긴 고칠 지적을 안 셌습니다")
+
+    def test_a_full_judgment_records_no_open_count(self) -> None:
+        self.write(BASE)
+        judge.judge(self.doc, "opus", 10, FakeBackend([]).pair())
+        self.assertNotIn("open_elsewhere", self.last_row())
+
     def test_asks_waiting_for_the_user_are_not_counted(self) -> None:
         """사람 확인은 세션이 못 푼다 — 그것 때문에 경고하면 할 수 있는 일이 없다."""
         lines = BASE[:4] + [VERSIONS[0], "", self.NEW]
