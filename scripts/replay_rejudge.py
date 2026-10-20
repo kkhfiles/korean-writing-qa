@@ -6,11 +6,12 @@
 판정기가 남겨 두고(`judge_layer2.save_case`), 여기서 같은 입력을 방식마다 부른다(외부 검토 권고).
 
     python -X utf8 scripts/replay_rejudge.py list
-    python -X utf8 scripts/replay_rejudge.py run <이름> [--modes chunk,fixed,block] [--repeat 2] [--limit N]
+    python -X utf8 scripts/replay_rejudge.py run <이름> [--modes chunk,fixed,block,fixed@bare] [--repeat 2] [--limit N]
     python -X utf8 scripts/replay_rejudge.py sheet <이름>
 
 - **run** — 사례마다 방식마다 `--repeat` 번 부른다. 같은 방식을 두 번 이상 불러야 방식 사이 차이와 판정기 흔들림을
-  가른다. 결과는 `~/.claude/state/korean-replay-runs/<이름>/results.jsonl`.
+  가른다. 결과는 `~/.claude/state/korean-replay-runs/<이름>/results.jsonl`. 방식 뒤에 `@bare` 를 붙이면 기준 판의
+  「고친 까닭」을 빼고 부른다 — 그것을 싣기 전 입력과 같은 조건으로 견준다.
 - **sheet** — 대상 줄마다 방식별 지적을 나란히 둔 표. 방식 이름 대신 사례마다 섞은 A · B · C 를 쓰고 대응은
   `key.json` 에 따로 둔다 — 검토자가 어느 방식인지 모른 채 고르게. 차이만 보면 양쪽이 함께 놓친 것은 못 찾으므로
   일치한 줄도 표에 남긴다.
@@ -25,6 +26,7 @@ import json
 import random
 import sys
 import time
+from datetime import datetime
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -46,12 +48,26 @@ def load_cases(folder: Path) -> list[dict]:
     return out
 
 
-def replay(case: dict, mode: str, backend, model: str, timeout: float = 900) -> dict:
-    """사례 하나를 한 방식으로 — {"findings", "calls", "cost", "cache_write", "cache_read", "output", "short", "seconds"}."""
+def replay(case: dict, mode: str, backend, model: str, timeout: float = 900, reasons: bool = True) -> dict:
+    """사례 하나를 한 방식으로 — {"findings", "calls", "cost", "cache_write", "cache_read", "output", "short", "seconds"}.
+
+    `reasons` — 기준 판에 「고친 까닭」(앞선 판정의 지적)을 싣는다. 끄면 싣기 전과 같은 입력이다(견줄 때).
+    """
     call_messages, parse_json = backend
     lines = case["text"].splitlines()
     want = set(case["targets"])
-    info, path = case["info"], Path(case["doc"])
+    info = {n: {k: v for k, v in i.items() if k != "root_found"} for n, i in case["info"].items()}
+    path = Path(case["doc"])
+    if reasons:
+        root = [n for n, i in case["info"].items() if i.get("root_found")]
+        for n in root:
+            info[n]["root_found"] = case["info"][n]["root_found"]
+        # 싣기 전(2026-10-20)에 남긴 입력은 판정 기록에서 그때 앞의 것으로 되살린다. 세션 흉내(`bench_loop.py`)는
+        # 문서 옆에 따로 기록을 둔다
+        if not root and case.get("key"):
+            own = path.with_name("judge.jsonl")
+            judge.root_findings(case["key"], info, before=datetime.fromisoformat(case["at"]).timestamp(),
+                                log=own if own.is_file() else None)
     closed = [tuple(x) for x in case.get("closed") or []]
     decided = [tuple(x) for x in case.get("decided") or []]
     instructed = [tuple(x) for x in case.get("instructed") or []]
@@ -105,7 +121,9 @@ def run(name: str, cases: list[dict], modes: list[str], repeat: int, backend, mo
                 # 방식 순서를 반복마다 돌려 캐시 상태가 한쪽에 몰리지 않게
                 order = modes[k % len(modes):] + modes[:k % len(modes)]
                 for mode in order:
-                    got = replay(case, mode, backend, model)
+                    # 「방식@bare」 — 기준 판의 고친 까닭을 빼고 부른다(싣기 전 입력과 견줄 때)
+                    base_mode, _, flag = mode.partition("@")
+                    got = replay(case, base_mode, backend, model, reasons=flag != "bare")
                     row = {"case": case["file"], "mode": mode, "repeat": k, "targets": case["targets"],
                            "rules_changed": case.get("rules") != rules_now, **got}
                     f.write(json.dumps(row, ensure_ascii=False) + "\n")

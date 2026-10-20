@@ -367,6 +367,7 @@ def process(doc: Path, meta: dict[int, dict], mode: str, counts: dict,
     - 그 밖의 고칠 지적: 수정안을 넣는다 · 글자로 못 넣으면 「대상아님」으로 닫는다(세션이 손으로 고친 셈)
     - 넣으면 그 줄이 이 실행에서 가졌던 판으로 되돌아가는 수정안: 넣지 않고 닫는다(`history` · 줄 번호별
       지난 판). 예전 판으로 돌아가면 그때 남은 지적이 다시 열려 두 판을 오간다
+    - 판정기가 「지적됐던 표현을 되살림」(`revives`)으로 표시한 수정안: 세션은 다른 말로 쓰지만 기계는 못 써 닫는다
     """
     key = coverage.doc_key(doc)
     edits = 0
@@ -403,6 +404,10 @@ def process(doc: Path, meta: dict[int, dict], mode: str, counts: dict,
                 counts["지시반영 닫기"] += 1
                 judge._close_fix(doc, lines, n, item, {"reason": "지시반영",
                                                        "note": f"사용자 지시 「{meta[n]['instruction']}」(재현 일감)"})
+        elif item.get("revives"):     # 지적됐던 표현을 되살리는 수정안 — 세션은 다른 말로 쓴다. 기계는 못 써 닫는다
+            counts["되살림 닫기"] += 1
+            judge._close_fix(doc, lines, n, item, {"reason": "대상아님",
+                                                   "note": f"재현 일감 — 지적됐던 「{item['revives']}」을 되살리는 수정안"})
         elif coverage.needs_check(item):
             counts["사실 확인 닫기"] += 1
             judge._close_fix(doc, lines, n, item, {"reason": "확인함", "note": "재현 일감 — 자료로 확인했다고 본다"})
@@ -458,7 +463,7 @@ def run_session(folder: Path, flagged: list[dict], clean: list[dict], edits: lis
     git("switch", "-q", "-c", "work")
 
     counts: dict[str, int] = {k: 0 for k in ("사람 답", "사실 확인 닫기", "지시반영 닫기", "지시 밖 짚음 처리", "적용",
-                                             "적용 못함 닫기", "되돌림 닫기")}
+                                             "적용 못함 닫기", "되돌림 닫기", "되살림 닫기")}
     history: dict[int, set] = {}
     rows, limits, said = [], [], io.StringIO()
     first_hits: set[int] = set()

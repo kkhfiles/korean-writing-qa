@@ -257,7 +257,9 @@ class SessionTests(_Base):
         got, fake = self.session([[fix(F1, "올립니다", "제출합니다")], [fix(F1, "제출합니다", "올립니다")], [], []],
                                  mode="one")
         t = got["total"]
-        self.assertEqual(1, t["되돌림 닫기"], "앞선 판으로 되돌리는 수정안을 넣었습니다")
+        # 판정기가 0회차 지적을 되살린다고 표시하면(2026-10-20) 그 길로 먼저 닫힌다 — 어느 쪽이든 넣지 않는다
+        self.assertEqual(1, t["되돌림 닫기"] + t["되살림 닫기"], "앞선 판으로 되돌리는 수정안을 넣었습니다")
+        self.assertEqual(1, t["되살림 닫기"], "지적됐던 표현을 되살리는 수정안을 판정기가 못 알아봤습니다")
         self.assertIn(t["종료"], ("완료", "멈춤"))
         self.assertLess(len(got["rounds"]), 10, "고리가 끝나지 않았습니다")
         doc = (self.dir / "run" / "bench.md").read_text(encoding="utf-8").splitlines()

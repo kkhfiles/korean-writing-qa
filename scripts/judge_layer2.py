@@ -1177,6 +1177,51 @@ def lineage(key: str, lines: list[str], targets: list[int], base: list[str] | No
     return out
 
 
+#: 기준 판에 붙여 보내는 앞선 판정의 지적 — 줄마다 이만큼까지. 규칙 이름은 안 싣는다 — 재생(2026-10-20 · 25건 두 번씩)에서
+#: 대상 20줄 미만 재판정의 환산 비용이 14% 늘어(쓰기 호출당 약 1,100토큰) 판정기가 실제로 쓴 표현과 고친 말만 남겼다.
+ROOT_FINDINGS_PER_LINE = 2
+
+
+def root_findings(key: str, info: dict[int, dict], before: float | None = None, log: Path | None = None) -> None:
+    """기준 판 줄에 앞서 낸 고칠 지적을 `info[n]["root_found"]` 에 붙인다 — 「왜 고쳤나」를 재판정에 알린다.
+
+    ⛔ 기준 판만 보내면 판정기가 그것을 정답처럼 읽고 「뜻이 바뀌었다」며 지적됐던 표현으로 되돌리라고 냈다
+       (2026-10-19 재생 · 사용자가 짚은 헛짚음 다섯 중 대부분이 「자동 수리」 · 「원문을 그대로 훑어」로 되돌림).
+       사용자 지시를 알려 주자 지시 안 수정을 짚은 줄이 6→0 이 된 것과 같은 원리다(외부 검토 Argon · 10-20).
+    `before` 가 있으면 그 시각 앞의 판정만 본다(재생이 그때 입력을 되살릴 때). `log` 는 판정 기록(기본 `LOG`).
+    """
+    by_key: dict[str, list[int]] = {}
+    for n, v in info.items():
+        if v.get("root") and not v.get("anchor"):
+            by_key.setdefault(coverage.line_key(v["root"]), []).append(n)
+    if not by_key:
+        return
+    found: dict[str, list[dict]] = {}
+    for row in coverage._rows(key, log or LOG, None, fresh=False):
+        if not row.get("ok") or (before is not None and float(row.get("when") or 0) >= before):
+            continue
+        for fx in row.get("fixes") or []:
+            k = fx.get("line_key")
+            phrase = str(fx.get("phrase") or "").strip()
+            if k in by_key and phrase and phrase not in {f["phrase"] for f in found.get(k, [])}:
+                found.setdefault(k, []).append({"phrase": phrase, "fix": fx.get("fix") or "",
+                                                "category": fx.get("category") or ""})
+    for k, ns in by_key.items():
+        for n in ns:
+            if found.get(k):
+                info[n]["root_found"] = found[k][:ROOT_FINDINGS_PER_LINE]
+
+
+def revived(item: dict, info: dict) -> str | None:
+    """수정안이 기준 판에서 지적됐던 표현을 되살리면 그 표현 — 아니면 None."""
+    fix = str(item.get("fix") or "")
+    for f in info.get("root_found") or []:
+        p = f["phrase"]
+        if len(p) >= 2 and p in fix and p not in str(item.get("phrase") or ""):
+            return p
+    return None
+
+
 def closed_on(key: str, lines: list[str], mine: list[int]) -> list[tuple[int, dict]]:
     """대상 줄(또는 그 앞 판)에서 세션이 이미 닫은 고칠 지적 — (줄, 기록). 줄마다 최근 것 셋까지."""
     rows = [r for r in coverage._rows(key, coverage.DISMISSALS, None, fresh=False)
@@ -1253,7 +1298,14 @@ def before_after(mine: list[int], info: dict[int, dict], closed: list[tuple[int,
         out += ["", "", "아래 줄은 기준 판(고치기 전 글)에서 바뀐 줄이다. 기준 판과 대조해 숫자 · 주체 · 부정 · "
                 "조건 · 범위 · 확실성이 달라졌거나 필요한 정보가 빠졌으면 그것도 지적한다 — 갈래는 「고치다 뜻이 "
                 "바뀐 곳」, 고친 말은 기준 판의 뜻을 살린 글이다. 기준 판에 있던 문제를 다시 짚지는 않는다."]
-        out += [f"- {n}행 기준 판: {r}" for n, r in roots]
+        for n, r in roots:
+            out.append(f"- {n}행 기준 판: {r}")
+            found = info[n].get("root_found") or []
+            if found:
+                out.append("  고친 까닭: " + " · ".join(f"「{f['phrase']}」→「{f['fix']}」" for f in found))
+        if any(info[n].get("root_found") for n, _ in roots):
+            out.append("기준 판은 「고친 까닭」의 지적을 받아 고친 글이다. 지적됐던 표현을 되살리는 수정안은 내지 "
+                       "않는다 — 빠진 뜻을 되살려야 하면 다른 말로 쓴다.")
         if gone:
             out += ["지운 줄(기준 판에만 있고 지금 글에 없음) — 그 정보가 필요하면 가까운 대상 줄에 지적한다."]
             out += [f"- {n}행 가까이에서 지움: {d}" for n, d in gone]
@@ -1323,6 +1375,7 @@ def judge(path: Path, model: str, timeout: float, backend, targets: list[int] | 
     rules_sha = hashlib.sha256(rules.encode("utf-8")).hexdigest()[:12]
     system_sha = hashlib.sha256(system.encode("utf-8")).hexdigest()[:12]
     info = lineage(key, lines, sorted(want - set(anchors)), base, base_time) if want else {}
+    root_findings(key, info)
     for n, gone in anchors.items():
         info[n] = {"round": 0, "root": None, "deleted": gone[:DELETED_PER_LINE], "more": len(gone) - DELETED_PER_LINE,
                    "deleted_keys": [coverage.line_key(g) for g in gone], "anchor": True}
@@ -1442,11 +1495,20 @@ def judge(path: Path, model: str, timeout: float, backend, targets: list[int] | 
                     it["held"] = True
                 if it.get("held"):
                     held += 1
+                # 지적됐던 표현을 되살리는 수정안 — 버리지 않고 안내를 붙인다. 버리면 실제 뜻 바뀜 지적도 함께
+                # 사라지고, 그대로 두면 세션이 되돌려 같은 지적이 다시 난다(외부 검토 Argon · 2026-10-20)
+                back = revived(it, info.get(n) or {}) if want is not None and not is_ask(it) else None
+                if back:
+                    it["revives"] = back
+                    it["why"] = (f"{it.get('why') or ''} · 수정안이 앞선 판정에서 고치라고 한 「{back}」을 "
+                                 f"되살림 — 빠진 뜻만 살리고 다른 말로 씀").lstrip(" ·")
                 found.append(it)
                 ok_line = isinstance(n, int) and 0 < n <= len(lines)
                 rec = {"line_key": coverage.line_key(lines[n - 1]) if ok_line else None,
                        "line": n, "phrase": it.get("phrase"), "fix": it.get("fix"),
                        "why": it.get("why"), "category": it.get("category")}
+                if it.get("revives"):
+                    rec["revives"] = it["revives"]
                 if is_ask(it):
                     asks.append(rec)
                 else:

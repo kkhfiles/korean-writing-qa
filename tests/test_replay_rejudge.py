@@ -59,6 +59,19 @@ class ReplayTests(unittest.TestCase):
         self.assertEqual(["매주"], [f["phrase"] for f in got["findings"]])
         self.assertEqual(["block", "chunk←문맥 부족"], got["modes"])
 
+    def test_bare_drops_the_reason_for_the_base_line(self) -> None:
+        case = json.loads(json.dumps(self.cases[0]))
+        case["info"] = {int(k): v for k, v in case["info"].items()}
+        case["info"][5]["root"] = "배포는 매주 진행합니다."      # 고친 줄로 꾸민다 — 기준 판이 있어야 까닭이 실린다
+        case["info"][5]["root_found"] = [{"phrase": "매주", "fix": "주마다", "category": "업무에서 쓰는 말로 쓰기"}]
+        with_reason, bare = Scripted([[]]), Scripted([[]])
+        replay.replay(case, "chunk", with_reason.pair(), "opus")
+        replay.run("t", [case], ["chunk@bare"], 1, bare.pair(), "opus", self.dir / "runs")
+        self.assertIn("고친 까닭: 「매주」→「주마다」", with_reason.calls[0]["user"])
+        self.assertNotIn("고친 까닭", bare.calls[0]["user"])
+        row = json.loads((self.dir / "runs" / "t" / "results.jsonl").read_text(encoding="utf-8").splitlines()[0])
+        self.assertEqual("chunk@bare", row["mode"], "결과에서 두 조건을 못 가릅니다")
+
     def test_replay_leaves_the_judge_log_alone(self) -> None:
         replay.run("t", self.cases, ["chunk", "block"], 1, Scripted([[]] * 4).pair(), "opus", self.dir / "runs")
         self.assertEqual(self.log_before, judge.LOG.read_text(encoding="utf-8"))
