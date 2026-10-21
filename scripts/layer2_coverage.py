@@ -32,11 +32,24 @@ import json
 import os
 import re
 import subprocess
+import tempfile
 import time
 from pathlib import Path
 
 LOG = Path(os.environ.get("KOREAN_QA_JUDGE_LOG")
            or Path.home() / ".claude" / "state" / "korean-layer2-judge.jsonl")
+
+
+def fallback_log(log: Path) -> Path:
+    """판정 기록(`log`)을 못 쓸 때 같은 줄을 대신 적는 곳 — 임시 폴더 아래 · 기록 경로마다 다른 이름.
+
+    Codex 샌드박스(workspace-write)는 `~/.claude/state` 쓰기를 막고 임시 폴더는 연다. 기록 쓰기가 예외를 안
+    받아 그 안의 실패 판정이 한 줄도 안 남았다(2026-10-14~20 · 2026-10-21 확인). 이름에 기록 경로의 해시를 넣어
+    시험이 돌린 기록과 실사용 기록이 서로의 대신 적은 줄을 합치지 않게 한다.
+    """
+    tag = hashlib.sha256(str(log).encode("utf-8")).hexdigest()[:8]
+    return Path(tempfile.gettempdir()) / f"korean-layer2-judge-fallback-{tag}.jsonl"
+
 #: 사람 확인 지적에 사용자가 답한 기록 — 비용 장부(`LOG`)와 따로 둔다(장부 합계에 안 섞이게)
 ANSWERS = Path(os.environ.get("KOREAN_QA_ANSWER_LOG")
                or Path.home() / ".claude" / "state" / "korean-layer2-answers.jsonl")

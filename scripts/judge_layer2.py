@@ -354,14 +354,21 @@ def _system_file(key: str) -> Path:
 
 
 def save_system(key: str, system: str, rules_sha: str, made: float, used: float) -> None:
-    """이 문서의 직전 호출이 쓴 시스템 프롬프트 — `made` 는 그 프롬프트의 사용자 답을 읽은 시각."""
+    """이 문서의 직전 호출이 쓴 시스템 프롬프트 — `made` 는 그 프롬프트의 사용자 답을 읽은 시각.
+
+    못 쓰면(Codex 샌드박스 등) 건너뛴다 — 다음 재판정이 캐시를 덜 읽을 뿐이고, 여기서 죽으면 받은 판정과
+    그 기록 줄을 잃는다.
+    """
     p = _system_file(key)
-    p.parent.mkdir(parents=True, exist_ok=True)
-    for old in p.parent.glob("*.json"):
-        if old != p and old.stat().st_mtime < time.time() - SYSTEM_KEEP:
-            old.unlink(missing_ok=True)
-    p.write_text(json.dumps({"system": system, "rules": rules_sha, "made": made, "used": used}, ensure_ascii=False),
-                 encoding="utf-8")
+    try:
+        p.parent.mkdir(parents=True, exist_ok=True)
+        for old in p.parent.glob("*.json"):
+            if old != p and old.stat().st_mtime < time.time() - SYSTEM_KEEP:
+                old.unlink(missing_ok=True)
+        p.write_text(json.dumps({"system": system, "rules": rules_sha, "made": made, "used": used},
+                                ensure_ascii=False), encoding="utf-8")
+    except OSError:
+        pass
 
 
 def system_for(key: str, current: str, rules_sha: str) -> tuple[str, float] | None:
@@ -1002,9 +1009,40 @@ def input_total(row: dict) -> int:
 
 
 def log_call(row: dict) -> None:
-    LOG.parent.mkdir(parents=True, exist_ok=True)
-    with LOG.open("a", encoding="utf-8", newline="\n") as f:
-        f.write(json.dumps(row, ensure_ascii=False) + "\n")
+    """판정 기록에 한 줄 — 못 쓰면 임시 폴더에 대신 적고 알린다(`coverage.fallback_log`).
+
+    ⛔ 예외를 그대로 올리면 안 된다 — 실패 줄을 적다 나면 원래 실패 사유가 권한 오류로 덮이고 줄도 사라진다
+       (Codex 샌드박스 · 2026-10-14~20 실패 0건으로 남음). 쓸 수 있을 때 대신 적은 줄을 먼저 합친다.
+    """
+    line = json.dumps(row, ensure_ascii=False) + "\n"
+    spare = coverage.fallback_log(LOG)
+    merging = spare.is_file()
+    try:
+        LOG.parent.mkdir(parents=True, exist_ok=True)
+        earlier = merge_spare(spare) if merging else ""
+        with LOG.open("a", encoding="utf-8", newline="\n") as f:
+            f.write(earlier + line)
+    except OSError as e:
+        try:
+            with spare.open("a", encoding="utf-8", newline="\n") as f:
+                f.write(line)
+        except OSError as e2:
+            print(f"⚠️ 판정 기록을 못 썼습니다 — {LOG}: {type(e).__name__} · 대신 적을 곳 {spare}: {type(e2).__name__}")
+            return
+        print(f"⚠️ 판정 기록을 못 써({type(e).__name__}) {spare} 에 대신 적었습니다 — 다음에 기록을 쓸 수 있을 때 합칩니다")
+        return
+    if merging:
+        try:
+            spare.unlink(missing_ok=True)
+        except OSError:
+            pass    # 남아도 다음에 합칠 때 이미 있는 줄은 건너뛴다
+
+
+def merge_spare(spare: Path) -> str:
+    """대신 적은 줄 중 본 기록에 아직 없는 것 — 합치다 지우기 전에 끊겨도 두 번 들어가지 않게 줄 글자로 가린다."""
+    have = set(LOG.read_text(encoding="utf-8").splitlines()) if LOG.is_file() else set()
+    new = [l for l in dict.fromkeys(spare.read_text(encoding="utf-8").splitlines()) if l.strip() and l not in have]
+    return "".join(l + "\n" for l in new)
 
 
 #: 재판정 입력을 남기는 날수 — 문맥 방식을 같은 입력으로 재생해 지적 차이를 보려고 둔다(외부 검토 2026-10-16)
@@ -1037,13 +1075,21 @@ def save_case(path: Path, key: str, text: str, want: set[int], anchors: dict, ba
               rules_sha: str, system: str, model: str, context: str, closed: list, decided: list,
               instructed: list = (), heads: dict | None = None, decisions_text: str | None = None,
               extra: str = "") -> None:
-    """재판정 한 번의 입력 — 그때 문서 · 대상 · 기준 판 · 계보 · 닫은 지적 · 사용자 답 · 시스템 프롬프트."""
+    """재판정 한 번의 입력 — 그때 문서 · 대상 · 기준 판 · 계보 · 닫은 지적 · 사용자 답 · 시스템 프롬프트.
+
+    못 쓰면(Codex 샌드박스 등) 알리고 건너뛴다 — 재생 자료 하나를 잃을 뿐이고, 여기서 죽으면 모델을 부르기도
+    전에 재판정이 끝난다.
+    """
     folder = replay_dir()
-    folder.mkdir(parents=True, exist_ok=True)
-    cutoff = time.time() - REPLAY_DAYS * 86400
-    for old in folder.glob("*.json"):
-        if old.stat().st_mtime < cutoff:
-            old.unlink(missing_ok=True)
+    try:
+        folder.mkdir(parents=True, exist_ok=True)
+        cutoff = time.time() - REPLAY_DAYS * 86400
+        for old in folder.glob("*.json"):
+            if old.stat().st_mtime < cutoff:
+                old.unlink(missing_ok=True)
+    except OSError as e:
+        print(f"⚠️ 재생 입력을 못 써({type(e).__name__}) 건너뜁니다 — {folder}")
+        return
     case = {"at": datetime.now().isoformat(timespec="seconds"), "doc": str(path), "key": key, "text": text,
             "targets": sorted(want), "anchors": {str(n): g for n, g in anchors.items()}, "base": base,
             "info": {str(n): v for n, v in info.items()}, "rules": rules_sha, "model": model, "context": context,
@@ -1055,7 +1101,10 @@ def save_case(path: Path, key: str, text: str, want: set[int], anchors: dict, ba
             # HTML 제목 줄 — 재생 때 파일이 바뀌어 있어도 같은 창을 잡게
             "heads": {str(n): v for n, v in (heads or {}).items()}}
     name = f"{datetime.now():%Y%m%d-%H%M%S}-{hashlib.sha256(text.encode('utf-8')).hexdigest()[:8]}.json"
-    (folder / name).write_text(json.dumps(case, ensure_ascii=False), encoding="utf-8")
+    try:
+        (folder / name).write_text(json.dumps(case, ensure_ascii=False), encoding="utf-8")
+    except OSError as e:
+        print(f"⚠️ 재생 입력을 못 써({type(e).__name__}) 건너뜁니다 — {folder}")
 
 
 def open_for(path: Path, since: str) -> tuple[list[int], bool]:
