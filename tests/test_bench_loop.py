@@ -265,6 +265,56 @@ class SessionTests(_Base):
         doc = (self.dir / "run" / "bench.md").read_text(encoding="utf-8").splitlines()
         self.assertEqual(doc[F1 - 1], "- 보고서는 매주 금요일에 제출합니다.")
 
+    def test_traps_are_planted_after_round0_and_counted_at_the_first_rejudge(self) -> None:
+        """(2026-10-21) 2판 회수는 0회차만 세어 재판정만 바꾼 변경의 정확도를 못 봤다."""
+        traps = [{"trap_id": "T-1", "target": "C-1", "kind": "뜻 바뀜", "after": "배포 일정은 지난주에 정했습니다."},
+                 {"trap_id": "T-2", "target": "F-2", "kind": "되살림", "after": "회의록은 당일에 바로 공유합니다."}]
+        round1 = [dict(fix(C1, "지난주에", "다음 주에"), category="고치다 뜻이 바뀐 곳")]
+        fake = Scripted([[], round1, []])
+        got = bench.run_session(self.dir / "run", FLAGGED, CLEAN, [], "batch", max_calls=20, backend=fake.pair(),
+                                traps=traps)
+        t = got["total"]
+        self.assertEqual((t["함정"], t["재판정 함정 회수"], t["놓친 함정"]), (2, 1, ["T-2"]))
+        self.assertEqual(t["재판정 함정 회수(종류)"], {"뜻 바뀜": "1/1", "되살림": "0/1"})
+        self.assertIn(f"{F2}, {C1}", fake.calls[1]["user"], "심은 줄이 첫 재판정 대상이 아닙니다")
+
+    def test_round0_is_reused_without_calling(self) -> None:
+        first = bench.run_session(self.dir / "a", FLAGGED, CLEAN, [], "batch", max_calls=20,
+                                  backend=Scripted([ROUND0, []]).pair())
+        fake = Scripted([[]])
+        got = bench.run_session(self.dir / "b", FLAGGED, CLEAN, [], "batch", max_calls=20, backend=fake.pair(),
+                                reuse0=self.dir / "a")
+        self.assertEqual(len(fake.calls), 1, "0회차를 다시 불렀습니다")
+        self.assertIn("기준 판", fake.calls[0]["user"], "첫 호출이 재판정이 아닙니다")
+        t = got["total"]
+        self.assertEqual(t["0회차 회수(짚음)"], first["total"]["0회차 회수(짚음)"])
+        self.assertEqual(got["rounds"][0]["환산 비용"], 0, "실은 0회차 비용을 이 실행에 셌습니다")
+        self.assertEqual(t["재판정 환산 비용"], 0.25)
+        doc = (self.dir / "b" / "bench.md").read_text(encoding="utf-8").splitlines()
+        self.assertEqual(doc[F1 - 1], "- 보고서는 매주 금요일에 제출합니다.", "실은 0회차 지적을 처리하지 않았습니다")
+
+    def test_round0_of_another_document_is_refused(self) -> None:
+        bench.run_session(self.dir / "a", FLAGGED, CLEAN, [], "batch", max_calls=20, backend=Scripted([[]]).pair())
+        with self.assertRaises(ValueError):
+            bench.run_session(self.dir / "b", FLAGGED[:1], CLEAN, [], "batch", max_calls=20,
+                              backend=Scripted([[]]).pair(), reuse0=self.dir / "a")
+
+    def test_round0_under_other_rules_is_refused(self) -> None:
+        bench.run_session(self.dir / "a", FLAGGED, CLEAN, [], "batch", max_calls=20, backend=Scripted([[]]).pair())
+        log = self.dir / "a" / "judge.jsonl"
+        rows = [dict(json.loads(l), rules="000000000000") for l in log.read_text(encoding="utf-8").splitlines()]
+        log.write_text("\n".join(json.dumps(r, ensure_ascii=False) for r in rows) + "\n", encoding="utf-8")
+        with self.assertRaises(ValueError):
+            bench.run_session(self.dir / "b", FLAGGED, CLEAN, [], "batch", max_calls=20,
+                              backend=Scripted([[]]).pair(), reuse0=self.dir / "a")
+
+    def test_effort_reaches_only_the_rejudges(self) -> None:
+        fake = Scripted([ROUND0, [], []])
+        bench.run_session(self.dir / "run", FLAGGED, CLEAN, EDITS, "batch", max_calls=20, backend=fake.pair(),
+                          effort="low")
+        self.assertNotIn("effort", fake.calls[0], "0회차에도 사고 깊이를 줬습니다")
+        self.assertEqual(fake.calls[1].get("effort"), "low")
+
     def test_reclosing_the_same_finding_is_counted(self) -> None:
         log = self.dir / "d.jsonl"
         rows = [{"phrase": "p", "reason": "확인함", "line_key": k} for k in ("a", "b", "b", "c")]
@@ -361,6 +411,64 @@ class CompareTests(unittest.TestCase):
 
     def test_more_runs_than_registered_is_exploratory(self) -> None:
         self.assertIn("탐색적", bench.compare(self.BASE, [total(1.0)] * 4))
+
+    def test_three_against_three_cannot_go_below_p_005(self) -> None:
+        self.assertEqual(bench.perm_p([1.6, 1.7, 2.3], [1.0, 1.2, 1.4]), 0.05)
+        self.assertEqual(bench.perm_p([1.0, 1.2, 1.4], [1.6, 1.7, 2.3]), 1.0)
+
+    def test_a_split_that_moves_between_like_runs_is_not_an_improvement(self) -> None:
+        """(2026-10-21) 같은 조건 6회를 앞뒤로 나누면 범위 규칙이 「개선」을 냈다(0.87~0.93 대 0.70~0.81)."""
+        base = [total(0.87), total(0.93), total(0.88), total(0.70), total(0.75), total(0.81)]
+        self.assertEqual(bench.aa(base, bench.PREREGISTERED)["환산 비용"], "줄어듦")
+        got = bench.compare(base, [total(0.60), total(0.62), total(0.65)])
+        self.assertTrue(got["목표 지표"]["환산 비용"]["판정"].startswith("판정 불가(기준끼리도"))
+        self.assertEqual(got["결론"], "판정 불가")
+
+
+def rejudge_total(cost: float, secs: int = 100, caught=12, out_of_scope=2, intended=0, errors=9) -> dict:
+    t = {"완주": True, "종료": "완료", "재판정 환산 비용": cost, "재판정 호출 초": secs, "지시 밖 짚은 줄": out_of_scope,
+         "지시 안 뜻 바뀜 짚은 줄": intended, "1층 오류(끝)": errors}
+    if caught is not None:
+        t["재판정 함정 회수"] = caught
+    return t
+
+
+class RejudgeRuleTests(unittest.TestCase):
+
+    RULE = bench.REJUDGE_RULE
+
+    def test_cheaper_rejudges_that_still_catch_the_traps_improve(self) -> None:
+        base = [rejudge_total(0.40), rejudge_total(0.42), rejudge_total(0.45)]
+        got = bench.compare(base, [rejudge_total(0.30), rejudge_total(0.31), rejudge_total(0.33)], self.RULE)
+        self.assertEqual(got["결론"], "개선")
+
+    def test_missing_two_traps_beats_saved_cost(self) -> None:
+        base = [rejudge_total(0.40), rejudge_total(0.42), rejudge_total(0.45)]
+        got = bench.compare(base, [rejudge_total(0.30), rejudge_total(0.31, caught=10), rejudge_total(0.33)], self.RULE)
+        self.assertEqual(got["결론"], "정확도 악화")
+
+    def test_missing_an_out_of_scope_change_beats_saved_cost(self) -> None:
+        base = [rejudge_total(0.40), rejudge_total(0.42), rejudge_total(0.45)]
+        got = bench.compare(base, [rejudge_total(0.30), rejudge_total(0.31, out_of_scope=1), rejudge_total(0.33)],
+                            self.RULE)
+        self.assertEqual(got["결론"], "정확도 악화")
+
+    def test_runs_without_traps_are_compared_on_cost_but_never_improve(self) -> None:
+        base = [rejudge_total(0.40, caught=None)] * 3
+        got = bench.compare(base, [rejudge_total(0.30, caught=None)] * 3, self.RULE)
+        self.assertTrue(got["결론"].startswith("판정 불가"), got["결론"])
+        self.assertIn("재판정 함정 회수", got["정확도"])
+
+    def test_stage_metrics_are_rebuilt_from_the_rounds_of_old_runs(self) -> None:
+        with tempfile.TemporaryDirectory() as d:
+            run = Path(d) / "old" / "20261020-000000"
+            run.mkdir(parents=True)
+            rounds = [{"환산 비용": 0.5, "초": 150, "출력 토큰": 9, "캐시 쓰기": 9, "캐시 읽기": 9},
+                      {"환산 비용": 0.2, "초": 40, "출력 토큰": 3, "캐시 쓰기": 5, "캐시 읽기": 7},
+                      {"환산 비용": 0.1, "초": 10, "출력 토큰": 1, "캐시 쓰기": 2, "캐시 읽기": 4}]
+            (run / "summary.json").write_text(json.dumps({"rounds": rounds, "total": {"완주": True}}), encoding="utf-8")
+            got = bench.runs_of(Path(d), "old")[0]
+        self.assertEqual((got["재판정 환산 비용"], got["재판정 호출 초"], got["재판정 캐시 쓰기"]), (0.3, 50, 7))
 
 
 if __name__ == "__main__":

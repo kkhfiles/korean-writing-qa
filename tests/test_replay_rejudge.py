@@ -91,6 +91,43 @@ class ReplayTests(unittest.TestCase):
         key = json.loads((out / "t" / "key.json").read_text(encoding="utf-8"))
         self.assertEqual({"chunk", "block"}, set(next(iter(key.values())).values()))
 
+    def test_effort_reaches_the_call_only_when_asked(self) -> None:
+        low, plain = Scripted([[]]), Scripted([[]])
+        replay.run("t", self.cases, ["chunk@low"], 1, low.pair(), "opus", self.dir / "runs")
+        replay.run("u", self.cases, ["chunk"], 1, plain.pair(), "opus", self.dir / "runs")
+        self.assertEqual("low", low.calls[0].get("effort"))
+        self.assertNotIn("effort", plain.calls[0])
+        self.assertEqual(("chunk", False, "high"), replay.parse_mode("chunk@bare+high"))
+        with self.assertRaises(ValueError):
+            replay.parse_mode("chunk@huge")
+
+    def test_cases_where_every_mode_sent_the_same_prompt_are_split_out(self) -> None:
+        """(2026-10-21) 창이 chunk 로 돌아간 사례는 두 방식이 같은 입력이었는데 차이로 셌다."""
+        rows = [{"case": "a", "mode": "chunk", "prompts": ["p1"], "calls": 1, "cost": 0.5, "findings": [], "short": [],
+                 "cache_write": 1000, "cache_read": 0, "output": 100},
+                {"case": "a", "mode": "fixed", "prompts": ["p1"], "calls": 1, "cost": 0.1, "findings": [], "short": [],
+                 "cache_write": 0, "cache_read": 1000, "output": 100},
+                {"case": "b", "mode": "chunk", "prompts": ["p2"], "calls": 1, "cost": 0.4, "findings": [], "short": [],
+                 "cache_write": 2000, "cache_read": 0, "output": 100},
+                {"case": "b", "mode": "fixed", "prompts": ["p3"], "calls": 1, "cost": 0.2, "findings": [], "short": [],
+                 "cache_write": 500, "cache_read": 0, "output": 100}]
+        got = replay.summarize(rows)
+        self.assertEqual(1, got["모든 방식이 같은 입력인 사례"])
+        self.assertEqual({"chunk": 1, "fixed": 1}, {m: v["runs"] for m, v in got["입력이 달랐던 사례만"].items()})
+        # 같은 입력이면 캐시와 뗀 비용도 같다 — 금액 0.5 대 0.1 은 순서 효과
+        a = replay._tally(rows[:2])
+        self.assertEqual(a["chunk"]["캐시와 뗀 비용"], a["fixed"]["캐시와 뗀 비용"])
+
+    def test_rescore_fingerprints_without_calling(self) -> None:
+        rows = [{"case": self.cases[0]["file"], "mode": m, "calls": 1, "cost": 0.1, "findings": [], "short": []}
+                for m in ("chunk", "chunk@bare")]
+        got = replay.rescore(rows, self.cases)
+        self.assertTrue(all(r["prompts"] for r in got))
+        # 사고 깊이만 다른 방식은 같은 입력으로 치지 않는다
+        deep = replay.rescore([dict(rows[0], mode="chunk@high")], self.cases)
+        self.assertNotEqual(got[0]["prompts"], deep[0]["prompts"])
+        self.assertEqual(self.log_before, judge.LOG.read_text(encoding="utf-8"))
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -16,7 +16,9 @@
 60% 가 캐시 쓰기였다.
 
     python -X utf8 scripts/bench_loop.py run <이름> [--times 3] [--policy all|known] [--rounds 6] [--limit N]
-    python -X utf8 scripts/bench_loop.py compare <기준 이름> <후보 이름>
+    python -X utf8 scripts/bench_loop.py compare <기준 이름> <후보 이름> [--rule all|rejudge]
+    python -X utf8 scripts/bench_loop.py run <이름> --policy session --reuse0 <실행 폴더> --traps [--rejudge-effort low]
+    python -X utf8 scripts/bench_loop.py aa <이름> [--rule all|rejudge]
 
 - **문서** — 사용자가 짚은 표현 대장의 문장(`data/cases/flagged-rounds.jsonl`)과 기여 시료의 정상 문장
   (`data/cases/contributed.jsonl` 의 expect=clean). 시료마다 한 줄 · 순서 고정. 머리말 `form: prose` —
@@ -34,12 +36,31 @@
 - ⛔ **정상 줄 지적은 오탐률이 아니다** — 정상 시료는 1층에서 정상인 문장이라 2층 결함이 섞여 있다.
 - ⛔ **판정기를 실제로 부른다** — 구독 한도를 쓴다(한 번에 출력 6만여 토큰 · 9분 안팎 · 환산 1.7~2.3달러,
   2026-10-14 실측). 7일 창이 차 있으면 다른 업무 세션까지 멈출 수 있으니 돌리기 전에 사용률을 본다.
+
+**3판 — 재판정만 바꾸는 실험용**(2026-10-21 회고 · 외부 검토 둘)
+
+- **0회차 재사용**(`--reuse0 <실행 폴더>`) — 2판은 실행마다 같은 0회차를 다시 불러 세션 흉내 비용의 42% 를
+  썼고, 0회차 출력의 흔들림(출력 1.8만~2.9만 토큰)이 재판정 차이를 가렸다. 재판정 방식만 견줄 때는 한 번 낸
+  0회차 판정을 그대로 실어 1회차부터 돈다. 시작 문서와 판단 규칙이 같아야 받는다. 실은 0회차가 시스템
+  프롬프트를 캐시에 올려 두지 않으므로 첫 재판정이 그 몫을 쓴다 — 견주는 쪽이 모두 같은 조건이라 비교는 선다.
+- **재판정 함정**(`--traps`) — 2판의 회수 지표는 0회차 지적과 시작 문서만 세어, 재판정만 바꾼 변경의 정확도를
+  하나도 못 봤다. 0회차를 처리한 뒤 잘못 고친 줄(뜻을 바꿈 · 짚힌 표현을 되살림 · 논리를 깸)을 심고
+  (`data/cases/rejudge-traps.jsonl`) 첫 재판정이 그 줄을 짚었는지 센다. 새 1층 오류는 심지 않는다 — 1층
+  검사기가 끝난 문서에서 글자로 잡고(「1층 오류(끝)」) 2층 재판정의 몫이 아니다.
+- **재판정 단계 지표** — 「재판정 환산 비용」 · 「재판정 호출 초」 등 1회차부터의 합. 옛 실행은 회차 기록으로
+  되살려 견준다(`compare --rule rejudge`).
+- **같은 조건끼리 견줌**(`aa <이름>`) — 같은 조건 6회를 앞뒤 셋으로 나눠 범위 규칙을 대면 「개선」이 나왔다
+  (sysreuse 1~3회 0.87~0.93 대 4~6회 0.70~0.81달러). 기준이 6회 이상이면 compare 가 기준끼리도 견주고,
+  거기서 갈리는 지표의 판정은 「판정 불가」로 내린다. 셋 대 셋 순열검정의 가장 작은 단측 p 는 0.05 다.
+- **재판정 사고 깊이**(`--rejudge-effort low`) — 1회차부터의 호출에만 준다. 실사용 판정기는 바꾸지 않는다.
 """
 from __future__ import annotations
 
 import argparse
 import contextlib
+import hashlib
 import io
+import itertools
 import json
 import os
 import re
@@ -83,6 +104,24 @@ PREREGISTERED = {
     "guard_ceiling": {"1층 오류(끝)": 2},
 }
 
+#: 비교 규칙 3판 — 재판정만 바꾸는 실험용. 3판 기준선을 재기 전에 적었다(2026-10-21).
+#: 0회차를 재사용하면 0회차 지표는 양쪽이 같아 정확도 근거가 못 된다 — 재판정 함정과 지시 편집으로 본다.
+REJUDGE_RULE = {
+    "runs": 3,
+    "targets": ["재판정 환산 비용", "재판정 호출 초"],
+    "report": ["재판정 출력 토큰", "재판정 캐시 쓰기", "재판정 캐시 읽기", "재판정 걸린 시간", "환산 비용", "걸린 시간",
+               "호출", "회차", "되돌림 닫기", "되살림 닫기", "상한 올림", "사람 답", "대상 3줄 이하 재판정",
+               "지시 안 뜻 바뀜 짚은 줄"],
+    # 함정 12줄 중 첫 재판정이 짚은 줄 — 판정기 흔들림을 보아 한 줄까지는 봐준다. 지시 밖 변경은 하나도 못 놓친다
+    "guard_floor": {"재판정 함정 회수": 1, "지시 밖 짚은 줄": 0},
+    # 지시대로 바꾼 줄을 「뜻이 바뀐 곳」으로 짚은 수(헛짚음)와 끝난 문서의 1층 오류
+    "guard_ceiling": {"지시 안 뜻 바뀜 짚은 줄": 1, "1층 오류(끝)": 2},
+}
+RULES = {"all": PREREGISTERED, "rejudge": REJUDGE_RULE}
+#: 재판정 단계 지표 — 회차 기록의 1회차부터를 더한다(옛 실행도 되살릴 수 있게)
+STAGE = {"재판정 환산 비용": "환산 비용", "재판정 호출 초": "초", "재판정 출력 토큰": "출력 토큰",
+         "재판정 캐시 쓰기": "캐시 쓰기", "재판정 캐시 읽기": "캐시 읽기"}
+
 
 def load_samples(limit: int = 0) -> tuple[list[dict], list[dict]]:
     def rows(rel: str) -> list[dict]:
@@ -96,6 +135,52 @@ def load_edits() -> list[dict]:
     """사용자 지시로 뜻을 일부러 바꾸는 편집 — 지어낸 문장(`data/cases/instructed-edits.jsonl`)."""
     p = ROOT / "data" / "cases" / "instructed-edits.jsonl"
     return [json.loads(l) for l in p.read_text(encoding="utf-8").splitlines() if l.strip()]
+
+
+def load_traps() -> list[dict]:
+    """재판정 함정 — 0회차 뒤에 심는 잘못 고친 줄(`data/cases/rejudge-traps.jsonl`, 지어낸 수정)."""
+    p = ROOT / "data" / "cases" / "rejudge-traps.jsonl"
+    return [json.loads(l) for l in p.read_text(encoding="utf-8").splitlines() if l.strip()]
+
+
+def stage_totals(rows: list[dict]) -> dict:
+    """1회차부터의 합 — 재판정 단계 지표."""
+    return {k: round(sum(r.get(src) or 0 for r in rows[1:]), 4) for k, src in STAGE.items()}
+
+
+def copy_round0(source: Path, folder: Path, doc: Path) -> Path:
+    """앞선 실행의 0회차 판정을 이 실행의 판정 기록에 싣는다 — 문서 열쇠와 시각만 이 실행 것으로 바꾼다.
+
+    시작 문서나 판단 규칙이 다르면 받지 않는다(다른 일감의 0회차가 된다).
+    """
+    if (source / "start.md").read_text(encoding="utf-8") != (folder / "start.md").read_text(encoding="utf-8"):
+        raise ValueError(f"시작 문서가 다릅니다 — {source}")
+    calls = json.loads((source / "round0.json").read_text(encoding="utf-8"))[0]["calls"]
+    rows = [json.loads(l) for l in (source / "judge.jsonl").read_text(encoding="utf-8").splitlines() if l.strip()]
+    first = rows[:len(calls)]
+    if any(r.get("targets") is not None for r in first):
+        raise ValueError(f"0회차 기록을 못 가릅니다 — {source}")
+    now = hashlib.sha256(judge.probe.rules_for("guided").encode("utf-8")).hexdigest()[:12]   # 판정기의 rules 와 같은 식
+    if any(r.get("rules") != now for r in first):
+        raise ValueError(f"판단 규칙이 바뀐 뒤의 실행이 아닙니다(규칙 {first[0].get('rules')} · 지금 {now}) — {source}")
+    key = coverage.doc_key(doc)
+    for r in first:
+        r.update(doc=str(doc), key=key, at=datetime.now().isoformat(timespec="seconds"), when=time.time())
+        judge.log_call(r)
+    out = folder / "round0.json"
+    out.write_text((source / "round0.json").read_text(encoding="utf-8"), encoding="utf-8")
+    return out
+
+
+def with_effort(backend, state: dict):
+    """1회차부터의 호출에만 사고 깊이를 준다 — `state["effort"]` 가 비어 있으면 그대로 부른다."""
+    call, parse = backend
+
+    def call_with(**kw):
+        if state.get("effort"):
+            kw["effort"] = state["effort"]
+        return call(**kw)
+    return call_with, parse
 
 
 def build_doc(flagged: list[dict], clean: list[dict],
@@ -442,11 +527,14 @@ def reclosed(dismissals: Path) -> int:
 
 def run_session(folder: Path, flagged: list[dict], clean: list[dict], edits: list[dict], mode: str = "batch",
                 max_calls: int = 60, backend=None, echo=None, context: str = judge.DEFAULT_CONTEXT,
-                instructions: bool = False) -> dict:
+                instructions: bool = False, reuse0: Path | None = None, traps: list[dict] = (),
+                effort: str | None = None) -> dict:
     """세션처럼 처리하며 고리를 돈다 — 실사용 흐름 재생(외부 검토의 둘째 트랙). 「전부 적용」은 스트레스 시험이다.
 
     0회차를 처리한 뒤 사용자 지시 편집을 넣는다. `batch` 는 열린 지적을 다 처리하고 다시 판정하고, `one` 은 글을
     하나 고칠 때마다 다시 판정한다 — 실사용 재판정의 60% 가 대상 3줄 이하였다(10/07~10/14).
+    `reuse0` 이면 0회차를 부르지 않고 그 실행의 판정을 싣고, `traps` 는 지시 편집과 같은 때 심는다(3판).
+    `effort` 는 1회차부터의 호출에만 준다.
     """
     folder.mkdir(parents=True)
     lines, meta = build_doc(flagged, clean, edits)
@@ -469,7 +557,12 @@ def run_session(folder: Path, flagged: list[dict], clean: list[dict], edits: lis
     first_hits: set[int] = set()
     first_fixes: list[dict] = []
     finished, state, calls_total = True, "멈춤", 0
-    started = time.time()
+    by_id = {m["id"]: n for n, m in meta.items()}
+    trap_at = {by_id[t["target"]]: t for t in traps}
+    effort_state: dict = {}
+    if effort:
+        backend = with_effort(backend or judge.load_backend(judge.pick_backend("auto")), effort_state)
+    started = rejudge_started = time.time()
     with isolated(folder), watch_limits(limits):
         for rnd in range(10_000):
             if calls_total >= max_calls:
@@ -477,13 +570,18 @@ def run_session(folder: Path, flagged: list[dict], clean: list[dict], edits: lis
                 break
             out = folder / f"round{rnd}.json"
             argv = [str(doc), "--json", str(out)] + (["--since", "main", "--context", context] if rnd else [])
-            with contextlib.redirect_stdout(said):
-                rc = judge.main(argv, backend=backend)
+            effort_state["effort"] = effort if rnd else None
+            if rnd == 0 and reuse0:
+                copy_round0(reuse0, folder, doc)
+                rc = 0
+            else:
+                with contextlib.redirect_stdout(said):
+                    rc = judge.main(argv, backend=backend)
             if rc != 0 or not out.is_file():
                 finished, state = False, "실패"
                 break
             res = json.loads(out.read_text(encoding="utf-8"))[0]
-            calls = res["calls"]
+            calls = [] if rnd == 0 and reuse0 else res["calls"]      # 실은 0회차는 이 실행이 부른 것이 아니다
             calls_total += len(calls)
             if rnd == 0:
                 first_hits = {f["line"] for f in res["findings"] if isinstance(f.get("line"), int)}
@@ -495,7 +593,11 @@ def run_session(folder: Path, flagged: list[dict], clean: list[dict], edits: lis
                     if m["kind"] == "지시":
                         cur[n - 1] = m["after"]
                         did += 1
+                for n, t in trap_at.items():      # 세션이 잘못 고친 줄 — 첫 재판정이 짚어야 한다
+                    cur[n - 1] = "- " + t["after"]
+                    did += 1
                 doc.write_text("\n".join(cur) + "\n", encoding="utf-8")
+                rejudge_started = time.time()
                 if instructions:      # 세션이 지시를 기록한 뒤 다시 판정한다(--instructed)
                     for n, m in meta.items():
                         if m["kind"] == "지시":
@@ -522,7 +624,11 @@ def run_session(folder: Path, flagged: list[dict], clean: list[dict], edits: lis
         # 지시로 바꾼 줄 가운데 「뜻이 바뀐 곳」을 짚은 줄 — 지시 안은 적을수록, 지시 밖은 다 짚어야 좋다
         moved = {f["line"] for f in all_found if judge.INTENT_ONLY in str(f.get("category") or "")}
         again = reclosed(coverage.DISMISSALS)
+        first_rejudge = folder / "round1.json"
+        caught = ({f["line"] for f in json.loads(first_rejudge.read_text(encoding="utf-8"))[0]["findings"]}
+                  if first_rejudge.is_file() else set()) & set(trap_at)
     elapsed = round(time.time() - started)
+    rejudge_elapsed = round(time.time() - rejudge_started)
     (folder / "judge-output.txt").write_text(said.getvalue(), encoding="utf-8")
 
     flagged_at = {n for n, m in meta.items() if m["kind"] == "짚음"}
@@ -549,38 +655,88 @@ def run_session(folder: Path, flagged: list[dict], clean: list[dict], edits: lis
              "1층 오류(처음)": errors_start, "1층 오류(끝)": errors_end,
              "5시간 사용률": [five[0], five[-1]] if five else None,
              "5시간 사용률 변화": round(five[-1] - five[0], 2) if len(five) > 1 else None,
-             "7일 사용률": [week[0], week[-1]] if week else None}
+             "7일 사용률": [week[0], week[-1]] if week else None,
+             **stage_totals(rows), "재판정 걸린 시간": rejudge_elapsed,
+             "0회차 재사용": str(reuse0) if reuse0 else None, "재판정 사고 깊이": effort,
+             "함정": len(trap_at)}
+    if trap_at:
+        total["재판정 함정 회수"] = len(caught)
+        total["재판정 함정 회수(종류)"] = {k: f"{sum(1 for n in caught if trap_at[n]['kind'] == k)}"
+                                          f"/{sum(1 for t in trap_at.values() if t['kind'] == k)}"
+                                     for k in dict.fromkeys(t["kind"] for t in trap_at.values())}
+        total["놓친 함정"] = sorted(t["trap_id"] for n, t in trap_at.items() if n not in caught)
     summary = {"rounds": rows, "total": total}
     (folder / "summary.json").write_text(json.dumps(summary, ensure_ascii=False, indent=1), encoding="utf-8")
     return summary
 
 
 def runs_of(out: Path, name: str) -> list[dict]:
-    return [json.loads(p.read_text(encoding="utf-8"))["total"] for p in sorted((out / name).glob("*/summary.json"))]
+    """실행마다 total — 3판 전 실행은 재판정 단계 지표를 회차 기록에서 되살린다(「재판정 걸린 시간」은 못 되살림)."""
+    got = []
+    for p in sorted((out / name).glob("*/summary.json")):
+        s = json.loads(p.read_text(encoding="utf-8"))
+        got.append({**stage_totals(s.get("rounds") or []), **s["total"]})
+    return got
 
 
 def _verdict(bv: list, cv: list) -> str:
     return "줄어듦" if cv[-1] < bv[0] else "늘어남" if cv[0] > bv[-1] else "판정 불가(겹침)"
 
 
-def compare(base: list[dict], cand: list[dict], rule: dict = PREREGISTERED) -> dict:
-    """두 실행 묶음(각 실행의 total)을 미리 적은 규칙으로 견준다. 완주 못 한 실행은 뺀다."""
+def perm_p(bv: list, cv: list) -> float | None:
+    """후보 평균이 기준보다 낮다는 쪽의 정확 순열검정 단측 p — 셋 대 셋이면 가장 작은 값이 0.05 다."""
+    pool, k = list(bv) + list(cv), len(cv)
+    if not bv or not cv or len(pool) > 16:
+        return None
+    seen = sum(cv) / k - sum(bv) / len(bv)
+    diffs = []
+    for idx in itertools.combinations(range(len(pool)), k):
+        c = [pool[i] for i in idx]
+        b = [pool[i] for i in range(len(pool)) if i not in idx]
+        diffs.append(sum(c) / k - sum(b) / len(b))
+    return round(sum(1 for d in diffs if d <= seen + 1e-12) / len(diffs), 3)
+
+
+def aa(runs: list[dict], rule: dict) -> dict | None:
+    """같은 조건의 실행을 앞뒤 둘로 나눠 규칙대로 견준다 — 여기서 갈리는 지표는 그 규칙으로 못 가른다."""
+    done = [t for t in runs if t.get("완주")]
+    if len(done) < 2 * rule["runs"]:
+        return None
+    half = len(done) // 2
+    got = compare(done[:half], done[half:2 * half], dict(rule, runs=min(rule["runs"], half)), check_aa=False)
+    return {k: v["판정"] for k, v in (got.get("목표 지표") or {}).items()}
+
+
+def compare(base: list[dict], cand: list[dict], rule: dict = PREREGISTERED, check_aa: bool = True) -> dict:
+    """두 실행 묶음(각 실행의 total)을 미리 적은 규칙으로 견준다. 완주 못 한 실행은 뺀다.
+
+    기준이 규칙 회차의 두 배 이상이면 기준끼리도 견주어(`aa`), 같은 조건끼리 갈린 지표는 「판정 불가」로 내린다.
+    """
     b = [t for t in base if t.get("완주")]
     c = [t for t in cand if t.get("완주")]
     if len(b) < rule["runs"] or len(c) < rule["runs"]:
         return {"결론": "판정 불가",
                 "까닭": f"완주한 실행이 기준 {len(b)}회 · 후보 {len(c)}회 — 각 {rule['runs']}회 이상 필요"}
-    missing = [k for k in [*rule["targets"], *rule["guard_floor"], *rule["guard_ceiling"]]
-               if any(t.get(k) is None for t in b + c)]
+    def lacking(keys) -> list[str]:
+        return [k for k in keys if any(t.get(k) is None for t in b + c)]
+    missing = lacking(rule["targets"])
     if missing:
         return {"결론": "판정 불가", "까닭": f"규칙이 보는 값이 없는 실행이 있음 — {', '.join(missing)}(다른 판의 실행)"}
+    # 정확도 값이 없는 옛 실행(함정 없는 2판)도 비용은 견준다 — 다만 「개선」으로는 안 올린다
+    blind = lacking([*rule["guard_floor"], *rule["guard_ceiling"]])
     worse = [f"{k} {min(t[k] for t in c)} < 기준 최솟값 {min(t[k] for t in b)} - {tol}"
-             for k, tol in rule["guard_floor"].items() if min(t[k] for t in c) < min(t[k] for t in b) - tol]
+             for k, tol in rule["guard_floor"].items()
+             if k not in blind and min(t[k] for t in c) < min(t[k] for t in b) - tol]
     worse += [f"{k} {max(t[k] for t in c)} > 기준 최댓값 {max(t[k] for t in b)} + {tol}"
-              for k, tol in rule["guard_ceiling"].items() if max(t[k] for t in c) > max(t[k] for t in b) + tol]
+              for k, tol in rule["guard_ceiling"].items()
+              if k not in blind and max(t[k] for t in c) > max(t[k] for t in b) + tol]
     targets = {k: {"기준": sorted(t[k] for t in b), "후보": sorted(t[k] for t in c)} for k in rule["targets"]}
-    for v in targets.values():
+    same = aa(b, rule) if check_aa else None
+    for k, v in targets.items():
         v["판정"] = _verdict(v["기준"], v["후보"])
+        v["단측 p(후보가 낮음)"] = perm_p(v["기준"], v["후보"])
+        if same and not same[k].startswith("판정 불가"):
+            v["판정"] = f"판정 불가(기준끼리도 {same[k]})"
     report = {k: {"기준": sorted(t[k] for t in b if t.get(k) is not None),
                   "후보": sorted(t[k] for t in c if t.get(k) is not None)} for k in rule["report"]}
     states = {"기준": [t.get("종료") for t in b], "후보": [t.get("종료") for t in c]}
@@ -590,12 +746,15 @@ def compare(base: list[dict], cand: list[dict], rule: dict = PREREGISTERED) -> d
     elif "늘어남" in verdicts:
         result = "악화"
     elif "줄어듦" in verdicts:
-        result = "개선"
+        result = "판정 불가(비용은 줄었으나 정확도 값 없음)" if blind else "개선"
     else:
         result = "판정 불가"
-    out = {"결론": result, "정확도": worse or "유지", "목표 지표": targets, "종료": states, "참고": report}
+    accuracy = worse or (f"판정 불가 — 값 없음: {', '.join(blind)}" if blind else "유지")
+    out = {"결론": result, "정확도": accuracy, "목표 지표": targets, "종료": states, "참고": report}
     if len(b) > rule["runs"] or len(c) > rule["runs"]:
         out["탐색적"] = f"미리 정한 {rule['runs']}회보다 많이 돌림 — 앞 결과를 보고 더한 것이면 이 결론은 탐색적"
+    if check_aa:
+        out["기준끼리"] = same or f"기준이 {2 * rule['runs']}회 미만이라 안 견줌 — 범위 규칙의 「개선」은 단독 근거가 못 됨"
     return out
 
 
@@ -614,12 +773,25 @@ def main(argv=None) -> int:
     r.add_argument("--rounds", type=int, default=6)
     r.add_argument("--context", choices=judge.CONTEXT_MODES, default=judge.DEFAULT_CONTEXT, help="재판정 문맥(판정기 --context)")
     r.add_argument("--limit", type=int, default=0, help="묶음마다 앞에서부터 이만큼(0 = 전부)")
+    r.add_argument("--reuse0", type=Path, default=None, help="session 에서 이 실행 폴더의 0회차 판정을 실음(3판)")
+    r.add_argument("--traps", action="store_true", help="session 에서 0회차 뒤 재판정 함정을 심음(3판)")
+    r.add_argument("--rejudge-effort", choices=("low", "medium", "high"), default=None,
+                   help="session 의 1회차부터 호출에만 주는 사고 깊이")
     c = sub.add_parser("compare", help="미리 적은 규칙으로 두 이름을 견줌")
     c.add_argument("base")
     c.add_argument("cand")
+    c.add_argument("--rule", choices=tuple(RULES), default="all")
+    s = sub.add_parser("aa", help="같은 이름의 실행을 앞뒤로 나눠 규칙대로 견줌")
+    s.add_argument("name")
+    s.add_argument("--rule", choices=tuple(RULES), default="all")
     a = ap.parse_args(argv)
     if a.cmd == "compare":
-        print(json.dumps(compare(runs_of(a.out, a.base), runs_of(a.out, a.cand)), ensure_ascii=False, indent=1))
+        got = compare(runs_of(a.out, a.base), runs_of(a.out, a.cand), RULES[a.rule])
+        print(json.dumps(got, ensure_ascii=False, indent=1))
+        return 0
+    if a.cmd == "aa":
+        got = aa(runs_of(a.out, a.name), RULES[a.rule])
+        print(json.dumps(got or f"완주한 실행이 {2 * RULES[a.rule]['runs']}회 미만", ensure_ascii=False, indent=1))
         return 0
     flagged, clean = load_samples(a.limit)
     with locked(a.out / a.name):
@@ -628,7 +800,8 @@ def main(argv=None) -> int:
             print(f"── {i + 1}/{a.times} · {folder}", flush=True)
             echo = lambda s: print(s, flush=True)  # noqa: E731
             got = (run_session(folder, flagged, clean, load_edits(), a.mode, a.max_calls, echo=echo, context=a.context,
-                               instructions=a.instructions)
+                               instructions=a.instructions, reuse0=a.reuse0,
+                               traps=load_traps() if a.traps else (), effort=a.rejudge_effort)
                    if a.policy == "session"
                    else run_once(folder, flagged, clean, a.policy, a.rounds, echo=echo, context=a.context))
             print(json.dumps(got["total"], ensure_ascii=False), flush=True)
