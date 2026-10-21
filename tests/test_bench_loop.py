@@ -412,6 +412,13 @@ class CompareTests(unittest.TestCase):
     def test_more_runs_than_registered_is_exploratory(self) -> None:
         self.assertIn("탐색적", bench.compare(self.BASE, [total(1.0)] * 4))
 
+    def test_twice_the_runs_for_the_baseline_split_is_not_exploratory(self) -> None:
+        """(2026-10-21) 기준끼리 견주려고 미리 정한 기준 6회에도 「탐색적」이 붙었다 — 기준은 두 배까지가 계획 안."""
+        base = [total(1.6), total(1.7), total(2.3)] * 2
+        self.assertNotIn("탐색적", bench.compare(base, [total(1.0)] * 3))
+        self.assertIn("탐색적", bench.compare(base + [total(1.8)], [total(1.0)] * 3))
+        self.assertIn("탐색적", bench.compare(self.BASE, [total(1.0)] * 6), "후보는 두 배가 계획 안이 아닙니다")
+
     def test_three_against_three_cannot_go_below_p_005(self) -> None:
         self.assertEqual(bench.perm_p([1.6, 1.7, 2.3], [1.0, 1.2, 1.4]), 0.05)
         self.assertEqual(bench.perm_p([1.0, 1.2, 1.4], [1.6, 1.7, 2.3]), 1.0)

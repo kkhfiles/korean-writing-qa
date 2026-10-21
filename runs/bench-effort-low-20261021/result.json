@@ -33,5 +33,5 @@
   "재생": "~/.claude/state/korean-replay-runs/effort-low-1021 (저장소 밖 · 사내 원문 포함)",
   "비교": "python -X utf8 scripts/bench_loop.py compare v3-medium-1021 v3-low-1021 --rule rejudge"
  },
- "도구 쪽 메모": "compare 가 「미리 정한 3회보다 많이 돌림 — 탐색적」을 붙였으나 기준 6회는 사전 기준에 적은 회차라 탐색적이 아님"
+ "도구 쪽 메모": "compare 가 「미리 정한 3회보다 많이 돌림 — 탐색적」을 붙였으나 기준 6회는 사전 기준에 적은 회차라 탐색적이 아님 · 같은 날 고침(기준은 두 배까지 계획 안)"
 }

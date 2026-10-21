@@ -751,8 +751,11 @@ def compare(base: list[dict], cand: list[dict], rule: dict = PREREGISTERED, chec
         result = "판정 불가"
     accuracy = worse or (f"판정 불가 — 값 없음: {', '.join(blind)}" if blind else "유지")
     out = {"결론": result, "정확도": accuracy, "목표 지표": targets, "종료": states, "참고": report}
-    if len(b) > rule["runs"] or len(c) > rule["runs"]:
-        out["탐색적"] = f"미리 정한 {rule['runs']}회보다 많이 돌림 — 앞 결과를 보고 더한 것이면 이 결론은 탐색적"
+    # 기준은 기준끼리 견주려고 두 배까지 미리 정해 돌린다(`aa`) — 그만큼은 계획 안
+    base_runs = 2 * rule["runs"] if check_aa else rule["runs"]
+    if len(b) > base_runs or len(c) > rule["runs"]:
+        out["탐색적"] = (f"미리 정한 횟수(기준 {base_runs}회 · 후보 {rule['runs']}회)보다 많이 돌림"
+                       " — 앞 결과를 보고 더한 것이면 이 결론은 탐색적")
     if check_aa:
         out["기준끼리"] = same or f"기준이 {2 * rule['runs']}회 미만이라 안 견줌 — 범위 규칙의 「개선」은 단독 근거가 못 됨"
     return out
