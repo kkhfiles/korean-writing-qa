@@ -205,6 +205,32 @@ def translationese_hits(text):
             break
 
 
+#: **「~가 아니라」 반복** — 2026-10-23 im-not-ai(epoko77-ai, MIT) 2.3.2 를 받아 보고 넣었다.
+#   그쪽 실측(칼럼·에세이 사람 60편 대 AI 60편)에서 판별력이 가장 강한 신호였다(9.2배).
+#   업무 문서로 다시 쟀다 — 사람 업무 문서(노션 · 제품 문서 · 사내 규정, 2023년까지 고친 것)
+#   36만 자에서 한글 1만 자당 0.33 · AI 업무 문서 35만 자에서 3.39(10배).
+#   ⚠️ 한 번 쓴 것은 정상이다 — 사람 문서에도 「함수를 비교하는 것이 아니라 결과를 비교」가
+#      나온다. 신호는 **한 문서에 몰리는 것**이다: 300자 넘는 문서 중 두 번 이상 쓴 비율이
+#      사람 284편 중 1(0.4%) · AI 238편 중 17(7.1%). 그래서 줄이 아니라 문서 단위로 세고
+#      주의로만 낸다. 긴 문서는 두세 번이어도 사람 수준이라 밀도도 함께 본다.
+NOT_BUT = re.compile(r'[가-힣]+(?:가|이)\s?아니라(?=\s)')
+NOT_BUT_MIN = 2  # 문서 안 건수
+NOT_BUT_DENSITY = 3.0  # 한글 1만 자당 — 사람 평균 0.33 · AI 3.39
+NOT_BUT_FIX = '가장 필요한 한 번만 두고 나머지는 뒷말을 바로 단언할 것'
+_HANGUL = re.compile(r'[가-힣]')
+
+
+def not_but_pileup(texts):
+    """인용을 지운 글 조각들에서 「~가 아니라」가 몰렸으면 (조각 번호, 짚은 말) 목록과
+    건수 · 밀도를 낸다. 안 몰렸으면 빈 목록."""
+    hits = [(i, h) for i, t in enumerate(texts) for h in NOT_BUT.finditer(t)]
+    chars = sum(len(_HANGUL.findall(t)) for t in texts)
+    density = len(hits) / chars * 10000 if chars else 0.0
+    if len(hits) < NOT_BUT_MIN or density < NOT_BUT_DENSITY:
+        return [], len(hits), density
+    return hits, len(hits), density
+
+
 #: ★ **다른 낱말로 읽힘** — 수사 + 의존명사 「종」 + 주격 「이」가 「종이」(paper)가 된다.
 #   「설정 파일 두 종이 검증을 통과」·「세 종이 이미 다 적혀 있었다」는 종이 두 장·세 장으로
 #   읽힌다. 형태소 분석기조차 「한 종이 엔진」을 `종이/NNG` 로 읽었다(실측).
@@ -1727,7 +1753,7 @@ def scan_html(path, relaxed=False, form=None, rules=None):
     #    잡혀 있다.
     slot_chunks = [m.group(2) for m in re.finditer(
         r'<(li|dd|td|figcaption)(?![a-zA-Z])[^>]*>(.*?)</\1>', body, re.S)]
-    mix_sents, told = [], set()
+    mix_sents, told, not_but_texts = [], set(), []
     for p, count_mix in [(c, True) for c in chunks] + [(c, False) for c in slot_chunks]:
         t = strip(p)
         if not t or is_example(t):
@@ -1737,6 +1763,7 @@ def scan_html(path, relaxed=False, form=None, rules=None):
         # 개조식 결론 머리(「대체 아님 — …」)는 서술형이 아니라 그대로 지나간다.
         if count_mix:
             mix_sents.extend(sentences(t))
+        not_but_texts.append(mask(t))
         # 인용을 먼저 가리고 나눈다 — 여러 문장짜리 인용의 조각이 반말로 걸리지 않게
         for sent in sentences(mask(t)):
             for part in re.split(r'\s+[—–]\s+', sent):
@@ -1750,6 +1777,13 @@ def scan_html(path, relaxed=False, form=None, rules=None):
         warn.append(('말투 섞임',
                      f'{sent[:50]} — 이 문서는 존댓말 {np} · 반말 {nq} 이라 '
                      f'{side} 한 줄이 튄다'))
+    # 겹친 태그(`<li><p>…</p></li>`)는 같은 글이 두 번 들어오므로 한 번만 센다
+    not_but_texts = list(dict.fromkeys(not_but_texts))
+    _hits, _cnt, _den = not_but_pileup(not_but_texts)
+    for i, h in _hits:
+        warn.append(('「~가 아니라」 반복',
+                     f'「{h.group(0)}」 — 이 문서에 {_cnt}회(한글 1만 자당 {_den:.1f}) · '
+                     f'{NOT_BUT_FIX} · {excerpt(not_but_texts[i], h.group(0), 36)}'))
 
     # 4b. 제목 — 마크다운과 같은 규칙을 HTML 에도 건다.
     #     규칙(§1 개조식)은 진작 있었는데 이 경로에만 안 걸려 있었다. 그래서 값은
@@ -1986,7 +2020,7 @@ RULE_GROUPS = {
         '띄어 쓴 가운뎃점',
     ]),
     '번역투': ('번역에서 옮아온 문형', [
-        '이중 피동', '번역투 이중 조사', '번역투 그녀',
+        '이중 피동', '번역투 이중 조사', '번역투 그녀', '「~가 아니라」 반복',
     ]),
     '구조': ('찾아 읽기가 안 되는 갈래 — 문장은 멀쩡하다', [
         '제목 서술형', '제목 명사형 위반', '제목 형태 확인',
@@ -2016,7 +2050,9 @@ RULES_FILENAME = 'korean-qa.toml'
 INSTRUCTION_NAMES = {'CLAUDE.md', 'AGENTS.md', 'SKILL.md'}
 INSTRUCTION_DIRS = re.compile(r'[\\/](?:\.claude|\.agents|skills)[\\/]')
 #: 「낯선 사내 용어」도 뺀다 — 지시 파일에서는 정해 둔 내부 용어다(2026-10-06 · 정본).
-INSTRUCTION_SPARED = {'반말 서술형', '낯선 사내 용어'}
+#: 「「~가 아니라」 반복」도 뺀다 — 지시 파일은 「대체가 아니라 별도로 추가」처럼 구분을
+#: 세우는 글이라 밀도가 원래 높다(전역 지시 파일 1만 자당 10.6 · 2026-10-23 실측).
+INSTRUCTION_SPARED = {'반말 서술형', '낯선 사내 용어', '「~가 아니라」 반복'}
 #: Claude Code 작업 트리 — `<저장소>/.claude/worktrees/<이름>/`. 그 아래는 **저장소 사본**
 #: 이지 설정이 아니다. 떼고 남은 저장소 안 경로로 `.claude/` 를 본다.
 #: ⛔ 안 떼면 작업 트리 안의 문서가 통째로 지시 파일로 분류돼 반말을 안 봤다 — 같은
@@ -2549,6 +2585,16 @@ def scan_md(path, relaxed=False, form=None, rules=None):
             warn.append((n, '문장 끝 괄호 속 이름',
                          f'「({hit.group(1)})」 — {TRAIL_NAME_FIX} · '
                          f'{excerpt(line, hit.group(0), 40)}'))
+
+    # 2b. 「~가 아니라」 반복 — 문서 전체를 세야 해서 위 줄 단위 검사와 따로 본다
+    _cl = [(n, line) for n, line in body
+           if not line.strip().startswith('>') and not is_example(line.strip())]
+    _hits, _cnt, _den = not_but_pileup([mask(line) for _n, line in _cl])
+    for i, h in _hits:
+        n, line = _cl[i]
+        warn.append((n, '「~가 아니라」 반복',
+                     f'「{h.group(0)}」 — 이 문서에 {_cnt}회(한글 1만 자당 {_den:.1f}) · '
+                     f'{NOT_BUT_FIX} · {excerpt(line, h.group(0), 36)}'))
 
     # 3. 금지 라벨 (목록의 「라벨: 값」)
     for n, line in body:
