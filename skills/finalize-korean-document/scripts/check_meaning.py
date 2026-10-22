@@ -66,7 +66,10 @@ MEANING_MARKERS = {
     "계획·진행": re.compile(r"(예정|계획|할 것|하고 있|하는 중|중이|진행 중)"),
     "완료·단정": re.compile(r"(완료|했다|됐다|되었|끝냈|마쳤)"),
     "부정·범위": re.compile(r"(않|못하|없|아니|모두|전부|일부|대부분|만 )"),
-    "추정·유보": re.compile(r"(보인다|보임|듯|가능성|추정|일 수 있|것으로)"),
+    # 「~했을 수 있다」·「못할 수 있다」는 가능성이다. 그냥 「할 수 있다」는 대개 능력이라
+    # 넣지 않는다 — 넣으면 「도구가 시험을 수행할 수 있습니다」마다 유보로 센다.
+    "추정·유보": re.compile(r"(보인다|보임|듯|가능성|추정|일 수 있|것으로"
+                         r"|[었았였했]을 수 있|못할 수 있)"),
     # 주어가 사라지면 누가 하는 일인지 사라진다 — 낱말은 그대로라 낱말 대조로는 안 잡힌다
     "행위 주체": re.compile(r"[가-힣]{2,}(?:이|가)(?=\s)"),
 }
@@ -81,6 +84,57 @@ def marker_drops(original: str, revised: str) -> list[dict[str, object]]:
         if after < before:
             drops.append({"marker": name, "before": before, "after": after})
     return drops
+
+
+# 문서 전체 개수만 세면 **어느 문장**인지 모른다 — 긴 문서에서 「인과·조건 12 → 11」을
+# 받으면 열한 곳을 다 다시 읽어야 한다. im-not-ai(epoko77-ai, MIT)의 `restore_modality.py`
+# 가 문장을 짝지어 유보가 사라진 문장만 찾는 것을 보고 같은 방식으로 짚는다(2026-10-23).
+# 그쪽과 달리 되돌리지는 않는다 — 고칠지는 읽는 사람이 정한다.
+# 추정·유보는 **늘어난 것도** 낸다 — 일어난 사고를 「~할 수 있습니다」로 흐리자는 수정안이
+# 대외 기술 백서 인계에서 나왔다(9단계 「일어난 일을 가능형으로 씀」).
+SENTENCE_END = re.compile(r"(?<=[.!?。])\s+|\n+")
+# 짝 문장 유사도가 이보다 낮으면 다른 문장으로 보고 대조하지 않는다 — 합치거나 새로 쓴
+# 문장을 짝지으면 엉뚱한 표지 변화가 나온다(그쪽 도구도 같은 이유로 건너뛴다).
+PAIR_MIN = 0.5
+TWO_WAY = {"추정·유보"}
+
+
+def split_sentences(text: str) -> list[str]:
+    return [s.strip() for s in SENTENCE_END.split(text) if s.strip()]
+
+
+def marker_sentences(original: str, revised: str) -> list[dict[str, object]]:
+    """고친 문장 짝마다 표지가 줄었거나(추정·유보는 늘었거나) 한 곳을 낸다."""
+    before_s, after_s = split_sentences(original), split_sentences(revised)
+    out: list[dict[str, object]] = []
+    matcher = SequenceMatcher(None, before_s, after_s, autojunk=False)
+    for tag, i1, i2, j1, j2 in matcher.get_opcodes():
+        if tag != "replace":
+            continue
+        for old in before_s[i1:i2]:
+            scored = [(SequenceMatcher(None, old, new, autojunk=False).ratio(), new)
+                      for new in after_s[j1:j2]]
+            ratio, new = max(scored)
+            if ratio < PAIR_MIN:
+                continue
+            for name, pattern in MEANING_MARKERS.items():
+                before, after = len(pattern.findall(old)), len(pattern.findall(new))
+                if after < before or (name in TWO_WAY and after > before):
+                    out.append({"marker": name,
+                                "change": "줄어듦" if after < before else "늘어남",
+                                "original": old[:160], "revised": new[:160]})
+    return out
+
+
+# 원문 대비 변경률 — im-not-ai 의 30% 경고 · 50% 중단 선을 빌렸다(2026-10-23). 그쪽은
+# AI 글 윤문이라 50%에서 멈추지만 여기서는 **알리기만 한다** — 남이 쓴 초안을 고치면
+# 정당하게 많이 바뀌기도 한다. 많이 바뀐 문서는 9단계 「다듬다 원문의 논점을 바꿈」이
+# 나기 쉬우므로 원문과 나란히 놓고 다시 읽으라는 신호다.
+CHANGE_WARN, CHANGE_HIGH = 0.30, 0.50
+
+
+def change_level(rate: float) -> str:
+    return "high" if rate >= CHANGE_HIGH else "warn" if rate >= CHANGE_WARN else "ok"
 
 
 def normalize(text: str) -> str:
@@ -141,19 +195,22 @@ def measure(
     else:
         status = "preserved"
 
+    rate = 1.0 - SequenceMatcher(None, original, revised, autojunk=False).ratio()
     return {
         "status": status,
         "original_chars": len(original),
         "revised_chars": len(revised),
-        "change_rate": 1.0 - SequenceMatcher(
-            None, original, revised, autojunk=False
-        ).ratio(),
+        "change_rate": rate,
+        # 상태를 바꾸지 않는다 — warn · high 면 원문과 나란히 놓고 논점이 같은지 본다
+        "change_rate_level": change_level(rate),
         "protected_removed": display_tokens(unacknowledged),
         "protected_added": display_tokens(added),
         "acknowledged_removed": display_tokens(acknowledged),
         "explicit_protected": explicit,
         # 상태를 바꾸지 않는다 — 사람이 확인할 문장만 가리킨다
         "meaning_marker_drops": marker_drops(original, revised),
+        # 위 개수가 어느 문장에서 났는지 — 이것도 상태를 바꾸지 않는다
+        "meaning_marker_sentences": marker_sentences(original, revised),
     }
 
 

@@ -85,7 +85,26 @@ def run_meaning_marker_assertions() -> tuple[int, int, list[str]]:
     else:
         passed += 1
 
-    return len(cases) + 2, passed, failures
+    # 문장 단위 — 긴 문서에서 어느 문장인지 짚는다. 일어난 일을 가능형으로 흐린 수정(늘어남)과
+    # 조건을 지운 수정(줄어듦)을 잡고, 손대지 않은 문장과 낱말만 바꾼 문장은 조용해야 한다.
+    original = ("점검 보고서에 따르면 감지가 늦었습니다. 그 결과 차량이 제때 멈추지 못했습니다. "
+                "측정값이 낮으므로 폐기합니다. 일정은 다음 주에 정합니다.")
+    revised = ("점검 보고서에 따르면 감지가 늦었습니다. 그 결과 차량이 제때 멈추지 못했을 수 있습니다. "
+               "측정값이 낮아 폐기합니다. 일정은 다음 주에 확정합니다.")
+    found = {(str(d["marker"]), str(d["change"])) for d in check_meaning.marker_sentences(original, revised)}
+    expected = {("추정·유보", "늘어남"), ("인과·조건", "줄어듦")}
+    if not expected <= found or any(m == "계획·진행" for m, _c in found):
+        failures.append(f"meaning_marker/문장 단위: {sorted(found)}")
+    else:
+        passed += 1
+
+    levels = [check_meaning.change_level(r) for r in (0.1, 0.3, 0.49, 0.5)]
+    if levels != ["ok", "warn", "warn", "high"]:
+        failures.append(f"change_rate_level: {levels}")
+    else:
+        passed += 1
+
+    return len(cases) + 4, passed, failures
 
 
 def run_detector_format_assertions() -> tuple[int, int, list[str]]:
