@@ -325,6 +325,16 @@ def stock_hits(text):
             yield name, fix, hit
 
 
+#: **머리말 되풀이** — 줄 머리의 값이나 라벨을 뒤 설명 끝에서 다시 말함(2026-10-23 사용자 판정).
+#   「없음 — 이번 회차 후보 없음.」 · 「**모델** — 사용한 모델」. im-not-ai 윤문이 고친 줄 가운데
+#   이 저장소가 못 짚은 것이었다(`runs/imnotai-miss-mining-20261023`). 업무 문서 실측은 사람
+#   1,664편에 3줄 · AI 254편에 14줄. 「**비용** — 인건비와 장비 비용」처럼 종류를 가르는 복합어가
+#   섞여 주의로만 낸다. 줄 단위라 HTML 의 `<dt>`·`<dd>` 짝은 못 본다 — 그 꼴은 2층이 확정 수정 표로 본다.
+ECHO_HEAD = re.compile(r'^\s*(?:[-*]\s+|\d+\.\s+)?(?:\*\*)?([가-힣]{2,6})(?:\*\*)?\s*(?:—|–|:|\s-)\s+'
+                       r'(.+?)\s\1(?:함|합니다|됨|됩니다)?\s*[.。]?\s*$')
+ECHO_FIX = '같은 말을 두 번 함 · 뒤 설명에 새 정보가 없으면 한쪽을 지울 것(「장비 비용」처럼 종류를 가르는 복합어면 그대로)'
+
+
 #: **반복 문형** — 한 번은 정상인데 문단이나 문서에 몰리면 기계 문체가 되는 꼴(2026-10-23).
 #   im-not-ai 2.3.2 가 정한 밀집 조건을 그대로 쓴다(「~에 대해」 한 문단 3회 이상 등).
 #   ⛔ **사람이 많이 쓴다는 것은 빼는 근거가 아니다** — 「~를 통해」·「~할 수 있다」·「이루어지다」는
@@ -1809,6 +1819,10 @@ def scan_html(path, relaxed=False, form=None, rules=None):
         word = hit.group(0).strip(' .!?')
         near = ' '.join(text[max(0, hit.start() - 20):hit.end() + 20].split())
         warn.append(('상투 문형', f'{name} 「{word[:30]}」 — {fix} · {near[:48]}'))
+    for ln in text.splitlines():
+        e = ECHO_HEAD.search(ln)
+        if e and not is_example(ln.strip()):
+            warn.append(('머리말 되풀이', f'「{e.group(1)}」 — {ECHO_FIX} · {" ".join(ln.split())[:48]}'))
     for hit in attach_hits(text):
         near = ' '.join(text[max(0, hit.start() - 20):hit.end() + 10].split())
         warn.append(('업무 글에 없는 말',
@@ -2208,7 +2222,7 @@ RULE_GROUPS = {
         '「~하는 자리」', '「~하는 자리」 의심', '지어낸 명사구', '평가 수식어',
         '모호한 지칭', '지시어 확인', '「회기」', '업무 글에 없는 말',
         '말투 섞임', '제품 이름 음차', '다른 낱말로 읽힘', '낯선 사내 용어',
-        '띄어 쓴 가운뎃점',
+        '띄어 쓴 가운뎃점', '머리말 되풀이',
     ]),
     '번역투': ('번역에서 옮아온 문형', [
         '이중 피동', '번역투 이중 조사', '번역투 그녀', '「~가 아니라」 반복', '상투 문형',
@@ -2244,7 +2258,7 @@ INSTRUCTION_DIRS = re.compile(r'[\\/](?:\.claude|\.agents|skills)[\\/]')
 #: 「낯선 사내 용어」도 뺀다 — 지시 파일에서는 정해 둔 내부 용어다(2026-10-06 · 정본).
 #: 「「~가 아니라」 반복」도 뺀다 — 지시 파일은 「대체가 아니라 별도로 추가」처럼 구분을
 #: 세우는 글이라 밀도가 원래 높다(전역 지시 파일 본문 1만 자당 9.6 · 2026-10-23 실측).
-INSTRUCTION_SPARED = {'반말 서술형', '낯선 사내 용어', '「~가 아니라」 반복'}
+INSTRUCTION_SPARED = {'반말 서술형', '낯선 사내 용어', '「~가 아니라」 반복', '머리말 되풀이'}
 #: Claude Code 작업 트리 — `<저장소>/.claude/worktrees/<이름>/`. 그 아래는 **저장소 사본**
 #: 이지 설정이 아니다. 떼고 남은 저장소 안 경로로 `.claude/` 를 본다.
 #: ⛔ 안 떼면 작업 트리 안의 문서가 통째로 지시 파일로 분류돼 반말을 안 봤다 — 같은
@@ -2762,6 +2776,10 @@ def scan_md(path, relaxed=False, form=None, rules=None):
             word = hit.group(0).strip(' .!?')
             warn.append((n, '상투 문형',
                          f'{name} 「{word[:30]}」 — {fix} · {excerpt(line, word, 36)}'))
+        e = ECHO_HEAD.search(m)
+        if e:
+            warn.append((n, '머리말 되풀이',
+                         f'「{e.group(1)}」 — {ECHO_FIX} · {excerpt(line, e.group(1), 40)}'))
         for hit in attach_hits(m):
             word = eojeol_at(m, hit.start())
             warn.append((n, '업무 글에 없는 말',
