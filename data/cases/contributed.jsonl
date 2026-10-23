@@ -246,3 +246,10 @@
 {"case_id": "C-246", "expect": "finding", "form": "prose", "kind": "상투 문형", "source": "im-not-ai 2.3.2 전수 대조(2026-10-23)", "status": "pinned", "text": "결과 표가 잘립니다(이는 스크롤 설정 때문입니다).", "why": "괄호 부연"}
 {"case_id": "C-248", "expect": "clean", "form": "prose", "kind": "상투 문형", "source": "im-not-ai 2.3.2 전수 대조(2026-10-23)", "status": "pinned", "text": "회의실에 노트북을 가지고 갑니다.", "why": "실제 물건을 가지고 감 · 「가지고 있다」 꼴 아님"}
 {"case_id": "C-249", "expect": "clean", "form": "prose", "kind": "상투 문형", "source": "im-not-ai 2.3.2 전수 대조(2026-10-23)", "status": "pinned", "text": "일정은 다음과 같습니다.", "why": "위치 안내 · 열거 도입구 아님"}
+{"case_id": "C-250", "expect": "finding", "form": "prose", "kind": "상투 문형", "source": "im-not-ai 2.3.2 남은 흡수(2026-10-23)", "status": "pinned", "text": "값싼 제품이 기존 시장을 잠식하고 있습니다.", "why": "D-14 사람 0건 사전 은유"}
+{"case_id": "C-251", "expect": "finding", "form": "prose", "kind": "상투 문형", "source": "im-not-ai 2.3.2 남은 흡수(2026-10-23)", "status": "pinned", "text": "이번 조사의 진단은 서늘합니다.", "why": "D-14 감각 술어 평가문"}
+{"case_id": "C-252", "expect": "finding", "form": "prose", "kind": "상투 문형", "source": "im-not-ai 2.3.2 남은 흡수(2026-10-23)", "status": "pinned", "text": "이 글에서는 검증 절차의 변화를 알아보겠습니다.", "why": "후보 D-X-meta 메타담화 서두"}
+{"case_id": "C-253", "expect": "finding", "form": "prose", "kind": "상투 문형", "source": "im-not-ai 2.3.2 남은 흡수(2026-10-23)", "status": "pinned", "text": "한 업계 관계자는 수요가 늘 것이라고 말했습니다.", "why": "DS-2 정황 없는 익명 인용"}
+{"case_id": "C-254", "expect": "clean", "form": "prose", "kind": "상투 문형", "source": "im-not-ai 2.3.2 남은 흡수(2026-10-23)", "status": "pinned", "text": "시장 점유율이 3%p 줄었습니다.", "why": "은유를 글자 그대로 쓴 정상 문장"}
+{"case_id": "C-255", "expect": "finding", "form": "prose", "kind": "상투 문형", "source": "오염 시료 회수율 측정(2026-10-23)", "status": "pinned", "text": "수요가 계속 늘 것이라는 분석입니다.", "why": "「~라는 분석」 꼴 — 회수율 0%로 찾은 미탐"}
+{"case_id": "C-256", "expect": "finding", "form": "prose", "kind": "반복 문형", "source": "오염 시료 회수율 측정(2026-10-23)", "status": "pinned", "text": "API에 대해 검토하고, DB에 대해 정리하며, UI에 대해 결정합니다.", "why": "앞 글자가 영문인 「~에 대해」 밀집 — 회수율 0%로 찾은 미탐"}

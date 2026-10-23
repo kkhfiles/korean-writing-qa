@@ -310,6 +310,44 @@ def render(summary: str) -> str:
     ])
 
 
+#: im-not-ai 분류 비교 — 주 1회(2026-10-23). 그 저장소가 바뀌면 새 패턴은 그 순간부터 미탐이다.
+#: 같으면 침묵 · 바뀌면 한 줄 · 못 받으면 세어 두었다가 세 주 이어지면 말한다(위 「판단 불가」 원칙).
+UPSTREAM_DAYS = 7
+UPSTREAM_STALE = 3
+UPSTREAM_TIMEOUT = 40
+
+
+def upstream_due(state: dict, now: datetime) -> bool:
+    last = state.get("imnotai_checked")
+    try:
+        return not last or (now.date() - date.fromisoformat(last)).days >= UPSTREAM_DAYS
+    except ValueError:
+        return True
+
+
+def check_upstream(state: dict, now: datetime, repo: Path):
+    """알릴 말 또는 None. state 를 고친다(호출한 쪽이 적는다)."""
+    tool = repo / "scripts" / "check_imnotai_upstream.py"
+    if not tool.is_file() or not upstream_due(state, now):
+        return None
+    try:
+        done = subprocess.run([sys.executable, "-X", "utf8", str(tool)], capture_output=True, text=True,
+                              encoding="utf-8", timeout=UPSTREAM_TIMEOUT, cwd=str(repo))
+        rc, out = done.returncode, (done.stdout or "").strip()
+    except (OSError, subprocess.TimeoutExpired) as e:
+        rc, out = 3, f"판단 불가 — {type(e).__name__}"
+    if rc in (0, 1):
+        state["imnotai_checked"] = now.date().isoformat()
+        state.pop("imnotai_fails", None)
+        return f"🔎 {out}" if rc == 1 else None
+    # 판단 불가 — 다음 날 다시 시도한다(하루 점검이 하루 한 번이라 세션마다 찌르지 않는다)
+    fails = int(state.get("imnotai_fails", 0)) + 1
+    state["imnotai_fails"] = fails
+    if fails >= UPSTREAM_STALE:
+        return f"⚠️ im-not-ai 분류 비교가 {fails}번 이어서 판단 불가 — {out} · 감시가 멈춘 상태"
+    return None
+
+
 def emit(text: str) -> None:
     print(json.dumps({"hookSpecificOutput": {
         "hookEventName": "SessionStart", "additionalContext": text}}, ensure_ascii=False))
@@ -367,6 +405,23 @@ def _self_test() -> int:
             bad += 1
             print(f"  ❌ {name}: {expected} 여야 하는데 {got}")
 
+    # ── im-not-ai 분류 비교 — 주 1회 ─────────────────────────────────────────
+    weekly = [
+        ("한 번도 안 봤으면 본다", {}, True),
+        ("엿새 전에 봤으면 안 본다", {"imnotai_checked": "2026-08-29"}, False),
+        ("이레 전에 봤으면 본다", {"imnotai_checked": "2026-08-28"}, True),
+        ("망가진 날짜면 본다", {"imnotai_checked": "지난주"}, True),
+    ]
+    for name, state, expected in weekly:
+        got = upstream_due(state, now)
+        if got != expected:
+            bad += 1
+            print(f"  ❌ {name}: {expected} 여야 하는데 {got}")
+    gone = {"imnotai_checked": "2026-01-01"}
+    if check_upstream(gone, now, Path(__file__).resolve().parent / "없는-디렉터리") is not None:
+        bad += 1
+        print("  ❌ 비교 도구가 없으면 침묵해야 한다")
+
     # ── git 판정 — 저장소가 아니면 침묵한다 ──────────────────────────────────
     got = check_git(Path(__file__).resolve().parent / "없는-디렉터리")
     if got is not None:
@@ -403,6 +458,9 @@ def main() -> int:
     red = check_ci(REPO)
     if red:
         notes.append(render_ci(red, REPO))
+    upstream = check_upstream(state, now, REPO)
+    if upstream:
+        notes.append(upstream)
 
     if passed is None:
         # 판단 불가 — 그날을 「봤다」로 적지 않는다
