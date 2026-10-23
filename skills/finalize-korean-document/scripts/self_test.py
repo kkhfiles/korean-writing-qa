@@ -511,7 +511,19 @@ def run_feedback_workflow_assertions() -> tuple[int, int, list[str]]:
             "block context accepts a logical path",
             not record_feedback.validate_candidate(
                 record_feedback.build_candidate(
-                    arguments(context_level="block", logical_path="$.slides[2].title")
+                    arguments(context_level="block", logical_path="$.slides[2].title",
+                              context_excerpt="문단 발췌")
+                )
+            ),
+        ),
+        (
+            "block context rejects a missing excerpt",
+            any(
+                "context_excerpt" in error
+                for error in record_feedback.validate_candidate(
+                    record_feedback.build_candidate(
+                        arguments(context_level="block", logical_path="$.slides[2].title")
+                    )
                 )
             ),
         ),

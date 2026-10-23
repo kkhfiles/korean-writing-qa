@@ -162,6 +162,15 @@ VAGUE_ONLY_RE = re.compile(r'^\*{0,2}(아래|위쪽)\*{0,2}'
 SELF_PRAISE = ['가벼운', '강력한', '유연한', '혁신적', '똑똑한', '직관적인',
                '손쉬운', '최적의', '풍부한', '탄탄한', '완벽한', '뛰어난',
                '압도적', '대대적', '획기적', '폭발적', '파격적', '막강한']
+#: 수치 옆에서 크기를 평가하는 말 — 「월등히 높습니다」·「과반을 훌쩍」·「14%에 불과」·「5배 급증」(2026-10-23 사용자 판정).
+#   수치가 이미 크기를 말하므로 평가어는 과장이 된다(한국 67%는 32개국 중 9위인데 「월등히」). 업무 문서 실측은
+#   사람 1,664편 0건 · AI 254편 6건(전부 급증·급등)이라 여론조사 정리처럼 기사체에 가까운 글에서 나온다.
+#   ⛔ 「크게」·「대폭」은 뺐다 — 「크게 3개 영역」처럼 수치 앞에서 「대체로」 뜻으로 흔히 쓴다.
+_NUM = r'\d[\d.,]*(?:\s?~\s?\d[\d.,]*)?\s?(?:%p|%|퍼센트|배|명|건|개|곳|점|위|억|만|천)'
+_BIG = r'(?:월등히|훌쩍|압도적으로|현저히|급격히|급증|급감|폭증|폭락|급등|급락)'
+NUM_PRAISE = re.compile(_NUM + r'[^\n.]{0,6}?(?:에\s?불과|에\s?그치|에\s?그쳤)|'
+                        + _BIG + r'[^\n.]{0,20}?' + _NUM + '|' + _NUM + r'[^\n.]{0,20}?' + _BIG)
+NUM_PRAISE_FIX = '수치 옆에서 크기를 평가함 — 평가어를 빼고 비교 대상(평균, 다른 집단, 이전 값)을 함께 적을 것'
 # ── 번역투 (humanize-korean 분류 체계 A) ─────────────────────────────────────
 # **채택은 항목 자체로 판단한다.** 「지금 이 뭉치에서 몇 건 나오나」는 오탐을 재는
 # 물음이지 넣을지 정하는 물음이 아니다. 시료가 없으면 시료를 만든다.
@@ -1804,6 +1813,8 @@ def scan_html(path, relaxed=False, form=None, rules=None):
     for w in SELF_PRAISE:
         for m in re.findall(r'[^·\n]{0,20}' + w + r'[^·\n]{0,22}', text):
             warn.append(('평가 수식어', f'「{w}」 … {m.strip()[:56]} — 무엇을 하는지로 바꿀 것'))
+    for hit in NUM_PRAISE.finditer(text):
+        warn.append(('평가 수식어', f'「{" ".join(hit.group(0).split())[:40]}」 — {NUM_PRAISE_FIX}'))
     for wrong, canon in BRANDS.items():
         for m in re.finditer(re.escape(wrong), text):
             near = ' '.join(text[max(0, m.start() - 18):m.end() + 18].split())
@@ -2710,6 +2721,8 @@ def scan_md(path, relaxed=False, form=None, rules=None):
         for w in SELF_PRAISE:
             if w in m:
                 warn.append((n, '평가 수식어', f'「{w}」 — {excerpt(line, w, 50)}'))
+        for hit in NUM_PRAISE.finditer(m):
+            warn.append((n, '평가 수식어', f'「{" ".join(hit.group(0).split())[:40]}」 — {NUM_PRAISE_FIX}'))
         for wrong, canon in BRANDS.items():
             if wrong in m:
                 err.append((n, '제품 이름 음차',

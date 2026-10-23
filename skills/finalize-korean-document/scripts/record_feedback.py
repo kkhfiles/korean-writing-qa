@@ -89,6 +89,10 @@ def validate_candidate(candidate: dict[str, object]) -> list[str]:
         candidate.get("section_title") or candidate.get("logical_path")
     ):
         errors.append("block context requires section_title or logical_path")
+    # 발췌 없는 문단 문맥은 다음에 못 쓴다 — 시험(`test_feedback_loop_is_used`)이 요구하는데 여기서
+    # 안 막아 2026-10-22 후보가 기록을 통과하고 시험에서 걸렸다
+    if context_level == "block" and not candidate.get("context_excerpt"):
+        errors.append("block context requires context_excerpt")
     if context_level == "document" and not (
         candidate.get("source_ref") and candidate.get("source_hash")
     ):
