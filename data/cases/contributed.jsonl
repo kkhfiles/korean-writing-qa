@@ -233,3 +233,16 @@
 {"case_id": "C-233", "expect": "clean", "form": "prose", "kind": "상투 문형", "source": "im-not-ai 2.3.2 분류 · 2026-10-23 사용자 「앞으로 결함이 나올 수 있는데?」로 0건 제외를 되돌림", "status": "pinned", "text": "모든 장비가 갖춰지면 시험을 시작할 시점입니다.", "why": "당위 결말이 아니라 일정 안내"}
 {"case_id": "C-234", "expect": "clean", "form": "prose", "kind": "상투 문형", "source": "im-not-ai 2.3.2 분류 · 2026-10-23 사용자 「앞으로 결함이 나올 수 있는데?」로 0건 제외를 되돌림", "status": "pinned", "text": "이 방식을 고른 이유는 두 가지입니다.", "why": "「이유는」 주어 · 도치 결산 아님"}
 {"case_id": "C-235", "expect": "clean", "form": "prose", "kind": "상투 문형", "source": "im-not-ai 2.3.2 분류 · 2026-10-23 사용자 「앞으로 결함이 나올 수 있는데?」로 0건 제외를 되돌림", "status": "pinned", "text": "과제는 세 가지입니다.", "why": "문패가 아니라 내용이 이어짐"}
+{"case_id": "C-236", "expect": "finding", "form": "prose", "kind": "상투 문형", "source": "im-not-ai 2.3.2 전수 대조(2026-10-23)", "status": "pinned", "text": "이 문제에 있어서 일정이 가장 큰 변수입니다.", "why": "번역투 「~에 있어서」"}
+{"case_id": "C-237", "expect": "finding", "form": "prose", "kind": "상투 문형", "source": "im-not-ai 2.3.2 전수 대조(2026-10-23)", "status": "pinned", "text": "보안과 관련하여 접근 기록을 점검합니다.", "why": "번역투 「~와 관련하여」"}
+{"case_id": "C-238", "expect": "finding", "form": "prose", "kind": "상투 문형", "source": "im-not-ai 2.3.2 전수 대조(2026-10-23)", "status": "pinned", "text": "이 모델은 강한 경쟁력을 가지고 있습니다.", "why": "번역투 「~를 가지고 있다」"}
+{"case_id": "C-239", "expect": "finding", "form": "prose", "kind": "상투 문형", "source": "im-not-ai 2.3.2 전수 대조(2026-10-23)", "status": "pinned", "text": "범용 인공지능이라고 알려진 기술을 다룹니다.", "why": "번역투 「~라고 알려진」"}
+{"case_id": "C-240", "expect": "finding", "form": "prose", "kind": "상투 문형", "source": "im-not-ai 2.3.2 전수 대조(2026-10-23)", "status": "pinned", "text": "이 결과는 시사하는 바가 큽니다.", "why": "의의 과장"}
+{"case_id": "C-241", "expect": "finding", "form": "prose", "kind": "상투 문형", "source": "im-not-ai 2.3.2 전수 대조(2026-10-23)", "status": "pinned", "text": "결과는 크게 세 가지로 나눌 수 있습니다.", "why": "열거 도입구"}
+{"case_id": "C-242", "expect": "finding", "form": "prose", "kind": "상투 문형", "source": "im-not-ai 2.3.2 전수 대조(2026-10-23)", "status": "pinned", "text": "이 팀은 중요하고 핵심적인 역할을 맡습니다.", "why": "동의어 이중 수식"}
+{"case_id": "C-243", "expect": "finding", "form": "prose", "kind": "상투 문형", "source": "im-not-ai 2.3.2 전수 대조(2026-10-23)", "status": "pinned", "text": "도구의 역할과 기능을 정리합니다.", "why": "짝 명사 겹침"}
+{"case_id": "C-244", "expect": "finding", "form": "prose", "kind": "상투 문형", "source": "im-not-ai 2.3.2 전수 대조(2026-10-23)", "status": "pinned", "text": "일정이 지연될 가능성이 있을 수 있습니다.", "why": "이중 완곡"}
+{"case_id": "C-245", "expect": "finding", "form": "prose", "kind": "상투 문형", "source": "im-not-ai 2.3.2 전수 대조(2026-10-23)", "status": "pinned", "text": "원인은 설정이 잘못됐다는 점에 있습니다.", "why": "형식명사 강조"}
+{"case_id": "C-246", "expect": "finding", "form": "prose", "kind": "상투 문형", "source": "im-not-ai 2.3.2 전수 대조(2026-10-23)", "status": "pinned", "text": "결과 표가 잘립니다(이는 스크롤 설정 때문입니다).", "why": "괄호 부연"}
+{"case_id": "C-248", "expect": "clean", "form": "prose", "kind": "상투 문형", "source": "im-not-ai 2.3.2 전수 대조(2026-10-23)", "status": "pinned", "text": "회의실에 노트북을 가지고 갑니다.", "why": "실제 물건을 가지고 감 · 「가지고 있다」 꼴 아님"}
+{"case_id": "C-249", "expect": "clean", "form": "prose", "kind": "상투 문형", "source": "im-not-ai 2.3.2 전수 대조(2026-10-23)", "status": "pinned", "text": "일정은 다음과 같습니다.", "why": "위치 안내 · 열거 도입구 아님"}
