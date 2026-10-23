@@ -1,0 +1,91 @@
+[
+ {
+  "arm": "now",
+  "rep": 1,
+  "rules_chars": 23624,
+  "calls": 5,
+  "cost_usd": 0.9157,
+  "sec": 318,
+  "tight": 121,
+  "loose": 122,
+  "why": 60,
+  "total": 122,
+  "said": 160,
+  "extra": 24,
+  "cited": {
+   "total": 67,
+   "tight": 67,
+   "loose": 67
+  },
+  "uncited": {
+   "total": 55,
+   "tight": 54,
+   "loose": 55
+  },
+  "ledger_tight": 96,
+  "heldout_tight": 25,
+  "missed": [],
+  "limits": null
+ },
+ {
+  "arm": "slim",
+  "rep": 1,
+  "rules_chars": 21218,
+  "calls": 5,
+  "cost_usd": 0.9708,
+  "sec": 335,
+  "tight": 119,
+  "loose": 121,
+  "why": 61,
+  "total": 122,
+  "said": 159,
+  "extra": 28,
+  "cited": {
+   "total": 66,
+   "tight": 66,
+   "loose": 66
+  },
+  "uncited": {
+   "total": 56,
+   "tight": 53,
+   "loose": 55
+  },
+  "ledger_tight": 95,
+  "heldout_tight": 24,
+  "missed": [
+   "H-26"
+  ],
+  "limits": null
+ },
+ {
+  "arm": "hard",
+  "rep": 1,
+  "rules_chars": 10071,
+  "calls": 5,
+  "cost_usd": 0.8053,
+  "sec": 293,
+  "tight": 112,
+  "loose": 120,
+  "why": 37,
+  "total": 122,
+  "said": 158,
+  "extra": 30,
+  "cited": {
+   "total": 32,
+   "tight": 32,
+   "loose": 32
+  },
+  "uncited": {
+   "total": 90,
+   "tight": 80,
+   "loose": 88
+  },
+  "ledger_tight": 88,
+  "heldout_tight": 24,
+  "missed": [
+   "F-077",
+   "F-148"
+  ],
+  "limits": null
+ }
+]

@@ -32,6 +32,7 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--reps", type=int, default=2)
     ap.add_argument("--model", default="opus")
+    ap.add_argument("--start", type=int, default=0, help="이 회차부터 — 앞 회차 raw 파일은 그대로 둔다")
     a = ap.parse_args()
     probe = load("probe", REPO / "scripts" / "probe_layer2_kinds.py")
     bench = load("bench", REPO / "scripts" / "bench_loop.py")
@@ -43,7 +44,7 @@ def main() -> int:
     results = []
     seen: list[dict] = []
     with bench.watch_limits(seen):
-        for rep in range(a.reps):
+        for rep in range(a.start, a.reps):
             for name, rules in arms.items():
                 t0 = time.time()
                 out = probe.run_arm("guided", a.model, 600.0, doc, items, rules=rules)
@@ -67,7 +68,7 @@ def main() -> int:
                     print(f"사용률이 {STOP}% 를 넘어 멈춤")
                     (HERE / "runs.json").write_text(json.dumps(results, ensure_ascii=False, indent=1), encoding="utf-8")
                     return 2
-    (HERE / "runs.json").write_text(json.dumps(results, ensure_ascii=False, indent=1), encoding="utf-8")
+    (HERE / f"runs-from-{a.start}.json").write_text(json.dumps(results, ensure_ascii=False, indent=1), encoding="utf-8")
     return 0
 
 
