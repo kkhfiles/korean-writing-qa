@@ -1,0 +1,102 @@
+{
+ "doc-002": {
+  "hangul": 817,
+  "change_rate": 0.066,
+  "changed_lines": 18,
+  "l1_lines": 2,
+  "l2_lines": 20,
+  "judge_rc": 0,
+  "changed_and_l1_or_l2": 16,
+  "miss_candidates": 2,
+  "diagnose": {
+   "sec": 42,
+   "cost_usd": 0.178547,
+   "billing": "subscription"
+  },
+  "rewrite": {
+   "sec": 70,
+   "cost_usd": 0.283976,
+   "billing": "subscription"
+  }
+ },
+ "doc-004": {
+  "hangul": 593,
+  "change_rate": 0.041,
+  "changed_lines": 15,
+  "l1_lines": 0,
+  "l2_lines": 28,
+  "judge_rc": 0,
+  "changed_and_l1_or_l2": 13,
+  "miss_candidates": 2,
+  "diagnose": {
+   "sec": 43,
+   "cost_usd": 0.086131,
+   "billing": "subscription"
+  },
+  "rewrite": {
+   "sec": 47,
+   "cost_usd": 0.234908,
+   "billing": "subscription"
+  }
+ },
+ "doc-005": {
+  "hangul": 849,
+  "change_rate": 0.015,
+  "changed_lines": 27,
+  "l1_lines": 1,
+  "l2_lines": 18,
+  "judge_rc": 0,
+  "changed_and_l1_or_l2": 7,
+  "miss_candidates": 20,
+  "diagnose": {
+   "sec": 46,
+   "cost_usd": 0.203409,
+   "billing": "subscription"
+  },
+  "rewrite": {
+   "sec": 67,
+   "cost_usd": 0.27494,
+   "billing": "subscription"
+  }
+ },
+ "doc-015": {
+  "hangul": 1451,
+  "change_rate": 0.016,
+  "changed_lines": 22,
+  "l1_lines": 3,
+  "l2_lines": 18,
+  "judge_rc": 0,
+  "changed_and_l1_or_l2": 7,
+  "miss_candidates": 15,
+  "diagnose": {
+   "sec": 59,
+   "cost_usd": 0.233679,
+   "billing": "subscription"
+  },
+  "rewrite": {
+   "sec": 77,
+   "cost_usd": 0.330688,
+   "billing": "subscription"
+  }
+ },
+ "doc-016": {
+  "hangul": 1206,
+  "change_rate": 0.025,
+  "changed_lines": 28,
+  "l1_lines": 8,
+  "l2_lines": 10,
+  "judge_rc": 0,
+  "changed_and_l1_or_l2": 9,
+  "miss_candidates": 19,
+  "diagnose": {
+   "sec": 53,
+   "cost_usd": 0.221489,
+   "billing": "subscription"
+  },
+  "rewrite": {
+   "sec": 70,
+   "cost_usd": 0.336862,
+   "billing": "subscription"
+  }
+ }
+}
