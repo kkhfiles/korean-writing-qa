@@ -1402,6 +1402,9 @@ def judge(path: Path, model: str, timeout: float, backend, targets: list[int] | 
         if reused:
             system, made = reused
             extra = new_answers(made)
+    # 드문 낱말 목록 — 단어 점검 기록을 따로 요구하는 대신 판정기가 후보로 함께 읽는다(`probe.rare_note`)
+    note = probe.rare_note(path)
+    extra += note
     info = lineage(key, lines, sorted(want - set(anchors)), base, base_time) if want else {}
     root_findings(key, info)
     for n, gone in anchors.items():
@@ -1446,7 +1449,7 @@ def judge(path: Path, model: str, timeout: float, backend, targets: list[int] | 
                # 게이트가 「이번 가지의 새 줄을 판정기가 다 봤나」를 이것으로 가른다 — 창이면 보낸 줄만
                "seen": coverage.seen_keys(piece["seen"])}
         user = rejudge_user(piece, info, closed_all, decided_all, instructed_all, extra) if want is not None \
-            else probe.USER.format(document=piece["document"])
+            else probe.USER.format(document=piece["document"]) + note
         if want is not None:
             # 묶음은 문맥으로 통째로 보내되 지적은 새 줄에만 받는다. 전에는 묶음 전체에
             # 지적을 써 오게 하고 새 줄 밖의 것을 버렸다 — 출력 토큰이 곧 시간이고(상관 0.97)

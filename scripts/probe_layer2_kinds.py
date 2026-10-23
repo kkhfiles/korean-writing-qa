@@ -209,6 +209,47 @@ USER = """다음 문서를 점검한다. 줄 번호는 각 줄 앞에 적힌 번
 ```"""
 
 
+#: 판정기에 함께 주는 드문 낱말 목록(2026-10-23 사용자 결정 「판정기에 자동 첨부」).
+#: 단어 점검 기록은 문서 판의 21.6%에만 남아 발행 게이트가 요구하면 고무도장이 된다. 대신 판정기가
+#: 그 목록을 후보로 함께 읽게 한다 — 대장의 단어 점검 몫 33건에서 목록 없이 28건, 붙여 29건이고
+#: 원래 비인용 23건은 18 → 20(1회씩이라 흔들림 안쪽 · `runs/layer2-words-coverage-20261023`).
+#: 헛짚음은 늘지 않았다. 문서마다 달라서 시스템 프롬프트(캐시)가 아니라 사용자 메시지에 붙인다.
+RARE_HEAD = ("\n\n## 이 문서에서 업무 글에 드문 낱말\n\n"
+             "단어 점검(사람이 쓴 업무 한국어 4,790만 자에서 40회 이하)이 고른 낱말이다. 드물다고 틀린 것은 "
+             "아니다 — 제품 이름, 전문 용어, 그 분야에서 굳은 말은 정상이다. 업무 글에서 같은 뜻으로 더 흔히 "
+             "쓰는 말이 있으면 「업무에서 쓰는 말로 쓰기」로 짚는다.\n\n")
+
+
+_RARE = []
+
+
+def rare_note(path: Path) -> str:
+    """그 문서의 드문 낱말 목록 — 단어 점검을 못 돌리는 PC(형태소 분석기 없음)면 빈 글.
+
+    같은 프로세스에서 부른다 — 따로 띄우면 판정마다 형태소 분석기를 새로 올려 판정기 시험 66건이
+    23초에서 169초가 됐다(2026-10-23). 안에서 부르면 검사기와 같은 한 벌을 나눠 쓴다.
+    """
+    import contextlib
+    import importlib.util
+    import io
+    buf, argv = io.StringIO(), sys.argv
+    sys.argv = ["rare_words.py", str(path)]
+    try:
+        if not _RARE:
+            spec = importlib.util.spec_from_file_location("rare_words", Path(__file__).with_name("rare_words.py"))
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)
+            _RARE.append(module)
+        with contextlib.redirect_stdout(buf):
+            _RARE[0].main()
+    except (SystemExit, Exception):     # 목록은 보조 — 못 만들면 목록 없이 판정한다
+        return ""
+    finally:
+        sys.argv = argv
+    lines = [" ".join(l.split()) for l in buf.getvalue().splitlines() if "이 문서" in l and "/" in l]
+    return RARE_HEAD + "\n".join(f"- {l}" for l in lines) if lines else ""
+
+
 def load_client(backend: str = "claude"):
     """정본은 `llm_playbook.backends` 하나다 — 옛 경로는 위임 shim 이다.
 
@@ -437,13 +478,18 @@ def run_arm(arm: str, model: str, timeout: float, document: str,
         i["text"] for i in planted() if i["text"] in rules.replace("*", "")}
 
     lines = document.splitlines()
+    # 판정기와 같게 드문 낱말 목록을 붙인다 — 단어 점검은 파일을 읽으므로 잠깐 써 둔다
+    import tempfile
+    with tempfile.TemporaryDirectory() as d:
+        (Path(d) / "doc.md").write_text(document, encoding="utf-8")
+        note = rare_note(Path(d) / "doc.md")
     findings, cost, usages, models = [], 0.0, [], set()
     for a, b in chunks(document):
         part = "\n".join(f"{n:>3} | {line}" for n, line in enumerate(lines[a:b], a + 1))
         result = call_messages(
             model=model,
             system=system_prompt().format(rules=rules),
-            user=USER.format(document=part),
+            user=USER.format(document=part) + note,
             max_tokens=8000,
             temperature=0,
             timeout=timeout,

@@ -23,7 +23,9 @@ import os
 import re
 import sys
 
-sys.stdout.reconfigure(encoding="utf-8")
+# 판정기가 같은 프로세스에서 불러올 때 표준 출력이 이미 바뀌어 있을 수 있다(시험의 문자열 버퍼)
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 TABLE = os.path.join(HERE, "..", "data", "catalog", "work-korean-freq.json")

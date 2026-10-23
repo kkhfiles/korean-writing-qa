@@ -44,6 +44,8 @@ python -X utf8 P:/github/korean-writing-qa/scripts/rare_words.py --accept <낱�
 python -X utf8 ~/.claude/assets/check_record.py record <대상> --stage words --verdict <pass|fail>
 ```
 
+   - **발행 게이트는 이 기록을 요구하지 않는다** — 2층 판정기(`judge_layer2.py`)가 같은 목록을 판단 후보로 함께 받는다(2026-10-23 사용자 결정 · 대장의 단어 점검 몫 33건 중 32건을 짚음). 판정기를 못 부르는 PC 에서는 이 단계가 새 낱말을 잡는 유일한 기계라 그대로 한다.
+
 6. 결과를 구분해 처리한다.
    - `suggest_exact`: 문맥과 의미가 같으면 제안문으로 고친다.
    - `review_context`: 앞뒤 문장과 실제 상태를 확인한 뒤 다시 쓴다. 제안문을 그대로 복사하지 않는다.

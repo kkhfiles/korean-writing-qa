@@ -88,6 +88,20 @@ class JudgeTests(unittest.TestCase):
         self.assertEqual(probe.system_prompt().format(rules=probe.rules_for("guided")), sent["system"])
         self.assertEqual(probe.USER.format(document=probe.numbered(text)), sent["user"])
 
+    def test_the_rare_word_list_rides_along(self) -> None:
+        """(2026-10-23 사용자 결정) 단어 점검 기록을 따로 요구하는 대신 판정기가 드문 낱말 목록을 함께 읽는다.
+
+        탐침도 같은 함수(`probe.rare_note`)로 붙인다 — 잰 것과 도는 것이 같아야 한다.
+        """
+        fake = FakeBackend()
+        text = "# 제목\n\n포상을 먼저 정해 공지에 실음\n"
+        rc, _ = self.run_main([str(self.doc(text))], backend=fake.pair())
+        self.assertEqual(0, rc)
+        user = fake.calls[0]["user"]
+        self.assertIn(probe.RARE_HEAD.strip(), user)
+        self.assertIn("싣/VV", user, "단어 점검이 고른 낱말이 판정기 입력에 안 실렸습니다")
+        self.assertNotIn(probe.RARE_HEAD.strip(), fake.calls[0]["system"], "목록이 캐시되는 시스템 프롬프트에 섞였습니다")
+
     def test_every_call_leaves_a_cost_line(self) -> None:
         fake = FakeBackend(reply=[{"line": 3, "phrase": "알 수", "category": "c", "fix": "파악할 수"}])
         rc, out = self.run_main([str(self.doc("# 제목\n\n원인을 알 수 없었습니다.\n"))],
