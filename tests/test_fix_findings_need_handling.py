@@ -293,6 +293,18 @@ class FactTests(_Base):
         self.assertEqual(0, rc, out)
         self.assertEqual([], self.open_fixes())
 
+    def test_a_confirmed_fact_does_not_reopen_after_its_words_change(self) -> None:
+        """(2026-10-23) 확인한 주장의 수치를 다시 고쳐도 그 옛 지적이 되살아나지 않는다.
+
+        닫음 기록이 줄 해시에 묶여 있어, 사례집 갈래 수(36가지, 37가지 …)를 고칠 때마다 이미 확인한
+        옛 숫자 지적이 고친 줄에 다시 붙었다. 새 수치는 새 줄 판정이 짚는다.
+        """
+        rc, out = self.run_main([str(self.doc), "--dismiss", "3", "--reason", "확인함",
+                                 "--note", "scheduler/cron.toml 의 갱신 시각 설정으로 확인"])
+        self.assertEqual(0, rc, out)
+        self.doc.write_text(DOC.replace("매일 갱신됩니다", "매주 월요일에 갱신됩니다"), encoding="utf-8")
+        self.assertEqual([], self.open_fixes(), "확인한 옛 주장의 지적이 고친 줄에 다시 붙었습니다")
+
     def test_deleting_the_claim_closes_it(self) -> None:
         self.doc.write_text(DOC.replace("업무 목록은 매일 갱신됩니다.\n\n", ""), encoding="utf-8")
         self.assertEqual([], self.open_fixes(), "확인 안 된 주장을 지웠는데 지적이 엉뚱한 줄에 붙었습니다")
