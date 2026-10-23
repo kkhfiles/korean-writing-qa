@@ -42,7 +42,8 @@ FILES = {
     "candidates": "skills/humanize-korean/references/taxonomy-candidates.md",
     "marketplace": ".claude-plugin/marketplace.json",
 }
-TIMEOUT = 15
+#: 파일 하나 받는 시간 — 세션 시작 훅이 부르므로 짧게(세 파일이 다 막혀도 15초 안)
+TIMEOUT = 5
 
 HEAD = re.compile(r"^###\s+([A-J]-\d+)\.\s*(.*)$")
 QUICK = re.compile(r"quick_pattern:\s*(.*?)(?:\s·\squick_fix|_\s*$|$)")

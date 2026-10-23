@@ -311,10 +311,11 @@ def render(summary: str) -> str:
 
 
 #: im-not-ai 분류 비교 — 주 1회(2026-10-23). 그 저장소가 바뀌면 새 패턴은 그 순간부터 미탐이다.
-#: 같으면 침묵 · 바뀌면 한 줄 · 못 받으면 세어 두었다가 세 주 이어지면 말한다(위 「판단 불가」 원칙).
+#: 같으면 침묵 · 바뀌면 한 줄 · 못 받으면 다음 날 다시 받고, 세 번 이어서 못 받으면 말한다(위 「판단 불가」 원칙).
+#: 세션 시작을 붙잡으므로 짧게 끊는다 — 비교 도구는 파일당 5초, 여기는 통째로 20초.
 UPSTREAM_DAYS = 7
 UPSTREAM_STALE = 3
-UPSTREAM_TIMEOUT = 40
+UPSTREAM_TIMEOUT = 20
 
 
 def upstream_due(state: dict, now: datetime) -> bool:

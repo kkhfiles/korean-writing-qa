@@ -253,3 +253,5 @@
 {"case_id": "C-254", "expect": "clean", "form": "prose", "kind": "상투 문형", "source": "im-not-ai 2.3.2 남은 흡수(2026-10-23)", "status": "pinned", "text": "시장 점유율이 3%p 줄었습니다.", "why": "은유를 글자 그대로 쓴 정상 문장"}
 {"case_id": "C-255", "expect": "finding", "form": "prose", "kind": "상투 문형", "source": "오염 시료 회수율 측정(2026-10-23)", "status": "pinned", "text": "수요가 계속 늘 것이라는 분석입니다.", "why": "「~라는 분석」 꼴 — 회수율 0%로 찾은 미탐"}
 {"case_id": "C-256", "expect": "finding", "form": "prose", "kind": "반복 문형", "source": "오염 시료 회수율 측정(2026-10-23)", "status": "pinned", "text": "API에 대해 검토하고, DB에 대해 정리하며, UI에 대해 결정합니다.", "why": "앞 글자가 영문인 「~에 대해」 밀집 — 회수율 0%로 찾은 미탐"}
+{"case_id": "C-257", "expect": "clean", "form": "prose", "kind": "상투 문형", "source": "im-not-ai 흡수 재검토(2026-10-23)", "status": "pinned", "text": "한 담당자가 두 과제를 맡습니다.", "why": "「한」이 「하나」 — 익명 인용 아님(재검토에서 찾은 오탐)"}
+{"case_id": "C-258", "expect": "finding", "form": "prose", "kind": "상투 문형", "source": "im-not-ai 흡수 재검토(2026-10-23)", "status": "pinned", "text": "업계 전망에 따르면 수요가 늘 것입니다. 한 전문가에 따르면 내년 상반기가 고비입니다.", "why": "「~에 따르면」 꼴 익명 인용"}
