@@ -63,6 +63,24 @@ class CarrierTests(unittest.TestCase):
                       f"운반 문서에 1층 주의가 있습니다 — 2층 지적과 섞입니다\n{out}")
 
 
+class ChunkTests(unittest.TestCase):
+    """운반 문서를 절 단위로 나눠 보낸다(2026-10-23) — 한 번에 보낸 답이 출력 상한에서 잘려 지적 0건으로 읽혔다."""
+
+    def test_chunks_cover_every_line_once_and_cut_only_at_sections(self) -> None:
+        doc = probe.CARRIER.read_text(encoding="utf-8")
+        lines = doc.splitlines()
+        parts = probe.chunks(doc)
+        self.assertEqual(0, parts[0][0])
+        self.assertEqual(len(lines), parts[-1][1])
+        for (a, b), (c, d) in zip(parts, parts[1:]):
+            self.assertEqual(b, c, "묶음 사이에 빠지거나 겹친 줄이 있습니다")
+            self.assertTrue(lines[c].startswith("## "), f"{c + 1}행은 절 경계가 아닙니다")
+        self.assertGreater(len(parts), 1, "운반 문서가 한 묶음이면 다시 출력 상한에 걸립니다")
+
+    def test_a_short_document_stays_one_chunk(self) -> None:
+        self.assertEqual([(0, 3)], probe.chunks("# 제목\n\n본문"))
+
+
 class HeldOutTests(unittest.TestCase):
     """예비 예문 — 규칙이 **인용하지 않은** 같은 갈래의 예문.
 

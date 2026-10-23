@@ -201,7 +201,8 @@ def malformed(items) -> int:
     return bad
 
 
-USER = """다음 문서를 점검한다. 줄 번호는 1부터 센다.
+#: 절 단위로 나눠 보내면 둘째 묶음부터 번호가 1이 아니다 — 적힌 번호를 그대로 쓰게 한다(2026-10-23)
+USER = """다음 문서를 점검한다. 줄 번호는 각 줄 앞에 적힌 번호를 그대로 쓴다.
 
 ```
 {document}
@@ -405,27 +406,57 @@ def score(items: list[dict], findings: list, document: str,
             "인용": tally(True), "비인용": tally(False)}
 
 
+#: 한 번에 보내는 줄 수 — 절(`## `) 경계에서 이 크기 안팎으로 묶는다(2026-10-23).
+#: 운반 문서가 242줄 · 심은 것 122건으로 커지자 한 번에 보낸 답이 출력 상한에서 잘려 지적 0건으로
+#: 읽혔다(0.47달러 버림 · `runs/layer2-whitepaper-handoff-20261022`). im-not-ai 실측도 「청킹은 콜마다
+#: 규칙을 다시 실어 비싸므로 예외로만」이라, 출력이 넘칠 때만 나눌 크기로 잡았다 — 규칙은 캐시에서 읽힌다.
+CHUNK_LINES = 70
+
+
+def chunks(document: str) -> list[tuple[int, int]]:
+    """(시작 줄 0부터, 끝 줄 미포함) — 절 경계에서 나눈다. 줄 번호는 문서 전체 기준을 지킨다."""
+    lines = document.splitlines()
+    cuts = [0] + [i for i, line in enumerate(lines) if line.startswith("## ") and i] + [len(lines)]
+    out, start = [], 0
+    for a, b in zip(cuts, cuts[1:]):
+        if b - start > CHUNK_LINES and a > start:
+            out.append((start, a))
+            start = a
+    out.append((start, len(lines)))
+    return out
+
+
 def run_arm(arm: str, model: str, timeout: float, document: str,
-            items: list[dict], backend: str = "claude") -> dict:
+            items: list[dict], backend: str = "claude", rules: str | None = None) -> dict:
+    """`rules` 를 주면 그 규칙 글로 보낸다 — 규칙 글 비교(축약본 등)용. 인용 채점도 그 글로 한다."""
     call_messages, parse_json = load_client(backend)
     # 조립은 `rules_for` 한 곳에서만 한다. 두 곳이면 인용 채점이 보는 글과
     # 실제로 보낸 글이 어긋나고, 어긋나도 아무 데서도 안 걸린다.
-    rules = rules_for(arm)
+    rules = rules_for(arm) if rules is None else rules
+    cited = cited_texts(arm) if rules is None else {
+        i["text"] for i in planted() if i["text"] in rules.replace("*", "")}
 
-    result = call_messages(
-        model=model,
-        system=system_prompt().format(rules=rules),
-        user=USER.format(document=numbered(document)),
-        max_tokens=4000,
-        temperature=0,
-        timeout=timeout,
-    )
-    findings = as_findings(parse_json(result.get("text") or "") or [])
-    out = score(items, findings, document, cited_texts(arm))
-    out.update({"arm": arm, "model": result.get("model"),
-                "cost_usd": result.get("cost_usd"), "findings": findings,
+    lines = document.splitlines()
+    findings, cost, usages, models = [], 0.0, [], set()
+    for a, b in chunks(document):
+        part = "\n".join(f"{n:>3} | {line}" for n, line in enumerate(lines[a:b], a + 1))
+        result = call_messages(
+            model=model,
+            system=system_prompt().format(rules=rules),
+            user=USER.format(document=part),
+            max_tokens=8000,
+            temperature=0,
+            timeout=timeout,
+        )
+        findings += as_findings(parse_json(result.get("text") or "") or [])
+        cost += result.get("cost_usd") or 0.0
+        usages.append(result.get("usage"))
+        models.add(result.get("model"))
+    out = score(items, findings, document, cited)
+    out.update({"arm": arm, "model": ", ".join(sorted(m for m in models if m)),
+                "cost_usd": cost, "findings": findings, "calls": len(usages),
                 "rules_chars": len(rules), "carrier_sha": carrier_sha(),
-                "backend": backend, "usage": result.get("usage")})
+                "backend": backend, "usage": usages})
     return out
 
 
