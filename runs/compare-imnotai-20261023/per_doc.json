@@ -1,0 +1,9233 @@
+{
+ "human": [
+  {
+   "hangul": 793,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 1455,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "지시어 확인"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "지시어 확인"
+   ]
+  },
+  {
+   "hangul": 389,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "반복 문형"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "반복 문형"
+   ]
+  },
+  {
+   "hangul": 1468,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "지시어 확인"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "지시어 확인"
+   ]
+  },
+  {
+   "hangul": 591,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "반복 문형"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "반복 문형"
+   ]
+  },
+  {
+   "hangul": 338,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 16,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결"
+   ],
+   "ours_prose_err": 8,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": [
+    "반말 서술형"
+   ]
+  },
+  {
+   "hangul": 682,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 1393,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 1,
+   "ours_auto_err": 96,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결",
+    "형식 미표기"
+   ],
+   "ours_prose_err": 48,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": [
+    "반말 서술형"
+   ]
+  },
+  {
+   "hangul": 932,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 4,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결",
+    "지시어 확인"
+   ],
+   "ours_prose_err": 2,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "반말 서술형",
+    "지시어 확인"
+   ]
+  },
+  {
+   "hangul": 881,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 8,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "서술형 종결"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 808,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 10,
+   "ours_auto_warn": 3,
+   "ours_auto_kinds": [
+    "서술형 종결",
+    "절단형 의심",
+    "형식 미표기"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 2,
+   "ours_prose_kinds": [
+    "절단형 의심"
+   ]
+  },
+  {
+   "hangul": 307,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 1,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "서술형 종결"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 3032,
+   "imnotai_band": "low",
+   "imnotai_score": 2,
+   "antithesis": 1,
+   "ours_auto_err": 42,
+   "ours_auto_warn": 16,
+   "ours_auto_kinds": [
+    "말투 섞임",
+    "반말 서술형",
+    "반복 문형",
+    "번역투 이중 조사",
+    "상투 문형",
+    "서술형 종결",
+    "평가 수식어",
+    "형식 미표기"
+   ],
+   "ours_prose_err": 8,
+   "ours_prose_warn": 15,
+   "ours_prose_kinds": [
+    "말투 섞임",
+    "반말 서술형",
+    "반복 문형",
+    "번역투 이중 조사",
+    "상투 문형",
+    "평가 수식어"
+   ]
+  },
+  {
+   "hangul": 600,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 476,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 24,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결",
+    "형식 미표기"
+   ],
+   "ours_prose_err": 12,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": [
+    "반말 서술형"
+   ]
+  },
+  {
+   "hangul": 2131,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 17,
+   "ours_auto_warn": 7,
+   "ours_auto_kinds": [
+    "말투 섞임",
+    "반말 서술형",
+    "반복 문형",
+    "번역투 이중 조사",
+    "상투 문형",
+    "서술형 종결",
+    "형식 미표기"
+   ],
+   "ours_prose_err": 1,
+   "ours_prose_warn": 6,
+   "ours_prose_kinds": [
+    "말투 섞임",
+    "반말 서술형",
+    "반복 문형",
+    "번역투 이중 조사",
+    "상투 문형"
+   ]
+  },
+  {
+   "hangul": 2148,
+   "imnotai_band": "low",
+   "imnotai_score": 2,
+   "antithesis": 0,
+   "ours_auto_err": 22,
+   "ours_auto_warn": 2,
+   "ours_auto_kinds": [
+    "반복 문형",
+    "서술형 종결",
+    "형식 미표기"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "반복 문형"
+   ]
+  },
+  {
+   "hangul": 584,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 5,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "서술형 종결",
+    "평가 수식어"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "평가 수식어"
+   ]
+  },
+  {
+   "hangul": 718,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 2,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "절단형 종결"
+   ],
+   "ours_prose_err": 2,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": [
+    "절단형 종결"
+   ]
+  },
+  {
+   "hangul": 630,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 6,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "서술형 종결"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 986,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 429,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 2,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결"
+   ],
+   "ours_prose_err": 1,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": [
+    "반말 서술형"
+   ]
+  },
+  {
+   "hangul": 523,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 2,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결"
+   ],
+   "ours_prose_err": 1,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": [
+    "반말 서술형"
+   ]
+  },
+  {
+   "hangul": 1902,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 45,
+   "ours_auto_warn": 3,
+   "ours_auto_kinds": [
+    "서술형 종결",
+    "지시어 확인",
+    "형식 미표기"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 2,
+   "ours_prose_kinds": [
+    "지시어 확인"
+   ]
+  },
+  {
+   "hangul": 1902,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 45,
+   "ours_auto_warn": 3,
+   "ours_auto_kinds": [
+    "서술형 종결",
+    "지시어 확인",
+    "형식 미표기"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 2,
+   "ours_prose_kinds": [
+    "지시어 확인"
+   ]
+  },
+  {
+   "hangul": 544,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 6,
+   "ours_auto_warn": 3,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결",
+    "지어낸 명사구"
+   ],
+   "ours_prose_err": 3,
+   "ours_prose_warn": 3,
+   "ours_prose_kinds": [
+    "반말 서술형",
+    "지어낸 명사구"
+   ]
+  },
+  {
+   "hangul": 1902,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 45,
+   "ours_auto_warn": 3,
+   "ours_auto_kinds": [
+    "서술형 종결",
+    "지시어 확인",
+    "형식 미표기"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 2,
+   "ours_prose_kinds": [
+    "지시어 확인"
+   ]
+  },
+  {
+   "hangul": 486,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 11,
+   "ours_auto_warn": 2,
+   "ours_auto_kinds": [
+    "서술형 종결",
+    "지어낸 명사구",
+    "형식 미표기"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "지어낸 명사구"
+   ]
+  },
+  {
+   "hangul": 526,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 1,
+   "ours_auto_err": 12,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결"
+   ],
+   "ours_prose_err": 6,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": [
+    "반말 서술형"
+   ]
+  },
+  {
+   "hangul": 322,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 20,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결",
+    "형식 미표기"
+   ],
+   "ours_prose_err": 10,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": [
+    "반말 서술형"
+   ]
+  },
+  {
+   "hangul": 577,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 509,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "절단형 의심"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "절단형 의심"
+   ]
+  },
+  {
+   "hangul": 1561,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 66,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결",
+    "제목 서술형",
+    "진입점 서술형"
+   ],
+   "ours_prose_err": 32,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": [
+    "반말 서술형"
+   ]
+  },
+  {
+   "hangul": 452,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 1,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "서술형 종결",
+    "업무 글에 없는 말"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "업무 글에 없는 말"
+   ]
+  },
+  {
+   "hangul": 1811,
+   "imnotai_band": "low",
+   "imnotai_score": 2,
+   "antithesis": 0,
+   "ours_auto_err": 23,
+   "ours_auto_warn": 3,
+   "ours_auto_kinds": [
+    "말투 섞임",
+    "반말 서술형",
+    "반복 문형",
+    "서술형 종결",
+    "형식 미표기"
+   ],
+   "ours_prose_err": 1,
+   "ours_prose_warn": 2,
+   "ours_prose_kinds": [
+    "말투 섞임",
+    "반말 서술형",
+    "반복 문형"
+   ]
+  },
+  {
+   "hangul": 812,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 53,
+   "ours_auto_warn": 2,
+   "ours_auto_kinds": [
+    "말투 섞임",
+    "반말 서술형",
+    "서술형 종결",
+    "형식 미표기"
+   ],
+   "ours_prose_err": 26,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "말투 섞임",
+    "반말 서술형"
+   ]
+  },
+  {
+   "hangul": 924,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 2,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 932,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 10,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결"
+   ],
+   "ours_prose_err": 5,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": [
+    "반말 서술형"
+   ]
+  },
+  {
+   "hangul": 314,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 316,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 2,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결"
+   ],
+   "ours_prose_err": 1,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": [
+    "반말 서술형"
+   ]
+  },
+  {
+   "hangul": 626,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 6,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "서술형 종결"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 559,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "업무 글에 없는 말"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "업무 글에 없는 말"
+   ]
+  },
+  {
+   "hangul": 726,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 6,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결"
+   ],
+   "ours_prose_err": 3,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": [
+    "반말 서술형"
+   ]
+  },
+  {
+   "hangul": 731,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 18,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "모호한 지칭",
+    "반말 서술형",
+    "서술형 종결",
+    "진입점 서술형"
+   ],
+   "ours_prose_err": 10,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": [
+    "모호한 지칭",
+    "반말 서술형"
+   ]
+  },
+  {
+   "hangul": 894,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 897,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 8,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결",
+    "절단형 의심"
+   ],
+   "ours_prose_err": 4,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "반말 서술형",
+    "절단형 의심"
+   ]
+  },
+  {
+   "hangul": 343,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 334,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 1,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 2,
+   "ours_auto_kinds": [
+    "절단형 의심"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 2,
+   "ours_prose_kinds": [
+    "절단형 의심"
+   ]
+  },
+  {
+   "hangul": 536,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 6,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결"
+   ],
+   "ours_prose_err": 3,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": [
+    "반말 서술형"
+   ]
+  },
+  {
+   "hangul": 447,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 14,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "서술형 종결",
+    "형식 미표기"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 1088,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 26,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결",
+    "형식 미표기"
+   ],
+   "ours_prose_err": 13,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": [
+    "반말 서술형"
+   ]
+  },
+  {
+   "hangul": 1641,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 5,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결",
+    "지시어 확인"
+   ],
+   "ours_prose_err": 2,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "반말 서술형",
+    "지시어 확인"
+   ]
+  },
+  {
+   "hangul": 1140,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 9,
+   "ours_auto_warn": 2,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결",
+    "절단형 의심",
+    "절단형 종결"
+   ],
+   "ours_prose_err": 5,
+   "ours_prose_warn": 2,
+   "ours_prose_kinds": [
+    "반말 서술형",
+    "절단형 의심",
+    "절단형 종결"
+   ]
+  },
+  {
+   "hangul": 310,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 2,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결"
+   ],
+   "ours_prose_err": 1,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": [
+    "반말 서술형"
+   ]
+  },
+  {
+   "hangul": 308,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 3,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "서술형 종결"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 948,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 365,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 2,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결"
+   ],
+   "ours_prose_err": 1,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": [
+    "반말 서술형"
+   ]
+  },
+  {
+   "hangul": 1255,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 3,
+   "ours_auto_warn": 4,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결",
+    "업무 글에 없는 말",
+    "절단형 의심",
+    "절단형 종결",
+    "지시어 확인"
+   ],
+   "ours_prose_err": 2,
+   "ours_prose_warn": 4,
+   "ours_prose_kinds": [
+    "반말 서술형",
+    "업무 글에 없는 말",
+    "절단형 의심",
+    "절단형 종결",
+    "지시어 확인"
+   ]
+  },
+  {
+   "hangul": 2518,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 14,
+   "ours_auto_warn": 2,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결",
+    "지시어 확인"
+   ],
+   "ours_prose_err": 6,
+   "ours_prose_warn": 2,
+   "ours_prose_kinds": [
+    "반말 서술형",
+    "지시어 확인"
+   ]
+  },
+  {
+   "hangul": 839,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 1,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "서술형 종결"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 657,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 526,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 6,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결"
+   ],
+   "ours_prose_err": 3,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": [
+    "반말 서술형"
+   ]
+  },
+  {
+   "hangul": 1944,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 28,
+   "ours_auto_warn": 3,
+   "ours_auto_kinds": [
+    "말투 섞임",
+    "반말 서술형",
+    "서술형 종결",
+    "형식 미표기"
+   ],
+   "ours_prose_err": 13,
+   "ours_prose_warn": 2,
+   "ours_prose_kinds": [
+    "말투 섞임",
+    "반말 서술형"
+   ]
+  },
+  {
+   "hangul": 359,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 2,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "절단형 종결"
+   ],
+   "ours_prose_err": 2,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": [
+    "절단형 종결"
+   ]
+  },
+  {
+   "hangul": 476,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 2,
+   "ours_auto_warn": 2,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "번역투 이중 조사",
+    "서술형 종결",
+    "업무 글에 없는 말"
+   ],
+   "ours_prose_err": 1,
+   "ours_prose_warn": 2,
+   "ours_prose_kinds": [
+    "반말 서술형",
+    "번역투 이중 조사",
+    "업무 글에 없는 말"
+   ]
+  },
+  {
+   "hangul": 687,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 12,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결"
+   ],
+   "ours_prose_err": 6,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": [
+    "반말 서술형"
+   ]
+  },
+  {
+   "hangul": 945,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 14,
+   "ours_auto_warn": 2,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "반복 문형",
+    "서술형 종결",
+    "형식 미표기"
+   ],
+   "ours_prose_err": 4,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "반말 서술형",
+    "반복 문형"
+   ]
+  },
+  {
+   "hangul": 634,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 1,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "절단형 종결"
+   ],
+   "ours_prose_err": 1,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": [
+    "절단형 종결"
+   ]
+  },
+  {
+   "hangul": 653,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 1,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 311,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 2,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결"
+   ],
+   "ours_prose_err": 1,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": [
+    "반말 서술형"
+   ]
+  },
+  {
+   "hangul": 323,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 866,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 28,
+   "ours_auto_warn": 3,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결",
+    "업무 글에 없는 말",
+    "지시어 확인",
+    "형식 미표기"
+   ],
+   "ours_prose_err": 14,
+   "ours_prose_warn": 2,
+   "ours_prose_kinds": [
+    "반말 서술형",
+    "업무 글에 없는 말",
+    "지시어 확인"
+   ]
+  },
+  {
+   "hangul": 900,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 22,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결",
+    "형식 미표기"
+   ],
+   "ours_prose_err": 11,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": [
+    "반말 서술형"
+   ]
+  },
+  {
+   "hangul": 747,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 29,
+   "ours_auto_warn": 2,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결",
+    "절단형 의심",
+    "절단형 종결",
+    "지시어 확인"
+   ],
+   "ours_prose_err": 16,
+   "ours_prose_warn": 2,
+   "ours_prose_kinds": [
+    "반말 서술형",
+    "절단형 의심",
+    "절단형 종결",
+    "지시어 확인"
+   ]
+  },
+  {
+   "hangul": 581,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 819,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 8,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결"
+   ],
+   "ours_prose_err": 4,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": [
+    "반말 서술형"
+   ]
+  },
+  {
+   "hangul": 606,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 4,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결"
+   ],
+   "ours_prose_err": 2,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": [
+    "반말 서술형"
+   ]
+  },
+  {
+   "hangul": 876,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 1,
+   "ours_auto_err": 17,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "서술형 종결",
+    "형식 미표기"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 1537,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 31,
+   "ours_auto_warn": 3,
+   "ours_auto_kinds": [
+    "말투 섞임",
+    "반말 서술형",
+    "서술형 종결",
+    "형식 미표기"
+   ],
+   "ours_prose_err": 2,
+   "ours_prose_warn": 2,
+   "ours_prose_kinds": [
+    "말투 섞임",
+    "반말 서술형"
+   ]
+  },
+  {
+   "hangul": 1389,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 38,
+   "ours_auto_warn": 7,
+   "ours_auto_kinds": [
+    "말투 섞임",
+    "반말 서술형",
+    "서술형 종결",
+    "형식 미표기"
+   ],
+   "ours_prose_err": 6,
+   "ours_prose_warn": 6,
+   "ours_prose_kinds": [
+    "말투 섞임",
+    "반말 서술형"
+   ]
+  },
+  {
+   "hangul": 741,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 14,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결"
+   ],
+   "ours_prose_err": 7,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": [
+    "반말 서술형"
+   ]
+  },
+  {
+   "hangul": 1072,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 1,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "절단형 의심"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "절단형 의심"
+   ]
+  },
+  {
+   "hangul": 1707,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 53,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결",
+    "제목 서술형"
+   ],
+   "ours_prose_err": 26,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": [
+    "반말 서술형"
+   ]
+  },
+  {
+   "hangul": 335,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 14,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결"
+   ],
+   "ours_prose_err": 7,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": [
+    "반말 서술형"
+   ]
+  },
+  {
+   "hangul": 316,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 435,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 306,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 10,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결"
+   ],
+   "ours_prose_err": 5,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": [
+    "반말 서술형"
+   ]
+  },
+  {
+   "hangul": 1112,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 26,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결",
+    "형식 미표기"
+   ],
+   "ours_prose_err": 13,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": [
+    "반말 서술형"
+   ]
+  },
+  {
+   "hangul": 714,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 24,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결",
+    "형식 미표기"
+   ],
+   "ours_prose_err": 12,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": [
+    "반말 서술형"
+   ]
+  },
+  {
+   "hangul": 4097,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 23,
+   "ours_auto_warn": 4,
+   "ours_auto_kinds": [
+    "반복 문형",
+    "서술형 종결",
+    "절단형 의심",
+    "형식 미표기"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 3,
+   "ours_prose_kinds": [
+    "반복 문형",
+    "절단형 의심"
+   ]
+  },
+  {
+   "hangul": 330,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 386,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 2,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결"
+   ],
+   "ours_prose_err": 1,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": [
+    "반말 서술형"
+   ]
+  },
+  {
+   "hangul": 322,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 361,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 799,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 1,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "서술형 종결",
+    "형식 미표기"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 886,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 4,
+   "ours_auto_warn": 2,
+   "ours_auto_kinds": [
+    "서술형 종결",
+    "지시어 확인",
+    "형식 미표기"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "지시어 확인"
+   ]
+  },
+  {
+   "hangul": 404,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 4,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결"
+   ],
+   "ours_prose_err": 2,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": [
+    "반말 서술형"
+   ]
+  },
+  {
+   "hangul": 569,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 38,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결",
+    "형식 미표기"
+   ],
+   "ours_prose_err": 19,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": [
+    "반말 서술형"
+   ]
+  },
+  {
+   "hangul": 450,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 449,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 24,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결",
+    "형식 미표기"
+   ],
+   "ours_prose_err": 10,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": [
+    "반말 서술형"
+   ]
+  },
+  {
+   "hangul": 408,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 2,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결"
+   ],
+   "ours_prose_err": 1,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": [
+    "반말 서술형"
+   ]
+  },
+  {
+   "hangul": 618,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 1,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "서술형 종결"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 370,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 22,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "모호한 지칭",
+    "반말 서술형",
+    "서술형 종결",
+    "형식 미표기"
+   ],
+   "ours_prose_err": 12,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": [
+    "모호한 지칭",
+    "반말 서술형"
+   ]
+  },
+  {
+   "hangul": 772,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 32,
+   "ours_auto_warn": 4,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "반복 문형",
+    "서술형 종결",
+    "업무 글에 없는 말",
+    "형식 미표기"
+   ],
+   "ours_prose_err": 16,
+   "ours_prose_warn": 3,
+   "ours_prose_kinds": [
+    "반말 서술형",
+    "반복 문형",
+    "업무 글에 없는 말"
+   ]
+  },
+  {
+   "hangul": 1405,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 4,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "번역투 이중 조사",
+    "서술형 종결"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "번역투 이중 조사"
+   ]
+  },
+  {
+   "hangul": 1375,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "절단형 의심"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "절단형 의심"
+   ]
+  },
+  {
+   "hangul": 1192,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 1757,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 15,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "상투 문형",
+    "서술형 종결"
+   ],
+   "ours_prose_err": 7,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "반말 서술형",
+    "상투 문형"
+   ]
+  },
+  {
+   "hangul": 1801,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 1,
+   "ours_auto_err": 7,
+   "ours_auto_warn": 2,
+   "ours_auto_kinds": [
+    "모호한 지칭",
+    "반말 서술형",
+    "서술형 종결",
+    "업무 글에 없는 말"
+   ],
+   "ours_prose_err": 4,
+   "ours_prose_warn": 2,
+   "ours_prose_kinds": [
+    "모호한 지칭",
+    "반말 서술형",
+    "업무 글에 없는 말"
+   ]
+  },
+  {
+   "hangul": 336,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 4,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결"
+   ],
+   "ours_prose_err": 2,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": [
+    "반말 서술형"
+   ]
+  },
+  {
+   "hangul": 992,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 1,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "모호한 지칭"
+   ],
+   "ours_prose_err": 1,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": [
+    "모호한 지칭"
+   ]
+  },
+  {
+   "hangul": 869,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 2,
+   "ours_auto_kinds": [
+    "반복 문형",
+    "절단형 의심"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 2,
+   "ours_prose_kinds": [
+    "반복 문형",
+    "절단형 의심"
+   ]
+  },
+  {
+   "hangul": 556,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 6,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결"
+   ],
+   "ours_prose_err": 3,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": [
+    "반말 서술형"
+   ]
+  },
+  {
+   "hangul": 1688,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 35,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "모호한 지칭",
+    "반말 서술형",
+    "서술형 종결"
+   ],
+   "ours_prose_err": 18,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": [
+    "모호한 지칭",
+    "반말 서술형"
+   ]
+  },
+  {
+   "hangul": 375,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 4,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결"
+   ],
+   "ours_prose_err": 2,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": [
+    "반말 서술형"
+   ]
+  },
+  {
+   "hangul": 3034,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 2,
+   "ours_auto_err": 5,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결",
+    "지시어 확인"
+   ],
+   "ours_prose_err": 2,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "반말 서술형",
+    "지시어 확인"
+   ]
+  },
+  {
+   "hangul": 4271,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 19,
+   "ours_auto_warn": 4,
+   "ours_auto_kinds": [
+    "모호한 지칭",
+    "반말 서술형",
+    "반복 문형",
+    "서술형 종결",
+    "업무 글에 없는 말",
+    "지시어 확인"
+   ],
+   "ours_prose_err": 10,
+   "ours_prose_warn": 4,
+   "ours_prose_kinds": [
+    "모호한 지칭",
+    "반말 서술형",
+    "반복 문형",
+    "업무 글에 없는 말",
+    "지시어 확인"
+   ]
+  },
+  {
+   "hangul": 1075,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 1157,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 19,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결",
+    "절단형 종결"
+   ],
+   "ours_prose_err": 10,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": [
+    "반말 서술형",
+    "절단형 종결"
+   ]
+  },
+  {
+   "hangul": 684,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 324,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 551,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 384,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 435,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 3920,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 103,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "말투 섞임",
+    "모호한 지칭",
+    "반말 서술형",
+    "서술형 종결"
+   ],
+   "ours_prose_err": 52,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "말투 섞임",
+    "모호한 지칭",
+    "반말 서술형"
+   ]
+  },
+  {
+   "hangul": 1298,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 7,
+   "ours_auto_warn": 3,
+   "ours_auto_kinds": [
+    "상투 문형",
+    "서술형 종결",
+    "절단형 의심"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 3,
+   "ours_prose_kinds": [
+    "상투 문형",
+    "절단형 의심"
+   ]
+  },
+  {
+   "hangul": 1327,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 15,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결"
+   ],
+   "ours_prose_err": 7,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": [
+    "반말 서술형"
+   ]
+  },
+  {
+   "hangul": 981,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 5,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "모호한 지칭",
+    "반말 서술형",
+    "서술형 종결",
+    "평가 수식어"
+   ],
+   "ours_prose_err": 3,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "모호한 지칭",
+    "반말 서술형",
+    "평가 수식어"
+   ]
+  },
+  {
+   "hangul": 724,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 7,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결",
+    "절단형 종결"
+   ],
+   "ours_prose_err": 3,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": [
+    "반말 서술형",
+    "절단형 종결"
+   ]
+  },
+  {
+   "hangul": 1288,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 1,
+   "ours_auto_err": 4,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결",
+    "업무 글에 없는 말"
+   ],
+   "ours_prose_err": 2,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "반말 서술형",
+    "업무 글에 없는 말"
+   ]
+  },
+  {
+   "hangul": 5313,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 271,
+   "ours_auto_warn": 2,
+   "ours_auto_kinds": [
+    "말투 섞임",
+    "반말 서술형",
+    "서술형 종결",
+    "형식 미표기"
+   ],
+   "ours_prose_err": 135,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "말투 섞임",
+    "반말 서술형"
+   ]
+  },
+  {
+   "hangul": 1053,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 4,
+   "ours_auto_warn": 9,
+   "ours_auto_kinds": [
+    "서술형 종결",
+    "절단형 종결",
+    "해설을 인용 부호로 씀"
+   ],
+   "ours_prose_err": 1,
+   "ours_prose_warn": 9,
+   "ours_prose_kinds": [
+    "절단형 종결",
+    "해설을 인용 부호로 씀"
+   ]
+  },
+  {
+   "hangul": 1412,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 12,
+   "ours_auto_warn": 4,
+   "ours_auto_kinds": [
+    "모호한 지칭",
+    "반말 서술형",
+    "서술형 종결",
+    "업무 글에 없는 말",
+    "지시어 확인"
+   ],
+   "ours_prose_err": 7,
+   "ours_prose_warn": 4,
+   "ours_prose_kinds": [
+    "모호한 지칭",
+    "반말 서술형",
+    "업무 글에 없는 말",
+    "지시어 확인"
+   ]
+  },
+  {
+   "hangul": 1088,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 8,
+   "ours_auto_warn": 2,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결",
+    "업무 글에 없는 말"
+   ],
+   "ours_prose_err": 4,
+   "ours_prose_warn": 2,
+   "ours_prose_kinds": [
+    "반말 서술형",
+    "업무 글에 없는 말"
+   ]
+  },
+  {
+   "hangul": 1326,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 18,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결",
+    "지시어 확인"
+   ],
+   "ours_prose_err": 9,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "반말 서술형",
+    "지시어 확인"
+   ]
+  },
+  {
+   "hangul": 425,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 410,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 457,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 10,
+   "ours_auto_warn": 4,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결",
+    "해설을 인용 부호로 씀"
+   ],
+   "ours_prose_err": 4,
+   "ours_prose_warn": 4,
+   "ours_prose_kinds": [
+    "반말 서술형",
+    "해설을 인용 부호로 씀"
+   ]
+  },
+  {
+   "hangul": 1899,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 4,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "반복 문형",
+    "서술형 종결"
+   ],
+   "ours_prose_err": 2,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "반말 서술형",
+    "반복 문형"
+   ]
+  },
+  {
+   "hangul": 3527,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 1,
+   "ours_auto_err": 73,
+   "ours_auto_warn": 9,
+   "ours_auto_kinds": [
+    "말투 섞임",
+    "반말 서술형",
+    "서술형 종결",
+    "절단형 의심",
+    "절단형 종결",
+    "제목 서술형",
+    "지시어 확인",
+    "지어낸 명사구"
+   ],
+   "ours_prose_err": 35,
+   "ours_prose_warn": 9,
+   "ours_prose_kinds": [
+    "말투 섞임",
+    "반말 서술형",
+    "절단형 의심",
+    "절단형 종결",
+    "지시어 확인",
+    "지어낸 명사구"
+   ]
+  },
+  {
+   "hangul": 1373,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 8,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "모호한 지칭",
+    "반말 서술형",
+    "서술형 종결",
+    "지시어 확인"
+   ],
+   "ours_prose_err": 5,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "모호한 지칭",
+    "반말 서술형",
+    "지시어 확인"
+   ]
+  },
+  {
+   "hangul": 1140,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 49,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결",
+    "제목 서술형",
+    "지시어 확인"
+   ],
+   "ours_prose_err": 22,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "반말 서술형",
+    "지시어 확인"
+   ]
+  },
+  {
+   "hangul": 401,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 8,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결"
+   ],
+   "ours_prose_err": 4,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": [
+    "반말 서술형"
+   ]
+  },
+  {
+   "hangul": 2559,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 54,
+   "ours_auto_warn": 8,
+   "ours_auto_kinds": [
+    "말투 섞임",
+    "반말 서술형",
+    "상투 문형",
+    "서술형 종결",
+    "업무 글에 없는 말",
+    "절단형 의심",
+    "지시어 확인",
+    "형식 미표기"
+   ],
+   "ours_prose_err": 27,
+   "ours_prose_warn": 7,
+   "ours_prose_kinds": [
+    "말투 섞임",
+    "반말 서술형",
+    "상투 문형",
+    "업무 글에 없는 말",
+    "절단형 의심",
+    "지시어 확인"
+   ]
+  },
+  {
+   "hangul": 890,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 1,
+   "ours_auto_err": 30,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결",
+    "형식 미표기"
+   ],
+   "ours_prose_err": 15,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": [
+    "반말 서술형"
+   ]
+  },
+  {
+   "hangul": 1355,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 48,
+   "ours_auto_warn": 2,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결",
+    "지시어 확인",
+    "형식 미표기"
+   ],
+   "ours_prose_err": 24,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "반말 서술형",
+    "지시어 확인"
+   ]
+  },
+  {
+   "hangul": 2238,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 75,
+   "ours_auto_warn": 8,
+   "ours_auto_kinds": [
+    "말투 섞임",
+    "반말 서술형",
+    "서술형 종결",
+    "해설을 인용 부호로 씀",
+    "형식 미표기"
+   ],
+   "ours_prose_err": 35,
+   "ours_prose_warn": 7,
+   "ours_prose_kinds": [
+    "말투 섞임",
+    "반말 서술형",
+    "해설을 인용 부호로 씀"
+   ]
+  },
+  {
+   "hangul": 561,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 20,
+   "ours_auto_warn": 8,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결",
+    "업무 글에 없는 말",
+    "형식 미표기"
+   ],
+   "ours_prose_err": 10,
+   "ours_prose_warn": 7,
+   "ours_prose_kinds": [
+    "반말 서술형",
+    "업무 글에 없는 말"
+   ]
+  },
+  {
+   "hangul": 592,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 482,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 304,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 938,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 11,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결",
+    "절단형 종결"
+   ],
+   "ours_prose_err": 6,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": [
+    "반말 서술형",
+    "절단형 종결"
+   ]
+  },
+  {
+   "hangul": 638,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 14,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결",
+    "업무 글에 없는 말"
+   ],
+   "ours_prose_err": 7,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "반말 서술형",
+    "업무 글에 없는 말"
+   ]
+  },
+  {
+   "hangul": 609,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 9,
+   "ours_auto_warn": 5,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결",
+    "해설을 인용 부호로 씀"
+   ],
+   "ours_prose_err": 4,
+   "ours_prose_warn": 5,
+   "ours_prose_kinds": [
+    "반말 서술형",
+    "해설을 인용 부호로 씀"
+   ]
+  },
+  {
+   "hangul": 969,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 8,
+   "ours_auto_warn": 6,
+   "ours_auto_kinds": [
+    "서술형 종결",
+    "절단형 종결",
+    "지시어 확인",
+    "해설을 인용 부호로 씀"
+   ],
+   "ours_prose_err": 1,
+   "ours_prose_warn": 6,
+   "ours_prose_kinds": [
+    "절단형 종결",
+    "지시어 확인",
+    "해설을 인용 부호로 씀"
+   ]
+  },
+  {
+   "hangul": 462,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 2,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "반복 문형",
+    "서술형 종결"
+   ],
+   "ours_prose_err": 1,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "반말 서술형",
+    "반복 문형"
+   ]
+  },
+  {
+   "hangul": 659,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 6,
+   "ours_auto_warn": 2,
+   "ours_auto_kinds": [
+    "서술형 종결",
+    "해설을 인용 부호로 씀"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 2,
+   "ours_prose_kinds": [
+    "해설을 인용 부호로 씀"
+   ]
+  },
+  {
+   "hangul": 389,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 437,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 16,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결"
+   ],
+   "ours_prose_err": 8,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": [
+    "반말 서술형"
+   ]
+  },
+  {
+   "hangul": 369,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 16,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결"
+   ],
+   "ours_prose_err": 8,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": [
+    "반말 서술형"
+   ]
+  },
+  {
+   "hangul": 1933,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 44,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결",
+    "형식 미표기"
+   ],
+   "ours_prose_err": 22,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": [
+    "반말 서술형"
+   ]
+  },
+  {
+   "hangul": 3936,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 157,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결",
+    "진입점 서술형"
+   ],
+   "ours_prose_err": 78,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": [
+    "반말 서술형"
+   ]
+  },
+  {
+   "hangul": 451,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 541,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 2,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결",
+    "업무 글에 없는 말"
+   ],
+   "ours_prose_err": 1,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "반말 서술형",
+    "업무 글에 없는 말"
+   ]
+  },
+  {
+   "hangul": 389,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 6,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결"
+   ],
+   "ours_prose_err": 3,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": [
+    "반말 서술형"
+   ]
+  },
+  {
+   "hangul": 509,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "절단형 의심"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "절단형 의심"
+   ]
+  },
+  {
+   "hangul": 1189,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 9,
+   "ours_auto_warn": 2,
+   "ours_auto_kinds": [
+    "번역투 이중 조사",
+    "서술형 종결",
+    "업무 글에 없는 말"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 2,
+   "ours_prose_kinds": [
+    "번역투 이중 조사",
+    "업무 글에 없는 말"
+   ]
+  },
+  {
+   "hangul": 484,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 1013,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 25,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결",
+    "제목 서술형"
+   ],
+   "ours_prose_err": 10,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": [
+    "반말 서술형"
+   ]
+  },
+  {
+   "hangul": 375,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 2,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결"
+   ],
+   "ours_prose_err": 1,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": [
+    "반말 서술형"
+   ]
+  },
+  {
+   "hangul": 1618,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 32,
+   "ours_auto_warn": 2,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "반복 문형",
+    "서술형 종결",
+    "형식 미표기"
+   ],
+   "ours_prose_err": 16,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "반말 서술형",
+    "반복 문형"
+   ]
+  },
+  {
+   "hangul": 2807,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 82,
+   "ours_auto_warn": 5,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결",
+    "업무 글에 없는 말",
+    "지어낸 명사구",
+    "형식 미표기"
+   ],
+   "ours_prose_err": 41,
+   "ours_prose_warn": 4,
+   "ours_prose_kinds": [
+    "반말 서술형",
+    "업무 글에 없는 말",
+    "지어낸 명사구"
+   ]
+  },
+  {
+   "hangul": 497,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 487,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 585,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 16,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결"
+   ],
+   "ours_prose_err": 8,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": [
+    "반말 서술형"
+   ]
+  },
+  {
+   "hangul": 1057,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 24,
+   "ours_auto_warn": 3,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결",
+    "지시어 확인",
+    "형식 미표기"
+   ],
+   "ours_prose_err": 12,
+   "ours_prose_warn": 2,
+   "ours_prose_kinds": [
+    "반말 서술형",
+    "지시어 확인"
+   ]
+  },
+  {
+   "hangul": 4006,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 1,
+   "ours_auto_err": 130,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "모호한 지칭",
+    "반말 서술형",
+    "서술형 종결",
+    "지어낸 명사구",
+    "진입점 서술형"
+   ],
+   "ours_prose_err": 65,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "모호한 지칭",
+    "반말 서술형",
+    "지어낸 명사구"
+   ]
+  },
+  {
+   "hangul": 566,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "업무 글에 없는 말"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "업무 글에 없는 말"
+   ]
+  },
+  {
+   "hangul": 589,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 6,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결"
+   ],
+   "ours_prose_err": 3,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": [
+    "반말 서술형"
+   ]
+  },
+  {
+   "hangul": 1736,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 89,
+   "ours_auto_warn": 2,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결",
+    "업무 글에 없는 말",
+    "제목 서술형",
+    "지시어 확인"
+   ],
+   "ours_prose_err": 44,
+   "ours_prose_warn": 2,
+   "ours_prose_kinds": [
+    "반말 서술형",
+    "업무 글에 없는 말",
+    "지시어 확인"
+   ]
+  },
+  {
+   "hangul": 400,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 12,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결"
+   ],
+   "ours_prose_err": 6,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": [
+    "반말 서술형"
+   ]
+  },
+  {
+   "hangul": 318,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 840,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 22,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결",
+    "형식 미표기"
+   ],
+   "ours_prose_err": 11,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": [
+    "반말 서술형"
+   ]
+  },
+  {
+   "hangul": 1198,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 2,
+   "ours_auto_warn": 3,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결",
+    "절단형 의심",
+    "지시어 확인"
+   ],
+   "ours_prose_err": 1,
+   "ours_prose_warn": 3,
+   "ours_prose_kinds": [
+    "반말 서술형",
+    "절단형 의심",
+    "지시어 확인"
+   ]
+  },
+  {
+   "hangul": 554,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 709,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 14,
+   "ours_auto_warn": 2,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "상투 문형",
+    "서술형 종결",
+    "형식 미표기"
+   ],
+   "ours_prose_err": 4,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "반말 서술형",
+    "상투 문형"
+   ]
+  },
+  {
+   "hangul": 1230,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 2,
+   "ours_auto_warn": 2,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결",
+    "절단형 의심",
+    "지시어 확인"
+   ],
+   "ours_prose_err": 1,
+   "ours_prose_warn": 2,
+   "ours_prose_kinds": [
+    "반말 서술형",
+    "절단형 의심",
+    "지시어 확인"
+   ]
+  },
+  {
+   "hangul": 587,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 2,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결"
+   ],
+   "ours_prose_err": 1,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": [
+    "반말 서술형"
+   ]
+  },
+  {
+   "hangul": 343,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 4,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결"
+   ],
+   "ours_prose_err": 2,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": [
+    "반말 서술형"
+   ]
+  },
+  {
+   "hangul": 1473,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 38,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결",
+    "형식 미표기"
+   ],
+   "ours_prose_err": 19,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": [
+    "반말 서술형"
+   ]
+  },
+  {
+   "hangul": 4203,
+   "imnotai_band": "low",
+   "imnotai_score": 2,
+   "antithesis": 0,
+   "ours_auto_err": 138,
+   "ours_auto_warn": 6,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결",
+    "업무 글에 없는 말",
+    "형식 미표기"
+   ],
+   "ours_prose_err": 69,
+   "ours_prose_warn": 5,
+   "ours_prose_kinds": [
+    "반말 서술형",
+    "업무 글에 없는 말"
+   ]
+  },
+  {
+   "hangul": 1590,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 12,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결",
+    "업무 글에 없는 말"
+   ],
+   "ours_prose_err": 6,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "반말 서술형",
+    "업무 글에 없는 말"
+   ]
+  },
+  {
+   "hangul": 406,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 1155,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 28,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결",
+    "형식 미표기"
+   ],
+   "ours_prose_err": 14,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": [
+    "반말 서술형"
+   ]
+  },
+  {
+   "hangul": 1658,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 3,
+   "ours_auto_kinds": [
+    "업무 글에 없는 말"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 3,
+   "ours_prose_kinds": [
+    "업무 글에 없는 말"
+   ]
+  },
+  {
+   "hangul": 385,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 2,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결"
+   ],
+   "ours_prose_err": 1,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": [
+    "반말 서술형"
+   ]
+  },
+  {
+   "hangul": 322,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 4,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결",
+    "절단형 의심"
+   ],
+   "ours_prose_err": 2,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "반말 서술형",
+    "절단형 의심"
+   ]
+  },
+  {
+   "hangul": 366,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 2642,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 69,
+   "ours_auto_warn": 2,
+   "ours_auto_kinds": [
+    "모호한 지칭",
+    "반말 서술형",
+    "서술형 종결",
+    "이중 피동",
+    "절단형 의심",
+    "절단형 종결",
+    "지시어 확인"
+   ],
+   "ours_prose_err": 36,
+   "ours_prose_warn": 2,
+   "ours_prose_kinds": [
+    "모호한 지칭",
+    "반말 서술형",
+    "이중 피동",
+    "절단형 의심",
+    "절단형 종결",
+    "지시어 확인"
+   ]
+  },
+  {
+   "hangul": 4936,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 1,
+   "ours_auto_err": 187,
+   "ours_auto_warn": 4,
+   "ours_auto_kinds": [
+    "모호한 지칭",
+    "반말 서술형",
+    "서술형 종결",
+    "업무 글에 없는 말",
+    "지어낸 명사구"
+   ],
+   "ours_prose_err": 94,
+   "ours_prose_warn": 4,
+   "ours_prose_kinds": [
+    "모호한 지칭",
+    "반말 서술형",
+    "업무 글에 없는 말",
+    "지어낸 명사구"
+   ]
+  },
+  {
+   "hangul": 1396,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 15,
+   "ours_auto_warn": 2,
+   "ours_auto_kinds": [
+    "서술형 종결",
+    "해설을 인용 부호로 씀",
+    "형식 미표기"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "해설을 인용 부호로 씀"
+   ]
+  },
+  {
+   "hangul": 1919,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 94,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결",
+    "형식 미표기"
+   ],
+   "ours_prose_err": 47,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": [
+    "반말 서술형"
+   ]
+  },
+  {
+   "hangul": 596,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 30,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결",
+    "형식 미표기"
+   ],
+   "ours_prose_err": 15,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": [
+    "반말 서술형"
+   ]
+  },
+  {
+   "hangul": 1945,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 7,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "모호한 지칭",
+    "반말 서술형",
+    "서술형 종결",
+    "업무 글에 없는 말"
+   ],
+   "ours_prose_err": 4,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "모호한 지칭",
+    "반말 서술형",
+    "업무 글에 없는 말"
+   ]
+  },
+  {
+   "hangul": 351,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 559,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "상투 문형"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "상투 문형"
+   ]
+  },
+  {
+   "hangul": 664,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 9,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결"
+   ],
+   "ours_prose_err": 4,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": [
+    "반말 서술형"
+   ]
+  },
+  {
+   "hangul": 737,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 8,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결"
+   ],
+   "ours_prose_err": 2,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": [
+    "반말 서술형"
+   ]
+  },
+  {
+   "hangul": 330,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 12,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결"
+   ],
+   "ours_prose_err": 6,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": [
+    "반말 서술형"
+   ]
+  },
+  {
+   "hangul": 687,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 3590,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 155,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결",
+    "진입점 서술형"
+   ],
+   "ours_prose_err": 77,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": [
+    "반말 서술형"
+   ]
+  },
+  {
+   "hangul": 1344,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 8,
+   "ours_auto_warn": 4,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결",
+    "업무 글에 없는 말",
+    "절단형 의심",
+    "지시어 확인"
+   ],
+   "ours_prose_err": 4,
+   "ours_prose_warn": 4,
+   "ours_prose_kinds": [
+    "반말 서술형",
+    "업무 글에 없는 말",
+    "절단형 의심",
+    "지시어 확인"
+   ]
+  },
+  {
+   "hangul": 650,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 9,
+   "ours_auto_warn": 4,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결",
+    "업무 글에 없는 말",
+    "절단형 의심"
+   ],
+   "ours_prose_err": 4,
+   "ours_prose_warn": 4,
+   "ours_prose_kinds": [
+    "반말 서술형",
+    "업무 글에 없는 말",
+    "절단형 의심"
+   ]
+  },
+  {
+   "hangul": 327,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 6,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "서술형 종결"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 311,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 826,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 6,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결",
+    "제목 형태 확인"
+   ],
+   "ours_prose_err": 3,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": [
+    "반말 서술형"
+   ]
+  },
+  {
+   "hangul": 2854,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 869,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 2,
+   "ours_auto_err": 4,
+   "ours_auto_warn": 3,
+   "ours_auto_kinds": [
+    "「~가 아니라」 반복",
+    "반말 서술형",
+    "번역투 이중 조사",
+    "서술형 종결",
+    "제목 형태 확인"
+   ],
+   "ours_prose_err": 2,
+   "ours_prose_warn": 2,
+   "ours_prose_kinds": [
+    "「~가 아니라」 반복",
+    "반말 서술형",
+    "번역투 이중 조사"
+   ]
+  },
+  {
+   "hangul": 543,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 2,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결"
+   ],
+   "ours_prose_err": 1,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": [
+    "반말 서술형"
+   ]
+  },
+  {
+   "hangul": 607,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 4,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결"
+   ],
+   "ours_prose_err": 2,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": [
+    "반말 서술형"
+   ]
+  },
+  {
+   "hangul": 466,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 1,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "서술형 종결"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 354,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 2,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "번역투 이중 조사",
+    "서술형 종결"
+   ],
+   "ours_prose_err": 1,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "반말 서술형",
+    "번역투 이중 조사"
+   ]
+  },
+  {
+   "hangul": 322,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 2,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결"
+   ],
+   "ours_prose_err": 1,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": [
+    "반말 서술형"
+   ]
+  },
+  {
+   "hangul": 300,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 2,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결"
+   ],
+   "ours_prose_err": 1,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": [
+    "반말 서술형"
+   ]
+  },
+  {
+   "hangul": 594,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 689,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 6,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결",
+    "제목 서술형"
+   ],
+   "ours_prose_err": 1,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": [
+    "반말 서술형"
+   ]
+  },
+  {
+   "hangul": 485,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 418,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 16,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결",
+    "형식 미표기"
+   ],
+   "ours_prose_err": 8,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": [
+    "반말 서술형"
+   ]
+  },
+  {
+   "hangul": 367,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 15,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "모호한 지칭",
+    "반말 서술형",
+    "서술형 종결",
+    "지시어 확인"
+   ],
+   "ours_prose_err": 8,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "모호한 지칭",
+    "반말 서술형",
+    "지시어 확인"
+   ]
+  },
+  {
+   "hangul": 385,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 1,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "모호한 지칭",
+    "평가 수식어"
+   ],
+   "ours_prose_err": 1,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "모호한 지칭",
+    "평가 수식어"
+   ]
+  },
+  {
+   "hangul": 937,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 13,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "모호한 지칭",
+    "반말 서술형",
+    "반복 문형",
+    "서술형 종결"
+   ],
+   "ours_prose_err": 7,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "모호한 지칭",
+    "반말 서술형",
+    "반복 문형"
+   ]
+  },
+  {
+   "hangul": 2039,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 1,
+   "ours_auto_err": 2,
+   "ours_auto_warn": 2,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결",
+    "지시어 확인",
+    "형식 미표기"
+   ],
+   "ours_prose_err": 1,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "반말 서술형",
+    "지시어 확인"
+   ]
+  },
+  {
+   "hangul": 614,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 20,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결",
+    "형식 미표기"
+   ],
+   "ours_prose_err": 10,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": [
+    "반말 서술형"
+   ]
+  },
+  {
+   "hangul": 1037,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 1,
+   "ours_auto_err": 4,
+   "ours_auto_warn": 2,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결",
+    "지어낸 명사구",
+    "형식 미표기"
+   ],
+   "ours_prose_err": 2,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "반말 서술형",
+    "지어낸 명사구"
+   ]
+  },
+  {
+   "hangul": 2299,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 50,
+   "ours_auto_warn": 4,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "반복 문형",
+    "번역투 이중 조사",
+    "서술형 종결",
+    "지시어 확인",
+    "형식 미표기"
+   ],
+   "ours_prose_err": 25,
+   "ours_prose_warn": 3,
+   "ours_prose_kinds": [
+    "반말 서술형",
+    "반복 문형",
+    "번역투 이중 조사",
+    "지시어 확인"
+   ]
+  },
+  {
+   "hangul": 1387,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 56,
+   "ours_auto_warn": 4,
+   "ours_auto_kinds": [
+    "말투 섞임",
+    "반말 서술형",
+    "상투 문형",
+    "서술형 종결",
+    "업무 글에 없는 말",
+    "제목 서술형",
+    "형식 미표기"
+   ],
+   "ours_prose_err": 27,
+   "ours_prose_warn": 3,
+   "ours_prose_kinds": [
+    "말투 섞임",
+    "반말 서술형",
+    "상투 문형",
+    "업무 글에 없는 말"
+   ]
+  },
+  {
+   "hangul": 2369,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 43,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "반복 문형",
+    "서술형 종결",
+    "제목 서술형"
+   ],
+   "ours_prose_err": 21,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "반말 서술형",
+    "반복 문형"
+   ]
+  },
+  {
+   "hangul": 1247,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 2,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "반복 문형",
+    "서술형 종결"
+   ],
+   "ours_prose_err": 1,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "반말 서술형",
+    "반복 문형"
+   ]
+  },
+  {
+   "hangul": 624,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 348,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 5,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결",
+    "이중 피동"
+   ],
+   "ours_prose_err": 3,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": [
+    "반말 서술형",
+    "이중 피동"
+   ]
+  },
+  {
+   "hangul": 399,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 6,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결"
+   ],
+   "ours_prose_err": 3,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": [
+    "반말 서술형"
+   ]
+  },
+  {
+   "hangul": 1460,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 16,
+   "ours_auto_warn": 2,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "상투 문형",
+    "서술형 종결",
+    "지어낸 명사구"
+   ],
+   "ours_prose_err": 8,
+   "ours_prose_warn": 2,
+   "ours_prose_kinds": [
+    "반말 서술형",
+    "상투 문형",
+    "지어낸 명사구"
+   ]
+  },
+  {
+   "hangul": 309,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 12,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결"
+   ],
+   "ours_prose_err": 6,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": [
+    "반말 서술형"
+   ]
+  },
+  {
+   "hangul": 375,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 4,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결"
+   ],
+   "ours_prose_err": 2,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": [
+    "반말 서술형"
+   ]
+  },
+  {
+   "hangul": 438,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "절단형 의심"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "절단형 의심"
+   ]
+  },
+  {
+   "hangul": 322,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 391,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 15,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "모호한 지칭",
+    "반말 서술형",
+    "서술형 종결"
+   ],
+   "ours_prose_err": 8,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": [
+    "모호한 지칭",
+    "반말 서술형"
+   ]
+  },
+  {
+   "hangul": 321,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 28,
+   "ours_auto_warn": 2,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결",
+    "지시어 확인",
+    "형식 미표기"
+   ],
+   "ours_prose_err": 14,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "반말 서술형",
+    "지시어 확인"
+   ]
+  },
+  {
+   "hangul": 634,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 1208,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 8,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "모호한 지칭",
+    "반말 서술형",
+    "서술형 종결"
+   ],
+   "ours_prose_err": 4,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": [
+    "모호한 지칭",
+    "반말 서술형"
+   ]
+  },
+  {
+   "hangul": 1850,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 9,
+   "ours_auto_warn": 3,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결",
+    "절단형 의심",
+    "지시어 확인"
+   ],
+   "ours_prose_err": 2,
+   "ours_prose_warn": 3,
+   "ours_prose_kinds": [
+    "반말 서술형",
+    "절단형 의심",
+    "지시어 확인"
+   ]
+  },
+  {
+   "hangul": 316,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 555,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 556,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 611,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 2,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "모호한 지칭",
+    "절단형 의심"
+   ],
+   "ours_prose_err": 2,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "모호한 지칭",
+    "절단형 의심"
+   ]
+  },
+  {
+   "hangul": 341,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 2,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결"
+   ],
+   "ours_prose_err": 1,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": [
+    "반말 서술형"
+   ]
+  },
+  {
+   "hangul": 1165,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 2,
+   "ours_auto_warn": 3,
+   "ours_auto_kinds": [
+    "「~하는 자리」 의심",
+    "반말 서술형",
+    "서술형 종결",
+    "절단형 의심"
+   ],
+   "ours_prose_err": 1,
+   "ours_prose_warn": 3,
+   "ours_prose_kinds": [
+    "「~하는 자리」 의심",
+    "반말 서술형",
+    "절단형 의심"
+   ]
+  },
+  {
+   "hangul": 1630,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 2,
+   "ours_auto_warn": 2,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결",
+    "절단형 의심"
+   ],
+   "ours_prose_err": 1,
+   "ours_prose_warn": 2,
+   "ours_prose_kinds": [
+    "반말 서술형",
+    "절단형 의심"
+   ]
+  },
+  {
+   "hangul": 1285,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 2,
+   "ours_auto_warn": 2,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결",
+    "절단형 의심"
+   ],
+   "ours_prose_err": 1,
+   "ours_prose_warn": 2,
+   "ours_prose_kinds": [
+    "반말 서술형",
+    "절단형 의심"
+   ]
+  },
+  {
+   "hangul": 1217,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 2,
+   "ours_auto_warn": 2,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결",
+    "절단형 의심"
+   ],
+   "ours_prose_err": 1,
+   "ours_prose_warn": 2,
+   "ours_prose_kinds": [
+    "반말 서술형",
+    "절단형 의심"
+   ]
+  },
+  {
+   "hangul": 1315,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 7,
+   "ours_auto_warn": 2,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결",
+    "절단형 의심"
+   ],
+   "ours_prose_err": 1,
+   "ours_prose_warn": 2,
+   "ours_prose_kinds": [
+    "반말 서술형",
+    "절단형 의심"
+   ]
+  },
+  {
+   "hangul": 1971,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 20,
+   "ours_auto_warn": 6,
+   "ours_auto_kinds": [
+    "말투 섞임",
+    "반말 서술형",
+    "반복 문형",
+    "서술형 종결",
+    "절단형 의심",
+    "평가 수식어",
+    "형식 미표기"
+   ],
+   "ours_prose_err": 1,
+   "ours_prose_warn": 5,
+   "ours_prose_kinds": [
+    "말투 섞임",
+    "반말 서술형",
+    "반복 문형",
+    "절단형 의심",
+    "평가 수식어"
+   ]
+  },
+  {
+   "hangul": 2311,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 24,
+   "ours_auto_warn": 8,
+   "ours_auto_kinds": [
+    "말투 섞임",
+    "반말 서술형",
+    "반복 문형",
+    "서술형 종결",
+    "절단형 의심",
+    "평가 수식어",
+    "형식 미표기"
+   ],
+   "ours_prose_err": 3,
+   "ours_prose_warn": 7,
+   "ours_prose_kinds": [
+    "말투 섞임",
+    "반말 서술형",
+    "반복 문형",
+    "절단형 의심",
+    "평가 수식어"
+   ]
+  },
+  {
+   "hangul": 1682,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 22,
+   "ours_auto_warn": 5,
+   "ours_auto_kinds": [
+    "말투 섞임",
+    "반말 서술형",
+    "반복 문형",
+    "서술형 종결",
+    "평가 수식어",
+    "형식 미표기"
+   ],
+   "ours_prose_err": 2,
+   "ours_prose_warn": 4,
+   "ours_prose_kinds": [
+    "말투 섞임",
+    "반말 서술형",
+    "반복 문형",
+    "평가 수식어"
+   ]
+  },
+  {
+   "hangul": 1682,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 22,
+   "ours_auto_warn": 5,
+   "ours_auto_kinds": [
+    "말투 섞임",
+    "반말 서술형",
+    "반복 문형",
+    "서술형 종결",
+    "평가 수식어",
+    "형식 미표기"
+   ],
+   "ours_prose_err": 2,
+   "ours_prose_warn": 4,
+   "ours_prose_kinds": [
+    "말투 섞임",
+    "반말 서술형",
+    "반복 문형",
+    "평가 수식어"
+   ]
+  },
+  {
+   "hangul": 1548,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 22,
+   "ours_auto_warn": 5,
+   "ours_auto_kinds": [
+    "말투 섞임",
+    "반말 서술형",
+    "반복 문형",
+    "서술형 종결",
+    "평가 수식어",
+    "형식 미표기"
+   ],
+   "ours_prose_err": 2,
+   "ours_prose_warn": 4,
+   "ours_prose_kinds": [
+    "말투 섞임",
+    "반말 서술형",
+    "반복 문형",
+    "평가 수식어"
+   ]
+  },
+  {
+   "hangul": 1541,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 22,
+   "ours_auto_warn": 4,
+   "ours_auto_kinds": [
+    "모호한 지칭",
+    "반복 문형",
+    "서술형 종결",
+    "절단형 의심",
+    "절단형 종결",
+    "평가 수식어",
+    "형식 미표기"
+   ],
+   "ours_prose_err": 2,
+   "ours_prose_warn": 3,
+   "ours_prose_kinds": [
+    "모호한 지칭",
+    "반복 문형",
+    "절단형 의심",
+    "절단형 종결",
+    "평가 수식어"
+   ]
+  },
+  {
+   "hangul": 537,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 2,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "모호한 지칭",
+    "절단형 의심",
+    "절단형 종결"
+   ],
+   "ours_prose_err": 2,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "모호한 지칭",
+    "절단형 의심",
+    "절단형 종결"
+   ]
+  },
+  {
+   "hangul": 714,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 6,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "모호한 지칭",
+    "서술형 종결",
+    "절단형 의심",
+    "절단형 종결"
+   ],
+   "ours_prose_err": 2,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "모호한 지칭",
+    "절단형 의심",
+    "절단형 종결"
+   ]
+  },
+  {
+   "hangul": 786,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 5,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "모호한 지칭",
+    "반말 서술형",
+    "서술형 종결",
+    "업무 글에 없는 말",
+    "절단형 종결"
+   ],
+   "ours_prose_err": 4,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "모호한 지칭",
+    "반말 서술형",
+    "업무 글에 없는 말",
+    "절단형 종결"
+   ]
+  },
+  {
+   "hangul": 664,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 4,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "모호한 지칭",
+    "절단형 종결"
+   ],
+   "ours_prose_err": 4,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": [
+    "모호한 지칭",
+    "절단형 종결"
+   ]
+  },
+  {
+   "hangul": 1290,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 7,
+   "ours_auto_warn": 2,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결",
+    "절단형 의심"
+   ],
+   "ours_prose_err": 1,
+   "ours_prose_warn": 2,
+   "ours_prose_kinds": [
+    "반말 서술형",
+    "절단형 의심"
+   ]
+  },
+  {
+   "hangul": 775,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 4,
+   "ours_auto_warn": 3,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결",
+    "평가 수식어"
+   ],
+   "ours_prose_err": 2,
+   "ours_prose_warn": 3,
+   "ours_prose_kinds": [
+    "반말 서술형",
+    "평가 수식어"
+   ]
+  },
+  {
+   "hangul": 662,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 4,
+   "ours_auto_warn": 3,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결",
+    "평가 수식어"
+   ],
+   "ours_prose_err": 2,
+   "ours_prose_warn": 3,
+   "ours_prose_kinds": [
+    "반말 서술형",
+    "평가 수식어"
+   ]
+  },
+  {
+   "hangul": 549,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 756,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 327,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 647,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 8,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결"
+   ],
+   "ours_prose_err": 4,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": [
+    "반말 서술형"
+   ]
+  },
+  {
+   "hangul": 1077,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 2,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "모호한 지칭"
+   ],
+   "ours_prose_err": 2,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": [
+    "모호한 지칭"
+   ]
+  },
+  {
+   "hangul": 443,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 632,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 23,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "「~하는 자리」 의심",
+    "모호한 지칭",
+    "반말 서술형",
+    "서술형 종결",
+    "제목 서술형"
+   ],
+   "ours_prose_err": 11,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "「~하는 자리」 의심",
+    "모호한 지칭",
+    "반말 서술형"
+   ]
+  },
+  {
+   "hangul": 414,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 346,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 337,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 1,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "모호한 지칭"
+   ],
+   "ours_prose_err": 1,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": [
+    "모호한 지칭"
+   ]
+  }
+ ],
+ "ai": [
+  {
+   "hangul": 4938,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 8,
+   "ours_auto_err": 135,
+   "ours_auto_warn": 22,
+   "ours_auto_kinds": [
+    "「~가 아니라」 반복",
+    "「회기」",
+    "낯선 사내 용어",
+    "반말 서술형",
+    "서술형 종결",
+    "스캔 가치 없는 라벨",
+    "업무 글에 없는 말",
+    "절 번호로 가리킴",
+    "절단형 의심",
+    "제목 명사형 위반",
+    "지시어 확인",
+    "진입점 서술형"
+   ],
+   "ours_prose_err": 76,
+   "ours_prose_warn": 22,
+   "ours_prose_kinds": [
+    "「~가 아니라」 반복",
+    "「회기」",
+    "낯선 사내 용어",
+    "반말 서술형",
+    "스캔 가치 없는 라벨",
+    "업무 글에 없는 말",
+    "절 번호로 가리킴",
+    "절단형 의심",
+    "지시어 확인"
+   ]
+  },
+  {
+   "hangul": 2286,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 35,
+   "ours_auto_warn": 16,
+   "ours_auto_kinds": [
+    "모호한 지칭",
+    "반복 문형",
+    "서술형 종결",
+    "절 번호로 가리킴",
+    "절단형 의심",
+    "절단형 종결",
+    "진입점 서술형",
+    "해설을 인용 부호로 씀",
+    "형식 미표기"
+   ],
+   "ours_prose_err": 7,
+   "ours_prose_warn": 15,
+   "ours_prose_kinds": [
+    "모호한 지칭",
+    "반복 문형",
+    "절 번호로 가리킴",
+    "절단형 의심",
+    "절단형 종결",
+    "해설을 인용 부호로 씀"
+   ]
+  },
+  {
+   "hangul": 483,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 1,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "절단형 종결"
+   ],
+   "ours_prose_err": 1,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": [
+    "절단형 종결"
+   ]
+  },
+  {
+   "hangul": 6390,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 5,
+   "ours_auto_err": 23,
+   "ours_auto_warn": 15,
+   "ours_auto_kinds": [
+    "「~가 아니라」 반복",
+    "「회기」",
+    "낯선 사내 용어",
+    "반말 서술형",
+    "반복 문형",
+    "업무 글에 없는 말",
+    "절 번호로 가리킴",
+    "지시어 확인"
+   ],
+   "ours_prose_err": 23,
+   "ours_prose_warn": 15,
+   "ours_prose_kinds": [
+    "「~가 아니라」 반복",
+    "「회기」",
+    "낯선 사내 용어",
+    "반말 서술형",
+    "반복 문형",
+    "업무 글에 없는 말",
+    "절 번호로 가리킴",
+    "지시어 확인"
+   ]
+  },
+  {
+   "hangul": 880,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 13,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "절 번호로 가리킴",
+    "절단형 의심",
+    "제목 명사형 위반"
+   ],
+   "ours_prose_err": 12,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "절 번호로 가리킴",
+    "절단형 의심"
+   ]
+  },
+  {
+   "hangul": 489,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 6,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "반복 블록 라벨 불일치",
+    "절 번호로 가리킴"
+   ],
+   "ours_prose_err": 6,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "반복 블록 라벨 불일치",
+    "절 번호로 가리킴"
+   ]
+  },
+  {
+   "hangul": 603,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 11,
+   "ours_auto_warn": 2,
+   "ours_auto_kinds": [
+    "번역투 이중 조사",
+    "서술형 종결",
+    "형식 미표기"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "번역투 이중 조사"
+   ]
+  },
+  {
+   "hangul": 658,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 3,
+   "ours_auto_warn": 2,
+   "ours_auto_kinds": [
+    "반복 블록 라벨 불일치",
+    "번역투 이중 조사",
+    "서술형 종결"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 2,
+   "ours_prose_kinds": [
+    "반복 블록 라벨 불일치",
+    "번역투 이중 조사"
+   ]
+  },
+  {
+   "hangul": 3669,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 1,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "진입점 서술형"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 2201,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 1,
+   "ours_auto_warn": 3,
+   "ours_auto_kinds": [
+    "반복 블록 라벨 불일치",
+    "스캔 가치 없는 라벨",
+    "진입점 서술형",
+    "해설을 인용 부호로 씀"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 3,
+   "ours_prose_kinds": [
+    "반복 블록 라벨 불일치",
+    "스캔 가치 없는 라벨",
+    "해설을 인용 부호로 씀"
+   ]
+  },
+  {
+   "hangul": 346,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "스캔 가치 없는 라벨"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "스캔 가치 없는 라벨"
+   ]
+  },
+  {
+   "hangul": 621,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 4,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "서술형 종결",
+    "형식 미표기"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 387,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 1,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "반복 블록 라벨 불일치",
+    "서술형 종결"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "반복 블록 라벨 불일치"
+   ]
+  },
+  {
+   "hangul": 1089,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 10,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결"
+   ],
+   "ours_prose_err": 5,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": [
+    "반말 서술형"
+   ]
+  },
+  {
+   "hangul": 2338,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 2,
+   "ours_auto_err": 10,
+   "ours_auto_warn": 2,
+   "ours_auto_kinds": [
+    "「회기」",
+    "낯선 사내 용어",
+    "절 번호로 가리킴",
+    "지시어 확인"
+   ],
+   "ours_prose_err": 10,
+   "ours_prose_warn": 2,
+   "ours_prose_kinds": [
+    "「회기」",
+    "낯선 사내 용어",
+    "절 번호로 가리킴",
+    "지시어 확인"
+   ]
+  },
+  {
+   "hangul": 500,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 710,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 470,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 3745,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 3,
+   "ours_auto_err": 37,
+   "ours_auto_warn": 12,
+   "ours_auto_kinds": [
+    "「~가 아니라」 반복",
+    "말투 섞임",
+    "모호한 지칭",
+    "반말 서술형",
+    "반복 문형",
+    "서술형 종결",
+    "업무 글에 없는 말",
+    "절 번호로 가리킴",
+    "지시어 확인",
+    "형식 미표기"
+   ],
+   "ours_prose_err": 6,
+   "ours_prose_warn": 11,
+   "ours_prose_kinds": [
+    "「~가 아니라」 반복",
+    "말투 섞임",
+    "모호한 지칭",
+    "반말 서술형",
+    "반복 문형",
+    "업무 글에 없는 말",
+    "절 번호로 가리킴",
+    "지시어 확인"
+   ]
+  },
+  {
+   "hangul": 1581,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 5,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "서술형 종결"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 894,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 33,
+   "ours_auto_warn": 3,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결",
+    "제목 명사형 위반",
+    "제목 서술형",
+    "지시어 확인"
+   ],
+   "ours_prose_err": 15,
+   "ours_prose_warn": 3,
+   "ours_prose_kinds": [
+    "반말 서술형",
+    "지시어 확인"
+   ]
+  },
+  {
+   "hangul": 718,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 5,
+   "ours_auto_warn": 2,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "업무 글에 없는 말",
+    "절 번호로 가리킴",
+    "지시어 확인"
+   ],
+   "ours_prose_err": 5,
+   "ours_prose_warn": 2,
+   "ours_prose_kinds": [
+    "반말 서술형",
+    "업무 글에 없는 말",
+    "절 번호로 가리킴",
+    "지시어 확인"
+   ]
+  },
+  {
+   "hangul": 444,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 3,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "절 번호로 가리킴"
+   ],
+   "ours_prose_err": 3,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": [
+    "반말 서술형",
+    "절 번호로 가리킴"
+   ]
+  },
+  {
+   "hangul": 1220,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 2,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결"
+   ],
+   "ours_prose_err": 1,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": [
+    "반말 서술형"
+   ]
+  },
+  {
+   "hangul": 447,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 4,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결",
+    "해설을 인용 부호로 씀"
+   ],
+   "ours_prose_err": 2,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "반말 서술형",
+    "해설을 인용 부호로 씀"
+   ]
+  },
+  {
+   "hangul": 7337,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 15,
+   "ours_auto_err": 302,
+   "ours_auto_warn": 51,
+   "ours_auto_kinds": [
+    "「~가 아니라」 반복",
+    "「회기」",
+    "낯선 사내 용어",
+    "반말 서술형",
+    "반복 문형",
+    "서술형 종결",
+    "업무 글에 없는 말",
+    "절 번호로 가리킴",
+    "절단형 의심",
+    "제목 명사형 위반",
+    "제목 서술형",
+    "지시어 확인",
+    "진입점 서술형",
+    "평가 수식어",
+    "해설을 인용 부호로 씀"
+   ],
+   "ours_prose_err": 163,
+   "ours_prose_warn": 51,
+   "ours_prose_kinds": [
+    "「~가 아니라」 반복",
+    "「회기」",
+    "낯선 사내 용어",
+    "반말 서술형",
+    "반복 문형",
+    "업무 글에 없는 말",
+    "절 번호로 가리킴",
+    "절단형 의심",
+    "지시어 확인",
+    "평가 수식어",
+    "해설을 인용 부호로 씀"
+   ]
+  },
+  {
+   "hangul": 2201,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 1,
+   "ours_auto_warn": 3,
+   "ours_auto_kinds": [
+    "반복 블록 라벨 불일치",
+    "스캔 가치 없는 라벨",
+    "진입점 서술형",
+    "해설을 인용 부호로 씀"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 3,
+   "ours_prose_kinds": [
+    "반복 블록 라벨 불일치",
+    "스캔 가치 없는 라벨",
+    "해설을 인용 부호로 씀"
+   ]
+  },
+  {
+   "hangul": 817,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 1,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "절 번호로 가리킴",
+    "평가 수식어"
+   ],
+   "ours_prose_err": 1,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "절 번호로 가리킴",
+    "평가 수식어"
+   ]
+  },
+  {
+   "hangul": 2013,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 2,
+   "ours_auto_warn": 11,
+   "ours_auto_kinds": [
+    "모호한 지칭",
+    "반복 문형",
+    "반복 블록 라벨 불일치",
+    "번역투 이중 조사",
+    "스캔 가치 없는 라벨"
+   ],
+   "ours_prose_err": 2,
+   "ours_prose_warn": 11,
+   "ours_prose_kinds": [
+    "모호한 지칭",
+    "반복 문형",
+    "반복 블록 라벨 불일치",
+    "번역투 이중 조사",
+    "스캔 가치 없는 라벨"
+   ]
+  },
+  {
+   "hangul": 593,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 849,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "스캔 가치 없는 라벨"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "스캔 가치 없는 라벨"
+   ]
+  },
+  {
+   "hangul": 1716,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "스캔 가치 없는 라벨"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "스캔 가치 없는 라벨"
+   ]
+  },
+  {
+   "hangul": 2845,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 4,
+   "ours_auto_warn": 2,
+   "ours_auto_kinds": [
+    "절 번호로 가리킴",
+    "절단형 의심"
+   ],
+   "ours_prose_err": 4,
+   "ours_prose_warn": 2,
+   "ours_prose_kinds": [
+    "절 번호로 가리킴",
+    "절단형 의심"
+   ]
+  },
+  {
+   "hangul": 1309,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 4,
+   "ours_auto_warn": 3,
+   "ours_auto_kinds": [
+    "반복 문형",
+    "스캔 가치 없는 라벨",
+    "절 번호로 가리킴"
+   ],
+   "ours_prose_err": 4,
+   "ours_prose_warn": 3,
+   "ours_prose_kinds": [
+    "반복 문형",
+    "스캔 가치 없는 라벨",
+    "절 번호로 가리킴"
+   ]
+  },
+  {
+   "hangul": 3669,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 1,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "진입점 서술형"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 2648,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 1,
+   "ours_auto_err": 2,
+   "ours_auto_warn": 5,
+   "ours_auto_kinds": [
+    "「회기」",
+    "반복 블록 라벨 불일치",
+    "스캔 가치 없는 라벨"
+   ],
+   "ours_prose_err": 2,
+   "ours_prose_warn": 5,
+   "ours_prose_kinds": [
+    "「회기」",
+    "반복 블록 라벨 불일치",
+    "스캔 가치 없는 라벨"
+   ]
+  },
+  {
+   "hangul": 1232,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 3,
+   "ours_auto_warn": 2,
+   "ours_auto_kinds": [
+    "반복 문형",
+    "서술형 종결",
+    "진입점 서술형",
+    "해설을 인용 부호로 씀"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 2,
+   "ours_prose_kinds": [
+    "반복 문형",
+    "해설을 인용 부호로 씀"
+   ]
+  },
+  {
+   "hangul": 1129,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "반복 블록 라벨 불일치"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "반복 블록 라벨 불일치"
+   ]
+  },
+  {
+   "hangul": 620,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "스캔 가치 없는 라벨"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "스캔 가치 없는 라벨"
+   ]
+  },
+  {
+   "hangul": 600,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 3,
+   "ours_auto_kinds": [
+    "스캔 가치 없는 라벨",
+    "해설을 인용 부호로 씀"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 3,
+   "ours_prose_kinds": [
+    "스캔 가치 없는 라벨",
+    "해설을 인용 부호로 씀"
+   ]
+  },
+  {
+   "hangul": 1366,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 1,
+   "ours_auto_err": 3,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결",
+    "스캔 가치 없는 라벨",
+    "절 번호로 가리킴"
+   ],
+   "ours_prose_err": 2,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "반말 서술형",
+    "스캔 가치 없는 라벨",
+    "절 번호로 가리킴"
+   ]
+  },
+  {
+   "hangul": 1206,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 6,
+   "ours_auto_warn": 3,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "반복 문형",
+    "서술형 종결",
+    "스캔 가치 없는 라벨",
+    "절 번호로 가리킴"
+   ],
+   "ours_prose_err": 5,
+   "ours_prose_warn": 3,
+   "ours_prose_kinds": [
+    "반말 서술형",
+    "반복 문형",
+    "스캔 가치 없는 라벨",
+    "절 번호로 가리킴"
+   ]
+  },
+  {
+   "hangul": 2680,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 1,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "「회기」"
+   ],
+   "ours_prose_err": 1,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": [
+    "「회기」"
+   ]
+  },
+  {
+   "hangul": 1967,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 10,
+   "ours_auto_warn": 6,
+   "ours_auto_kinds": [
+    "반복 블록 라벨 불일치",
+    "서술형 종결",
+    "스캔 가치 없는 라벨",
+    "해설을 인용 부호로 씀",
+    "형식 미표기"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 5,
+   "ours_prose_kinds": [
+    "반복 블록 라벨 불일치",
+    "스캔 가치 없는 라벨",
+    "해설을 인용 부호로 씀"
+   ]
+  },
+  {
+   "hangul": 1148,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "반복 문형"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "반복 문형"
+   ]
+  },
+  {
+   "hangul": 1222,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 9,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "번역투 이중 조사",
+    "서술형 종결"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "번역투 이중 조사"
+   ]
+  },
+  {
+   "hangul": 2201,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 1,
+   "ours_auto_warn": 3,
+   "ours_auto_kinds": [
+    "반복 블록 라벨 불일치",
+    "스캔 가치 없는 라벨",
+    "진입점 서술형",
+    "해설을 인용 부호로 씀"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 3,
+   "ours_prose_kinds": [
+    "반복 블록 라벨 불일치",
+    "스캔 가치 없는 라벨",
+    "해설을 인용 부호로 씀"
+   ]
+  },
+  {
+   "hangul": 817,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 1,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "절 번호로 가리킴",
+    "평가 수식어"
+   ],
+   "ours_prose_err": 1,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "절 번호로 가리킴",
+    "평가 수식어"
+   ]
+  },
+  {
+   "hangul": 2013,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 2,
+   "ours_auto_warn": 11,
+   "ours_auto_kinds": [
+    "모호한 지칭",
+    "반복 문형",
+    "반복 블록 라벨 불일치",
+    "번역투 이중 조사",
+    "스캔 가치 없는 라벨"
+   ],
+   "ours_prose_err": 2,
+   "ours_prose_warn": 11,
+   "ours_prose_kinds": [
+    "모호한 지칭",
+    "반복 문형",
+    "반복 블록 라벨 불일치",
+    "번역투 이중 조사",
+    "스캔 가치 없는 라벨"
+   ]
+  },
+  {
+   "hangul": 593,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 849,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "스캔 가치 없는 라벨"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "스캔 가치 없는 라벨"
+   ]
+  },
+  {
+   "hangul": 1716,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "스캔 가치 없는 라벨"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "스캔 가치 없는 라벨"
+   ]
+  },
+  {
+   "hangul": 2845,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 4,
+   "ours_auto_warn": 2,
+   "ours_auto_kinds": [
+    "절 번호로 가리킴",
+    "절단형 의심"
+   ],
+   "ours_prose_err": 4,
+   "ours_prose_warn": 2,
+   "ours_prose_kinds": [
+    "절 번호로 가리킴",
+    "절단형 의심"
+   ]
+  },
+  {
+   "hangul": 1309,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 4,
+   "ours_auto_warn": 3,
+   "ours_auto_kinds": [
+    "반복 문형",
+    "스캔 가치 없는 라벨",
+    "절 번호로 가리킴"
+   ],
+   "ours_prose_err": 4,
+   "ours_prose_warn": 3,
+   "ours_prose_kinds": [
+    "반복 문형",
+    "스캔 가치 없는 라벨",
+    "절 번호로 가리킴"
+   ]
+  },
+  {
+   "hangul": 3669,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 1,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "진입점 서술형"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 2648,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 1,
+   "ours_auto_err": 2,
+   "ours_auto_warn": 5,
+   "ours_auto_kinds": [
+    "「회기」",
+    "반복 블록 라벨 불일치",
+    "스캔 가치 없는 라벨"
+   ],
+   "ours_prose_err": 2,
+   "ours_prose_warn": 5,
+   "ours_prose_kinds": [
+    "「회기」",
+    "반복 블록 라벨 불일치",
+    "스캔 가치 없는 라벨"
+   ]
+  },
+  {
+   "hangul": 1232,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 3,
+   "ours_auto_warn": 2,
+   "ours_auto_kinds": [
+    "반복 문형",
+    "서술형 종결",
+    "진입점 서술형",
+    "해설을 인용 부호로 씀"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 2,
+   "ours_prose_kinds": [
+    "반복 문형",
+    "해설을 인용 부호로 씀"
+   ]
+  },
+  {
+   "hangul": 1129,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "반복 블록 라벨 불일치"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "반복 블록 라벨 불일치"
+   ]
+  },
+  {
+   "hangul": 620,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "스캔 가치 없는 라벨"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "스캔 가치 없는 라벨"
+   ]
+  },
+  {
+   "hangul": 600,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 3,
+   "ours_auto_kinds": [
+    "스캔 가치 없는 라벨",
+    "해설을 인용 부호로 씀"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 3,
+   "ours_prose_kinds": [
+    "스캔 가치 없는 라벨",
+    "해설을 인용 부호로 씀"
+   ]
+  },
+  {
+   "hangul": 1366,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 1,
+   "ours_auto_err": 3,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결",
+    "스캔 가치 없는 라벨",
+    "절 번호로 가리킴"
+   ],
+   "ours_prose_err": 2,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "반말 서술형",
+    "스캔 가치 없는 라벨",
+    "절 번호로 가리킴"
+   ]
+  },
+  {
+   "hangul": 1206,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 6,
+   "ours_auto_warn": 3,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "반복 문형",
+    "서술형 종결",
+    "스캔 가치 없는 라벨",
+    "절 번호로 가리킴"
+   ],
+   "ours_prose_err": 5,
+   "ours_prose_warn": 3,
+   "ours_prose_kinds": [
+    "반말 서술형",
+    "반복 문형",
+    "스캔 가치 없는 라벨",
+    "절 번호로 가리킴"
+   ]
+  },
+  {
+   "hangul": 2680,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 1,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "「회기」"
+   ],
+   "ours_prose_err": 1,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": [
+    "「회기」"
+   ]
+  },
+  {
+   "hangul": 1967,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 10,
+   "ours_auto_warn": 6,
+   "ours_auto_kinds": [
+    "반복 블록 라벨 불일치",
+    "서술형 종결",
+    "스캔 가치 없는 라벨",
+    "해설을 인용 부호로 씀",
+    "형식 미표기"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 5,
+   "ours_prose_kinds": [
+    "반복 블록 라벨 불일치",
+    "스캔 가치 없는 라벨",
+    "해설을 인용 부호로 씀"
+   ]
+  },
+  {
+   "hangul": 1148,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "반복 문형"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "반복 문형"
+   ]
+  },
+  {
+   "hangul": 1222,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 9,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "번역투 이중 조사",
+    "서술형 종결"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "번역투 이중 조사"
+   ]
+  },
+  {
+   "hangul": 923,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 1068,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 2,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결",
+    "스캔 가치 없는 라벨"
+   ],
+   "ours_prose_err": 1,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "반말 서술형",
+    "스캔 가치 없는 라벨"
+   ]
+  },
+  {
+   "hangul": 2033,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 4,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "반복 문형",
+    "절 번호로 가리킴"
+   ],
+   "ours_prose_err": 4,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "반복 문형",
+    "절 번호로 가리킴"
+   ]
+  },
+  {
+   "hangul": 3000,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 1,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "「회기」"
+   ],
+   "ours_prose_err": 1,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": [
+    "「회기」"
+   ]
+  },
+  {
+   "hangul": 2288,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 1,
+   "ours_auto_warn": 8,
+   "ours_auto_kinds": [
+    "낯선 사내 용어",
+    "반복 블록 라벨 불일치",
+    "스캔 가치 없는 라벨",
+    "진입점 서술형",
+    "해설을 인용 부호로 씀"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 8,
+   "ours_prose_kinds": [
+    "낯선 사내 용어",
+    "반복 블록 라벨 불일치",
+    "스캔 가치 없는 라벨",
+    "해설을 인용 부호로 씀"
+   ]
+  },
+  {
+   "hangul": 1585,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 17,
+   "ours_auto_warn": 3,
+   "ours_auto_kinds": [
+    "반복 블록 라벨 불일치",
+    "서술형 종결",
+    "절 번호로 가리킴",
+    "진입점 서술형",
+    "평가 수식어",
+    "형식 미표기"
+   ],
+   "ours_prose_err": 2,
+   "ours_prose_warn": 2,
+   "ours_prose_kinds": [
+    "반복 블록 라벨 불일치",
+    "절 번호로 가리킴",
+    "평가 수식어"
+   ]
+  },
+  {
+   "hangul": 1250,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 2,
+   "ours_auto_kinds": [
+    "반복 문형",
+    "상투 문형"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 2,
+   "ours_prose_kinds": [
+    "반복 문형",
+    "상투 문형"
+   ]
+  },
+  {
+   "hangul": 925,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 1,
+   "ours_auto_warn": 2,
+   "ours_auto_kinds": [
+    "「회기」",
+    "스캔 가치 없는 라벨"
+   ],
+   "ours_prose_err": 1,
+   "ours_prose_warn": 2,
+   "ours_prose_kinds": [
+    "「회기」",
+    "스캔 가치 없는 라벨"
+   ]
+  },
+  {
+   "hangul": 1051,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 2,
+   "ours_auto_warn": 2,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결",
+    "스캔 가치 없는 라벨",
+    "업무 글에 없는 말"
+   ],
+   "ours_prose_err": 1,
+   "ours_prose_warn": 2,
+   "ours_prose_kinds": [
+    "반말 서술형",
+    "스캔 가치 없는 라벨",
+    "업무 글에 없는 말"
+   ]
+  },
+  {
+   "hangul": 1067,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 2,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "낯선 사내 용어",
+    "절 번호로 가리킴",
+    "절단형 종결"
+   ],
+   "ours_prose_err": 2,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "낯선 사내 용어",
+    "절 번호로 가리킴",
+    "절단형 종결"
+   ]
+  },
+  {
+   "hangul": 618,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 2,
+   "ours_auto_warn": 2,
+   "ours_auto_kinds": [
+    "서술형 종결",
+    "평가 수식어",
+    "형식 미표기"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "평가 수식어"
+   ]
+  },
+  {
+   "hangul": 375,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 3,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "서술형 종결"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 447,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 6,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "서술형 종결"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 317,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 7,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "서술형 종결"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 603,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 11,
+   "ours_auto_warn": 2,
+   "ours_auto_kinds": [
+    "번역투 이중 조사",
+    "서술형 종결",
+    "형식 미표기"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "번역투 이중 조사"
+   ]
+  },
+  {
+   "hangul": 658,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 3,
+   "ours_auto_warn": 2,
+   "ours_auto_kinds": [
+    "반복 블록 라벨 불일치",
+    "번역투 이중 조사",
+    "서술형 종결"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 2,
+   "ours_prose_kinds": [
+    "반복 블록 라벨 불일치",
+    "번역투 이중 조사"
+   ]
+  },
+  {
+   "hangul": 588,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 1,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "서술형 종결"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 397,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 1,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "서술형 종결"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 346,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 1,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "반복 블록 라벨 불일치",
+    "서술형 종결"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "반복 블록 라벨 불일치"
+   ]
+  },
+  {
+   "hangul": 349,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 1,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "반복 블록 라벨 불일치",
+    "서술형 종결"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "반복 블록 라벨 불일치"
+   ]
+  },
+  {
+   "hangul": 528,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 8,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "번역투 이중 조사",
+    "서술형 종결"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "번역투 이중 조사"
+   ]
+  },
+  {
+   "hangul": 621,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 4,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "서술형 종결",
+    "형식 미표기"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 671,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 9,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "반복 블록 라벨 불일치",
+    "서술형 종결"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "반복 블록 라벨 불일치"
+   ]
+  },
+  {
+   "hangul": 387,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 1,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "반복 블록 라벨 불일치",
+    "서술형 종결"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "반복 블록 라벨 불일치"
+   ]
+  },
+  {
+   "hangul": 500,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 3635,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 1,
+   "ours_auto_err": 38,
+   "ours_auto_warn": 6,
+   "ours_auto_kinds": [
+    "모호한 지칭",
+    "반복 문형",
+    "서술형 종결",
+    "업무 글에 없는 말",
+    "지시어 확인",
+    "형식 미표기"
+   ],
+   "ours_prose_err": 1,
+   "ours_prose_warn": 5,
+   "ours_prose_kinds": [
+    "모호한 지칭",
+    "반복 문형",
+    "업무 글에 없는 말",
+    "지시어 확인"
+   ]
+  },
+  {
+   "hangul": 2546,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 1,
+   "ours_auto_err": 16,
+   "ours_auto_warn": 3,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결",
+    "스캔 가치 없는 라벨",
+    "업무 글에 없는 말",
+    "절단형 의심"
+   ],
+   "ours_prose_err": 8,
+   "ours_prose_warn": 3,
+   "ours_prose_kinds": [
+    "반말 서술형",
+    "스캔 가치 없는 라벨",
+    "업무 글에 없는 말",
+    "절단형 의심"
+   ]
+  },
+  {
+   "hangul": 970,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 6,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결",
+    "업무 글에 없는 말"
+   ],
+   "ours_prose_err": 3,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "반말 서술형",
+    "업무 글에 없는 말"
+   ]
+  },
+  {
+   "hangul": 15721,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 22,
+   "ours_auto_err": 229,
+   "ours_auto_warn": 55,
+   "ours_auto_kinds": [
+    "「~가 아니라」 반복",
+    "낯선 사내 용어",
+    "반말 서술형",
+    "반복 문형",
+    "반복 블록 라벨 불일치",
+    "서술형 종결",
+    "업무 글에 없는 말",
+    "절단형 의심",
+    "제목 명사형 위반",
+    "제목 서술형",
+    "지시어 확인",
+    "진입점 서술형",
+    "해설을 인용 부호로 씀"
+   ],
+   "ours_prose_err": 152,
+   "ours_prose_warn": 55,
+   "ours_prose_kinds": [
+    "「~가 아니라」 반복",
+    "낯선 사내 용어",
+    "반말 서술형",
+    "반복 문형",
+    "반복 블록 라벨 불일치",
+    "업무 글에 없는 말",
+    "절단형 의심",
+    "지시어 확인",
+    "해설을 인용 부호로 씀"
+   ]
+  },
+  {
+   "hangul": 1448,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 2,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "반복 블록 라벨 불일치"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "반복 블록 라벨 불일치"
+   ]
+  },
+  {
+   "hangul": 18450,
+   "imnotai_band": "low",
+   "imnotai_score": 2,
+   "antithesis": 15,
+   "ours_auto_err": 533,
+   "ours_auto_warn": 30,
+   "ours_auto_kinds": [
+    "「~가 아니라」 반복",
+    "낯선 사내 용어",
+    "문장 끝 괄호 속 이름",
+    "반말 서술형",
+    "반복 문형",
+    "반복 블록 라벨 불일치",
+    "서술형 종결",
+    "절단형 의심",
+    "제목 서술형",
+    "지시어 확인",
+    "진입점 서술형",
+    "해설을 인용 부호로 씀"
+   ],
+   "ours_prose_err": 297,
+   "ours_prose_warn": 30,
+   "ours_prose_kinds": [
+    "「~가 아니라」 반복",
+    "낯선 사내 용어",
+    "문장 끝 괄호 속 이름",
+    "반말 서술형",
+    "반복 문형",
+    "반복 블록 라벨 불일치",
+    "절단형 의심",
+    "지시어 확인",
+    "해설을 인용 부호로 씀"
+   ]
+  },
+  {
+   "hangul": 16170,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 22,
+   "ours_auto_err": 229,
+   "ours_auto_warn": 44,
+   "ours_auto_kinds": [
+    "「~가 아니라」 반복",
+    "낯선 사내 용어",
+    "반말 서술형",
+    "반복 문형",
+    "반복 블록 라벨 불일치",
+    "서술형 종결",
+    "업무 글에 없는 말",
+    "절단형 의심",
+    "제목 명사형 위반",
+    "제목 서술형",
+    "지시어 확인",
+    "진입점 서술형",
+    "해설을 인용 부호로 씀"
+   ],
+   "ours_prose_err": 152,
+   "ours_prose_warn": 44,
+   "ours_prose_kinds": [
+    "「~가 아니라」 반복",
+    "낯선 사내 용어",
+    "반말 서술형",
+    "반복 문형",
+    "반복 블록 라벨 불일치",
+    "업무 글에 없는 말",
+    "절단형 의심",
+    "지시어 확인",
+    "해설을 인용 부호로 씀"
+   ]
+  },
+  {
+   "hangul": 793,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 2315,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 1,
+   "ours_auto_err": 64,
+   "ours_auto_warn": 5,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "반복 블록 라벨 불일치",
+    "서술형 종결",
+    "진입점 서술형",
+    "해설을 인용 부호로 씀"
+   ],
+   "ours_prose_err": 34,
+   "ours_prose_warn": 5,
+   "ours_prose_kinds": [
+    "반말 서술형",
+    "반복 블록 라벨 불일치",
+    "해설을 인용 부호로 씀"
+   ]
+  },
+  {
+   "hangul": 3339,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 3,
+   "ours_auto_err": 115,
+   "ours_auto_warn": 3,
+   "ours_auto_kinds": [
+    "「~가 아니라」 반복",
+    "반말 서술형",
+    "반복 문형",
+    "서술형 종결"
+   ],
+   "ours_prose_err": 60,
+   "ours_prose_warn": 3,
+   "ours_prose_kinds": [
+    "「~가 아니라」 반복",
+    "반말 서술형",
+    "반복 문형"
+   ]
+  },
+  {
+   "hangul": 2038,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 63,
+   "ours_auto_warn": 2,
+   "ours_auto_kinds": [
+    "낯선 사내 용어",
+    "반말 서술형",
+    "서술형 종결"
+   ],
+   "ours_prose_err": 34,
+   "ours_prose_warn": 2,
+   "ours_prose_kinds": [
+    "낯선 사내 용어",
+    "반말 서술형"
+   ]
+  },
+  {
+   "hangul": 2347,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 85,
+   "ours_auto_warn": 3,
+   "ours_auto_kinds": [
+    "낯선 사내 용어",
+    "문장 끝 괄호 속 이름",
+    "반말 서술형",
+    "서술형 종결"
+   ],
+   "ours_prose_err": 45,
+   "ours_prose_warn": 3,
+   "ours_prose_kinds": [
+    "낯선 사내 용어",
+    "문장 끝 괄호 속 이름",
+    "반말 서술형"
+   ]
+  },
+  {
+   "hangul": 1524,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 5,
+   "ours_auto_err": 35,
+   "ours_auto_warn": 3,
+   "ours_auto_kinds": [
+    "「~가 아니라」 반복",
+    "반말 서술형",
+    "서술형 종결"
+   ],
+   "ours_prose_err": 23,
+   "ours_prose_warn": 3,
+   "ours_prose_kinds": [
+    "「~가 아니라」 반복",
+    "반말 서술형"
+   ]
+  },
+  {
+   "hangul": 3221,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 3,
+   "ours_auto_err": 46,
+   "ours_auto_warn": 7,
+   "ours_auto_kinds": [
+    "「~가 아니라」 반복",
+    "낯선 사내 용어",
+    "반말 서술형",
+    "서술형 종결",
+    "절단형 의심",
+    "제목 서술형",
+    "지시어 확인"
+   ],
+   "ours_prose_err": 40,
+   "ours_prose_warn": 7,
+   "ours_prose_kinds": [
+    "「~가 아니라」 반복",
+    "낯선 사내 용어",
+    "반말 서술형",
+    "절단형 의심",
+    "지시어 확인"
+   ]
+  },
+  {
+   "hangul": 3041,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 3,
+   "ours_auto_err": 105,
+   "ours_auto_warn": 6,
+   "ours_auto_kinds": [
+    "「~가 아니라」 반복",
+    "낯선 사내 용어",
+    "반말 서술형",
+    "반복 블록 라벨 불일치",
+    "서술형 종결",
+    "제목 서술형",
+    "지시어 확인"
+   ],
+   "ours_prose_err": 51,
+   "ours_prose_warn": 6,
+   "ours_prose_kinds": [
+    "「~가 아니라」 반복",
+    "낯선 사내 용어",
+    "반말 서술형",
+    "반복 블록 라벨 불일치",
+    "지시어 확인"
+   ]
+  },
+  {
+   "hangul": 625,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 20,
+   "ours_auto_warn": 2,
+   "ours_auto_kinds": [
+    "낯선 사내 용어",
+    "반말 서술형",
+    "서술형 종결",
+    "형식 미표기"
+   ],
+   "ours_prose_err": 10,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "낯선 사내 용어",
+    "반말 서술형"
+   ]
+  },
+  {
+   "hangul": 2161,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 1,
+   "ours_auto_err": 19,
+   "ours_auto_warn": 7,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "반복 블록 라벨 불일치",
+    "서술형 종결",
+    "업무 글에 없는 말",
+    "절단형 의심",
+    "진입점 서술형",
+    "해설을 인용 부호로 씀"
+   ],
+   "ours_prose_err": 10,
+   "ours_prose_warn": 7,
+   "ours_prose_kinds": [
+    "반말 서술형",
+    "반복 블록 라벨 불일치",
+    "업무 글에 없는 말",
+    "절단형 의심",
+    "해설을 인용 부호로 씀"
+   ]
+  },
+  {
+   "hangul": 3099,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 4,
+   "ours_auto_err": 50,
+   "ours_auto_warn": 8,
+   "ours_auto_kinds": [
+    "「~가 아니라」 반복",
+    "반말 서술형",
+    "반복 문형",
+    "서술형 종결",
+    "업무 글에 없는 말",
+    "지시어 확인"
+   ],
+   "ours_prose_err": 29,
+   "ours_prose_warn": 8,
+   "ours_prose_kinds": [
+    "「~가 아니라」 반복",
+    "반말 서술형",
+    "반복 문형",
+    "업무 글에 없는 말",
+    "지시어 확인"
+   ]
+  },
+  {
+   "hangul": 1654,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 11,
+   "ours_auto_warn": 3,
+   "ours_auto_kinds": [
+    "낯선 사내 용어",
+    "반말 서술형",
+    "서술형 종결",
+    "업무 글에 없는 말"
+   ],
+   "ours_prose_err": 7,
+   "ours_prose_warn": 3,
+   "ours_prose_kinds": [
+    "낯선 사내 용어",
+    "반말 서술형",
+    "업무 글에 없는 말"
+   ]
+  },
+  {
+   "hangul": 1879,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 3,
+   "ours_auto_err": 34,
+   "ours_auto_warn": 4,
+   "ours_auto_kinds": [
+    "「~가 아니라」 반복",
+    "낯선 사내 용어",
+    "반말 서술형",
+    "서술형 종결"
+   ],
+   "ours_prose_err": 23,
+   "ours_prose_warn": 4,
+   "ours_prose_kinds": [
+    "「~가 아니라」 반복",
+    "낯선 사내 용어",
+    "반말 서술형"
+   ]
+  },
+  {
+   "hangul": 1514,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 4,
+   "ours_auto_err": 32,
+   "ours_auto_warn": 3,
+   "ours_auto_kinds": [
+    "「~가 아니라」 반복",
+    "반말 서술형",
+    "서술형 종결",
+    "절단형 의심"
+   ],
+   "ours_prose_err": 22,
+   "ours_prose_warn": 3,
+   "ours_prose_kinds": [
+    "「~가 아니라」 반복",
+    "반말 서술형",
+    "절단형 의심"
+   ]
+  },
+  {
+   "hangul": 2977,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 6,
+   "ours_auto_err": 37,
+   "ours_auto_warn": 11,
+   "ours_auto_kinds": [
+    "「~가 아니라」 반복",
+    "낯선 사내 용어",
+    "반말 서술형",
+    "서술형 종결",
+    "업무 글에 없는 말",
+    "절단형 의심",
+    "제목 명사형 위반",
+    "제목 서술형",
+    "지시어 확인"
+   ],
+   "ours_prose_err": 33,
+   "ours_prose_warn": 11,
+   "ours_prose_kinds": [
+    "「~가 아니라」 반복",
+    "낯선 사내 용어",
+    "반말 서술형",
+    "업무 글에 없는 말",
+    "절단형 의심",
+    "지시어 확인"
+   ]
+  },
+  {
+   "hangul": 2627,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 3,
+   "ours_auto_err": 44,
+   "ours_auto_warn": 5,
+   "ours_auto_kinds": [
+    "「~가 아니라」 반복",
+    "낯선 사내 용어",
+    "반말 서술형",
+    "서술형 종결",
+    "제목 명사형 위반",
+    "제목 서술형",
+    "지시어 확인"
+   ],
+   "ours_prose_err": 27,
+   "ours_prose_warn": 5,
+   "ours_prose_kinds": [
+    "「~가 아니라」 반복",
+    "낯선 사내 용어",
+    "반말 서술형",
+    "지시어 확인"
+   ]
+  },
+  {
+   "hangul": 384,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 1,
+   "ours_auto_err": 3,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "낯선 사내 용어",
+    "반말 서술형",
+    "서술형 종결"
+   ],
+   "ours_prose_err": 2,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "낯선 사내 용어",
+    "반말 서술형"
+   ]
+  },
+  {
+   "hangul": 651,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 9,
+   "ours_auto_warn": 2,
+   "ours_auto_kinds": [
+    "서술형 종결",
+    "스캔 가치 없는 라벨",
+    "업무 글에 없는 말"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 2,
+   "ours_prose_kinds": [
+    "스캔 가치 없는 라벨",
+    "업무 글에 없는 말"
+   ]
+  },
+  {
+   "hangul": 668,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 2,
+   "ours_auto_warn": 4,
+   "ours_auto_kinds": [
+    "서술형 종결",
+    "스캔 가치 없는 라벨",
+    "업무 글에 없는 말",
+    "지시어 확인",
+    "진입점 서술형"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 4,
+   "ours_prose_kinds": [
+    "스캔 가치 없는 라벨",
+    "업무 글에 없는 말",
+    "지시어 확인"
+   ]
+  },
+  {
+   "hangul": 477,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 495,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "스캔 가치 없는 라벨"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "스캔 가치 없는 라벨"
+   ]
+  },
+  {
+   "hangul": 600,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "스캔 가치 없는 라벨"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "스캔 가치 없는 라벨"
+   ]
+  },
+  {
+   "hangul": 544,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "스캔 가치 없는 라벨"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "스캔 가치 없는 라벨"
+   ]
+  },
+  {
+   "hangul": 654,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 2,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "서술형 종결",
+    "스캔 가치 없는 라벨"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "스캔 가치 없는 라벨"
+   ]
+  },
+  {
+   "hangul": 582,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 1,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "서술형 종결",
+    "스캔 가치 없는 라벨"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "스캔 가치 없는 라벨"
+   ]
+  },
+  {
+   "hangul": 553,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 1,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "서술형 종결"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 463,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 607,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "반복 블록 라벨 불일치"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "반복 블록 라벨 불일치"
+   ]
+  },
+  {
+   "hangul": 640,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 1,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "서술형 종결",
+    "스캔 가치 없는 라벨"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "스캔 가치 없는 라벨"
+   ]
+  },
+  {
+   "hangul": 631,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 1,
+   "ours_auto_err": 3,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "반복 블록 라벨 불일치",
+    "서술형 종결"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "반복 블록 라벨 불일치"
+   ]
+  },
+  {
+   "hangul": 800,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 5,
+   "ours_auto_warn": 2,
+   "ours_auto_kinds": [
+    "서술형 종결",
+    "스캔 가치 없는 라벨",
+    "업무 글에 없는 말"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 2,
+   "ours_prose_kinds": [
+    "스캔 가치 없는 라벨",
+    "업무 글에 없는 말"
+   ]
+  },
+  {
+   "hangul": 491,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 1,
+   "ours_auto_warn": 2,
+   "ours_auto_kinds": [
+    "반복 블록 라벨 불일치",
+    "스캔 가치 없는 라벨",
+    "진입점 서술형"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 2,
+   "ours_prose_kinds": [
+    "반복 블록 라벨 불일치",
+    "스캔 가치 없는 라벨"
+   ]
+  },
+  {
+   "hangul": 590,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 1,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "반복 블록 라벨 불일치",
+    "서술형 종결"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "반복 블록 라벨 불일치"
+   ]
+  },
+  {
+   "hangul": 432,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "반복 블록 라벨 불일치"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "반복 블록 라벨 불일치"
+   ]
+  },
+  {
+   "hangul": 503,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 823,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "스캔 가치 없는 라벨"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "스캔 가치 없는 라벨"
+   ]
+  },
+  {
+   "hangul": 819,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 3,
+   "ours_auto_kinds": [
+    "스캔 가치 없는 라벨",
+    "해설을 인용 부호로 씀"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 3,
+   "ours_prose_kinds": [
+    "스캔 가치 없는 라벨",
+    "해설을 인용 부호로 씀"
+   ]
+  },
+  {
+   "hangul": 570,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "스캔 가치 없는 라벨"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "스캔 가치 없는 라벨"
+   ]
+  },
+  {
+   "hangul": 539,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "스캔 가치 없는 라벨"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "스캔 가치 없는 라벨"
+   ]
+  },
+  {
+   "hangul": 572,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 599,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "스캔 가치 없는 라벨"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "스캔 가치 없는 라벨"
+   ]
+  },
+  {
+   "hangul": 675,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "스캔 가치 없는 라벨"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "스캔 가치 없는 라벨"
+   ]
+  },
+  {
+   "hangul": 567,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 530,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 555,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "스캔 가치 없는 라벨"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "스캔 가치 없는 라벨"
+   ]
+  },
+  {
+   "hangul": 636,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 577,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "반복 블록 라벨 불일치"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "반복 블록 라벨 불일치"
+   ]
+  },
+  {
+   "hangul": 560,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 562,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "스캔 가치 없는 라벨"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "스캔 가치 없는 라벨"
+   ]
+  },
+  {
+   "hangul": 567,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 579,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 623,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 565,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 1,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "진입점 서술형"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 580,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 1,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "스캔 가치 없는 라벨",
+    "진입점 서술형"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "스캔 가치 없는 라벨"
+   ]
+  },
+  {
+   "hangul": 651,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 1,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "절단형 의심",
+    "진입점 서술형"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "절단형 의심"
+   ]
+  },
+  {
+   "hangul": 528,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "스캔 가치 없는 라벨"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "스캔 가치 없는 라벨"
+   ]
+  },
+  {
+   "hangul": 515,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 1,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "서술형 종결",
+    "스캔 가치 없는 라벨"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "스캔 가치 없는 라벨"
+   ]
+  },
+  {
+   "hangul": 496,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 2,
+   "ours_auto_kinds": [
+    "반복 블록 라벨 불일치",
+    "스캔 가치 없는 라벨"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 2,
+   "ours_prose_kinds": [
+    "반복 블록 라벨 불일치",
+    "스캔 가치 없는 라벨"
+   ]
+  },
+  {
+   "hangul": 485,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "스캔 가치 없는 라벨"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "스캔 가치 없는 라벨"
+   ]
+  },
+  {
+   "hangul": 489,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "스캔 가치 없는 라벨"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "스캔 가치 없는 라벨"
+   ]
+  },
+  {
+   "hangul": 433,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "스캔 가치 없는 라벨"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "스캔 가치 없는 라벨"
+   ]
+  },
+  {
+   "hangul": 420,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 1,
+   "ours_auto_err": 1,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "스캔 가치 없는 라벨",
+    "진입점 서술형"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "스캔 가치 없는 라벨"
+   ]
+  },
+  {
+   "hangul": 577,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 1,
+   "ours_auto_warn": 2,
+   "ours_auto_kinds": [
+    "반복 블록 라벨 불일치",
+    "서술형 종결",
+    "스캔 가치 없는 라벨"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 2,
+   "ours_prose_kinds": [
+    "반복 블록 라벨 불일치",
+    "스캔 가치 없는 라벨"
+   ]
+  },
+  {
+   "hangul": 620,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "스캔 가치 없는 라벨"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "스캔 가치 없는 라벨"
+   ]
+  },
+  {
+   "hangul": 533,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 520,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "스캔 가치 없는 라벨"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "스캔 가치 없는 라벨"
+   ]
+  },
+  {
+   "hangul": 497,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 504,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "스캔 가치 없는 라벨"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "스캔 가치 없는 라벨"
+   ]
+  },
+  {
+   "hangul": 508,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 4,
+   "ours_auto_warn": 2,
+   "ours_auto_kinds": [
+    "반복 블록 라벨 불일치",
+    "서술형 종결",
+    "스캔 가치 없는 라벨"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 2,
+   "ours_prose_kinds": [
+    "반복 블록 라벨 불일치",
+    "스캔 가치 없는 라벨"
+   ]
+  },
+  {
+   "hangul": 476,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 484,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 460,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 17,
+   "ours_auto_warn": 2,
+   "ours_auto_kinds": [
+    "서술형 종결",
+    "업무 글에 없는 말",
+    "진입점 서술형",
+    "형식 미표기"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "업무 글에 없는 말"
+   ]
+  },
+  {
+   "hangul": 371,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 17,
+   "ours_auto_warn": 3,
+   "ours_auto_kinds": [
+    "서술형 종결",
+    "업무 글에 없는 말",
+    "진입점 서술형",
+    "형식 미표기"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 2,
+   "ours_prose_kinds": [
+    "업무 글에 없는 말"
+   ]
+  },
+  {
+   "hangul": 545,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 4,
+   "ours_auto_warn": 2,
+   "ours_auto_kinds": [
+    "반복 블록 라벨 불일치",
+    "서술형 종결",
+    "지시어 확인",
+    "진입점 서술형"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 2,
+   "ours_prose_kinds": [
+    "반복 블록 라벨 불일치",
+    "지시어 확인"
+   ]
+  },
+  {
+   "hangul": 384,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 1,
+   "ours_auto_warn": 2,
+   "ours_auto_kinds": [
+    "반복 블록 라벨 불일치",
+    "스캔 가치 없는 라벨",
+    "진입점 서술형"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 2,
+   "ours_prose_kinds": [
+    "반복 블록 라벨 불일치",
+    "스캔 가치 없는 라벨"
+   ]
+  },
+  {
+   "hangul": 554,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "반복 블록 라벨 불일치"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "반복 블록 라벨 불일치"
+   ]
+  },
+  {
+   "hangul": 542,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 4,
+   "ours_auto_warn": 2,
+   "ours_auto_kinds": [
+    "반복 블록 라벨 불일치",
+    "서술형 종결",
+    "업무 글에 없는 말"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 2,
+   "ours_prose_kinds": [
+    "반복 블록 라벨 불일치",
+    "업무 글에 없는 말"
+   ]
+  },
+  {
+   "hangul": 444,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 2,
+   "ours_auto_kinds": [
+    "스캔 가치 없는 라벨",
+    "업무 글에 없는 말"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 2,
+   "ours_prose_kinds": [
+    "스캔 가치 없는 라벨",
+    "업무 글에 없는 말"
+   ]
+  },
+  {
+   "hangul": 322,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "반복 블록 라벨 불일치"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "반복 블록 라벨 불일치"
+   ]
+  },
+  {
+   "hangul": 345,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "반복 블록 라벨 불일치"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "반복 블록 라벨 불일치"
+   ]
+  },
+  {
+   "hangul": 650,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 2,
+   "ours_auto_warn": 3,
+   "ours_auto_kinds": [
+    "반복 문형",
+    "반복 블록 라벨 불일치",
+    "서술형 종결",
+    "스캔 가치 없는 라벨"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 3,
+   "ours_prose_kinds": [
+    "반복 문형",
+    "반복 블록 라벨 불일치",
+    "스캔 가치 없는 라벨"
+   ]
+  },
+  {
+   "hangul": 501,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 3,
+   "ours_auto_warn": 2,
+   "ours_auto_kinds": [
+    "반복 문형",
+    "반복 블록 라벨 불일치",
+    "서술형 종결"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 2,
+   "ours_prose_kinds": [
+    "반복 문형",
+    "반복 블록 라벨 불일치"
+   ]
+  },
+  {
+   "hangul": 566,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 5,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "반복 블록 라벨 불일치",
+    "서술형 종결"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "반복 블록 라벨 불일치"
+   ]
+  },
+  {
+   "hangul": 543,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 5,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "반복 블록 라벨 불일치",
+    "서술형 종결",
+    "진입점 서술형"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "반복 블록 라벨 불일치"
+   ]
+  },
+  {
+   "hangul": 587,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 2,
+   "ours_auto_warn": 2,
+   "ours_auto_kinds": [
+    "반복 블록 라벨 불일치",
+    "서술형 종결",
+    "스캔 가치 없는 라벨",
+    "진입점 서술형"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 2,
+   "ours_prose_kinds": [
+    "반복 블록 라벨 불일치",
+    "스캔 가치 없는 라벨"
+   ]
+  },
+  {
+   "hangul": 381,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 1,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "반복 블록 라벨 불일치",
+    "서술형 종결"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "반복 블록 라벨 불일치"
+   ]
+  },
+  {
+   "hangul": 589,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 5,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "반복 블록 라벨 불일치",
+    "서술형 종결"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "반복 블록 라벨 불일치"
+   ]
+  },
+  {
+   "hangul": 532,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 4,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "반복 블록 라벨 불일치",
+    "서술형 종결"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "반복 블록 라벨 불일치"
+   ]
+  },
+  {
+   "hangul": 480,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 0,
+   "ours_auto_err": 4,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "반복 블록 라벨 불일치",
+    "서술형 종결",
+    "진입점 서술형"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "반복 블록 라벨 불일치"
+   ]
+  },
+  {
+   "hangul": 1648,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 1,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 7,
+   "ours_auto_kinds": [
+    "스캔 가치 없는 라벨",
+    "업무 글에 없는 말",
+    "절단형 의심"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 7,
+   "ours_prose_kinds": [
+    "스캔 가치 없는 라벨",
+    "업무 글에 없는 말",
+    "절단형 의심"
+   ]
+  },
+  {
+   "hangul": 1332,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 1,
+   "ours_auto_warn": 5,
+   "ours_auto_kinds": [
+    "서술형 종결",
+    "스캔 가치 없는 라벨",
+    "업무 글에 없는 말",
+    "해설을 인용 부호로 씀"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 5,
+   "ours_prose_kinds": [
+    "스캔 가치 없는 라벨",
+    "업무 글에 없는 말",
+    "해설을 인용 부호로 씀"
+   ]
+  },
+  {
+   "hangul": 2216,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 1,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 8,
+   "ours_auto_kinds": [
+    "반복 문형",
+    "스캔 가치 없는 라벨",
+    "업무 글에 없는 말",
+    "절단형 의심",
+    "지시어 확인"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 8,
+   "ours_prose_kinds": [
+    "반복 문형",
+    "스캔 가치 없는 라벨",
+    "업무 글에 없는 말",
+    "절단형 의심",
+    "지시어 확인"
+   ]
+  },
+  {
+   "hangul": 1636,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 1,
+   "ours_auto_err": 2,
+   "ours_auto_warn": 6,
+   "ours_auto_kinds": [
+    "「~가 아니라」 반복",
+    "「~하는 자리」 의심",
+    "서술형 종결",
+    "스캔 가치 없는 라벨",
+    "업무 글에 없는 말"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 6,
+   "ours_prose_kinds": [
+    "「~가 아니라」 반복",
+    "「~하는 자리」 의심",
+    "스캔 가치 없는 라벨",
+    "업무 글에 없는 말"
+   ]
+  },
+  {
+   "hangul": 1192,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 2,
+   "ours_auto_kinds": [
+    "반복 블록 라벨 불일치",
+    "스캔 가치 없는 라벨"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 2,
+   "ours_prose_kinds": [
+    "반복 블록 라벨 불일치",
+    "스캔 가치 없는 라벨"
+   ]
+  },
+  {
+   "hangul": 1286,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "스캔 가치 없는 라벨"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "스캔 가치 없는 라벨"
+   ]
+  },
+  {
+   "hangul": 1488,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 1,
+   "ours_auto_err": 3,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "반복 블록 라벨 불일치",
+    "서술형 종결"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "반복 블록 라벨 불일치"
+   ]
+  },
+  {
+   "hangul": 1470,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 1,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 2,
+   "ours_auto_kinds": [
+    "반복 블록 라벨 불일치",
+    "스캔 가치 없는 라벨"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 2,
+   "ours_prose_kinds": [
+    "반복 블록 라벨 불일치",
+    "스캔 가치 없는 라벨"
+   ]
+  },
+  {
+   "hangul": 1472,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 1,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 2,
+   "ours_auto_kinds": [
+    "스캔 가치 없는 라벨"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 2,
+   "ours_prose_kinds": [
+    "스캔 가치 없는 라벨"
+   ]
+  },
+  {
+   "hangul": 1343,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 2,
+   "ours_auto_kinds": [
+    "반복 블록 라벨 불일치",
+    "스캔 가치 없는 라벨"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 2,
+   "ours_prose_kinds": [
+    "반복 블록 라벨 불일치",
+    "스캔 가치 없는 라벨"
+   ]
+  },
+  {
+   "hangul": 1430,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 1,
+   "ours_auto_err": 3,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "반복 블록 라벨 불일치",
+    "서술형 종결"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "반복 블록 라벨 불일치"
+   ]
+  },
+  {
+   "hangul": 1417,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "스캔 가치 없는 라벨"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "스캔 가치 없는 라벨"
+   ]
+  },
+  {
+   "hangul": 1608,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 6,
+   "ours_auto_warn": 3,
+   "ours_auto_kinds": [
+    "반복 블록 라벨 불일치",
+    "서술형 종결",
+    "스캔 가치 없는 라벨"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 3,
+   "ours_prose_kinds": [
+    "반복 블록 라벨 불일치",
+    "스캔 가치 없는 라벨"
+   ]
+  },
+  {
+   "hangul": 1502,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 1,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "반복 블록 라벨 불일치",
+    "진입점 서술형"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "반복 블록 라벨 불일치"
+   ]
+  },
+  {
+   "hangul": 1375,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "반복 블록 라벨 불일치"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "반복 블록 라벨 불일치"
+   ]
+  },
+  {
+   "hangul": 1019,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "스캔 가치 없는 라벨"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "스캔 가치 없는 라벨"
+   ]
+  },
+  {
+   "hangul": 1515,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 1,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "서술형 종결",
+    "스캔 가치 없는 라벨"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "스캔 가치 없는 라벨"
+   ]
+  },
+  {
+   "hangul": 1321,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 1,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "서술형 종결",
+    "스캔 가치 없는 라벨"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "스캔 가치 없는 라벨"
+   ]
+  },
+  {
+   "hangul": 1306,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "업무 글에 없는 말"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "업무 글에 없는 말"
+   ]
+  },
+  {
+   "hangul": 1773,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 1194,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 1721,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 1,
+   "ours_auto_err": 8,
+   "ours_auto_warn": 2,
+   "ours_auto_kinds": [
+    "반복 블록 라벨 불일치",
+    "서술형 종결",
+    "스캔 가치 없는 라벨",
+    "진입점 서술형"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 2,
+   "ours_prose_kinds": [
+    "반복 블록 라벨 불일치",
+    "스캔 가치 없는 라벨"
+   ]
+  },
+  {
+   "hangul": 1733,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 28,
+   "ours_auto_warn": 4,
+   "ours_auto_kinds": [
+    "반복 블록 라벨 불일치",
+    "서술형 종결",
+    "스캔 가치 없는 라벨",
+    "절단형 의심",
+    "진입점 서술형",
+    "형식 미표기"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 3,
+   "ours_prose_kinds": [
+    "반복 블록 라벨 불일치",
+    "스캔 가치 없는 라벨",
+    "절단형 의심"
+   ]
+  },
+  {
+   "hangul": 1323,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "반복 블록 라벨 불일치"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "반복 블록 라벨 불일치"
+   ]
+  },
+  {
+   "hangul": 1484,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 1,
+   "ours_auto_err": 2,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "서술형 종결",
+    "진입점 서술형"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 1680,
+   "imnotai_band": "low",
+   "imnotai_score": 0,
+   "antithesis": 1,
+   "ours_auto_err": 1,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "반복 문형",
+    "진입점 서술형"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "반복 문형"
+   ]
+  },
+  {
+   "hangul": 1414,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 3,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "서술형 종결",
+    "스캔 가치 없는 라벨",
+    "진입점 서술형"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "스캔 가치 없는 라벨"
+   ]
+  },
+  {
+   "hangul": 1337,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 1333,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 1343,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 1,
+   "ours_auto_err": 1,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "서술형 종결",
+    "스캔 가치 없는 라벨"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "스캔 가치 없는 라벨"
+   ]
+  },
+  {
+   "hangul": 1225,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 1457,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 3,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [
+    "서술형 종결"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 1340,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 1,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "스캔 가치 없는 라벨"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "스캔 가치 없는 라벨"
+   ]
+  },
+  {
+   "hangul": 1203,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 1291,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 1,
+   "ours_auto_kinds": [
+    "반복 블록 라벨 불일치"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 1,
+   "ours_prose_kinds": [
+    "반복 블록 라벨 불일치"
+   ]
+  },
+  {
+   "hangul": 1162,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 1,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 0,
+   "ours_auto_kinds": [],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 0,
+   "ours_prose_kinds": []
+  },
+  {
+   "hangul": 2219,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 2,
+   "ours_auto_kinds": [
+    "스캔 가치 없는 라벨",
+    "절단형 의심"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 2,
+   "ours_prose_kinds": [
+    "스캔 가치 없는 라벨",
+    "절단형 의심"
+   ]
+  },
+  {
+   "hangul": 1854,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 1,
+   "ours_auto_warn": 3,
+   "ours_auto_kinds": [
+    "반복 블록 라벨 불일치",
+    "서술형 종결",
+    "스캔 가치 없는 라벨",
+    "절단형 의심"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 3,
+   "ours_prose_kinds": [
+    "반복 블록 라벨 불일치",
+    "스캔 가치 없는 라벨",
+    "절단형 의심"
+   ]
+  },
+  {
+   "hangul": 1702,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 2,
+   "ours_auto_kinds": [
+    "스캔 가치 없는 라벨",
+    "절단형 의심"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 2,
+   "ours_prose_kinds": [
+    "스캔 가치 없는 라벨",
+    "절단형 의심"
+   ]
+  },
+  {
+   "hangul": 1843,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 3,
+   "ours_auto_kinds": [
+    "반복 블록 라벨 불일치",
+    "스캔 가치 없는 라벨",
+    "절단형 의심"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 3,
+   "ours_prose_kinds": [
+    "반복 블록 라벨 불일치",
+    "스캔 가치 없는 라벨",
+    "절단형 의심"
+   ]
+  },
+  {
+   "hangul": 2558,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 1,
+   "ours_auto_warn": 3,
+   "ours_auto_kinds": [
+    "반복 블록 라벨 불일치",
+    "서술형 종결",
+    "스캔 가치 없는 라벨",
+    "절단형 의심"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 3,
+   "ours_prose_kinds": [
+    "반복 블록 라벨 불일치",
+    "스캔 가치 없는 라벨",
+    "절단형 의심"
+   ]
+  },
+  {
+   "hangul": 2225,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 4,
+   "ours_auto_kinds": [
+    "반복 블록 라벨 불일치",
+    "스캔 가치 없는 라벨",
+    "절단형 의심"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 4,
+   "ours_prose_kinds": [
+    "반복 블록 라벨 불일치",
+    "스캔 가치 없는 라벨",
+    "절단형 의심"
+   ]
+  },
+  {
+   "hangul": 2324,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 2,
+   "ours_auto_kinds": [
+    "반복 블록 라벨 불일치",
+    "스캔 가치 없는 라벨"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 2,
+   "ours_prose_kinds": [
+    "반복 블록 라벨 불일치",
+    "스캔 가치 없는 라벨"
+   ]
+  },
+  {
+   "hangul": 1968,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 2,
+   "ours_auto_kinds": [
+    "스캔 가치 없는 라벨",
+    "절단형 의심"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 2,
+   "ours_prose_kinds": [
+    "스캔 가치 없는 라벨",
+    "절단형 의심"
+   ]
+  },
+  {
+   "hangul": 2006,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 3,
+   "ours_auto_kinds": [
+    "반복 블록 라벨 불일치",
+    "스캔 가치 없는 라벨",
+    "절단형 의심"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 3,
+   "ours_prose_kinds": [
+    "반복 블록 라벨 불일치",
+    "스캔 가치 없는 라벨",
+    "절단형 의심"
+   ]
+  },
+  {
+   "hangul": 2111,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 2,
+   "ours_auto_warn": 5,
+   "ours_auto_kinds": [
+    "서술형 종결",
+    "스캔 가치 없는 라벨",
+    "절단형 의심",
+    "진입점 서술형"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 5,
+   "ours_prose_kinds": [
+    "스캔 가치 없는 라벨",
+    "절단형 의심"
+   ]
+  },
+  {
+   "hangul": 2063,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 2,
+   "ours_auto_kinds": [
+    "스캔 가치 없는 라벨",
+    "절단형 의심"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 2,
+   "ours_prose_kinds": [
+    "스캔 가치 없는 라벨",
+    "절단형 의심"
+   ]
+  },
+  {
+   "hangul": 2066,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 0,
+   "ours_auto_warn": 4,
+   "ours_auto_kinds": [
+    "반복 블록 라벨 불일치",
+    "절단형 의심"
+   ],
+   "ours_prose_err": 0,
+   "ours_prose_warn": 4,
+   "ours_prose_kinds": [
+    "반복 블록 라벨 불일치",
+    "절단형 의심"
+   ]
+  },
+  {
+   "hangul": 1771,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 1,
+   "ours_auto_err": 12,
+   "ours_auto_warn": 4,
+   "ours_auto_kinds": [
+    "반말 서술형",
+    "서술형 종결",
+    "스캔 가치 없는 라벨",
+    "업무 글에 없는 말",
+    "절단형 의심",
+    "지어낸 명사구"
+   ],
+   "ours_prose_err": 6,
+   "ours_prose_warn": 4,
+   "ours_prose_kinds": [
+    "반말 서술형",
+    "스캔 가치 없는 라벨",
+    "업무 글에 없는 말",
+    "절단형 의심",
+    "지어낸 명사구"
+   ]
+  },
+  {
+   "hangul": 3998,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 0,
+   "ours_auto_err": 1,
+   "ours_auto_warn": 20,
+   "ours_auto_kinds": [
+    "모호한 지칭",
+    "업무 글에 없는 말",
+    "지시어 확인",
+    "형식 미표기"
+   ],
+   "ours_prose_err": 1,
+   "ours_prose_warn": 19,
+   "ours_prose_kinds": [
+    "모호한 지칭",
+    "업무 글에 없는 말",
+    "지시어 확인"
+   ]
+  },
+  {
+   "hangul": 4398,
+   "imnotai_band": "low",
+   "imnotai_score": 1,
+   "antithesis": 1,
+   "ours_auto_err": 2,
+   "ours_auto_warn": 17,
+   "ours_auto_kinds": [
+    "「~하는 자리」 의심",
+    "반말 서술형",
+    "서술형 종결",
+    "업무 글에 없는 말",
+    "지시어 확인",
+    "형식 미표기"
+   ],
+   "ours_prose_err": 1,
+   "ours_prose_warn": 16,
+   "ours_prose_kinds": [
+    "「~하는 자리」 의심",
+    "반말 서술형",
+    "업무 글에 없는 말",
+    "지시어 확인"
+   ]
+  }
+ ]
+}
