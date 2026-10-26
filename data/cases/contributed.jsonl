@@ -246,7 +246,7 @@
 {"case_id": "C-246", "expect": "finding", "form": "prose", "kind": "상투 문형", "source": "im-not-ai 2.3.2 전수 대조(2026-10-23)", "status": "pinned", "text": "결과 표가 잘립니다(이는 스크롤 설정 때문입니다).", "why": "괄호 부연"}
 {"case_id": "C-248", "expect": "clean", "form": "prose", "kind": "상투 문형", "source": "im-not-ai 2.3.2 전수 대조(2026-10-23)", "status": "pinned", "text": "회의실에 노트북을 가지고 갑니다.", "why": "실제 물건을 가지고 감 · 「가지고 있다」 꼴 아님"}
 {"case_id": "C-249", "expect": "clean", "form": "prose", "kind": "상투 문형", "source": "im-not-ai 2.3.2 전수 대조(2026-10-23)", "status": "pinned", "text": "일정은 다음과 같습니다.", "why": "위치 안내 · 열거 도입구 아님"}
-{"case_id": "C-250", "expect": "finding", "form": "prose", "kind": "상투 문형", "source": "im-not-ai 2.3.2 남은 흡수(2026-10-23)", "status": "pinned", "text": "값싼 제품이 기존 시장을 잠식하고 있습니다.", "why": "D-14 사람 0건 사전 은유"}
+{"case_id": "C-250", "expect": "clean", "form": "prose", "kind": "상투 문형", "source": "im-not-ai 2.3.2 남은 흡수(2026-10-23)", "status": "pinned", "text": "값싼 제품이 기존 시장을 잠식하고 있습니다.", "why": "「시장을 잠식」은 정상 — 「매출 잠식」(자기잠식)은 경제 용어이고 「한도 잠식」도 정상이라 은유 목록에서 뺌(2026-10-26 사용자 판정)"}
 {"case_id": "C-251", "expect": "finding", "form": "prose", "kind": "상투 문형", "source": "im-not-ai 2.3.2 남은 흡수(2026-10-23)", "status": "pinned", "text": "이번 조사의 진단은 서늘합니다.", "why": "D-14 감각 술어 평가문"}
 {"case_id": "C-252", "expect": "finding", "form": "prose", "kind": "상투 문형", "source": "im-not-ai 2.3.2 남은 흡수(2026-10-23)", "status": "pinned", "text": "이 글에서는 검증 절차의 변화를 알아보겠습니다.", "why": "후보 D-X-meta 메타담화 서두"}
 {"case_id": "C-253", "expect": "finding", "form": "prose", "kind": "상투 문형", "source": "im-not-ai 2.3.2 남은 흡수(2026-10-23)", "status": "pinned", "text": "한 업계 관계자는 수요가 늘 것이라고 말했습니다.", "why": "DS-2 정황 없는 익명 인용"}
@@ -256,8 +256,8 @@
 {"case_id": "C-257", "expect": "clean", "form": "prose", "kind": "상투 문형", "source": "im-not-ai 흡수 재검토(2026-10-23)", "status": "pinned", "text": "한 담당자가 두 과제를 맡습니다.", "why": "「한」이 「하나」 — 익명 인용 아님(재검토에서 찾은 오탐)"}
 {"case_id": "C-258", "expect": "finding", "form": "prose", "kind": "상투 문형", "source": "im-not-ai 흡수 재검토(2026-10-23)", "status": "pinned", "text": "업계 전망에 따르면 수요가 늘 것입니다. 한 전문가에 따르면 내년 상반기가 고비입니다.", "why": "「~에 따르면」 꼴 익명 인용"}
 {"case_id": "C-259", "expect": "finding", "form": "prose", "kind": "머리말 되풀이", "source": "2026-10-23 im-not-ai 윤문 미탐 찾기 · 사용자 판정 ⑤", "status": "pinned", "text": "없음 — 이번 회차 후보 없음.", "why": "머리 값과 뒤 설명이 같은 판정을 두 번 말함"}
-{"case_id": "C-260", "expect": "finding", "form": "prose", "kind": "머리말 되풀이", "source": "2026-10-23 im-not-ai 윤문 미탐 찾기 · 사용자 판정 ⑤", "status": "pinned", "text": "**모델** — 사용한 모델", "why": "라벨을 값 끝에서 되풀이해 값에 새 정보가 없음"}
-{"case_id": "C-261", "expect": "finding", "form": "prose", "kind": "머리말 되풀이", "source": "2026-10-23 im-not-ai 윤문 미탐 찾기 · 사용자 판정 ⑤", "status": "pinned", "text": "**확인**: 배포 로그를 확인함", "why": "라벨을 값 끝 활용형으로 되풀이"}
+{"case_id": "C-260", "expect": "clean", "form": "prose", "kind": "머리말 되풀이", "source": "2026-10-23 im-not-ai 윤문 미탐 찾기 · 사용자 판정 ⑤", "status": "pinned", "text": "**모델** — 사용한 모델", "why": "라벨을 값 끝에서 다시 말하는 꼴은 값이 완결된 구라 정상(2026-10-26 사용자 판정)"}
+{"case_id": "C-261", "expect": "clean", "form": "prose", "kind": "머리말 되풀이", "source": "2026-10-23 im-not-ai 윤문 미탐 찾기 · 사용자 판정 ⑤", "status": "pinned", "text": "**확인**: 배포 로그를 확인함", "why": "라벨을 값 끝 활용형으로 다시 말하는 꼴도 정상(2026-10-26 사용자 판정)"}
 {"case_id": "C-262", "expect": "clean", "form": "prose", "kind": "머리말 되풀이", "source": "2026-10-23 im-not-ai 윤문 미탐 찾기 · 사용자 판정 ⑤", "status": "pinned", "text": "없음 — 다음 회차에 다시 확인", "why": "뒤 설명이 다른 말로 끝나 새 정보를 더함"}
 {"case_id": "C-263", "expect": "clean", "form": "prose", "kind": "머리말 되풀이", "source": "2026-10-23 im-not-ai 윤문 미탐 찾기 · 사용자 판정 ⑤", "status": "pinned", "text": "**배포 예정**: 11월 중 배포", "why": "머리가 두 낱말이라 한 낱말 되풀이 꼴이 아님"}
 {"case_id": "C-264", "expect": "clean", "form": "prose", "kind": "머리말 되풀이", "source": "2026-10-23 im-not-ai 윤문 미탐 찾기 · 사용자 판정 ⑤", "status": "pinned", "text": "비고: 없음", "why": "값이 한 낱말뿐이라 되풀이가 없음"}
@@ -265,3 +265,4 @@
 {"case_id": "C-266", "expect": "finding", "form": "prose", "kind": "평가 수식어", "source": "2026-10-23 다른 세션 후보 20261022-number-intensifier · 사용자 판정 결함", "status": "pinned", "text": "부정 응답은 14%에 불과했습니다.", "why": "수치 뒤 「불과」로 작음을 평가함"}
 {"case_id": "C-267", "expect": "clean", "form": "prose", "kind": "평가 수식어", "source": "2026-10-23 다른 세션 후보 20261022-number-intensifier · 사용자 판정 결함", "status": "pinned", "text": "크게 3개 영역으로 나뉩니다.", "why": "수치 앞 「크게」는 「대체로」 뜻이라 평가가 아님"}
 {"case_id": "C-268", "expect": "clean", "form": "prose", "kind": "평가 수식어", "source": "2026-10-23 다른 세션 후보 20261022-number-intensifier · 사용자 판정 결함", "status": "pinned", "text": "이는 형식에 불과하다는 지적이 있었습니다.", "why": "수치가 없는 「불과」는 이 꼴이 아님"}
+{"case_id": "C-269", "expect": "clean", "form": "prose", "kind": "평가 수식어", "source": "2026-10-26 최근 문서 신규 규칙 오탐 점검 · 사용자 판정 결함 아님", "status": "pinned", "text": "문턱이 첫 턴 크기(2.4만)에 가까워지면 그 값이 급격히 커집니다.", "why": "수치에서 떨어진 다른 절이 변화의 모양을 말함 — 수치를 꾸미는 평가가 아님"}
