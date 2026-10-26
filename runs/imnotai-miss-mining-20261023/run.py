@@ -3,7 +3,9 @@
 본문은 저장소 밖 작업 폴더(첫 인자)에만 쓴다. 저장소에는 집계(summary.json)만 남긴다.
 모델 호출은 모두 구독이다.
 
-python -X utf8 runs/imnotai-miss-mining-20261023/run.py <작업 폴더> [doc-002 …]
+python -X utf8 runs/imnotai-miss-mining-20261023/run.py <작업 폴더> [doc-002 … | 파일 경로 …] [--summary 집계 경로]
+
+파일 경로를 주면 그 문서를 쓴다(이름은 파일 이름 · 2026-10-26 실제 발행 문서 회차).
 """
 import difflib
 import importlib.util
@@ -139,13 +141,21 @@ def changed(before, after):
 
 
 def main():
-    work_root = Path(sys.argv[1])
-    names = sys.argv[2:] or DOCS
+    args = sys.argv[1:]
+    out = HERE / "summary.json"
+    if "--summary" in args:
+        i = args.index("--summary")
+        out = Path(args[i + 1])
+        del args[i:i + 2]
+    work_root = Path(args[0])
+    names = args[1:] or DOCS
     summary = {}
     for name in names:
+        src = Path(name) if Path(name).is_file() else SRC / f"{name}.md"
+        name = src.stem
         work = work_root / name
         work.mkdir(parents=True, exist_ok=True)
-        body = strip_front((SRC / f"{name}.md").read_text(encoding="utf-8"))
+        body = strip_front(src.read_text(encoding="utf-8"))
         (work / "01_input.txt").write_text(body, encoding="utf-8")
         doc = work / f"{name}.md"
         doc.write_text(body, encoding="utf-8")
@@ -161,7 +171,7 @@ def main():
                          "changed_lines": len(rows), "l1_lines": len(l1), "l2_lines": len(l2), "judge_rc": rc,
                          "changed_and_l1_or_l2": len(rows) - len(miss), "miss_candidates": len(miss), **log}
         print(json.dumps(summary[name], ensure_ascii=False), flush=True)
-        (HERE / "summary.json").write_text(json.dumps(summary, ensure_ascii=False, indent=1), encoding="utf-8")
+        out.write_text(json.dumps(summary, ensure_ascii=False, indent=1), encoding="utf-8")
 
 
 if __name__ == "__main__":

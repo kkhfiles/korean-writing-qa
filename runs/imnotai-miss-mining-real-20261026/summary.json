@@ -1,0 +1,102 @@
+{
+ "주간보고 한 장 요약": {
+  "hangul": 2260,
+  "change_rate": 0.001,
+  "changed_lines": 3,
+  "l1_lines": 0,
+  "l2_lines": 18,
+  "judge_rc": 0,
+  "changed_and_l1_or_l2": 1,
+  "miss_candidates": 2,
+  "diagnose": {
+   "sec": 47,
+   "cost_usd": 0.232306,
+   "billing": "subscription"
+  },
+  "rewrite": {
+   "sec": 44,
+   "cost_usd": 0.295305,
+   "billing": "subscription"
+  }
+ },
+ "주간보고 요약본": {
+  "hangul": 7743,
+  "change_rate": 0.006,
+  "changed_lines": 49,
+  "l1_lines": 1,
+  "l2_lines": 18,
+  "judge_rc": 0,
+  "changed_and_l1_or_l2": 6,
+  "miss_candidates": 43,
+  "diagnose": {
+   "sec": 64,
+   "cost_usd": 0.390368,
+   "billing": "subscription"
+  },
+  "rewrite": {
+   "sec": 191,
+   "cost_usd": 0.845636,
+   "billing": "subscription"
+  }
+ },
+ "백서 변경 노트": {
+  "hangul": 6803,
+  "change_rate": 0.007,
+  "changed_lines": 32,
+  "l1_lines": 4,
+  "l2_lines": 28,
+  "judge_rc": 0,
+  "changed_and_l1_or_l2": 10,
+  "miss_candidates": 22,
+  "diagnose": {
+   "sec": 52,
+   "cost_usd": 0.307322,
+   "billing": "subscription"
+  },
+  "rewrite": {
+   "sec": 163,
+   "cost_usd": 0.681448,
+   "billing": "subscription"
+  }
+ },
+ "회의록": {
+  "hangul": 606,
+  "change_rate": 0.05,
+  "changed_lines": 20,
+  "l1_lines": 0,
+  "l2_lines": 3,
+  "judge_rc": 0,
+  "changed_and_l1_or_l2": 2,
+  "miss_candidates": 18,
+  "diagnose": {
+   "sec": 36,
+   "cost_usd": 0.159236,
+   "billing": "subscription"
+  },
+  "rewrite": {
+   "sec": 27,
+   "cost_usd": 0.16827,
+   "billing": "subscription"
+  }
+ },
+ "CONTRIBUTING.md": {
+  "hangul": 1326,
+  "change_rate": 0.011,
+  "changed_lines": 5,
+  "l1_lines": 0,
+  "l2_lines": 20,
+  "judge_rc": 0,
+  "changed_and_l1_or_l2": 5,
+  "miss_candidates": 0,
+  "diagnose": {
+   "sec": 61,
+   "cost_usd": 0.221207,
+   "billing": "subscription"
+  },
+  "rewrite": {
+   "sec": 47,
+   "cost_usd": 0.247877,
+   "billing": "subscription"
+  }
+ }
+}
