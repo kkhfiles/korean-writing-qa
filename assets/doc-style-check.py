@@ -2159,6 +2159,27 @@ _SENTENCE_END = re.compile(r'[.!?。]\s*$')
 
 HTML_FORM = re.compile(
     r'''<meta\s+name=["']form["']\s+content=["']([A-Za-z_-]+)["']''', re.I)
+_YAML_KEY = re.compile(r'^[A-Za-z_][\w-]*\s*:')
+
+
+def front_matter_end(lines):
+    """머리말을 닫는 `---` 의 줄 번호(0부터). 머리말이 없으면 None.
+
+    ⛔ **줄 수로 자르지 않는다** — 예전에는 앞 60줄 안에서만 닫는 줄을 찾았다. Marp 덱은
+    머리말에 `style: |` CSS 를 통째로 넣어 85줄에서 닫혔고, 그 결과 적어 둔 `form: prose`
+    를 못 읽어 발표 대본 21줄이 서술형 오류로 나왔다(2026-10-28 · 세미나 좌장 덱). 같은
+    상한 때문에 그 CSS 는 본문으로 검사되고 있었다. 대신 첫 줄이 YAML 키인지로 가른다 —
+    가로줄로 시작하는 문서의 본문을 머리말로 삼키지 않게.
+    """
+    if not lines or lines[0].strip() != '---':
+        return None
+    first = next((l for l in lines[1:] if l.strip()), '')
+    if not _YAML_KEY.match(first):
+        return None
+    for j in range(1, len(lines)):
+        if lines[j].strip() == '---':
+            return j
+    return None
 
 
 def declared_form(raw):
@@ -2174,11 +2195,10 @@ def declared_form(raw):
     #    감춰진 오류 12건 · `docs/architecture.md` 도 같았다). 머리말이 있으면 머리말만 보고,
     #    HTML 표시는 머리말이 없을 때 코드 밖에서만 찾는다.
     lines = raw.split('\n')
-    if lines and lines[0].strip() == '---':
-        for j in range(1, min(len(lines), 60)):
-            if lines[j].strip() == '---':
-                m = FORM_KEY.search('\n'.join(lines[1:j]))
-                return m.group(1).lower() if m and m.group(1).lower() in FORM_VALUES else None
+    j = front_matter_end(lines)
+    if j is not None:
+        m = FORM_KEY.search('\n'.join(lines[1:j]))
+        return m.group(1).lower() if m and m.group(1).lower() in FORM_VALUES else None
     m = HTML_FORM.search(CODE_SPAN.sub(' ', raw[:4096]))
     if m and m.group(1).lower() in FORM_VALUES:
         return m.group(1).lower()
@@ -2523,12 +2543,8 @@ def pre_code_prose(body):
 def md_body(raw):
     """(행번호, 원문) — frontmatter·코드펜스 제외. frontmatter는 메타데이터지 본문이 아니다."""
     lines = raw.split('\n')
-    start = 0
-    if lines and lines[0].strip() == '---':
-        for j in range(1, min(len(lines), 60)):
-            if lines[j].strip() == '---':
-                start = j + 1
-                break
+    j = front_matter_end(lines)
+    start = 0 if j is None else j + 1
     inside = fenced_lines(lines)
     return [(n + 1, lines[n]) for n in range(start, len(lines)) if n not in inside]
 

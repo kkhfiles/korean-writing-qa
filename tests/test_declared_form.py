@@ -48,6 +48,26 @@ class DeclaredFormTests(unittest.TestCase):
     def test_front_matter_prose_is_read(self) -> None:
         self.assertEqual("prose", self.m.declared_form("---\nform: prose\n---\n\n# 소개\n"))
 
+    # 2026-10-28 · Marp 덱은 머리말에 CSS 를 통째로 넣어 60줄을 넘겨 닫힌다. 앞 60줄만 보던
+    # 시절에는 적어 둔 `form: prose` 를 못 읽어 발표 대본이 서술형 오류로 나왔다.
+    MARP = ("---\nmarp: true\ntheme: default\npaginate: true\nsize: 16:9\nform: prose\nstyle: |\n"
+            + "".join(f"  .c{i} {{ color: #333; }}\n" for i in range(80))
+            + "---\n\n# 좌장 인사\n\n오늘 세미나를 시작하겠습니다.\n")
+
+    def test_long_marp_front_matter_is_read(self) -> None:
+        self.assertGreater(self.MARP.split("\n").index("---", 1), 60, "시료가 60줄 안에서 닫혀 증상 모양이 아닙니다")
+        self.assertEqual("prose", self.m.declared_form(self.MARP))
+
+    def test_long_marp_front_matter_is_not_body(self) -> None:
+        body = [line for _, line in self.m.md_body(self.MARP)]
+        self.assertFalse(any(".c0" in line for line in body), "머리말의 CSS 를 본문으로 검사합니다")
+        self.assertIn("오늘 세미나를 시작하겠습니다.", body)
+
+    def test_a_leading_horizontal_rule_is_not_front_matter(self) -> None:
+        raw = "---\n\n# 안내\n\n본문 문장입니다.\n\n---\n\n끝 문장입니다.\n"
+        body = [line for _, line in self.m.md_body(raw)]
+        self.assertIn("본문 문장입니다.", body, "가로줄로 시작한 문서의 본문을 머리말로 삼켰습니다")
+
 
 if __name__ == "__main__":
     unittest.main()
