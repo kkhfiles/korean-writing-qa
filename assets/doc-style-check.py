@@ -32,7 +32,7 @@ NARRATIVE = re.compile(r'[가-힣]다\.?$')
 # 「아니다」는 빼지 않는다 — 규칙 §1이 ❌"대체하지 않는다" → ✅"대체 아님"으로 든 바로 그 형태다
 NOT_NARRATIVE = re.compile(r'(보다|마다|최다|과다)\.?$')
 # 존댓말 종결 — 「니다」 계열과 「요」 계열. 이 밖의 서술형 종결이 반말이다.
-POLITE = re.compile(r'(?:니다|니까|세요|셔요|어요|아요|여요|에요|예요|시오|ㅂ시다)$')
+POLITE = re.compile(r'(?:니다|니까|세요|셔요|어요|아요|여요|에요|예요|시오|시다)$')
 
 
 def is_polite(probe):
@@ -45,11 +45,14 @@ def is_polite(probe):
 
     「반말 서술형」 갈래가 기본으로 꺼져 있어 이 버그가 안 드러나 있었다. 말투
     섞임을 켜면서 저장소 문서에서 「…가 아니다」가 **존댓말 소수**로 튀어 나왔다.
+
+    청유형 「~ㅂ시다」도 같은 받침 검사를 쓴다(2026-10-28) — 예전 정규식의 낱자
+    「ㅂ시다」는 완성형 「봅시다」에 안 맞아 반말로 잡혔다. 「오시다」는 반말이다.
     """
     m = POLITE.search(probe)
     if not m:
         return False
-    if not m.group(0).startswith('니다'):
+    if not m.group(0).startswith(('니다', '시다')):
         return True
     i = m.start()
     if i == 0:
