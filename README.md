@@ -176,6 +176,7 @@ err  = []                                 # 주의에서 오류로 올린다
 
 - [사용 안내](docs/user-guide.md) — 설치·실행·결과 읽는 법
 - [시스템 구조와 역할](docs/architecture.md) — 부품·실행 시점·되먹임
+- [장점과 기술 요소](docs/highlights.md) — 장점별 기술 요소와 근거, 홈페이지 문구 후보
 - [현재 상태](docs/status.md)
 - [판단이 필요한 것](docs/decisions-pending.md)
 - [재발방지 설계안](docs/prevention-design-20260915.md) — 탐지 넷과 호출 하나 · 외부 검토 반영
