@@ -143,7 +143,9 @@ err  = []                                 # 주의에서 오류로 올린다
 | properties | 속성값 | 키 · 주석 |
 | 일반 텍스트 | 제어 문자 제거 후 각 줄 | 터미널 색상·제어 코드 |
 
-- **산문 문서** — 머리말에 `form: prose`(HTML 은 `<meta name="form" content="prose">`) · 개조식 전제 검사가 꺼짐
+- **산문 문서** — 머리말에 `form: prose`(HTML 은 `<meta name="form" content="prose">`)를 적으면 개조식을 전제로 한 검사가 꺼짐
+- **형식을 안 적은 문서** — 산문으로 판별되면 개조식 검사를 제외하고, 결과의 「형식 미표기」 주의에 산문으로 판별했다고 적음
+  - **개조식으로 검사하게 하려면** — 문서에 `form: structured` 를 적거나, `korean-qa.toml` 에 `[form]` 절과 `undeclared = "structured"` 를 둠
 - **화면(업무 보드 등)** — `<meta name="form" content="app">` · 제목·진입점 같은 문서 뼈대 검사만 꺼지고 낱말·문장 검사는 그대로
 - **검사 대상 아님** — PDF·PPTX 같은 변환 산출물. 편집 원본을 검사합니다.
 - **의존성 둘** — `python -m pip install -r requirements.txt` · YAML 검사와 형태소 판정에 씀

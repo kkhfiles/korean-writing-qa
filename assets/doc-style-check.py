@@ -2112,7 +2112,15 @@ def scan_html(path, relaxed=False, form=None, rules=None):
     # 자기 형식을 들고 있게 한다. 플래그가 오면 그쪽이 이긴다(그 자리에서 뒤집어 봄).
     for msg in middot_errors(path, raw, numbered=False):
         err.append(('띄어 쓴 가운뎃점', msg))
-    err, warn = apply_form(err, warn, form or declared_form(raw))
+    # 형식을 안 적은 HTML 도 판별한다 — 줄 단위 산문 비율은 태그 때문에 못 재서 지적 쏠림만 본다.
+    # 개조식으로 보는 설정이면 예전처럼 아무것도 더하지 않는다(HTML 에는 원래 형식 물음이 없었다).
+    resolved = form or declared_form(raw)
+    if (resolved is None and undeclared_mode(rules) == UNDECLARED_DETECT
+            and narrative_flood(err, ('서술형 종결', '서술형 문단'))):
+        resolved = 'prose'
+        warn.append(('형식 미표기', DETECTED_PROSE_NOTE.replace(
+            '머리말에 `form: structured` 를 적는다', '`<meta name="form" content="structured">` 를 넣는다')))
+    err, warn = apply_form(err, warn, resolved)
     err, warn = apply_instruction_file(err, warn, path)
     err, warn = apply_selection(err, warn, rules) if rules else (err, warn)
     return err, warn, slots
@@ -2156,6 +2164,59 @@ PROSE_ASK_THRESHOLD = 0.30
 # 개조식 지적이 이만큼 넘게 쌓이고 그것이 지적의 절반 이상이면, 산문 비율이 낮아도
 # 형식을 물어본다. 열 건 아래는 문서 하나에 몇 군데 고칠 곳이 있는 정상 상태다.
 NARRATIVE_ASK_MIN = 10
+
+# ★ 형식을 안 적은 문서는 판별해서 본다 (2026-10-29 사용자 결정)
+#
+#  사용자 — 「기본값이 개조식인게 아니라 산문인지 개조식인지를 보고 모드가 바뀌게 해야하는거
+#  아니니? 나는 취향이 산문이 아니라서 개인 설정으로 한 것뿐」. 받아 쓰는 사람이 평범한 업무 글을
+#  돌리면 서술형 종결이 쏟아져 「멀쩡한 한국어를 틀렸다고 한다」로 읽혔다(공모 응모작 본문 28건 →
+#  산문으로 보면 1건).
+#  판별 조건은 위 두 임계 그대로다. 사용자 보고서 454편에서 27편(6%)이 산문으로 갔고, 빠지는 것은
+#  개조식 전제 갈래(서술형 종결 · 제목 · 진입점)뿐이다. 8월에 「산문 판을 기본값으로 하면 안 된다」고
+#  본 근거(diagnostic-004 · 구조 문서 오류 56% 소실)는 **모든 문서를 산문으로 볼 때**의 값이다.
+#  ⛔ 조용히 빼지 않는다 — 산문으로 보면 「형식 미표기」 주의에 그렇게 봤다고 적는다.
+#  기본을 바꾸는 길 — 조직은 `korean-qa.toml` 의 `[form] undeclared = "structured"`,
+#  개인은 개인 항목 스위치(`PROFILE_FILE`)가 있으면 지금처럼 개조식으로 본다.
+UNDECLARED_DETECT, UNDECLARED_STRUCTURED = 'detect', 'structured'
+# 인사말과 맺음말이 산문이고 본문만 「■ 라벨: 값」인 사내 공지 — 산문 비율 0.22, 서술형 종결 8/8 로
+# 위 두 임계에 다 못 미쳤다. 비율 0.20 이상에서 지적의 절반 넘게 서술형 종결(3건 이상)이면 산문으로
+# 본다. 사용자 보고서 454편과 이 저장소 문서 29편에서 이 조건으로 더 넘어간 문서는 0편이다.
+# ⚠️ 공지 한 편을 보고 정한 값이다 — 사람이 쓴 글 표본이 모이면 다시 잰다.
+PROSE_MIXED_THRESHOLD = 0.20
+NARRATIVE_MIXED_MIN = 3
+DETECTED_PROSE_NOTE = ('형식을 안 적어 산문으로 보고 개조식 검사(서술형 종결, 제목, 진입점)를 뺐다 — '
+                       '개조식 문서면 머리말에 `form: structured` 를 적는다.')
+ASK_FORM_NOTE = ('산문으로 보이는데 형식을 안 적었다 — 머리말에 `form: prose` 를 적으면 '
+                 '개조식 검사를 빼고 본다. 개조식이 맞다면 `form: structured` 를 적는다.')
+
+
+def undeclared_mode(rules):
+    """형식을 안 적은 문서의 기본 — 조직 설정이 앞서고, 없으면 개인 스위치가 있을 때 개조식, 아니면 판별."""
+    chosen = getattr(rules, 'undeclared', None)
+    if chosen:
+        return chosen
+    return UNDECLARED_STRUCTURED if PROFILE else UNDECLARED_DETECT
+
+
+def narrative_count(err, kinds=('서술형 종결',)):
+    return sum(1 for item in err if (item[1] if len(item) == 3 else item[0]) in kinds)
+
+
+def narrative_flood(err, kinds=('서술형 종결',)):
+    """지적이 개조식 축으로 쏠렸나 — 산문 비율이 낮아도 산문 글이면 이렇게 쌓인다."""
+    narrative = narrative_count(err, kinds)
+    return narrative >= NARRATIVE_ASK_MIN and narrative >= 0.5 * max(len(err), 1)
+
+
+def looks_prose_md(body, err):
+    """형식을 안 적은 마크다운이 산문으로 보이나 — 판별과 형식 물음이 같은 조건을 쓴다."""
+    share = prose_share(body)
+    narrative = narrative_count(err)
+    mixed = (share >= PROSE_MIXED_THRESHOLD and narrative >= NARRATIVE_MIXED_MIN
+             and narrative >= 0.5 * max(len(err), 1))
+    return share >= PROSE_ASK_THRESHOLD or narrative_flood(err) or mixed
+
+
 _STRUCTURE_LINE = re.compile(r'^\s*(?:[-*+]\s|\d+[.)]\s|\||#{1,6}\s|>|```|:?-{3,})')
 _SENTENCE_END = re.compile(r'[.!?。]\s*$')
 
@@ -2316,10 +2377,12 @@ def is_instruction_file(path):
 class Selection:
     """어느 갈래를 볼 것인가. `source` 가 None 이면 기본 갈래를 전부 본다."""
 
-    def __init__(self, off=(), warn=(), err=(), on=(), source=None):
+    def __init__(self, off=(), warn=(), err=(), on=(), source=None, undeclared=None):
         self.off, self.warn, self.err = set(off), set(warn), set(err)
         self.on = set(on)
         self.source = source
+        #: 형식을 안 적은 문서의 기본(`undeclared_mode`) — None 이면 개인 스위치로 정한다
+        self.undeclared = undeclared
 
     def __bool__(self):
         return bool(self.off or self.warn or self.err or self.on)
@@ -2357,12 +2420,18 @@ def load_rules(path):
     import tomllib
     data = tomllib.loads(io.open(path, encoding='utf-8').read())
     rules = data.get('rules', {})
+    undeclared = data.get('form', {}).get('undeclared')
+    if undeclared not in (None, UNDECLARED_DETECT, UNDECLARED_STRUCTURED):
+        # 오타는 멈춘다 — 조용히 넘기면 개조식으로 보려던 문서가 판별로 넘어간다
+        raise ValueError(f'{path} 의 [form] undeclared 는 '
+                         f'"{UNDECLARED_DETECT}" 또는 "{UNDECLARED_STRUCTURED}" — 받은 값: {undeclared!r}')
     return Selection(
         off=_expand(rules.get('off', []), f'{path} 의 off'),
         warn=_expand(rules.get('warn', []), f'{path} 의 warn'),
         err=_expand(rules.get('err', []), f'{path} 의 err'),
         on=_expand(rules.get('on', []), f'{path} 의 on'),
         source=path,
+        undeclared=undeclared,
     )
 
 
@@ -2980,22 +3049,21 @@ def scan_md(path, relaxed=False, form=None, rules=None):
 
     err, warn = dedupe(err), dedupe(warn)
 
-    # 형식은 선언으로만 정한다. 산문 비율로 짐작하면 표와 라벨이 뼈대인 문서까지
-    # 산문으로 넘어가 정당한 지적이 조용히 사라진다(실측 65건이 그 구간이다).
+    # 형식을 적었으면 선언대로, 안 적었으면 판별한다(`undeclared_mode` · 2026-10-29 사용자 결정).
+    # 판별 임계는 산문 비율 0.30 — 0.15~0.30 은 표와 라벨이 뼈대인 문서에 근거 문단이 붙은
+    # 형태라 지적이 정당했다(실측 65건).
     #
-    # 물어보는 조건은 둘이다. 산문 비율 하나로는 **물음이 필요한 문서를 놓친다** —
+    # 판별 조건은 둘이다. 산문 비율 하나로는 **산문 글을 놓친다** —
     # 표와 목록이 뼈대이고 그 안의 설명만 산문인 문서는 비율이 낮게 나오는데,
     # 정작 개조식 지적이 쏟아지는 것이 그런 문서다(실측 41건 · 문서의 10%).
     # 그래서 **지적 자체가 개조식 축으로 쏠렸는지**도 함께 본다.
-    narrative = sum(1 for item in err if (item[1] if len(item) == 3 else item[0]) == '서술형 종결')
-    form_axis_flood = narrative >= NARRATIVE_ASK_MIN and narrative >= 0.5 * max(len(err), 1)
     resolved = form or declared_form(raw)
-    if resolved is None and (prose_share(body) >= PROSE_ASK_THRESHOLD or form_axis_flood):
-        warn.append((
-            '형식 미표기',
-            '산문으로 보이는데 형식을 안 적었다 — 머리말에 `form: prose` 를 적으면 '
-            '개조식 검사를 빼고 본다. 개조식이 맞다면 `form: structured` 를 적는다.',
-        ))
+    if resolved is None and looks_prose_md(body, err):
+        if undeclared_mode(rules) == UNDECLARED_DETECT:
+            resolved = 'prose'
+            warn.append(('형식 미표기', DETECTED_PROSE_NOTE))
+        else:
+            warn.append(('형식 미표기', ASK_FORM_NOTE))
     # 코드펜스 안에 배포되는 한글 문구가 있으면 **안 봤다고 알린다.**
     #   ⛔ 지적이 아니라 안내다 — 펜스 안을 본문처럼 검사하면 바깥 문서의 개조식
     #      규약이 공지문에 걸린다(공지문은 산문이 정상이다).

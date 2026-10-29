@@ -75,6 +75,10 @@ def load_checker():
     spec = importlib.util.spec_from_file_location("doc_style_check", CHECKER)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
+    # 이 파일은 「형식을 안 적으면 개조식으로 보고 물어보는」 모드를 지킨다 — 2026-10-29 부터 그 모드는
+    # 개인 스위치나 조직 설정이 있을 때만이라 고정한다. 안 하면 스위치가 있는 PC 에서만 통과하고
+    # CI 에서 깨진다(공유 기본인 판별 모드는 `test_undeclared_form.py` 가 지킨다).
+    module.PROFILE = True
     return module
 
 
