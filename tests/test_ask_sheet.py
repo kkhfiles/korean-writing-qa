@@ -200,7 +200,9 @@ class ScreenTests(_SheetBase):
             rc, out = self.run_main([str(self.doc), "--sheet", str(self.sheet)])
         finally:
             ask_sheet.SCREEN_MAX = saved
-        self.assertIn("표 파일로 묻습니다", out)
+        self.assertIn("판정표로 묻습니다", out)
+        self.assertIn("ask_sheet_html.py", out, "많은 지적을 카드형 판정표로 띄우는 명령을 안내하지 않았습니다")
+        self.assertIn("--serve", out)
         self.assertNotIn("| 1 | ", out, "많은 지적을 대화에 풀었습니다 — 하나씩 볼 수 없습니다")
 
     def test_replies_work_like_the_sheet(self) -> None:
