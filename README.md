@@ -98,6 +98,7 @@ err  = []                                 # 주의에서 오류로 올린다
 - **발행 게이트** — `--no-rules` 로 설정을 무시하고 전부 봄
 - **제품 이름은 저장소 밖 목록에 둠** — `data/catalog/local-brand-names.example.txt` 를 `local-brand-names.txt` 로 복사해 자사 제품 이름과 잘못 적은 꼴을 적음 · 복사본은 `.gitignore` 대상이라 안 올라감 · 목록이 없으면 그 갈래는 안 돌고 **안 봤다고 출력에 적음**
 - **안 쓸 동사는 개인 목록에 둠** — `data/catalog/local-personal-words.example.tsv` 를 `local-personal-words.tsv` 로 복사해 「동사 · 명사 · 바꿀 말 · 까닭」을 적음(「결함을 잡다 → 검출」) · 「업무 글에 없는 말」 주의로 나옴 · 형태소 분석기가 있어야 돎 · 복사본은 `.gitignore` 대상
+  - **고친 뒤 `python install.py`** — 제품 이름 목록과 개인 목록을 설치 폴더(`~/.claude/data/catalog/`)로 옮겨, 이 저장소 밖 프로젝트의 검사에도 적용함
   - **후보 뽑기** — `python -X utf8 scripts/suggest_personal_words.py --informal <구어 글 폴더> --formal <문어 글 폴더>` · 구어 쪽에 치우친 동사를 용례와 함께 냄 · 판정은 안 함
 - **오타는 멈춤** — 모르는 갈래 이름을 적으면 rc 1. 조용히 넘기면 끄려던 검사가 안 꺼진 채 통과로 읽힙니다.
 

@@ -112,6 +112,13 @@ def pairs() -> list[tuple[Path, Path]]:
     brands = repo_paths.REPO / "data" / "catalog" / "local-brand-names.txt"
     if brands.exists():
         out.append((brands, repo_paths.installed("data", "catalog", brands.name)))
+    # ⛔ 개인 낱말 목록과 개인 항목 스위치도 같은 자리로 — README 는 저장소 `data/catalog/` 에
+    #    두라고 안내하는데 여기서 안 옮겨, 다른 프로젝트에서 도는 설치본 검사기는 개인 목록을
+    #    못 봤다(2026-10-29 재현 · 저장소 검사기 주의 1, 설치본 0).
+    for name in ("local-personal-words.tsv", "local-personal-rules.txt"):
+        personal = repo_paths.REPO / "data" / "catalog" / name
+        if personal.exists():
+            out.append((personal, repo_paths.installed("data", "catalog", name)))
     for name in HOOK_FILES:
         out.append((repo_paths.hook(name), repo_paths.installed("hooks", name)))
     # `skills/` 아래를 통째로 옮긴다 — 스킬을 새로 만들 때 이 함수를 안 고쳐도 된다.
