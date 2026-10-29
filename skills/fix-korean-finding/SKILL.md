@@ -14,7 +14,7 @@ description: 사람이 「이 표현은 업무 글에 안 맞는다」고 짚은
 
 ## 실행 기준
 
-- 저장소 기본값은 `P:/github/korean-writing-qa`다. 명령은 그 뿌리에서 돌린다.
+- 저장소 위치는 `install.py`가 설치할 때 적은 `~/.claude/data/korean-writing-qa-home.txt`의 값이다. 명령은 그 뿌리에서 돌린다.
 - 사람이 고쳐 달라고 짚은 것이 입력이다. 검사기가 낸 지적은 이 스킬이 아니라
   `finalize-korean-document` 스킬이 처리한다.
 - PR 로만 보낼 것이면 `CONTRIBUTING.md` 의 다섯 단계로 충분하다. 이 스킬은 **문서·

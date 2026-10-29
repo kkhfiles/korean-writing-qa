@@ -69,7 +69,26 @@ try:
 except (AttributeError, OSError):
     pass
 
-REPO = Path(os.environ.get("KOREAN_WRITING_QA_HOME", "P:/github/korean-writing-qa"))
+def _qa_root() -> Path | None:
+    """저장소 위치 — 환경 변수, 이 파일이 든 저장소, 설치할 때 적은 기록 차례로 찾는다.
+
+    작성자 PC 경로를 기본값으로 두면 받은 사람 PC 에서 엉뚱한 경로를 본다(2026-10-29).
+    못 찾으면 `None` — 판단할 수 없으니 이 점검은 조용히 넘어간다.
+    """
+    env = os.environ.get("KOREAN_WRITING_QA_HOME")
+    if env:
+        return Path(env)
+    here = Path(__file__).resolve().parents[1]
+    if (here / "install.py").is_file():
+        return here
+    claude = Path(os.environ.get("CLAUDE_HOME") or (Path.home() / ".claude"))
+    pointer = claude / "data" / "korean-writing-qa-home.txt"
+    if pointer.is_file() and pointer.read_text(encoding="utf-8").strip():
+        return Path(pointer.read_text(encoding="utf-8").strip())
+    return None
+
+
+REPO = _qa_root()
 RETRY_HOURS = 6
 TIMEOUT = 60
 GIT_TIMEOUT = 10
@@ -443,6 +462,8 @@ def main() -> int:
     except (OSError, ValueError):
         pass
 
+    if REPO is None:
+        return 0
     now = datetime.now()
     state = read_state()
     if not due(state, now):

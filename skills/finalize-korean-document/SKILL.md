@@ -10,7 +10,8 @@ description: AI가 생성하거나 수정한 한글 문서 산출물을 전달�
 ## 실행 기준
 
 - `scripts/...`로 시작하는 명령은 이 `SKILL.md`가 있는 디렉터리에서 실행한다. 다른 디렉터리에서는 스킬의 절대 디렉터리를 앞에 붙인다.
-- 피드백 후보와 QA 사본의 기본 디렉터리는 `P:/github/korean-writing-qa`다. 다른 복사본을 쓸 때만 `KOREAN_WRITING_QA_HOME`을 해당 디렉터리로 지정한다.
+- 피드백 후보와 QA 사본의 기본 디렉터리는 `install.py`가 설치할 때 적은 저장소 위치(`~/.claude/data/korean-writing-qa-home.txt`)다. 다른 복사본을 쓸 때만 `KOREAN_WRITING_QA_HOME`을 해당 디렉터리로 지정한다.
+- 저장소의 도구는 `"$HOME/.claude/assets/korean_qa_run.py" <도구 이름>`으로 부른다. 저장소를 어디에 두었든 같은 명령이다.
 - 자연스러움 기준문에는 판단에 쓴 원본 한 줄과 해시가 들어 있어 자체 시험만 실행할 때 원본 문서 사본이 없어도 된다.
 
 ## 작업 순서
@@ -25,7 +26,7 @@ description: AI가 생성하거나 수정한 한글 문서 산출물을 전달�
 5. **단어 점검을 돌린다** — 업무 글에서 드물게 쓰는 낱말을 목록으로 받는다.
 
 ```powershell
-python -X utf8 P:/github/korean-writing-qa/scripts/rare_words.py <대상>
+python -X utf8 "$HOME/.claude/assets/korean_qa_run.py" rare_words <대상>
 ```
 
    - **이 단계에 둔 이유** — 검사기 규칙은 **이미 짚힌 짝만 안다**(고정 목록). 새 낱말은 원리적으로 못 잡는다. 사용자가 여섯 차례 짚어 준 것이 전부 그 갈래였고, 빈도로 보는 이 도구가 새 낱말을 잡는 **유일한 기계**다(2026-09-16 확인).
@@ -33,7 +34,7 @@ python -X utf8 P:/github/korean-writing-qa/scripts/rare_words.py <대상>
    - **정상이라 판정하면 목록에 넣어 다음부터 접는다.** 낱말만 열지 말고 **어디서 정상인지**를 함께 적는다 — 「명사」는 이 저장소 글에서는 정상이지만 업무 보고서에서는 걸려야 한다.
 
 ```powershell
-python -X utf8 P:/github/korean-writing-qa/scripts/rare_words.py --accept <낱말/품사> --context <정상인 문맥> --scope <경로 무늬> --why <근거 한 줄>
+python -X utf8 "$HOME/.claude/assets/korean_qa_run.py" rare_words --accept <낱말/품사> --context <정상인 문맥> --scope <경로 무늬> --why <근거 한 줄>
 ```
 
    - **이 저장소 밖 경로로 범위를 좁히면 `--local` 을 붙인다** — 저장소 밖 목록(`data/catalog/local-known-words.jsonl` · 공개 안 됨)에 들어간다. 안 붙이면 거절한다 — 공개 목록에 남의 프로젝트 경로가 나가기 때문이다.
@@ -90,9 +91,9 @@ python "$HOME/.claude/assets/doc-style-check.py" <수정문>
 
 ```powershell
 # Codex
-python -X utf8 P:/github/korean-writing-qa/scripts/judge_layer2.py <수정문> --backend codex
+python -X utf8 "$HOME/.claude/assets/korean_qa_run.py" judge_layer2 <수정문> --backend codex
 # Claude Code
-python -X utf8 P:/github/korean-writing-qa/scripts/judge_layer2.py <수정문> --backend claude
+python -X utf8 "$HOME/.claude/assets/korean_qa_run.py" judge_layer2 <수정문> --backend claude
 ```
 
    - **git 저장소의 가지에서 고친 문서는 `--since origin/main`** — 그 가지와 갈라진 뒤 새로 생겼고 판정기가 아직 안 본 줄만 판정하고, 그 줄에 달린 지적만 보여 준다. 지적 목록을 **한 묶음으로 처리(고침 · 사유 · 사람 확인)한 뒤 같은 명령을 한 번 더** 부르면 고친 줄만 다시 판정한다. **지적 하나 고칠 때마다 부르지 않는다** — 호출마다 문서 문맥을 다시 실어 토큰이 들고, 같은 줄의 판정 횟수가 빨리 쌓여 재판정 상한(사람 확인)에 먼저 닿는다(2026-10-13 한 문서에서 판정 58회 중 29회가 대상 3줄 이하였다). 고치는 방향이 맞는지 먼저 봐야 하는 대표 수정은 한두 건 고쳐 중간에 판정해도 된다 — 사실 주장을 좁히거나 지운 줄도 확인할 사실이 바뀌므로 「확인함」을 적기 전에 다시 판정해도 된다. 고친 말이 새 문제를 들여오는지 보는 것이 이 재판정의 몫이다(실문서에서 수정안 40건 중 8건이 되돌아옴). 「판정할 새 줄 없음」이 나오면 끝이다.
@@ -117,12 +118,12 @@ python -X utf8 P:/github/korean-writing-qa/scripts/judge_layer2.py <수정문> -
 
 ```powershell
 # Codex 표 생성 예시: Claude Code에서는 --backend claude 사용
-python -X utf8 P:/github/korean-writing-qa/scripts/judge_layer2.py <수정문…> --backend codex --sheet <저장소 밖 경로>.md
-python -X utf8 P:/github/korean-writing-qa/scripts/ask_sheet_html.py <그 표> --serve    # 백그라운드로 실행, 사용자가 제출하면 종료
-python -X utf8 P:/github/korean-writing-qa/scripts/judge_layer2.py --answers-from <그 표>
-python -X utf8 P:/github/korean-writing-qa/scripts/judge_layer2.py --answers-from <그 표> --reply "의견대로, 단 3 그대로, 7 직접: …"
-python -X utf8 P:/github/korean-writing-qa/scripts/judge_layer2.py <수정문…> --asks
-python -X utf8 P:/github/korean-writing-qa/scripts/judge_layer2.py <수정문…> --fixes
+python -X utf8 "$HOME/.claude/assets/korean_qa_run.py" judge_layer2 <수정문…> --backend codex --sheet <저장소 밖 경로>.md
+python -X utf8 "$HOME/.claude/assets/korean_qa_run.py" ask_sheet_html <그 표> --serve    # 백그라운드로 실행, 사용자가 제출하면 종료
+python -X utf8 "$HOME/.claude/assets/korean_qa_run.py" judge_layer2 --answers-from <그 표>
+python -X utf8 "$HOME/.claude/assets/korean_qa_run.py" judge_layer2 --answers-from <그 표> --reply "의견대로, 단 3 그대로, 7 직접: …"
+python -X utf8 "$HOME/.claude/assets/korean_qa_run.py" judge_layer2 <수정문…> --asks
+python -X utf8 "$HOME/.claude/assets/korean_qa_run.py" judge_layer2 <수정문…> --fixes
 ```
 
    - **⛔ 묻지 않고 답을 적지 않는다** — 답 기록은 사용자가 정한 것을 옮겨 적는 곳이다. 세션이 판단해 적으면 사람에게 넘긴 뜻이 사라지고, 그 기록은 넘기기와 같아진다. 표의 「답」 칸도 같다 — 세션이 채운 표를 `--answers-from` 으로 읽히지 않는다. 사용자가 자리에 없으면 그 문서를 발행하지 않고 보고에 묻는 내용을 남긴다.

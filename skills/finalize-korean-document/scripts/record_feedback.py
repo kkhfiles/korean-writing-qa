@@ -12,9 +12,25 @@ from pathlib import Path
 import check
 
 
-DEFAULT_QA_ROOT = Path(
-    os.environ.get("KOREAN_WRITING_QA_HOME", "P:/github/korean-writing-qa")
-)
+def _qa_root() -> Path:
+    """저장소 위치 — 환경 변수, 이 파일이 든 저장소, 설치할 때 적은 기록 차례로 찾는다.
+
+    작성자 PC 경로를 기본값으로 두면 받은 사람 PC 에서 설치 뒤 첫 사용에 깨진다(2026-10-29).
+    """
+    env = os.environ.get("KOREAN_WRITING_QA_HOME")
+    if env:
+        return Path(env)
+    here = Path(__file__).resolve().parents[3]
+    if (here / "install.py").is_file():
+        return here
+    claude = Path(os.environ.get("CLAUDE_HOME") or (Path.home() / ".claude"))
+    pointer = claude / "data" / "korean-writing-qa-home.txt"
+    if pointer.is_file() and pointer.read_text(encoding="utf-8").strip():
+        return Path(pointer.read_text(encoding="utf-8").strip())
+    return here
+
+
+DEFAULT_QA_ROOT = _qa_root()
 DEFAULT_CANDIDATES = DEFAULT_QA_ROOT / "data" / "feedback" / "candidates.jsonl"
 HUMAN_SOURCES = {"user_direct", "user_accept", "human_review"}
 CONTEXT_LEVELS = {"sentence", "window", "block", "document"}

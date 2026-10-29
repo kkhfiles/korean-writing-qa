@@ -66,6 +66,22 @@ OWNED_MARK = ".installed-by-korean-writing-qa"
 PROJECTION_MANIFEST = CODEX_HOME / "claude-sync-manifest.json"
 
 
+def pointer() -> Path:
+    """설치된 스킬과 훅이 저장소를 찾는 기록 — 저장소를 어디에 풀었든 여기 적힌 곳을 본다."""
+    return repo_paths.installed("data", "korean-writing-qa-home.txt")
+
+
+def write_pointer(dry_run: bool) -> None:
+    target = pointer()
+    value = repo_paths.REPO.as_posix()
+    if target.is_file() and target.read_text(encoding="utf-8").strip() == value:
+        return
+    print(f"  {'쓸 것' if dry_run else '씀'}  {target} → {value}")
+    if not dry_run:
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(value + "\n", encoding="utf-8")
+
+
 def digest(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
@@ -100,6 +116,11 @@ def pairs() -> list[tuple[Path, Path]]:
     safety = repo_paths.REPO / "scripts" / "check_publish_safety.py"
     if safety.exists():
         out.append((safety, repo_paths.installed("assets", safety.name)))
+    # ⛔ 스킬이 저장소 도구를 이 입구로 부른다 — 스킬 문서에 작성자 PC 경로를 적어 두면
+    #    받은 사람 PC 에서 설치는 되고 첫 사용에서 깨졌다(2026-10-29 확인).
+    runner = repo_paths.REPO / "scripts" / "korean_qa_run.py"
+    if runner.exists():
+        out.append((runner, repo_paths.installed("assets", runner.name)))
     # ⛔ 신원 목록도 옮긴다 — 설치본 검사기는 자기 위치 기준 `data/catalog/` 를 보는데
     #    그 자리가 비어 있어 훅이 이름·회사를 안 봤다(2026-09-16 실측). 목록은 저장소
     #    밖에만 둔다 — 이 파일은 gitignore 대상이고 `~/.claude/data/` 는 백업 sync 가
@@ -154,6 +175,13 @@ def do_check() -> int:
             differ.append(dst)
     print(f"같음 {len(same)} · 다름 {len(differ)} · 없음 {len(missing)}")
     report([("다름", p) for p in differ] + [("없음", p) for p in missing])
+    recorded = pointer().read_text(encoding="utf-8").strip() if pointer().is_file() else ""
+    if not recorded:
+        print(f"  없음  {pointer()} (저장소 위치 기록)")
+        missing.append(pointer())
+    elif Path(recorded).resolve() != repo_paths.REPO.resolve():
+        # 다른 사본(작업 트리 등)에서 확인할 때 — 실패로 보지 않고 알리기만 한다
+        print(f"  참고  저장소 위치 기록은 {recorded}")
     if differ or missing:
         print("\n`python install.py` 로 정본을 덮어쓴다.")
         return 1
@@ -171,6 +199,7 @@ def do_install(dry_run: bool) -> int:
             dst.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(src, dst)
         written += 1
+    write_pointer(dry_run)
     print(f"{'쓸 파일' if dry_run else '쓴 파일'} {written}개 · 이미 같아서 건너뛴 것 {len(pairs()) - written}개")
     return 0
 
