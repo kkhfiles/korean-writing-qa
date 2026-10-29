@@ -21,7 +21,7 @@ sys.path.insert(0, str(ROOT / "scripts"))
 import judge_layer2 as judge  # noqa: E402
 
 try:
-    from llm_playbook import engine_state, models as lp_models  # noqa: E402
+    from llm_playbook import credits as lp_credits, engine_state, models as lp_models  # noqa: E402
     HAS_REVIEW = "review" in lp_models.ladders()
 except Exception:  # noqa: BLE001 — 사다리가 없는 PC 에서는 이 시험을 건너뛴다
     HAS_REVIEW = False
@@ -47,7 +47,10 @@ class JudgeReviewLadderTests(unittest.TestCase):
              patch.object(engine_state, "is_blocked", lambda e, now=None: e in self.blocked),
              patch.object(engine_state, "blocked", lambda e: self.blocked.get(e)),
              patch.object(engine_state, "record_block",
-                          lambda e, kind, until=None, until_known=False: self.blocks.append((e, kind)) or None),
+                          lambda e, kind, **kw: self.blocks.append((e, kind)) or None),
+             # 크레딧 키가 있는 PC 에서는 구독이 막혀도 API 로 부른다(llm_playbook 2026-10-22) — 이 시험은
+             # 「크레딧 없음」을 고정해 막힌 엔진을 안 부르는지 본다
+             patch.object(lp_credits, "pick", lambda *a, **kw: None),
              patch.object(engine_state, "record_ok", lambda e: self.oks.append(e)),
              # GPT 5시간 통이 가득 — review 는 GPT 몫 남기기(reserve)를 안 받으므로 그래도 codex 를 부른다
              patch.object(engine_state, "util", lambda e: {"five_hour": 0.99, "at": __import__("time").time()})]
