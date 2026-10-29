@@ -310,12 +310,46 @@ def personal_rows(text: str) -> str:
     return "".join(l for l in text.splitlines(keepends=True) if PERSONAL_MARK not in l)
 
 
+#: 이 검사기를 받아 쓰는 사람이 더하는 2층 판정 기준 — 저장소 밖(gitignore)에 둔다. 1층 개인 낱말 목록은
+#: 동사 짝만 받아, 문맥을 봐야 갈리는 자기 조직의 기준을 넣을 곳이 없었다(2026-10-29). 설치 폴더 쪽이 앞선다.
+LOCAL_RULES_FILE = "local-layer2-rules.md"
+LOCAL_RULES_HEAD = ("\n\n## 이 검사기를 쓰는 사람이 더한 기준\n\n"
+                    "아래 기준의 우선순위는 「프로젝트에서 정한 용어와 문서 형식」과 같다. "
+                    "공통 원칙과 부딪히면 아래 기준을 따른다.\n\n")
+
+
+def local_rules() -> str:
+    """개인 판정 기준 글 — 파일이 없거나 주석뿐이면 빈 글.
+
+    환경 변수 `KOREAN_QA_LOCAL_RULES` 가 가장 앞선다(경로, 또는 `off` — 판정기 성능을 잴 때 이 PC 기준을 뺀다).
+    """
+    pinned = os.environ.get("KOREAN_QA_LOCAL_RULES", "").strip()
+    if pinned.lower() in ("off", "0"):
+        return ""
+    cands = [Path(pinned)] if pinned else [
+        Path.home() / ".claude" / "data" / "catalog" / LOCAL_RULES_FILE,
+        REPO_ROOT / "data" / "catalog" / LOCAL_RULES_FILE]
+    for c in cands:
+        if c.is_file():
+            # 머리말(검사기용 `form: prose`)과 주석(쓰는 법)은 판정기에 안 보낸다
+            text = re.sub(r"\A---\n.*?\n---\n", "", c.read_text(encoding="utf-8"), flags=re.S)
+            body = re.sub(r"<!--.*?-->", "", text, flags=re.S).strip()
+            return LOCAL_RULES_HEAD + body if body else ""
+    return ""
+
+
 def rules_for(arm: str, core: str | None = None, skill: str | None = None) -> str:
-    """그 갈래가 실제로 받는 규칙 글 전체 — `core` 와 `skill` 을 주면 그 글로 조립한다(규칙 전후 비교용)."""
+    """그 갈래가 실제로 받는 규칙 글 전체 — `core` 와 `skill` 을 주면 그 글로 조립한다(규칙 전후 비교용).
+
+    개인 판정 기준(`local_rules`)은 실제 판정(`core` 없음)에만 붙인다 — 규칙 전후 비교에 섞이면 이 PC 의
+    기준이 측정값을 바꾼다.
+    """
     text = personal_rows(RULES.read_text(encoding="utf-8") if core is None else core)
     if arm == "guided":
         text += ("\n\n## 줄 하나만 봐서는 못 가르는 것\n\n"
                  + step_body(SKILL_MD.read_text(encoding="utf-8") if skill is None else skill, STEP_TITLE))
+    if core is None:
+        text += local_rules()
     return text
 
 

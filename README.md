@@ -100,6 +100,10 @@ err  = []                                 # 주의에서 오류로 올린다
 - **안 쓸 동사는 개인 목록에 둠** — `data/catalog/local-personal-words.example.tsv` 를 `local-personal-words.tsv` 로 복사해 「동사 · 명사 · 바꿀 말 · 까닭」을 적음(「결함을 잡다 → 검출」) · 「업무 글에 없는 말」 주의로 나옴 · 형태소 분석기가 있어야 돎 · 복사본은 `.gitignore` 대상
   - **고친 뒤 `python install.py`** — 제품 이름 목록과 개인 목록을 설치 폴더(`~/.claude/data/catalog/`)로 복사해, 이 저장소 밖 프로젝트의 검사에도 적용함
   - **후보 뽑기** — `python -X utf8 scripts/suggest_personal_words.py --informal <구어 글 폴더> --formal <문어 글 폴더>` · 구어 쪽에 치우친 동사를 용례와 함께 냄 · 판정은 안 함
+- **문맥을 봐야 갈리는 자기 기준은 개인 판정 기준에 둠** — `data/catalog/local-layer2-rules.example.md` 를 `local-layer2-rules.md` 로 복사해 용어 정의나 조직의 문서 관례를 적음
+  - **적용 방식** — 2층 판정기가 판정할 때마다 판정 원칙 뒤에 붙여 읽음, 프로젝트에서 정한 용어와 같은 우선순위로 적용함
+  - **보관** — 복사본은 `.gitignore` 대상이고 `python install.py` 가 설치 폴더로 복사함
+  - **판정기 성능을 측정할 때** — 환경 변수 `KOREAN_QA_LOCAL_RULES=off` 로 이 PC의 개인 판정 기준을 제외함
 - **오타는 멈춤** — 모르는 갈래 이름을 적으면 rc 1. 조용히 넘기면 끄려던 검사가 안 꺼진 채 통과로 읽힙니다.
 
 ## 두 층으로 나눔

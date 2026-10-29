@@ -115,7 +115,8 @@ def pairs() -> list[tuple[Path, Path]]:
     # ⛔ 개인 낱말 목록과 개인 항목 스위치도 같은 자리로 — README 는 저장소 `data/catalog/` 에
     #    두라고 안내하는데 여기서 안 옮겨, 다른 프로젝트에서 도는 설치본 검사기는 개인 목록을
     #    못 봤다(2026-10-29 재현 · 저장소 검사기 주의 1, 설치본 0).
-    for name in ("local-personal-words.tsv", "local-personal-rules.txt"):
+    # 2층 판정기도 개인 판정 기준을 같은 자리에서 먼저 찾는다(`probe_layer2_kinds.local_rules`).
+    for name in ("local-personal-words.tsv", "local-personal-rules.txt", "local-layer2-rules.md"):
         personal = repo_paths.REPO / "data" / "catalog" / name
         if personal.exists():
             out.append((personal, repo_paths.installed("data", "catalog", name)))
