@@ -17,7 +17,7 @@ form: structured
 | [초기 표본 진단](diagnostic-001.md) | 혼합 표본 30개 · 기존 검사기 재사용 가능성 | 뒤 진단이 대신함 |
 | [확인된 AI 보고서 진단](diagnostic-002.md) | 생성 모델이 확인된 보고서 20개 | 같음 |
 | [다중 형식 진단](diagnostic-003.md) | 편집 원본 149개 · 형식별 | 끝난 측정 |
-| [소형 보고서 수동 판정](manual-review-001.md) | 보고서 3개 · 회귀 시료의 판정 근거 | 끝난 측정 · `data/regression/corpus-sources.json` 이 근거로 가리킴 |
+| [소형 보고서 수동 판정](manual-review-001.md) | 보고서 3개, 회귀 시험 데이터의 판정 근거 | 끝난 측정, `data/regression/corpus-sources.json` 에서 이 문서를 판정 근거로 참조함 |
 | [1차 재검토](review-001.md) | 규칙·검사기·회귀시험 재검토 | 그 뒤 규칙이 스물 넘게 바뀜 |
 
 ## 일회성 수집·구현 기록

@@ -4,7 +4,7 @@
 
 ## 현재 구성
 
-| 자료 | 시료 수 | 용도 |
+| 자료 | 시험 자료 수 | 용도 |
 |---|---:|---|
 | `detector-cases.jsonl` | 68 | 사용자 확정 표현 25건 · 문서 종류 오용 방지 7건 · `경로` 분류 36건 |
 | `runs/diagnostic-002/path-term-candidates.jsonl` | 33 | 사람이 정상으로 판정한 실제 path 문맥의 오탐 방지 |
@@ -36,4 +36,4 @@
 python -m unittest discover -s tests -p "test_*.py" -v
 ```
 
-**자동 검사**: `tests/test_regression_corpus.py` · 시료 수·규칙별 최소 구성·예상 판정·실문서 오탐 대조
+**자동 검사**: `tests/test_regression_corpus.py` — 시험 자료 수, 규칙별 최소 구성, 예상 판정, 실문서 오탐을 모두 대조

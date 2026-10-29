@@ -24,12 +24,12 @@ form: structured
 python -X utf8 ~/.claude/assets/doc-style-check.py -v <설정 저장소>/reports
 python -X utf8 ~/.claude/assets/doc-style-check.py -v ~/.claude P:/github/korean-writing-qa
 
-# 짝 실험 시료
+# 짝 실험 시험 문서
 python -X utf8 ~/.claude/assets/doc-style-check.py <스크래치패드>/exempt-fixture.md
 python -X utf8 ~/.claude/assets/doc-style-check.py <스크래치패드>/violation-fixture.md
 
 # 형식 커버리지
-python -X utf8 ~/.claude/skills/finalize-korean-document/scripts/check.py <형식 시료 폴더>
+python -X utf8 ~/.claude/skills/finalize-korean-document/scripts/check.py <형식 시험 문서 폴더>
 ```
 
 ## 갈래별 건수
@@ -75,12 +75,12 @@ python -X utf8 ~/.claude/skills/finalize-korean-document/scripts/check.py <형�
 
 **위반을 잡는 능력만 재면 「전부 지적」이 만점** — 통과시켜야 하는 쪽을 같이 재야 규칙이 쓸 만한지 갈립니다.
 
-| 시료 | 담은 것 | 결과 |
+| 시험 문서 | 담은 것 | 결과 |
 |---|---|---|
 | `exempt-fixture.md` | 고유명 「」 · 굳은 합성어 · 실물 창 · 실제 좌석 · 혼자 서는 명사 · 서술어가 아닌 「~다」 · 수사 「하나」 · 회귀 · 파일 경로 · 낱말 속 「로」 · 대조 예시 · 출처 붙은 인용 · 인라인 코드 (20종) | **오류 0 · 주의 0** |
 | `violation-fixture.md` | 같은 모양의 진짜 위반 (15종) | **오류 10 · 주의 5** · 전부 제 갈래로 잡음 |
 
-**시료를 만들다 내 문장 둘이 걸림** — 「그대로 둔다.」(값 칸 서술형 종결) · 「격식 있는 자리」(관형형+자리 주의).
+**시험 문서를 만들다 내 문장 둘이 걸림** — 「그대로 둔다.」(값 칸 서술형 종결)와 「격식 있는 자리」(관형형+자리 주의).
 
 **★ 예문 넷을 사용자가 되돌림**(2026-09-04) — 검사기는 통과시켰지만 **한국어로 어색한 예문**을 골랐습니다. 검사기 통과가 좋은 예문임을 보증하지 않습니다.
 
@@ -94,7 +94,7 @@ python -X utf8 ~/.claude/skills/finalize-korean-document/scripts/check.py <형�
 
 ## 통짜 문서 — 한 편의 변화 폭
 
-**AI가 쓸 법한 도입 검토 보고서 한 편**(30줄) — 시료는 `docs/showcase.html` 의 「보고서 한 편 전체」 절에 그대로 실었습니다.
+**AI가 쓸 법한 도입 검토 보고서 한 편**(30줄) — 시험 문서는 `docs/showcase.html` 의 「보고서 한 편 전체」 절에 그대로 실었습니다.
 
 | 상태 | 오류 | 주의 | 값 슬롯 |
 |---|---:|---:|---:|
@@ -105,13 +105,13 @@ python -X utf8 ~/.claude/skills/finalize-korean-document/scripts/check.py <형�
 
 ## 형식 커버리지
 
-| 형식 | 시료 | 발화 |
+| 형식 | 시험 문서 | 발화 |
 |---|---|---|
 | `.properties` | `\uXXXX` 로 적힌 한글 | 발화 · 이스케이프를 풀어서 봄 |
 | `.json` | 표시 문구 값 | 발화 |
 | `.yaml` | 표시 문구 값 | 발화 |
 
-**같은 시료에서 안 잡은 것** — `"path":"C:/logs/app.log"`(파일 경로) · 「스캔 경로 정리」(실제 경로 뜻). 추상 뜻의 「제품화 경로」만 골라 잡았습니다.
+**같은 시험 문서에서 안 잡은 것** — `"path":"C:/logs/app.log"`(파일 경로)와 「스캔 경로 정리」(실제 경로 뜻). 추상 뜻의 「제품화 경로」만 골라 잡았습니다.
 
 ## 사례집에서 쓴 사람 판정 자료
 

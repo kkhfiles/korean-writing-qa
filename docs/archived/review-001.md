@@ -17,11 +17,11 @@
 | Claude Code 규칙 | `claude-korean-expression-rules.jsonl` · 수집 문서 | 일반 적용 16개 · 문서 종류별 8개 · 오탐 방지 1개 · 검증 전 후보 12개 |
 | `humanize-korean` | `quick-rules.md` · 기존 도구 검토 | 번역투 · 영어 과다 · 기계적 구조 · 리듬 · 명사화 · 접속어 · 형식명사 · 장식 |
 | 외부 레퍼런스 | [`korean-report-skills`](https://github.com/JangHyun-bin/korean-report-skills) · [`fluent-korean`](https://github.com/snflkd/fluent-korean) | 주어·술어 결합 · 식별자 보호 · 생략된 문장 성분 복원 · 비유 억제 |
-| 설계 기준 | `design-handoff.md` 회귀시험 절 | 규칙별 양성·정상·경계 시료 · 버그별 회귀 시료 |
+| 설계 기준 | `design-handoff.md` 회귀시험 절 | 규칙별 시험 문장(검출할 문장, 정상 문장, 경계 사례)과 버그별 회귀 시험 데이터 |
 
 ## 고친 문제
 
-| 문제 | 재현 증거 | 수정 결과 | 회귀 시료 |
+| 문제 | 재현 증거 | 수정 결과 | 회귀 시험 데이터 |
 |---|---|---|---:|
 | 수정 전·후 문구가 한 줄의 다른 문장에 있으면 실제 오류까지 검사 제외 | `제품화 단계`와 `제품화 경로`가 다른 문장에 함께 있는 문장 | 표·화살표로 명시한 수정 전후 예시만 제외 | 1건 |
 | HTML 인라인 태그로 나뉘 표현 누락 | `<div>` 안 `<span>` 사이에 나뉘 `제품화 경로` 미탐지 | 블록 단위로 텍스트 결합 | 1건 |
@@ -43,7 +43,7 @@
 | 수정 전후 | 22쌍 | 사용자 확정 8쌍 · AI 보고서 수동 판정 14쌍 |
 | 원본 형식 | 7개 | Markdown · HTML · 일반 텍스트 · JSON · JSONL · YAML · properties |
 
-**시료 정본**: `data/regression/detector-cases.jsonl` · `data/regression/corpus-sources.json` · `data/regression/README.md`
+**시험 데이터 정본**: `data/regression/detector-cases.jsonl`, `data/regression/corpus-sources.json`, `data/regression/README.md`
 
 ## 2단계 독립 검토
 
@@ -77,7 +77,7 @@
 
 | 우선순위 | 작업 | 완료 기준 |
 |---:|---|---|
-| 1 | 확정·문서 종류별 규칙을 읽는 탐지 계층 설계 | 규칙 ID별 양성·정상·경계 시료가 실제 탐지 결과를 검증 |
+| 1 | 확정·문서 종류별 규칙을 읽는 탐지 계층 설계 | 규칙 ID별 시험 문장(검출할 문장, 정상 문장, 경계 사례)으로 실제 탐지 결과를 검증 |
 | 2 | 문서 종류별 AI 원본 표본 추가 | 발표자 노트·임원 자료·제품 메시지·기술 보고서별 출처와 판정 확보 |
 | 3 | 수정 전후 원문 문맥과 외부 검사기 개별 판정 커밋 | 새 저장소 복제본에서도 주석 연결·오탐 계산 가능 |
 | 4 | 한글 고유명사 보호 방식 결정 | 일괄 변경을 오탐 없이 탐지할 근거 확보 |

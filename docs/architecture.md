@@ -30,8 +30,8 @@ form: structured
 | `references/core-rules.md` | 공통 원칙 11개 + 담당 표시(`[스킬]`·`[전역]`·`[사람]`) |
 | `references/document-types.md` | 문서 종류별 규칙 묶음과 형식 축(산문형·구조형) |
 | `references/confirmed-rules.jsonl` | 사용자가 확정한 교정 8건 · 1층이 글자로 찾는 것 |
-| `references/context-cases.jsonl` | 문맥 판정 시료 14건 |
-| `references/regression-cases.jsonl` | 회귀 시료 68건 |
+| `references/context-cases.jsonl` | 문맥 판정 시험 데이터 14건 |
+| `references/regression-cases.jsonl` | 회귀 시험 데이터 68건 |
 | `scripts/check.py` | 확정 표현·`경로` 비유 탐지 |
 | `scripts/check_meaning.py` | 고친 뒤 뜻이 빠졌는지 대조 |
 | `scripts/record_feedback.py` | 오탐·미탐을 후보로 기록 |
@@ -81,7 +81,7 @@ form: structured
 | `tests/` | 시험 파일 49개 · 배포본을 망가뜨리면 여기서 실패 |
 | `runs/` | 실행 기록 25건 · 입력·결과·판정 |
 | `data/annotations/` | 사람의 판정과 수정 전후 쌍 |
-| `data/regression/` | 양성·정상·경계 시료 |
+| `data/regression/` | 시험 문장(검출할 문장, 정상 문장, 경계 사례) |
 | `data/catalog/` | 원문 위치·해시 목록 |
 | `data/feedback/` | 승격 대기 후보 |
 | `docs/` | 설계·결정·조사 |
