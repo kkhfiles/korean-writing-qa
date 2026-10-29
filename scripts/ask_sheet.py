@@ -185,9 +185,9 @@ def screen(docs: list[tuple[Path, list[str], list[tuple[int, dict]]]]) -> str:
 
 #: 짧은 답에서 한 행의 답이 시작하는 곳 — 「3 그대로」, 「7 직접: …」. 번호 바로 뒤에 네 답 가운데
 #: 하나가 와야 나눈다 — 「직접:」 뒤 글 안의 숫자(「2개 표」)에서 잘리지 않게
-ITEM = re.compile(r"(?:^|,\s*|\s+)(Q?\d+)\s*[:.]?\s*(?=고침|그대로|보류|직접)")
+ITEM = re.compile(r"(?:^|,\s*|\s+)([Qq]?\d+)번?\s*[:.]?\s*(?=고침|그대로|보류|직접)")
 #: 「고침 2, 3」처럼 답 하나에 번호를 묶은 줄
-GROUPED = re.compile(r"(고침|그대로|보류)\s+((?:Q?\d+[\s,]*)+)$")
+GROUPED = re.compile(r"(고침|그대로|보류)\s+((?:[Qq]?\d+번?[\s,]*)+)$")
 #: 답을 안 고른 번호를 알리는 줄 — 읽을 답이 없다
 NOT_YET = "아직 안 고름"
 
@@ -206,40 +206,44 @@ def parse_replies(replies: list[str], opinions: dict[str, str] | None = None) ->
     - `3 그대로, 7 직접: …` — 번호와 답을 잇달아 적음
 
     의견대로 채운 답에는 「(의견대로)」를 붙인다 — 답 기록에서 사용자가 적은 말과 세션 의견을 가른다.
-    ⛔ 「제 의견」 칸이 빈 번호에 의견대로를 쓰면 ValueError — 그 행의 답을 지어 넣지 않는다.
+    번호를 적은 답이 의견보다 앞선다 — 줄 순서와 상관없이(「3 그대로」 다음 줄에 「의견대로」여도 3은 그대로).
+    ⛔ 의견 칸이 비었는데 번호로도 답하지 않은 행이 남으면 ValueError — 그 행의 답을 지어 넣지 않는다.
     """
-    out: dict[str, str] = {}
+    said: dict[str, str] = {}
+    delegated = False
     for line in "\n".join(replies).splitlines():
         line = line.strip().strip("「」").strip()
         if not line or line.startswith(NOT_YET):
             continue
-        m = re.match(r"(Q\d+)\s*[:.]?\s*(.*)$", line, re.S)
+        m = re.match(r"([Qq]\d+)번?\s*[:.]?\s*(.*)$", line, re.S)
         if m:
-            out[m.group(1)] = m.group(2).strip()
+            said[qid_of(m.group(1))] = m.group(2).strip()
             continue
         rest = line
         if rest.startswith(("전부 " + AS_OPINION, AS_OPINION)):
-            ops = opinions or {}
-            blank = sorted((q for q, op in ops.items() if not op.strip()), key=lambda q: int(q[1:]))
-            if blank or not ops:
-                raise ValueError(f"「제 의견」 칸이 빈 번호가 있어 의견대로로 답할 수 없음 — "
-                                 f"{', '.join(q[1:] for q in blank) or '표에 의견 없음'}")
-            out.update({q: f"{op} ({AS_OPINION})" for q, op in ops.items()})
+            delegated = True
             rest = re.sub(rf"^(전부\s+)?{AS_OPINION}\s*,?\s*(단\s*)?", "", rest)
             if not rest:
                 continue
         g = GROUPED.match(rest)
         if g:
-            for token in re.findall(r"Q?\d+", g.group(2)):
-                out[qid_of(token)] = g.group(1)
+            for token in re.findall(r"[Qq]?\d+", g.group(2)):
+                said[qid_of(token)] = g.group(1)
             continue
         found = list(ITEM.finditer(rest))
         if not found or rest[:found[0].start()].strip(" ,"):
             raise ValueError(f"알아들을 수 없는 답 — 「{line[:40]}」 · 「3 그대로」나 「Q3 그대로」 꼴로 적습니다")
         for i, it in enumerate(found):
             end = found[i + 1].start() if i + 1 < len(found) else len(rest)
-            out[qid_of(it.group(1))] = rest[it.end():end].strip().rstrip(",").strip()
-    return out
+            said[qid_of(it.group(1))] = rest[it.end():end].strip().rstrip(",").strip()
+    if not delegated:
+        return said
+    ops = opinions or {}
+    blank = sorted((q for q, op in ops.items() if not op.strip() and q not in said), key=lambda q: int(q[1:]))
+    if blank or not ops:
+        raise ValueError(f"「제 의견」 칸이 비어 의견대로로 답할 수 없는 번호 — "
+                         f"{', '.join(q[1:] for q in blank) or '표에 의견 없음'} · 그 번호의 답을 따로 적습니다")
+    return {**{q: f"{op} ({AS_OPINION})" for q, op in ops.items() if op.strip()}, **said}
 
 
 def _cells(row: str) -> list[str]:

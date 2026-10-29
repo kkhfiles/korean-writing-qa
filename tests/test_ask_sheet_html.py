@@ -73,6 +73,11 @@ class FillTests(unittest.TestCase):
         self.assertEqual(before.split("<!--")[1], after.split("<!--")[1], "열쇠 주석이 바뀌었습니다")
         self.assertEqual(ask_sheet.opinions(before), ask_sheet.opinions(after), "답 말고 다른 칸이 바뀌었습니다")
 
+    def test_a_short_table_row_with_the_same_number_is_left_alone(self) -> None:
+        md = "## 집계\n\n| # | 건수 |\n|---|---|\n| 1 | 18 |\n"
+        self.assertEqual(md, sheet_html.fill_answers(md, {"1": {"kind": "고침"}}),
+                         "판정 행이 아닌 표의 칸을 답으로 바꿨습니다")
+
 
 class ServeTests(unittest.TestCase):
     def setUp(self) -> None:

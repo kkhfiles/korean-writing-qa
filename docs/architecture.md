@@ -105,7 +105,7 @@ form: structured
 | 단계 | 실행체 | 남는 곳 |
 |---|---|---|
 | 오탐 판정 | `record_feedback.py --user-verdict false_positive` | `data/feedback/candidates.jsonl` |
-| 사람 확인 | 사용자 | — |
+| 사람 확인 | 사용자가 카드형 판정표(`scripts/ask_sheet_html.py --serve`)에서 답함 | md 판정표의 「답」 칸 |
 | 규칙 반영 | `promote_feedback.py` 또는 `core-rules.md` 예외 | 스킬 |
 | **적용 확인** | `scripts/probe_layer2_exemption.py` | `runs/eval-007` |
 

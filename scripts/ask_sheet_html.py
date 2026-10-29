@@ -385,8 +385,9 @@ def fill_answers(md: str, answers: dict) -> str:
     lines = []
     for line in head.split("\n"):
         m = ROW.match(line)
-        if m and m.group(1) in answers:
-            c = cells(line)
+        c = cells(line) if m and m.group(1) in answers else []
+        # 판정 행만 고친다 — 읽는 쪽(`parse`)과 같은 칸 수 조건이라야 번호가 같은 다른 표 행을 안 건드린다
+        if len(c) >= 6:
             c[-1] = answer_cell(answers[m.group(1)])
             line = "| " + " | ".join(c) + " |"
         lines.append(line)

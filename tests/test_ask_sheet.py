@@ -328,6 +328,20 @@ class ShortAnswerTests(_SheetBase):
         got = ask_sheet.parse_replies(["고침 1, 2\n아직 안 고름 3\n4 그대로 — 이름, 5 보류"])
         self.assertEqual({"Q1": "고침", "Q2": "고침", "Q4": "그대로 — 이름", "Q5": "보류"}, got)
 
+    def test_a_blank_opinion_answered_by_number_is_accepted(self) -> None:
+        # 2026-10-29 재검토 — 의견이 빈 2번을 직접 정했는데도 「의견대로」 전체를 거절했다
+        ops = {"Q1": "고침", "Q2": ""}
+        self.assertEqual({"Q1": "고침 (의견대로)", "Q2": "그대로"},
+                         ask_sheet.parse_replies(["의견대로, 단 2 그대로"], ops))
+
+    def test_a_numbered_answer_wins_whatever_the_line_order(self) -> None:
+        got = ask_sheet.parse_replies(["1 그대로", "전부 의견대로"], {"Q1": "고침", "Q2": "고침"})
+        self.assertEqual("그대로", got["Q1"], "앞줄에 번호로 적은 답을 뒷줄 「의견대로」가 덮었습니다")
+
+    def test_natural_number_forms(self) -> None:
+        self.assertEqual({"Q2": "그대로", "Q3": "고침", "Q4": "고침"},
+                         ask_sheet.parse_replies(["2번 그대로", "고침 3번, q4"]))
+
     def test_old_reply_form_still_works(self) -> None:
         self.assertEqual({"Q1": "이건 그냥 놔두자"}, ask_sheet.parse_replies(["Q1 이건 그냥 놔두자"]))
 
@@ -336,7 +350,7 @@ class ShortAnswerTests(_SheetBase):
         self.set_opinions({"Q1": "그대로"})
         rc, out = self.run_main(["--answers-from", str(self.sheet), "--reply", "전부 의견대로"])
         self.assertEqual(2, rc, out)
-        self.assertIn("「제 의견」 칸이 빈 번호", out)
+        self.assertIn("「제 의견」 칸이 비어 의견대로로 답할 수 없는 번호 — 2", out)
         self.assertEqual([5, 7], self.open_lines(), "의견이 빈 행의 답을 지어 넣었습니다")
 
     def test_as_opinion_in_the_answer_cell(self) -> None:
