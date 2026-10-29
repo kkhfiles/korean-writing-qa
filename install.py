@@ -8,8 +8,9 @@
     python install.py --dry-run    # 무엇을 쓸지만 보여 줌
     python install.py --uninstall  # 이 설치기가 넣은 파일과 훅만 지움(--codex 와 함께 쓰면 Codex 쪽도)
 
-**공유용과 개인용** — 기본은 한글 검사 훅만 건다. 작성자 PC 의 개인 훅 둘(셸 겹 역슬래시 차단,
-공개 저장소 push 차단)은 `data/catalog/local-install-personal.txt` 가 있을 때만 옮기고 건다.
+**공유용과 개인용** — 기본은 한글 검사 훅만 건다. 작성자 PC 의 개인 훅(셸 겹 역슬래시 차단,
+공개 저장소 push 차단, 저장소 매일 점검)은 `data/catalog/local-install-personal.txt` 가 있을 때만
+옮기고 건다.
 
 **설치 없이 쓰는 길** — 검사기 하나만 쓸 것이면 설치가 필요 없다.
 
@@ -38,9 +39,10 @@ import repo_paths  # noqa: E402
 HOOK_FILES = ["doc-style-gate.py", "block-backslash-in-shell.py",
               "korean-gate-daily-check.py", "public-push-gate.py"]
 
-#: 작성자 PC 의 개인 훅 — 한글 검사와 무관해서 공유용 설치에서는 옮기지도 걸지도 않는다.
+#: 작성자 PC 의 개인 훅 — 공유용 설치에서는 옮기지도 걸지도 않는다. 둘은 한글 검사와 무관하고,
+#: 매일 점검은 저장소를 고치는 사람용이다(push 안 한 커밋, CI, 바깥 분류 비교를 알림).
 #: 기본값을 바꾸면 작성자 PC 동작이 바뀌므로 개인 설정 파일 하나로 지금 동작을 유지한다.
-PERSONAL_HOOKS = {"block-backslash-in-shell.py", "public-push-gate.py"}
+PERSONAL_HOOKS = {"block-backslash-in-shell.py", "public-push-gate.py", "korean-gate-daily-check.py"}
 PERSONAL_SWITCH = "local-install-personal.txt"
 
 
