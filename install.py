@@ -6,6 +6,10 @@
     python install.py --codex      # Codex 에도 스킬과 훅을 건다(--hooks 와 함께 써도 됨)
     python install.py --check      # 설치본이 정본과 같은지만 확인 (아무것도 안 씀)
     python install.py --dry-run    # 무엇을 쓸지만 보여 줌
+    python install.py --uninstall  # 이 설치기가 넣은 파일과 훅만 지움(--codex 와 함께 쓰면 Codex 쪽도)
+
+**공유용과 개인용** — 기본은 한글 검사 훅만 건다. 작성자 PC 의 개인 훅 둘(셸 겹 역슬래시 차단,
+공개 저장소 push 차단)은 `data/catalog/local-install-personal.txt` 가 있을 때만 옮기고 건다.
 
 **설치 없이 쓰는 길** — 검사기 하나만 쓸 것이면 설치가 필요 없다.
 
@@ -33,6 +37,20 @@ import repo_paths  # noqa: E402
 
 HOOK_FILES = ["doc-style-gate.py", "block-backslash-in-shell.py",
               "korean-gate-daily-check.py", "public-push-gate.py"]
+
+#: 작성자 PC 의 개인 훅 — 한글 검사와 무관해서 공유용 설치에서는 옮기지도 걸지도 않는다.
+#: 기본값을 바꾸면 작성자 PC 동작이 바뀌므로 개인 설정 파일 하나로 지금 동작을 유지한다.
+PERSONAL_HOOKS = {"block-backslash-in-shell.py", "public-push-gate.py"}
+PERSONAL_SWITCH = "local-install-personal.txt"
+
+
+def personal() -> bool:
+    return (repo_paths.REPO / "data" / "catalog" / PERSONAL_SWITCH).is_file()
+
+
+def wanted(name: str) -> bool:
+    """이 훅을 이번 설치에 넣는가."""
+    return personal() or name not in PERSONAL_HOOKS
 
 #: 훅을 어느 사건에 걸 것인가. matcher 는 Claude Code 의 도구 이름 패턴이다.
 HOOK_WIRING = [
@@ -142,7 +160,8 @@ def pairs() -> list[tuple[Path, Path]]:
         if personal.exists():
             out.append((personal, repo_paths.installed("data", "catalog", name)))
     for name in HOOK_FILES:
-        out.append((repo_paths.hook(name), repo_paths.installed("hooks", name)))
+        if wanted(name):
+            out.append((repo_paths.hook(name), repo_paths.installed("hooks", name)))
     # `skills/` 아래를 통째로 옮긴다 — 스킬을 새로 만들 때 이 함수를 안 고쳐도 된다.
     for src in sorted(repo_paths.SKILLS.rglob("*")):
         if src.is_file() and "__pycache__" not in src.parts:
@@ -217,7 +236,9 @@ def wire_hooks(dry_run: bool) -> int:
     added = []
 
     for event, matcher, name in HOOK_WIRING:
-        command = f'python "$HOME/.claude/hooks/{name}"'
+        if not wanted(name):
+            continue
+        command = claude_hook_command(name)
         groups = hooks.setdefault(event, [])
         group = next((g for g in groups if g.get("matcher", "") == matcher), None)
         if group is None:
@@ -230,7 +251,7 @@ def wire_hooks(dry_run: bool) -> int:
 
     if not added:
         # ⛔ 개수를 글로 적지 않는다 — 훅을 더할 때마다 낡는다(README 가 그렇게 낡았다).
-        print(f"훅 {len(HOOK_WIRING)}개가 이미 등록돼 있다.")
+        print(f"훅 {sum(wanted(n) for _, _, n in HOOK_WIRING)}개가 이미 등록돼 있다.")
         return 0
 
     print("등록할 훅:")
@@ -244,6 +265,10 @@ def wire_hooks(dry_run: bool) -> int:
     settings.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(f"설정을 고쳤다 · 되돌릴 백업 {backup}")
     return 0
+
+
+def claude_hook_command(name: str) -> str:
+    return f'python "$HOME/.claude/hooks/{name}"'
 
 
 def codex_hook_command(name: str) -> str:
@@ -282,6 +307,8 @@ def install_codex(dry_run: bool) -> int:
             group["hooks"] = [h for h in group.get("hooks", []) if h.get("command") not in ours]
         hooks[event] = [g for g in groups if g.get("hooks")]
     for event, matcher, name, timeout in CODEX_WIRING:
+        if not wanted(name):
+            continue
         groups = hooks.setdefault(event, [])
         group = next((g for g in groups if g.get("matcher") == matcher), None)
         if group is None:
@@ -301,6 +328,71 @@ def install_codex(dry_run: bool) -> int:
     return 0
 
 
+def unhook(groups_by_event: dict, commands: set[str]) -> list[str]:
+    """훅 설정에서 이 설치기가 건 명령만 걷어 낸다 — 남이 건 것과 빈 묶음 아닌 것은 그대로 둔다."""
+    removed = []
+    for event, groups in list(groups_by_event.items()):
+        for group in groups:
+            kept = [h for h in group.get("hooks", []) if h.get("command") not in commands]
+            removed += [f"{event} · {h.get('command')}" for h in group.get("hooks", [])
+                        if h.get("command") in commands]
+            group["hooks"] = kept
+        groups_by_event[event] = [g for g in groups if g.get("hooks")]
+        if not groups_by_event[event]:
+            del groups_by_event[event]
+    return removed
+
+
+def uninstall(dry_run: bool, codex: bool) -> int:
+    """이 설치기가 넣은 것만 지운다 — 파일, 저장소 위치 기록, 설정의 훅 줄."""
+    verb = "지울 것" if dry_run else "지움"
+    files = [dst for _, dst in pairs() if dst.is_file()] + ([pointer()] if pointer().is_file() else [])
+    for dst in files:
+        print(f"  {verb}  {dst}")
+        if not dry_run:
+            dst.unlink()
+    if not dry_run:
+        # 스킬과 에이전트 아래에서 비게 된 폴더만 지운다 — 사용자가 넣은 파일이 있으면 남긴다
+        roots = (repo_paths.installed("skills"), repo_paths.installed("agents"))
+        for _, dst in sorted(pairs(), key=lambda p: -len(p[1].parts)):
+            if not any(root in dst.parents for root in roots):
+                continue
+            for parent in dst.parents:
+                if parent in roots or not parent.is_dir() or any(parent.iterdir()):
+                    break
+                parent.rmdir()
+
+    settings = repo_paths.installed("settings.json")
+    if settings.is_file():
+        data = json.loads(settings.read_text(encoding="utf-8"))
+        ours = {claude_hook_command(name) for name in HOOK_FILES if wanted(name)}
+        removed = unhook(data.get("hooks", {}), ours)
+        for line in removed:
+            print(f"  {verb}  훅 {line}")
+        if removed and not dry_run:
+            backup = settings.with_suffix(".json.bak")
+            shutil.copy2(settings, backup)
+            settings.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+            print(f"설정을 고쳤다 · 되돌릴 백업 {backup}")
+
+    if codex and not PROJECTION_MANIFEST.is_file():
+        for dst in sorted(AGENTS_SKILLS.glob(f"*/{OWNED_MARK}")):
+            print(f"  {verb}  {dst.parent}")
+            if not dry_run:
+                shutil.rmtree(dst.parent)
+        path = CODEX_HOME / "hooks.json"
+        if path.is_file():
+            data = json.loads(path.read_text(encoding="utf-8"))
+            removed = unhook(data.get("hooks", {}), {codex_hook_command(n) for _, _, n, _ in CODEX_WIRING})
+            for line in removed:
+                print(f"  {verb}  Codex 훅 {line}")
+            if removed and not dry_run:
+                shutil.copy2(path, path.with_suffix(".json.bak"))
+                path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    print(f"{'지울 파일' if dry_run else '지운 파일'} {len(files)}개 · 저장소 폴더는 그대로 둠")
+    return 0
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description="정본을 ~/.claude 에 설치한다")
     ap.add_argument("--check", action="store_true", help="설치본이 정본과 같은지만 확인")
@@ -308,20 +400,25 @@ def main() -> int:
     ap.add_argument("--codex", action="store_true",
                     help="Codex 에도 스킬(~/.agents/skills)과 훅(~/.codex/hooks.json)을 건다")
     ap.add_argument("--dry-run", action="store_true", help="쓰지 않고 무엇을 쓸지만 보여 줌")
+    ap.add_argument("--uninstall", action="store_true",
+                    help="이 설치기가 넣은 파일과 훅만 지움(--codex 와 함께 쓰면 Codex 쪽도)")
     args = ap.parse_args()
 
     print(f"정본  {repo_paths.REPO}")
-    print(f"설치처 {repo_paths.INSTALLED}\n")
+    print(f"설치처 {repo_paths.INSTALLED}")
+    print(f"설치 종류 {'개인용(개인 훅 포함)' if personal() else '공유용(한글 검사 훅만)'}\n")
 
     if args.check:
         return do_check()
+    if args.uninstall:
+        return uninstall(args.dry_run, args.codex)
 
     rc = do_install(args.dry_run)
     if args.hooks:
         print()
         rc |= wire_hooks(args.dry_run)
     else:
-        print("\n훅은 등록하지 않았다 — 발행 직전 검사와 겹 역슬래시 차단을 걸려면 `--hooks`.")
+        print("\n훅은 등록하지 않았다 — 문서를 쓸 때마다 자동으로 검사하려면 `--hooks`.")
     if args.codex:
         print()
         rc |= install_codex(args.dry_run)

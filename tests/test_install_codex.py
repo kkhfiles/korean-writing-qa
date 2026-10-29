@@ -57,7 +57,10 @@ class InstallCodexTests(unittest.TestCase):
         self.assertTrue((self.skills / SKILL / MARK).is_file(), "관리 표시가 없으면 다음 설치가 못 고칩니다")
         pre, post = self.commands("PreToolUse"), self.commands("PostToolUse")
         self.assertTrue(any("doc-style-gate.py" in c for c in pre), "발행·push 게이트가 없습니다")
-        self.assertTrue(any("public-push-gate.py" in c for c in pre))
+        # 공개 저장소 push 차단은 작성자의 개인 훅 — 개인 설정 파일이 있을 때만 건다(2026-10-30)
+        sys.path.insert(0, str(ROOT))
+        import install                                  # noqa: PLC0415
+        self.assertEqual(install.personal(), any("public-push-gate.py" in c for c in pre))
         self.assertTrue(any("doc-style-gate.py" in c for c in post), "쓰는 순간 검사가 없습니다")
         self.assertIn("apply_patch", [g["matcher"] for g in self.hooks()["PostToolUse"]][0])
         self.assertIn("승인", out, "Codex 는 훅을 승인해야 돈다 — 그 사실을 알려야 합니다")

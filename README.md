@@ -75,6 +75,10 @@ python doc-style-check.py <파일…|디렉터리> [-v]
 
 **훅이 하는 일** — Artifact 발행과 Edit·Write 뒤에 검사가 돌아 위반을 그 자리에서 알립니다. `--hooks` 는 `~/.claude/settings.json` 을 고치므로 백업을 먼저 뜹니다.
 
+**지우는 법** — `python install.py --uninstall` 이 이 설치기가 넣은 파일과 훅 줄만 지웁니다. Codex 쪽도 지우려면 `--codex` 를 더합니다. 저장소 폴더는 그대로 남습니다.
+
+**작성자 PC 의 개인 훅** — 셸 겹 역슬래시 차단과 공개 저장소 push 차단은 한글 검사와 무관해 기본 설치에서 빠집니다. `data/catalog/local-install-personal.txt` 가 있으면 함께 설치합니다.
+
 ## 갈래를 골라 쓰기
 
 **조직마다 문서 관행이 다름** — 표 머리 「비고」는 공문서 표의 표준 관례이고, 발표 대본은 산문이 정상입니다. 갈래를 끄거나 등급을 바꾸실 수 있습니다.
