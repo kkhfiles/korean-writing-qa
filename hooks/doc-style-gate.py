@@ -246,7 +246,7 @@ def ask_block(payload, files):
         "  · 표를 만듭니다 — 10건 이하면 목록이 화면에 나오니 대화로 묻고, 넘으면 표 경로를 넘깁니다:",
         f"      python -X utf8 {judge} <파일…> --sheet <저장소 밖 경로>.md",
         "  · 답을 읽습니다 — 「그대로」는 답 기록에 남고, 고칠 것은 목록으로 나옵니다:",
-        f"      python -X utf8 {judge} --answers-from <그 표> [--reply 'Q1 그대로' …(대화로 받은 답)]",
+        f"      python -X utf8 {judge} --answers-from <그 표> [--reply '의견대로, 단 3 그대로' …(대화로 받은 답)]",
         "  · 고친 줄은 이 목록에서 빠집니다.",
         "",
         f"  정말 그대로 내보내야 하면 명령 앞에 `{FORCE}` 를 붙입니다 — 명령문에 남습니다.",

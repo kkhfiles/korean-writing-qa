@@ -801,14 +801,15 @@ def read_answers(sheet: Path, replies: list[str] | None = None) -> int:
     종료 코드 — 0 남은 사람 확인 없음 · 1 남음(고칠 것 · 보류 · 빈칸) · 2 표를 못 읽음
     """
     try:
-        keys, answers = ask_sheet.parse(sheet.read_text(encoding="utf-8"))
+        text = sheet.read_text(encoding="utf-8")
+        keys, answers = ask_sheet.parse(text)
     except (OSError, ValueError) as e:
         print(f"⛔ {e}")
         return 2
     said: dict[str, str] = {}
     if replies:
         try:
-            said = ask_sheet.parse_replies(replies)
+            said = ask_sheet.parse_replies(replies, ask_sheet.opinions(text))
         except ValueError as e:
             print(f"⛔ {e}")
             return 2
@@ -1690,7 +1691,7 @@ def main(argv=None, backend=None) -> int:
                     help="답을 기다리는 사람 확인을 md 표로 씀 — 사용자에게 넘기는 형식 · 모델 안 부름")
     ap.add_argument("--answers-from", metavar="경로.md",
                     help="사용자가 답을 적은 사람 확인 표를 읽음 — 그대로만 답 기록에 남김")
-    ap.add_argument("--reply", action="append", metavar="'Q번호 답'",
+    ap.add_argument("--reply", action="append", metavar="'번호 답'",
                     help="--answers-from 과 함께 · 대화로 받은 답을 사용자 원문 그대로 — 여러 번 줄 수 있음")
     ap.add_argument("--fixes", action="store_true",
                     help="모델을 부르지 않고 처리 안 된 고칠 지적만 보기")
@@ -1731,15 +1732,16 @@ def main(argv=None, backend=None) -> int:
         rows, asks, listing = write_sheet([Path(d) for d in a.docs], out)
         print(f"사람 확인 표 — 줄 {rows}개 · 지적 {asks}건 · {out.resolve().as_uri()}")
         if 0 < asks <= ask_sheet.SCREEN_MAX:
-            print(f"  지적이 {ask_sheet.SCREEN_MAX}건 이하라 화면으로 묻습니다 — 아래 목록을 사용자에게 그대로 보이고,")
-            print("  받은 답을 사용자 원문 그대로 옮겨 읽습니다(답: 그대로 · 고침 · 직접: … · 보류):")
+            print(f"  지적이 {ask_sheet.SCREEN_MAX}건 이하라 화면으로 묻습니다 — 아래 표의 「제 의견」 칸을 채워 사용자에게 보이고,")
+            print("  위 표 파일의 같은 칸에도 같은 의견을 적습니다(「전부 의견대로」 같은 짧은 답을 그 칸으로 풉니다).")
+            print("  받은 답은 사용자 원문 그대로 옮겨 읽습니다(답: 고침, 그대로, 직접: …, 보류):")
             print(f"    python -X utf8 {Path(__file__).resolve().as_posix()} --answers-from {out.resolve().as_posix()} "
-                  "--reply 'Q1 그대로' --reply 'Q2 직접: …'")
+                  "--reply '의견대로, 단 3 그대로'")
             print()
             print(listing)
         elif asks:
             print(f"  지적이 {ask_sheet.SCREEN_MAX}건을 넘어 표 파일로 묻습니다 — "
-                  "위 경로를 사용자에게 주고 「답」 칸을 채우게 합니다")
+                  "「제 의견」 칸을 채운 뒤 위 경로를 사용자에게 주고 「답」 칸을 채우게 합니다")
         if coverage.repo_of(out) is not None:
             print("  ⚠️ 표가 git 저장소 안에 있습니다 — 문서 글이 들어 있으니 커밋하지 않습니다")
         return 1 if asks else 0

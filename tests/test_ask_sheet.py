@@ -81,7 +81,7 @@ class _SheetBase(unittest.TestCase):
         rows = []
         for raw in self.sheet.read_text(encoding="utf-8").splitlines():
             for qid, ans in answers.items():
-                if raw.startswith(f"| {qid} |") and raw.endswith("|  |"):
+                if raw.startswith(f"| {qid.lstrip('Q')} |") and raw.endswith("|  |"):
                     raw = raw[:-len("|  |")] + f"| {ans} |"
             rows.append(raw)
         self.sheet.write_text("\n".join(rows), encoding="utf-8")
@@ -100,8 +100,11 @@ class SheetTests(_SheetBase):
 
     def test_one_row_per_line(self) -> None:
         text = self.make_sheet()
-        rows = [l for l in text.splitlines() if l.startswith("| Q")]
+        rows = [l for l in text.splitlines() if l[:4] in ("| 1 ", "| 2 ", "| 3 ")]
         self.assertEqual(2, len(rows), "같은 줄의 지적 둘이 한 행에 안 모였습니다 — 답은 줄에 묶입니다")
+        self.assertIn("| # | 원문 | 고친 말 | 고친 이유 | 제 의견 | 답 |", text,
+                      "판정 요청 표준 칸(2026-10-28 사용자가 정함)과 다릅니다")
+        self.assertIn("원문을 고칠까요?", text)
         self.assertIn("**기억이 흐려집니다**", rows[0])
         self.assertIn("**일주일이 지나면**", rows[0])
         self.assertIn("7일이 지나면", rows[0])
@@ -182,10 +185,11 @@ class ScreenTests(_SheetBase):
         rc, out = self.run_main([str(self.doc), "--sheet", str(self.sheet)])
         self.assertEqual(1, rc, out)
         self.assertIn("화면으로 묻습니다", out)
-        self.assertIn("**Q1** · d.md 5행", out)
-        self.assertIn("**Q2** · d.md 7행", out)
+        self.assertIn("| # | 원문 | 고친 말 | 고친 이유 | 제 의견 | 답 |", out, "대화에서도 표준 칸 표로 묻습니다")
+        self.assertIn("| 1 | ", out)
+        self.assertIn("| 2 | ", out)
         self.assertIn("**기억이 흐려집니다**", out)
-        self.assertIn("제안: 7일이 지나면", out)
+        self.assertIn("7일이 지나면", out)
         self.assertIn("--reply", out)
         self.assertTrue(self.sheet.is_file(), "줄 해시를 지킬 표를 안 만들었습니다")
 
@@ -197,7 +201,7 @@ class ScreenTests(_SheetBase):
         finally:
             ask_sheet.SCREEN_MAX = saved
         self.assertIn("표 파일로 묻습니다", out)
-        self.assertNotIn("**Q1**", out, "많은 지적을 대화에 풀었습니다 — 하나씩 볼 수 없습니다")
+        self.assertNotIn("| 1 | ", out, "많은 지적을 대화에 풀었습니다 — 하나씩 볼 수 없습니다")
 
     def test_replies_work_like_the_sheet(self) -> None:
         self.make_sheet()
@@ -283,6 +287,70 @@ class LearningTests(_SheetBase):
         self.assertIn("## 사용자가 이미 답한 것", system)
         self.assertIn("이건 그냥 놔두자", system)
         self.assertIn("군더더기 지우기 — 글 1", system)
+
+
+class ShortAnswerTests(_SheetBase):
+    """(2026-10-28 사용자가 정한 판정 요청 형식) 「제 의견」 칸이 있고, 「전부 의견대로」처럼 짧게 답해도 된다.
+    ⛔ 의견이 빈 행에 의견대로를 쓰면 거절한다 — 그 행의 답을 지어 넣지 않는다."""
+
+    OPS = {"Q1": "그대로(정해진 문구)", "Q2": "고침"}
+
+    def set_opinions(self, ops: dict[str, str]) -> None:
+        rows = []
+        for raw in self.sheet.read_text(encoding="utf-8").splitlines():
+            for qid, op in ops.items():
+                if raw.startswith(f"| {qid.lstrip('Q')} |") and raw.endswith("|  |  |"):
+                    raw = raw[:-len("|  |  |")] + f"| {op} |  |"
+            rows.append(raw)
+        self.sheet.write_text("\n".join(rows), encoding="utf-8")
+
+    def test_opinion_cell_is_read(self) -> None:
+        self.make_sheet()
+        self.set_opinions(self.OPS)
+        self.assertEqual(self.OPS, ask_sheet.opinions(self.sheet.read_text(encoding="utf-8")))
+
+    def test_all_as_opinion(self) -> None:
+        self.make_sheet()
+        self.set_opinions(self.OPS)
+        rc, out = self.run_main(["--answers-from", str(self.sheet), "--reply", "전부 의견대로"])
+        self.assertEqual(1, rc, out)
+        self.assertEqual([7], self.open_lines(), "의견 「그대로」가 안 닫혔거나 의견 「고침」이 미리 닫혔습니다")
+        self.assertIn("(의견대로)", self.kept_note(), "의견으로 채운 답과 사용자가 적은 답이 기록에서 안 갈립니다")
+
+    def test_as_opinion_with_exceptions(self) -> None:
+        got = ask_sheet.parse_replies(["의견대로, 단 2 그대로, 1 직접: 2개 표 중 한 행만"], self.OPS)
+        self.assertEqual({"Q1": "직접: 2개 표 중 한 행만", "Q2": "그대로"}, got,
+                         "「직접:」 글 안의 숫자에서 답을 잘랐거나 예외가 의견을 못 덮었습니다")
+
+    def test_grouped_and_listed_lines(self) -> None:
+        got = ask_sheet.parse_replies(["고침 1, 2\n아직 안 고름 3\n4 그대로 — 이름, 5 보류"])
+        self.assertEqual({"Q1": "고침", "Q2": "고침", "Q4": "그대로 — 이름", "Q5": "보류"}, got)
+
+    def test_old_reply_form_still_works(self) -> None:
+        self.assertEqual({"Q1": "이건 그냥 놔두자"}, ask_sheet.parse_replies(["Q1 이건 그냥 놔두자"]))
+
+    def test_as_opinion_on_a_blank_opinion_is_refused(self) -> None:
+        self.make_sheet()
+        self.set_opinions({"Q1": "그대로"})
+        rc, out = self.run_main(["--answers-from", str(self.sheet), "--reply", "전부 의견대로"])
+        self.assertEqual(2, rc, out)
+        self.assertIn("「제 의견」 칸이 빈 번호", out)
+        self.assertEqual([5, 7], self.open_lines(), "의견이 빈 행의 답을 지어 넣었습니다")
+
+    def test_as_opinion_in_the_answer_cell(self) -> None:
+        self.make_sheet()
+        self.set_opinions(self.OPS)
+        self.fill({"Q1": "의견대로"})
+        _, answers = ask_sheet.parse(self.sheet.read_text(encoding="utf-8"))
+        self.assertEqual("그대로(정해진 문구) (의견대로)", answers["Q1"])
+
+    def test_legacy_seven_column_sheet_is_read(self) -> None:
+        text = self.make_sheet()
+        old = text.replace("| # | 원문 | 고친 말 | 고친 이유 | 제 의견 | 답 |",
+                           "| 번호 | 줄 | 문장 | 갈래 | 판정기 제안 | 넘긴 까닭 | 답 |")
+        old = old.replace("| 1 | ", "| Q1 | 5 | ", 1)
+        keys, answers = ask_sheet.parse(old)
+        self.assertIn("Q1", answers, "2026-10-29 전에 만든 표의 답을 못 읽습니다")
 
 
 class KindTests(unittest.TestCase):
