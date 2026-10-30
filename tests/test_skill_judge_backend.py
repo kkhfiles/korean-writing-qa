@@ -19,14 +19,16 @@ import layer2_coverage as coverage
 class SkillJudgeBackendTests(unittest.TestCase):
     def test_documented_calls_keep_the_current_service(self):
         skill = (ROOT / "skills/finalize-korean-document/SKILL.md").read_text(encoding="utf-8")
-        examples = dict(re.findall(r"^# (Codex|Claude Code)\n(python[^\n]+judge_layer2\.py[^\n]+)", skill, re.M))
+        # 스킬은 저장소 도구를 입구(`korean_qa_run.py judge_layer2`)로 부른다 — 작성자 경로 대신(2026-10-30)
+        examples = dict(re.findall(r"^# (Codex|Claude Code)\n(python[^\n]+judge_layer2(?:\.py)? [^\n]+)", skill, re.M))
         for session, expected in (("Codex", "codex"), ("Claude Code", "claude")):
             with self.subTest(session=session), tempfile.TemporaryDirectory() as folder:
                 self.assertIn(session, examples, "Each session needs an executable example with its own backend.")
                 doc = Path(folder) / "doc.md"
                 doc.write_text("# 검토\n\n문맥 검사 대상\n", encoding="utf-8")
                 command = shlex.split(examples[session])
-                args = command[command.index(next(t for t in command if t.endswith("judge_layer2.py"))) + 1:]
+                args = command[command.index(next(t for t in command if t in ("judge_layer2", "judge_layer2.py")
+                                                  or t.endswith("/judge_layer2.py"))) + 1:]
                 args = [str(doc) if t == "<수정문>" else t for t in args]
                 selected = []
 
