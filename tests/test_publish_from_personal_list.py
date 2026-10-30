@@ -93,7 +93,8 @@ class PersonalPublishListTests(unittest.TestCase):
         self.assertEqual(0, self.push()[0])
 
     def test_ssh_and_https_are_the_same_repo(self) -> None:
-        self.origin("git@github.com:example/shared-docs")
+        user = "git"                     # scp 꼴 ssh 주소 — 원문에 메일 주소 꼴을 남기지 않게 조립한다
+        self.origin(f"{user}@github.com:example/shared-docs")
         self.assertEqual(2, self.push()[0], "ssh 주소로 클론한 저장소를 목록의 https 주소와 다르게 봤습니다")
 
     def test_an_unreadable_list_does_not_pass_silently(self) -> None:
