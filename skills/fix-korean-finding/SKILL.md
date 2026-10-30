@@ -155,6 +155,21 @@ python scripts/add_case.py --text "<문장>" --expect finding|clean \
 **⛔ 옮길 곳을 안 적으면 그 순간부터 미탐이다.** 문맥 층은
 `finalize-korean-document` 스킬의 작업 순서 8단계다. 거기에 판정 기준까지 적는다.
 
+**넣을지는 규칙 후보 판정표로 묻는다** (2026-10-29 사용자 — 규칙을 넣을 때도 판정표로 받고,
+모양은 「규칙 전용 칸을 더함」). 실측과 적대 문장까지 마친 후보를 한 장에 모아 묻는다. 칸은
+규칙, 잡을 문장, 잡으면 안 될 문장, 실문서 오탐, 등급, 제 의견, 답이고 답은 공통 규칙, 개인 규칙,
+넣지 않음, 보류 가운데 하나다. 표에는 문서 원문이 들어가므로 저장소 밖에 둔다.
+
+```
+python -X utf8 scripts/rule_sheet.py template --title <회차> > <저장소 밖>/rules.md   # 칸을 채움
+python -X utf8 scripts/ask_sheet_html.py <저장소 밖>/rules.md --serve              # 백그라운드로, 제출하면 끝남
+python -X utf8 scripts/rule_sheet.py read <저장소 밖>/rules.md                     # 답을 종류별로 묶어 출력
+```
+
+- **공통 규칙** — 이 절차대로 검사기나 판정 기준에 추가한다
+- **개인 규칙** — 동사 짝이면 `data/catalog/local-personal-words.tsv`, 문맥 기준이면 `data/catalog/local-layer2-rules.md` 에 적고 `python install.py` 를 실행한다
+- **넣지 않음** — 「0. 적기」 절의 대장에서 그 갈래의 주인을 실제로 맡는 쪽(사람 또는 단어 점검)으로 고친다
+
 **★★ 넣기 전에 적대 문장을 손으로 짓는다 — 오탐은 실측 뭉치에서 안 나온다.**
 두 회차 연속 그랬다. 실측 뭉치는 그 오탐이 안 나오는 종류의 글이라서다.
 

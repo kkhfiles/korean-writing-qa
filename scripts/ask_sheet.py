@@ -196,7 +196,19 @@ def qid_of(token: str) -> str:
     return "Q" + token.lstrip("Qq")
 
 
-def parse_replies(replies: list[str], opinions: dict[str, str] | None = None) -> dict[str, str]:
+#: 사람 확인 표의 답 — 규칙 후보 표는 `parse_replies(..., kinds=...)` 로 제 답 이름을 준다
+ANSWER_KINDS = (EDIT, KEEP, HOLD, DIRECT)
+
+
+def _answer_patterns(kinds) -> tuple[re.Pattern, re.Pattern]:
+    names = "|".join(re.escape(k) for k in sorted(kinds, key=len, reverse=True))
+    grouped = "|".join(re.escape(k) for k in sorted(kinds, key=len, reverse=True) if k != DIRECT)
+    return (re.compile(rf"(?:^|,\s*|\s+)([Qq]?\d+)번?\s*[:.]?\s*(?={names})"),
+            re.compile(rf"({grouped})\s+((?:[Qq]?\d+번?[\s,]*)+)$"))
+
+
+def parse_replies(replies: list[str], opinions: dict[str, str] | None = None,
+                  kinds=ANSWER_KINDS) -> dict[str, str]:
     """대화로 받은 답 — 번호별 답 원문. 알아들을 수 없는 줄은 ValueError(줄을 짐작하지 않는다).
 
     받는 꼴:
@@ -209,6 +221,7 @@ def parse_replies(replies: list[str], opinions: dict[str, str] | None = None) ->
     번호를 적은 답이 의견보다 앞선다 — 줄 순서와 상관없이(「3 그대로」 다음 줄에 「의견대로」여도 3은 그대로).
     ⛔ 의견 칸이 비었는데 번호로도 답하지 않은 행이 남으면 ValueError — 그 행의 답을 지어 넣지 않는다.
     """
+    item_re, grouped_re = (ITEM, GROUPED) if tuple(kinds) == ANSWER_KINDS else _answer_patterns(kinds)
     said: dict[str, str] = {}
     delegated = False
     for line in "\n".join(replies).splitlines():
@@ -225,12 +238,12 @@ def parse_replies(replies: list[str], opinions: dict[str, str] | None = None) ->
             rest = re.sub(rf"^(전부\s+)?{AS_OPINION}\s*,?\s*(단\s*)?", "", rest)
             if not rest:
                 continue
-        g = GROUPED.match(rest)
+        g = grouped_re.match(rest)
         if g:
             for token in re.findall(r"[Qq]?\d+", g.group(2)):
                 said[qid_of(token)] = g.group(1)
             continue
-        found = list(ITEM.finditer(rest))
+        found = list(item_re.finditer(rest))
         if not found or rest[:found[0].start()].strip(" ,"):
             raise ValueError(f"알아들을 수 없는 답 — 「{line[:40]}」 · 「3 그대로」나 「Q3 그대로」 꼴로 적습니다")
         for i, it in enumerate(found):

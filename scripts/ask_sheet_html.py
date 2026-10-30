@@ -6,6 +6,9 @@
 **왜 있나** (2026-10-29 사용자) — md 표는 읽기 힘들고(「md 표로 보기가 힘들다」), 답을 복사해 대화에
 붙이는 것은 구식이다(「내가 표현한 그대로 직접 읽을 수 없니?」). 시안 다섯 가운데 고른 카드형이다.
 
+**두 가지 표** — 「원문을 고칠까요?」(사람 확인 표)와 「이 규칙을 넣을까요?」(규칙 후보 표, 머리에 「규칙」 칸).
+규칙 후보 표의 답은 공통 규칙, 개인 규칙, 넣지 않음, 보류 가운데 하나이고 `scripts/rule_sheet.py` 가 읽는다.
+
 **흐름** — `judge_layer2.py --sheet` 로 표를 만들고, 세션이 「제 의견」 칸을 채우고, 이 도구를 `--serve` 로
 백그라운드에서 돌린다. 사람이 「제출」을 누르면 답이 표의 「답」 칸에 적히고 이 명령이 끝난다. 세션은 끝났다는
 알림을 받고 `judge_layer2.py --answers-from <표.md>` 로 읽는다 — 답 처리는 md 표와 같은 길 하나다.
@@ -32,7 +35,13 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 KINDS = ["고침", "그대로", "직접", "보류"]
-KCLS = {"고침": "fix", "그대로": "keep", "직접": "own", "보류": "hold"}
+#: 규칙 후보 판정표 — 표 머리에 「규칙」 칸이 있으면 이 표다(2026-10-29 사용자가 고른 「규칙 전용 칸」).
+#: 공통 규칙은 검사기나 판정 기준에, 개인 규칙은 개인 파일(`local-personal-words.tsv` · `local-layer2-rules.md`)에 넣는다.
+RULE_KINDS = ["공통 규칙", "개인 규칙", "넣지 않음", "보류"]
+RULE_COLUMNS = ("#", "규칙", "잡을 문장", "잡으면 안 될 문장", "실문서 오탐", "등급", "제 의견", "답")
+KCLS = {"고침": "fix", "그대로": "keep", "직접": "own", "보류": "hold",
+        "공통 규칙": "fix", "개인 규칙": "own", "넣지 않음": "keep"}
+HEAD_ROW = re.compile(r"\s*\|\s*#\s*\|")
 #: 한글 서체를 HTML 에 심는 전역 도구 — 없는 PC 에서는 서체 이름 목록의 안전망으로 그린다
 FONT_TOOL = Path.home() / ".claude" / "assets" / "fonts" / "inline-korean-font.py"
 ROW = re.compile(r"\s*\|\s*Q?(\d+)\s*\|")
@@ -46,9 +55,10 @@ def cells(line: str) -> list[str]:
     return [c.strip() for c in re.split(r"(?<!\\)\|", s)]
 
 
-def parse_opinion(text: str) -> dict:
+def parse_opinion(text: str, kinds=KINDS) -> dict:
     """「제 의견」 칸 — 「직접: 「고칠 말」(까닭)」이면 고칠 말과 까닭을 가른다."""
-    m = re.match(r"(고침|그대로|직접|보류)\s*:?\s*(.*)$", text)
+    names = "|".join(re.escape(k) for k in sorted(kinds, key=len, reverse=True))
+    m = re.match(rf"({names})\s*:?\s*(.*)$", text)
     if not m:
         return {"kind": "", "text": "", "note": text}
     kind, rest = m.group(1), m.group(2).strip()
@@ -62,11 +72,13 @@ def parse_opinion(text: str) -> dict:
 
 
 def parse(md: str) -> dict:
-    """판정표 md — `ask_sheet.py` 가 만든 표와 손으로 쓴 같은 형식의 표 둘 다 읽는다."""
-    sheet = {"title": "", "ask": "", "use": "", "legend": [], "groups": []}
+    """판정표 md — `ask_sheet.py` 가 만든 표, 손으로 쓴 같은 형식의 표, 규칙 후보 표(`RULE_COLUMNS`)를 읽는다."""
+    sheet = {"title": "", "ask": "", "use": "", "legend": [], "groups": [], "kind": "fix", "kinds": KINDS}
     group = None
     in_legend = False
     for line in md.split("<!--")[0].splitlines():
+        if HEAD_ROW.match(line) and "규칙" in cells(line):
+            sheet["kind"], sheet["kinds"] = "rule", RULE_KINDS
         if line.startswith("# "):
             sheet["title"] = line[2:].strip()
         elif re.match(r"\**묻는 것\**\s*:", line.lstrip("- ")):
@@ -87,10 +99,13 @@ def parse(md: str) -> dict:
             continue
         elif ROW.match(line) and group is not None:
             c = cells(line)
-            if len(c) < 6:
-                continue
-            sheet["groups"][-1]["rows"].append({"id": ROW.match(line).group(1), "was": c[1], "fix": c[2],
-                                                "why": c[3], "op": parse_opinion(unescape(c[4]))})
+            rid = ROW.match(line).group(1)
+            if sheet["kind"] == "rule" and len(c) >= len(RULE_COLUMNS):
+                group["rows"].append({"id": rid, "rule": c[1], "catch": c[2], "spare": c[3], "fp": c[4],
+                                      "grade": c[5], "op": parse_opinion(unescape(c[6]), RULE_KINDS)})
+            elif sheet["kind"] == "fix" and len(c) >= 6:
+                group["rows"].append({"id": rid, "was": c[1], "fix": c[2],
+                                      "why": c[3], "op": parse_opinion(unescape(c[4]))})
         if in_legend and line.strip() and not re.match(r"\s*- ", line):
             in_legend = False
     sheet["groups"] = [g for g in sheet["groups"] if g["rows"]]
@@ -124,12 +139,33 @@ def op_html(row) -> str:
     return f'<p class="op"><span class="lbl">제 의견</span>{" ".join(parts)}</p>'
 
 
-def picks(row) -> str:
+def picks(row, kinds=KINDS) -> str:
     out = "".join(f'<button type="button" class="p-{KCLS[k]}" data-pick="{k}" aria-pressed="false">{k}</button>'
-                  for k in KINDS)
-    return (f'<div class="picks" role="group" aria-label="{row["id"]}번 답">{out}</div>'
-            f'<input class="direct" data-direct type="text" aria-label="{row["id"]}번 직접 고칠 말" '
-            'placeholder="고칠 말이나 지시를 적어 주세요">')
+                  for k in kinds)
+    direct = (f'<input class="direct" data-direct type="text" aria-label="{row["id"]}번 직접 고칠 말" '
+              'placeholder="고칠 말이나 지시를 적어 주세요">') if "직접" in kinds else ""
+    return f'<div class="picks" role="group" aria-label="{row["id"]}번 답">{out}</div>{direct}'
+
+
+def card(row, kind: str) -> str:
+    """카드 한 장 — 고칠 문장 판정표는 원문과 고친 말을, 규칙 판정표는 잡을 것과 잡으면 안 될 것을 위아래로."""
+    if kind == "rule":
+        body = (f'<div class="c-head"><span class="no">{row["id"]}</span><h3 class="why">{inline(row["rule"])}</h3></div>'
+                '<div class="diff rule">'
+                f'<div class="was"><span class="lbl">잡을 문장</span><p>{inline(row["catch"], mark=True)}</p></div>'
+                f'<div class="spare"><span class="lbl">잡으면 안 될 문장</span><p>{inline(row["spare"])}</p></div>'
+                f'<div class="facts"><span class="lbl">실문서 오탐</span><p>{inline(row["fp"])}</p></div>'
+                f'<div class="facts"><span class="lbl">등급</span><p>{inline(row["grade"])}</p></div>'
+                '</div>')
+    else:
+        body = (f'<div class="c-head"><span class="no">{row["id"]}</span><h3 class="why">{inline(row["why"])}</h3></div>'
+                '<div class="diff">'
+                f'<div class="was"><span class="lbl">원문</span><p>{inline(row["was"], mark=True)}</p></div>'
+                f'<div class="now"><span class="lbl">고친 말</span><p>{inline(row["fix"])}</p></div>'
+                '</div>')
+    kinds = RULE_KINDS if kind == "rule" else KINDS
+    return (f'<article class="card" data-item="{row["id"]}">{body}'
+            f'<div class="c-foot">{op_html(row)}<div class="ans">{picks(row, kinds)}</div></div></article>')
 
 
 CSS = """
@@ -181,6 +217,9 @@ mark.hit{background:var(--del-bg);color:var(--del);border-radius:3px;padding:0 .
 .diff .now{background:#F3FAF5;border-top:1px solid var(--line)}
 .diff .now p{color:var(--ins);font-weight:600}
 .diff .lbl{padding-top:.15em}
+.diff.rule>div{grid-template-columns:9em 1fr}
+.diff .spare{background:#F3FAF5;border-top:1px solid var(--line)}
+.diff .facts{border-top:1px solid var(--line)}
 .c-foot{display:flex;flex-wrap:wrap;gap:12px 20px;align-items:center;justify-content:space-between}
 .c-foot .op{flex:1 1 300px}
 .c-foot .ans{flex:0 0 auto;width:min(100%,380px)}
@@ -209,7 +248,7 @@ mark.hit{background:var(--del-bg);color:var(--del);border-radius:3px;padding:0 .
 .note:empty{display:none}
 .submitted .note{color:var(--fix)}
 .submitted .picks,.submitted .acts,.submitted .direct{pointer-events:none;opacity:.55}
-@media (max-width:620px){.diff>div{grid-template-columns:1fr;gap:2px}.picks{width:100%}.picks button{flex:1;padding:9px 6px}}
+@media (max-width:620px){.diff>div,.diff.rule>div{grid-template-columns:1fr;gap:2px}.picks{width:100%}.picks button{flex:1;padding:9px 6px}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 """
 
@@ -252,7 +291,7 @@ JS = r"""
       if (diff.length * 2 <= items.length) return '의견대로, 단 ' + diff.map(fmt).join(', ');
     }
     var lines = [];
-    ['고침', '그대로', '보류'].forEach(function(k){
+    S.kinds.filter(function(k){ return k !== '직접'; }).forEach(function(k){
       var ids = done.filter(function(i){ return A[i.id].kind === k; }).map(function(i){ return i.id; });
       if (ids.length) lines.push(k + ' ' + ids.join(', '));
     });
@@ -313,25 +352,19 @@ def render(sheet: dict) -> str:
     rows = [r for g in sheet["groups"] for r in g["rows"]]
     legend = "".join(f'<li><span class="k k-{KCLS.get(k, "keep")}">{html.escape(k)}</span>{inline(v)}</li>'
                      for k, v in sheet["legend"])
-    meta = f'<div><dt>묻는 것</dt><dd>{html.escape(sheet["ask"] or "원문을 고칠까요?")}</dd></div>'
+    default_ask = "이 규칙을 넣을까요?" if sheet["kind"] == "rule" else "원문을 고칠까요?"
+    meta = f'<div><dt>묻는 것</dt><dd>{html.escape(sheet["ask"] or default_ask)}</dd></div>'
     if sheet["use"]:
         meta += f'<div><dt>판정 결과의 쓰임</dt><dd>{inline(sheet["use"])}</dd></div>'
     out = [f'<div class="wrap"><header class="top"><h1>{html.escape(sheet["title"])}</h1>'
            f'<dl class="meta">{meta}</dl><ul class="legend">{legend}</ul></header>']
     for g in sheet["groups"]:
         out.append(f'<section class="grp"><h2>{html.escape(g["name"])}<small>{len(g["rows"])}건</small></h2><div class="cards">')
-        for r in g["rows"]:
-            out.append(f"""<article class="card" data-item="{r['id']}">
-  <div class="c-head"><span class="no">{r['id']}</span><h3 class="why">{inline(r['why'])}</h3></div>
-  <div class="diff">
-    <div class="was"><span class="lbl">원문</span><p>{inline(r['was'], mark=True)}</p></div>
-    <div class="now"><span class="lbl">고친 말</span><p>{inline(r['fix'])}</p></div>
-  </div>
-  <div class="c-foot">{op_html(r)}<div class="ans">{picks(r)}</div></div>
-</article>""")
+        out += [card(r, sheet["kind"]) for r in g["rows"]]
         out.append("</div></section>")
     out.append("</div>")
-    data = json.dumps({"key": sheet["title"], "items": [{"id": r["id"], "op": r["op"]} for r in rows]},
+    data = json.dumps({"key": sheet["title"], "kinds": sheet["kinds"],
+                       "items": [{"id": r["id"], "op": r["op"]} for r in rows]},
                       ensure_ascii=False).replace("</", "<\\/")
     return f"""<!doctype html>
 <html lang="ko">
@@ -371,9 +404,9 @@ def write_html(md_path: Path) -> Path:
 
 # ── 답을 표에 적기 ────────────────────────────────────
 def answer_cell(a: dict) -> str:
-    """고른 답을 표의 「답」 칸 글로 — `ask_sheet.kind_of` 가 읽는 꼴."""
+    """고른 답을 표의 「답」 칸 글로 — `ask_sheet.kind_of` 와 `rule_sheet.py` 가 읽는 꼴."""
     kind = str(a.get("kind") or "")
-    if kind not in KINDS:
+    if kind not in KINDS and kind not in RULE_KINDS:
         return ""
     text = f"직접: {a.get('text') or ''}".strip() if kind == "직접" else kind
     return re.sub(r"\s+", " ", text).replace("|", "\\|")
@@ -484,7 +517,8 @@ def main(argv=None) -> int:
         print(f"⛔ {e}")
         return 2
     if not sheet["groups"]:
-        print("⛔ 판정 행을 찾지 못했습니다 — 칸이 #, 원문, 고친 말, 고친 이유, 제 의견, 답인 표를 줍니다")
+        print("⛔ 판정 행을 찾지 못했습니다 — 칸이 #, 원문, 고친 말, 고친 이유, 제 의견, 답인 표나 "
+              f"{', '.join(RULE_COLUMNS)} 인 규칙 후보 표를 줍니다")
         return 2
     if a.serve:
         return serve(md_path, a.timeout, not a.no_open)

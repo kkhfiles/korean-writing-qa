@@ -103,6 +103,7 @@ class ServeTests(unittest.TestCase):
         try:
             return urllib.request.urlopen(req, timeout=5).status
         except urllib.error.HTTPError as e:
+            e.close()
             return e.code
 
     def test_listens_only_on_this_pc(self) -> None:
