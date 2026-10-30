@@ -316,7 +316,16 @@ def publish_base(cov, path):
        뒤 줄만 본다. 게이트가 다른 기준으로 세면 판정을 돌려도 안 풀리는 막힘이 된다.
        순서 — 저장소 설정의 발행 대상이면 그 `base` · 아니면 지금 가지가 따라가는 원격 가지 ·
        그것도 없으면 HEAD(커밋 안 한 줄만 셈).
+    **원본을 선언한 문서는 git 과 상관없이 원본**(`ORIGIN_REF`) — 원본과 같은 줄은 남이 쓴 줄이다.
+       선언한 원본 파일이 없으면 그 까닭을 지고 아래 순서로 넘어간다(문서 전체를 보게 된다).
     """
+    if hasattr(cov, "origin_base"):
+        try:
+            theirs = cov.origin_base(path)
+        except ValueError:
+            theirs = None
+        if theirs is not None:
+            return cov.ORIGIN_REF, theirs
     found = cov.repo_of(path) if hasattr(cov, "repo_of") else None
     if not found:
         return None, None
@@ -379,7 +388,9 @@ def unjudged_block(payload, files):
             # 설정을 못 읽으면 문자열(까닭)이 온다 — 그때는 발행 대상으로 안 본다(push 게이트가 그 까닭을 알린다)
             in_scope = isinstance(conf, dict) and matches(found_repo[1], conf["targets"])
             lines = cov.read_doc(p).splitlines()
-            if seen or in_scope:
+            # 원본을 선언한 문서 — 판정 기록이 없어도 원본과 다른 줄만 센다(남의 줄은 판정을 요구하지 않는다)
+            declared = hasattr(cov, "origin_of") and cov.origin_of(p) is not None
+            if seen or in_scope or declared:
                 ref, base = publish_base(cov, p)
                 ref = ref or "HEAD"         # git 밖 — 판정기가 판정 안 한 줄만 본다
             else:
@@ -1239,6 +1250,46 @@ def call_checker(path, *extra):
     return done.stdout
 
 
+#: 1층 검사기 출력의 지적 줄에서 줄 번호를 읽는다 — 「❌ [갈래] 12행 …」
+FINDING_ROW = re.compile(r"(?:❌|⚠️)\s*\[[^\]]+\]\s*(\d+)행")
+
+
+def _same_line(line):
+    return re.sub(r"\s+", " ", line).strip()
+
+
+def drop_theirs(path, hits):
+    """원본을 선언한 문서에서 원본과 글자가 같은 줄의 지적을 뺀다 — (남은 지적, 알림 줄 | "").
+
+    남이 쓴 줄은 그 사람의 문장이라 이 PC 의 검사 기준으로 고치지 않는다(2026-10-30 사용자 결정).
+    고칠 만한 것은 작성자에게 제안한다 — 알림 줄이 그 길과 원본 검사 명령을 적는다.
+    선언한 원본 파일이 없으면 하나도 빼지 않고 그 사실을 알린다(조용히 전체를 보면 남의 글을 고치게 된다).
+    """
+    cov = load_coverage()
+    origin = cov.origin_of(Path(path)) if cov is not None and hasattr(cov, "origin_of") else None
+    if origin is None:
+        return hits, ""
+    if not origin.is_file():
+        return hits, f"⚠️ 원본 선언의 파일이 없어 남이 쓴 줄을 가르지 못했다 — {origin.as_posix()}"
+    try:
+        theirs = {_same_line(l) for l in origin.read_text(encoding="utf-8", errors="replace").splitlines()
+                  if l.strip()}
+        mine = Path(path).read_text(encoding="utf-8", errors="replace").splitlines()
+    except OSError:
+        return hits, ""
+    kept, dropped = [], 0
+    for h in hits:
+        m = FINDING_ROW.search(h)
+        n = int(m.group(1)) if m else 0
+        if 0 < n <= len(mine) and _same_line(mine[n - 1]) in theirs:
+            dropped += 1
+            continue
+        kept.append(h)
+    note = (f"ℹ️ 원본({origin.name})과 같은 줄의 지적 {dropped}건은 뺐다 — 남이 쓴 줄이라 고치지 않는다 · "
+            f"필요하면 작성자에게 제안(원본 검사: doc-style-check.py {origin.as_posix()})") if dropped else ""
+    return kept, note
+
+
 def run_checker(path, errors_only):
     """검사기를 돌려 사람이 읽을 줄만 돌려준다. **못 돌린 것은 알린다.**
 
@@ -1281,7 +1332,11 @@ def run_checker(path, errors_only):
     hits = [l for l in out.splitlines() if "❌" in l or (not errors_only and "⚠️" in l)]
     if errors_only:
         hits = [l for l in hits if is_always(l)]
+    # 자르기 전에 거른다 — 남의 줄 지적이 12칸을 차지하면 사용자가 쓴 줄의 지적이 밀려난다
+    hits, theirs_note = drop_theirs(path, hits)
     hits = condense(hits)[:12]
+    if theirs_note:
+        hits.append(theirs_note)
     if blind:
         hits.insert(0, "⚠️ 값 슬롯을 못 찾아 부분 검사만 됐다 — 합격이 아니라 "
                        "안 본 것이다 · 표·목록·「라벨: 값」으로 다시 쓸 것")

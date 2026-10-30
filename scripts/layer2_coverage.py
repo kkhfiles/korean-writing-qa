@@ -224,11 +224,58 @@ def key_matches(row_key, key: str) -> bool:
             and key.split(KEY_SEP, 1)[0] == row_key)
 
 
+#: 원본 선언 — 남이 쓴 원고를 고쳐 내보낼 때 그 원본 파일을 문서가 들고 있게 한다.
+#  마크다운은 머리말 `origin: <원본 경로>`, HTML 은 `<meta name="origin" content="<원본 경로>">`.
+#  경로는 문서 폴더 기준. 판정기와 게이트는 원본과 글자가 같은 줄을 남의 줄로 보고 막지 않는다.
+ORIGIN_MD = re.compile(r"\A---[ \t]*\r?\n(.*?)\r?\n---[ \t]*(?:\r?\n|\Z)", re.S)
+ORIGIN_KEY = re.compile(r"^origin:[ \t]*(.+?)[ \t]*$", re.M)
+ORIGIN_HTML = re.compile(r"""<meta\s+name=["']origin["']\s+content=["']([^"']+)["']""", re.I)
+#: 게이트가 권하는 판정 명령의 `--since` 값 — 원본을 선언한 문서는 이 값이든 무엇이든 원본을 기준 판으로 쓴다
+ORIGIN_REF = "@origin"
+
+
+def origin_of(path: Path) -> Path | None:
+    """문서가 선언한 원본 파일 · 선언이 없으면 None(파일이 실제로 있는지는 안 본다).
+
+    **왜 있나** (2026-10-30 사용자 결정 — 「내가 스스로 사용하는 한국어 검사기 기준을 다른 사람에게
+    강요할 순 없다」). 남의 초안을 고쳐 내보내면 발행 게이트가 남의 줄까지 판정하고 오류 0 을 요구해,
+    남의 글을 고치거나 게이트를 넘기는 길밖에 없었다. 선언이 없으면 지금처럼 문서 전체를 본다
+    (2026-10-13 사용자 결정 「발행하는 문서 전부」).
+    """
+    try:
+        text = Path(path).read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return None
+    if Path(path).suffix.lower() in HTML_SUFFIXES:
+        m = ORIGIN_HTML.search(text)
+    else:
+        head = ORIGIN_MD.match(text)
+        m = ORIGIN_KEY.search(head.group(1)) if head else None
+    if not m:
+        return None
+    return (Path(path).resolve().parent / m.group(1).strip().strip("\"'")).resolve()
+
+
+def origin_base(path: Path) -> list[str] | None:
+    """선언한 원본의 글 줄 · 선언이 없으면 None. ⛔ 선언한 파일이 없으면 ValueError — 조용히 전체를 봐도
+    막히기는 하지만, 왜 남의 줄까지 보는지 모르고 남의 글을 고치게 된다."""
+    origin = origin_of(path)
+    if origin is None:
+        return None
+    if not origin.is_file():
+        raise ValueError(f"원본 선언의 파일이 없습니다 — {origin.as_posix()}")
+    return visible_text(origin.read_text(encoding="utf-8", errors="replace"), origin.suffix).splitlines()
+
+
 def base_lines(path: Path, ref: str) -> list[str] | None:
     """`ref` 와 갈라진 지점의 같은 문서 줄 · 그때 없던 문서면 빈 목록 · git 밖이면 None.
 
+    **원본을 선언한 문서는 `ref` 와 상관없이 원본의 줄**(`origin_base`) — 원본과 같은 줄은 남이 쓴 줄이다.
     ⛔ `ref` 를 못 풀면 ValueError — 갈라진 지점을 모르면 새 줄을 가를 수 없다.
     """
+    theirs = origin_base(path)
+    if theirs is not None:
+        return theirs
     found = repo_of(path)
     if not found:
         return None
