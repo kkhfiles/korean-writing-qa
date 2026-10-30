@@ -2113,13 +2113,25 @@ def scan_html(path, relaxed=False, form=None, rules=None):
     for msg in middot_errors(path, raw, numbered=False):
         err.append(('띄어 쓴 가운뎃점', msg))
     # 형식을 안 적은 HTML 도 판별한다 — 줄 단위 산문 비율은 태그 때문에 못 재서 지적 쏠림만 본다.
-    # 개조식으로 보는 설정이면 예전처럼 아무것도 더하지 않는다(HTML 에는 원래 형식 물음이 없었다).
+    # 개조식으로 보는 설정이면 산문 물음은 더하지 않는다(HTML 에는 원래 형식 물음이 없었다).
+    # 공지 판별은 인사말과 맺음말만 본다(2026-10-30) — 줄 비율이 없어도 첫 문단과 끝 문단은 읽힌다.
+    # 공지 물음은 개조식 설정에서도 낸다 — 세션이 그 물음을 보고 사용자에게 형식을 묻는다.
     resolved = form or declared_form(raw)
-    if (resolved is None and undeclared_mode(rules) == UNDECLARED_DETECT
-            and narrative_flood(err, ('서술형 종결', '서술형 문단'))):
-        resolved = 'prose'
-        warn.append(('형식 미표기', DETECTED_PROSE_NOTE.replace(
-            '머리말에 `form: structured` 를 적는다', '`<meta name="form" content="structured">` 를 넣는다')))
+    if resolved is None:
+        after_h1 = body.split('</h1>', 1)[1] if '</h1>' in body else body
+        letter = looks_notice(strip(p) for p in _PARAGRAPH.findall(after_h1))
+        guess = ('notice' if letter and _NOTICE_BODY_TAG.search(after_h1)
+                 else 'prose' if narrative_flood(err, ('서술형 종결', '서술형 문단'))
+                 else 'notice' if letter
+                 else None)
+        if guess and undeclared_mode(rules) == UNDECLARED_DETECT:
+            resolved = guess
+            warn.append(('형식 미표기', html_note(DETECTED_NOTES[guess])))
+        elif guess == 'notice':
+            warn.append(('형식 미표기', html_note(ASK_NOTICE_NOTE)))
+    if resolved == 'notice':
+        frame = notice_frame_html(body)
+        err, warn = drop_notice_frame(err, warn, lambda m: any(m.strip() in t for t in frame))
     err, warn = apply_form(err, warn, resolved)
     err, warn = apply_instruction_file(err, warn, path)
     err, warn = apply_selection(err, warn, rules) if rules else (err, warn)
@@ -2154,7 +2166,7 @@ FORM_ONLY_STRUCTURED = {
 #: 되나」 한 줄이 올 자리가 없다. 사이트 배포에 게이트를 걸자 데모 보드가 「진입점
 #: 없음」으로 걸렸다 — 문서 뼈대 규칙(제목 · 진입점 · 서술형 문단)만 빼고 낱말 ·
 #: 문장 규칙은 그대로 본다. 화면 문구도 업무 한국어여야 한다.
-FORM_VALUES = ('structured', 'prose', 'app')
+FORM_VALUES = ('structured', 'prose', 'app', 'notice')
 # 따옴표는 YAML 도구가 자동으로 붙이기도 한다. 안 받아 주면 선언한 사람은
 # 왜 계속 묻는지 모른 채 그대로 둔다.
 FORM_KEY = re.compile(r'''^form\s*:\s*['"]?([A-Za-z_-]+)['"]?\s*$''', re.M)
@@ -2184,10 +2196,82 @@ UNDECLARED_DETECT, UNDECLARED_STRUCTURED = 'detect', 'structured'
 # ⚠️ 공지 한 편을 보고 정한 값이다 — 사람이 쓴 글 표본이 모이면 다시 잰다.
 PROSE_MIXED_THRESHOLD = 0.20
 NARRATIVE_MIXED_MIN = 3
-DETECTED_PROSE_NOTE = ('형식을 안 적어 산문으로 보고 개조식 검사(서술형 종결, 제목, 진입점)를 뺐다 — '
-                       '개조식 문서면 머리말에 `form: structured` 를 적는다.')
+# 판별은 잠정이다(2026-10-30 사용자 결정) — 세션이 있으면 사용자에게 형식을 묻고 머리말에
+# 적는다. 판별 결과로 검사하는 것은 물을 사람이 없는 실행(명령줄, CI)뿐이고, 그때도 잠정이라고 적는다.
+DETECTED_PROSE_NOTE = ('형식을 안 적어 잠정으로 산문으로 보고 개조식 검사(서술형 종결, 제목, 진입점)를 뺐다 — '
+                       '산문이 맞으면 머리말에 `form: prose`, 개조식 문서면 `form: structured` 를 적는다.')
 ASK_FORM_NOTE = ('산문으로 보이는데 형식을 안 적었다 — 머리말에 `form: prose` 를 적으면 '
                  '개조식 검사를 빼고 본다. 개조식이 맞다면 `form: structured` 를 적는다.')
+DETECTED_NOTICE_NOTE = ('형식을 안 적어 잠정으로 공지로 보고 인사말과 맺음말 문단을 개조식 검사에서 뺐다 — '
+                        '공지가 맞으면 머리말에 `form: notice`, 개조식 문서면 `form: structured` 를 적는다.')
+ASK_NOTICE_NOTE = ('공지나 안내 메일로 보이는데 형식을 안 적었다 — 머리말에 `form: notice` 를 적으면 '
+                   '인사말과 맺음말 문단을 개조식 검사에서 빼고 본다. 개조식이 맞다면 `form: structured` 를 적는다.')
+DETECTED_NOTES = {'prose': DETECTED_PROSE_NOTE, 'notice': DETECTED_NOTICE_NOTE}
+ASK_NOTES = {'prose': ASK_FORM_NOTE, 'notice': ASK_NOTICE_NOTE}
+
+#: `notice` — **공지와 안내 메일**(2026-10-30 사용자 결정). 인사말과 맺음말은 산문이고 본문은
+#: 표와 목록인 문서라 둘 중 하나로 고르면 어딘가 어긋난다. 산문으로 보면 본문 표의 서술형을
+#: 놓치고, 개조식으로 보면 「안녕하세요 …입니다.」와 「감사합니다.」가 오류가 된다(사내 게시판
+#: 공지 61편 중 60편에 인사말이나 맺음말이 있었고, 사용자 보고서 454편에는 1편 · 2026-10-30 실측).
+#: 본문 앞뒤 문단(첫 표, 목록, 소제목, 「라벨: 값」 줄 앞과 마지막 그것 뒤)만 개조식 검사에서
+#: 빼고, 진입점은 인사말 자리라 보지 않는다. 표와 목록 안은 개조식 그대로 본다.
+NOTICE_FRAME_KINDS = {'서술형 종결', '서술형 문단'}
+GREETING = re.compile(r'^\s*안녕하(?:세요|십니까)')
+CLOSING = re.compile(r'^\s*(?:감사합니다|고맙습니다)[.!]?\s*$')
+#  본문으로 치는 줄 — 마크다운 구조 줄에 더해 「■ 일시」 같은 머리 기호 줄과 「문의: 재무팀」 같은 라벨 줄
+_NOTICE_BODY_LINE = re.compile(r'^\s*(?:[■□▶▷◆◇●○•※]|\**[^\s:：*][^:：]{0,24}?\**\s*[:：]\s*\S)')
+_NOTICE_BODY_TAG = re.compile(r'<(?:table|ul|ol|dl|h[2-6])[\s>]', re.I)
+_NOTICE_BODY_END = re.compile(r'</(?:table|ul|ol|dl|h[2-6])>', re.I)
+_PARAGRAPH = re.compile(r'<p(?![a-zA-Z])[^>]*>(.*?)</p>', re.S)
+
+
+def _is_notice_body(line):
+    return bool(_STRUCTURE_LINE.match(line) or _NOTICE_BODY_LINE.match(line))
+
+
+def notice_frame_md(body):
+    """공지의 인사말과 맺음말 문단 행번호 — 첫 본문 줄 앞과 마지막 본문 줄 뒤(제목 줄은 뺌)."""
+    lines = [(n, l) for n, l in body if l.strip()]
+    h1 = next((i for i, (_, l) in enumerate(lines) if l.strip().startswith('# ')), None)
+    rest = lines[h1 + 1:] if h1 is not None else lines
+    marks = [i for i, (_, l) in enumerate(rest) if _is_notice_body(l)]
+    if not marks:
+        return {n for n, _ in rest}
+    return {n for i, (n, _) in enumerate(rest) if i < marks[0] or i > marks[-1]}
+
+
+def notice_frame_html(body):
+    """공지의 인사말과 맺음말 문단 글 — 첫 표, 목록, 소제목 앞과 마지막 그것 뒤의 `<p>`."""
+    after = body.split('</h1>', 1)[1] if '</h1>' in body else body
+    start = _NOTICE_BODY_TAG.search(after)
+    if start is None:
+        parts = [after]
+    else:
+        ends = [m.end() for m in _NOTICE_BODY_END.finditer(after)]
+        parts = [after[:start.start()], after[max(ends):] if ends else '']
+    texts = (' '.join(strip(p).split()) for part in parts for p in _PARAGRAPH.findall(part))
+    return [t for t in texts if t]
+
+
+def looks_notice(lines):
+    """인사말로 열거나 맺음말로 닫나 — 앞 여섯 줄의 「안녕하세요」, 뒤 여섯 줄의 「감사합니다」."""
+    lines = [l.strip() for l in lines if l.strip()]
+    return (any(GREETING.match(l) for l in lines[:6])
+            or any(CLOSING.match(l) for l in lines[-6:]))
+
+
+def drop_notice_frame(err, warn, in_frame):
+    """공지의 인사말과 맺음말 문단에서 난 개조식 지적을 뺀다 — `in_frame(메시지)` 가 가른다."""
+    keep = lambda items: [(k, m) for k, m in items
+                          if not (k in NOTICE_FRAME_KINDS and in_frame(m))]
+    return keep(err), keep(warn)
+
+
+def html_note(note):
+    """머리말 안내를 HTML 표시 안내로 바꾼다 — HTML 에는 머리말이 없다."""
+    return re.sub(r'머리말에 `form: (\w+)`', r'`<meta name="form" content="\1">`', note).replace(
+        ', 개조식 문서면 `form: structured`', ', 개조식 문서면 `<meta name="form" content="structured">`').replace(
+        '개조식이 맞다면 `form: structured`', '개조식이 맞다면 `<meta name="form" content="structured">`')
 
 
 def undeclared_mode(rules):
@@ -2289,6 +2373,9 @@ def form_spared(form):
         return FORM_ONLY_STRUCTURED
     if form == 'app':
         return {k for k in ALL_KINDS if k.startswith(('제목', '진입점'))} | {'서술형 문단'}
+    if form == 'notice':
+        # 첫 줄은 인사말 자리다 — 인사말과 맺음말 문단의 서술형은 `drop_notice_frame` 이 뺀다
+        return {k for k in ALL_KINDS if k.startswith('진입점')}
     return set()
 
 
@@ -3057,13 +3144,26 @@ def scan_md(path, relaxed=False, form=None, rules=None):
     # 표와 목록이 뼈대이고 그 안의 설명만 산문인 문서는 비율이 낮게 나오는데,
     # 정작 개조식 지적이 쏟아지는 것이 그런 문서다(실측 41건 · 문서의 10%).
     # 그래서 **지적 자체가 개조식 축으로 쏠렸는지**도 함께 본다.
+    #
+    # 인사말로 열거나 맺음말로 닫고 표나 목록이 있으면 산문보다 먼저 공지로 본다(2026-10-30) —
+    # 산문으로 보면 본문 표의 서술형까지 빠진다. 공지는 앞뒤 문단만 빼고 표와 목록은 그대로 본다.
     resolved = form or declared_form(raw)
-    if resolved is None and looks_prose_md(body, err):
-        if undeclared_mode(rules) == UNDECLARED_DETECT:
-            resolved = 'prose'
-            warn.append(('형식 미표기', DETECTED_PROSE_NOTE))
-        else:
-            warn.append(('형식 미표기', ASK_FORM_NOTE))
+    if resolved is None:
+        text_lines = [l for _, l in body if not l.strip().startswith('# ')]
+        letter = looks_notice(text_lines)
+        guess = ('notice' if letter and any(_is_notice_body(l) for l in text_lines)
+                 else 'prose' if looks_prose_md(body, err)
+                 else 'notice' if letter
+                 else None)
+        if guess and undeclared_mode(rules) == UNDECLARED_DETECT:
+            resolved = guess
+            warn.append(('형식 미표기', DETECTED_NOTES[guess]))
+        elif guess:
+            warn.append(('형식 미표기', ASK_NOTES[guess]))
+    if resolved == 'notice':
+        frame = notice_frame_md(body)
+        line_of = lambda m: int(re.match(r'(\d+)행', m).group(1)) if re.match(r'\d+행', m) else None
+        err, warn = drop_notice_frame(err, warn, lambda m: line_of(m) in frame)
     # 코드펜스 안에 배포되는 한글 문구가 있으면 **안 봤다고 알린다.**
     #   ⛔ 지적이 아니라 안내다 — 펜스 안을 본문처럼 검사하면 바깥 문서의 개조식
     #      규약이 공지문에 걸린다(공지문은 산문이 정상이다).

@@ -5,7 +5,8 @@
 문단이 붙은 형태다. 그 문서에서 맞는 지적 1,043건이 발행 직전에 가려졌다.
 
 **고친 방향.** 접는 판정을 검사기 한 곳으로 모은다. 훅은 검사기가 「형식 미표기」로
-물어볼 때만 산문으로 한 번 더 물어보고, 무엇을 뺄지는 검사기가 정한다.
+물어볼 때 사용자에게 형식을 물으라고 적고(2026-10-30 · 그전에는 산문으로 접었다),
+무엇을 뺄지는 검사기가 정한다.
 
 **두 방향 다 지킨다** — 산문에서 쏟아지지 않아야 하고, 구조 문서에서 조용해지면
 안 된다. 뒤쪽이 더 위험하다(안 보이므로).
@@ -107,17 +108,38 @@ class DocStyleGateFormTests(unittest.TestCase):
         self.assertIn("서술형 종결", out)
         self.assertNotIn("산문으로 보고", out)
 
-    def test_an_undeclared_prose_document_is_folded_and_explained(self) -> None:
+    def test_an_undeclared_prose_document_stops_for_the_users_choice(self) -> None:
+        """형식은 사용자가 고른다 — 발행 순간에 산문으로 접지 않고 형식을 적을 때까지 막는다.
+
+        2026-10-30 사용자 결정(「제안하고 물어본 뒤에 사용자의 선택에 따라 검사」). 예전에는
+        여기서 산문으로 접어 검사했고, 판별이 틀리면 정당한 지적이 사용자 모르게 빠졌다.
+        """
         out = self.gate(PROSE)
 
-        self.assertNotIn("서술형 종결", out)
-        self.assertIn("form: prose", out)
+        self.assertIn("❌ 형식 미정", out)
+        self.assertIn("산문", out.splitlines()[0], "검사기 제안을 물음에 붙이지 않았습니다")
+
+    def test_writing_time_asks_without_blocking(self) -> None:
+        """묻는 때는 쓰고 고칠 때다(같은 날 사용자 「수정할 때, 새로 쓸 때에만」) — 막지는 않는다."""
+        out = self.gate(PROSE, errors_only=True)
+
+        self.assertIn("❓ 형식 미정", out)
+        self.assertNotIn("❌ 형식 미정", out)
+
+    def test_an_undeclared_notice_is_offered_as_a_notice(self) -> None:
+        """인사말로 열고 표가 본문인 문서는 산문이 아니라 공지로 제안한다."""
+        notice = ("# 11월 비용 마감 안내\n\n안녕하세요, 재무팀 홍길동입니다.\n\n"
+                  "| 구분 | 마감일 |\n|---|---|\n| 법인카드 | 12월 3일 |\n\n감사합니다.\n")
+        out = self.gate(notice)
+
+        self.assertIn("공지", out.splitlines()[0])
 
     def test_a_declared_prose_document_is_folded_without_the_note(self) -> None:
         out = self.gate("---\nform: prose\n---\n" + PROSE)
 
         self.assertNotIn("서술형 종결", out)
         self.assertNotIn("형식을 안 적어", out)
+        self.assertNotIn("형식 미정", out)
 
     def test_a_declared_structured_document_keeps_everything(self) -> None:
         """선언이 접기를 이긴다 — 사람이 개조식이라고 하면 개조식으로 본다."""

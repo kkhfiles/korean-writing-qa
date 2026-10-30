@@ -171,11 +171,12 @@ class GateReportsItsOwnFailureTests(unittest.TestCase):
         self.assertIn("절단형 종결", with_phrase,
                       "본문의 낱말이 그 파일의 지적을 지웠습니다")
 
-    def test_the_prose_retry_judges_by_the_line_shape_too(self) -> None:
-        """같은 함수에 판정이 두 곳 있다 — 한 곳만 고치면 다른 곳이 남는다.
+    def test_a_marker_in_the_body_does_not_hide_the_form_question(self) -> None:
+        """본문의 ⛔ 기호가 「부분 검사」로 읽혀 형식 물음을 가리면 안 된다.
 
-        산문 재검사도 「출력에 ⛔ 글자가 있나」로 보고 있었다. 그러면 본문에 그
-        기호를 쓴 산문 문서는 접기가 조용히 멈춰 개조식 지적이 쏟아진다.
+        예전에는 산문 재검사가 「출력에 ⛔ 글자가 있나」로 보고 있어, 본문에 그 기호를
+        쓴 산문 문서는 접기가 조용히 멈췄다. 접기는 2026-10-30 에 「형식을 사용자에게
+        묻기」로 바뀌었고, 같은 문서에서 그 물음이 나와야 한다.
         """
         prose = ("# 임베디드 검증 백서\n\n"
                  "소프트웨어가 안전을 좌우하게 되면서 검증의 무게가 달라졌다. "
@@ -192,10 +193,8 @@ class GateReportsItsOwnFailureTests(unittest.TestCase):
                  "요구사항을 잇는 일은 사람의 몫이다.\n")
         out = self.gate(prose)
 
-        # 「form: prose」 로 단정하면 안 갈린다 — 접기가 멈춘 쪽의 「형식 미표기」
-        # 안내 줄에도 그 글자가 들어 있다. 갈리는 것은 개조식 지적이 남았는지다.
-        self.assertNotIn("서술형 종결", out,
-                         "본문의 ⛔ 기호가 산문 접기를 멈췄습니다")
+        self.assertIn("형식 미정", out, "본문의 ⛔ 기호가 형식 물음을 가렸습니다")
+        self.assertNotIn("값 슬롯을 못 찾아", out, "본문의 ⛔ 기호를 부분 검사로 읽었습니다")
 
     def test_the_marker_is_matched_on_the_line_shape(self) -> None:
         """글자 대조로 되돌리면 같은 함정이 되살아난다 — 줄 모양으로 봐야 한다."""

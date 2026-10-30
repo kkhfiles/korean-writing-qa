@@ -1095,8 +1095,27 @@ def save(data):
 # Claude 만 읽는 지시 파일은 알아서 뺀다.
 ALWAYS = ("「~하는 자리」", "절단형", "모호한 지칭", "지시어 확인", "평가 수식어",
           "절 번호로 가리킴", "반말 서술형")
-# 검사기가 형식을 안 적은 산문으로 보고 물어보는 줄
+# 검사기가 형식을 안 적은 산문이나 공지로 보고 물어보는 줄
 FORM_ASK = "형식 미표기"
+
+
+def form_question(out):
+    """형식을 사용자에게 물으라는 한 줄 — 검사기가 「형식 미표기」를 냈을 때만, 제안 형식을 붙여.
+
+    ★ **형식은 사용자가 고른다** (2026-10-30 사용자 결정 — 「문서의 종류나 성격에 따라 제안하고
+      물어본 뒤에 사용자의 선택에 따라 검사」). 예전에는 발행 순간에 산문으로 접어 검사했다 —
+      판별이 틀리면 정당한 지적이 사용자 모르게 빠졌다. 묻는 때는 문서를 새로 쓰거나 고칠 때뿐이다
+      (같은 날 사용자 「수정할 때, 새로 쓸 때에만」) — 훅은 쓰고 고치는 파일만 본다.
+    """
+    line = next((l for l in out.splitlines() if FORM_ASK in l), "")
+    if not line:
+        return None
+    guess = "notice" if '"notice"' in line or "form: notice" in line else "prose"
+    what = ("공지(인사말과 맺음말 문단만 개조식 검사에서 뺌)" if guess == "notice"
+            else "산문(개조식 검사를 뺌)")
+    return (f"형식 미정 — 검사기 제안은 {what}이다 · 사용자에게 산문, 공지, 개조식 중 무엇으로 "
+            f"검사할지 묻고 답을 머리말 `form:`(HTML 은 `<meta name=\"form\">`)에 적는다 · "
+            f"세션이 답을 정하지 않는다")
 
 
 def is_always(line):
@@ -1158,8 +1177,9 @@ def run_checker(path, errors_only):
     뼈대인 문서에 근거 문단이 붙은 형태였고, 그 문서에서 맞는 지적 1,043건이
     발행 직전에 가려졌다. 접는 기준을 검사기 한 곳으로 모은다.
 
-    검사기가 「형식 미표기」로 물어보면 그때만 산문으로 한 번 더 물어본다.
-    무엇을 뺄지는 검사기가 정한다 — 훅은 목록을 따로 갖지 않는다.
+    검사기가 「형식 미표기」로 물어보면 사용자에게 형식을 물으라고 적는다(`form_question`).
+    쓰는 순간에는 알리기만 하고, 발행 순간에는 형식을 적을 때까지 막는다 — 막는 줄이
+    열쇠(머리말 한 줄)를 함께 적는다. 무엇을 뺄지는 검사기가 정한다.
     """
     if not CHECKER.exists():
         return f"⚠️ 전역 문서 검사를 못 돌렸다 — 검사기 없음 ({CHECKER})"
@@ -1175,14 +1195,7 @@ def run_checker(path, errors_only):
     # 잡은 오류가 사라진다(실측: 값 슬롯을 못 찾은 파일에서 오류 2건을 버리고 있었다).
     blind = BLIND.search(out)
 
-    note = None
-    if not errors_only and FORM_ASK in out:
-        prose = call_checker(path, "--form", "prose", *full)
-        if prose is not None and not BLIND.search(prose):
-            out = prose
-            note = ("(형식을 안 적어 산문으로 보고 개조식 지적을 뺐다 — "
-                    "머리말에 `form: prose` 를 적으면 확정되고, 개조식이 맞으면 "
-                    "`form: structured`)")
+    ask = form_question(out)
 
     hits = [l for l in out.splitlines() if "❌" in l or (not errors_only and "⚠️" in l)]
     if errors_only:
@@ -1191,8 +1204,8 @@ def run_checker(path, errors_only):
     if blind:
         hits.insert(0, "⚠️ 값 슬롯을 못 찾아 부분 검사만 됐다 — 합격이 아니라 "
                        "안 본 것이다 · 표·목록·「라벨: 값」으로 다시 쓸 것")
-    if note:
-        hits.append(note)
+    if ask:
+        hits.insert(0, f"❓ {ask}" if errors_only else f"❌ {ask}")
     return "\n".join(hits)
 
 
