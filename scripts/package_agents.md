@@ -5,7 +5,8 @@
 ## 설치 차례
 
 1. **Python 3.11 이상 확인** — 버전 숫자가 실제로 출력되어야 설치된 것입니다.
-   - Windows: `py -3 --version` 을 먼저, 안 되면 `python --version`
+   - Windows: `python --version` 을 먼저(실행 승인을 묻지 않음), 안 되면 `py -3 --version`
+   - **명령은 하나씩** — `cd` 나 다른 명령과 `&&`, `;` 로 묶으면 묶은 만큼 승인을 따로 묻습니다. 이 폴더에서 그대로 실행합니다.
    - **⚠️ 아무 출력이 없거나 Microsoft Store 가 열리면 미설치** — Windows 의 `python` 은 이름만 있는 Store 안내 프로그램일 수 있습니다(종료 코드 9009).
    - macOS, Linux: `python3 --version`
 2. **없거나 3.11 미만이면 사용자에게 설치 동의를 받음** — 동의하면 아래 명령으로 설치합니다.
