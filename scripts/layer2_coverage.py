@@ -446,7 +446,8 @@ def dismissed(key: str, dismissals: Path | None = None, now: float | None = None
 
 
 def open_fixes(key: str, lines: list[str], log: Path | None = None,
-               dismissals: Path | None = None, now: float | None = None) -> list[tuple[int, dict]]:
+               dismissals: Path | None = None, now: float | None = None,
+               base: list[str] | None = None) -> list[tuple[int, dict]]:
     """아직 처리 안 된 고칠 지적 — (지금 줄 번호, 지적).
 
     **열림** — 그 줄이 그대로이거나, 그 줄을 고친 줄(글자가 절반 이상 같음)에 짚은 표현이 남아
@@ -457,12 +458,17 @@ def open_fixes(key: str, lines: list[str], log: Path | None = None,
     **사실 확인 지적**(`needs_check`)은 고쳐도 안 닫힌다 — 고친 줄에 붙어 「확인함」이나 사람
     확인을 기다린다.
     ⛔ 기한이 없다 — 사람 확인과 같은 까닭이다.
+    **`base`(기준 가지와 갈라진 지점의 줄)를 주면** 사실 확인 지적이 고친 줄을 따라갈 때 그 판에 그대로
+    있던 줄에는 안 붙는다. 이번 가지가 손대지 않은 줄은 그 지적을 고친 줄일 수 없다 — 같은 저장소의
+    다른 checkout 이 커밋하지 않은 판에서 남긴 지적이, 그 줄을 바꾸기 전의 원래 줄을 「고친 줄」로 잡아
+    지적한 문장이 없는 push 를 막았다(2026-10-30 · README 155행).
     """
     where: dict[str, int] = {}
     for n, line in enumerate(lines, 1):
         k = line_key(line)
         if k and k not in where:
             where[k] = n
+    untouched = {k for k in map(line_key, base or []) if k}
     done = dismissed(key, dismissals, now)
     # 「확인함」으로 닫은 적이 있는 사실 확인 표현 — 그 뒤 표현이 사라졌으면 다시 열지 않는다(2026-10-23).
     # 닫음 기록이 줄 해시에 묶여 있어, 갈래 수처럼 같은 줄의 숫자를 고칠 때마다 이미 확인한 옛 숫자
@@ -489,7 +495,7 @@ def open_fixes(key: str, lines: list[str], log: Path | None = None,
                     #    줄을 통째로 지웠으면 닫는다 — 확인 안 된 주장이 안 나가는 쪽이다. 지워서
                     #    남은 글의 뜻이 바뀌었는지는 지운 자리 판정이 본다.
                     best = successor(row.get("seen"), fx.get("line_key") or "", lines, text)
-                    if best is not None:
+                    if best is not None and line_key(lines[best - 1]) not in untouched:
                         cands = [best]
                 if not cands:
                     continue                # 표현이 사라짐 — 고쳤다

@@ -506,6 +506,43 @@ class PushFixTests(unittest.TestCase):
         self.dismissal_in(wt / "docs" / "a.md")
         self.assertEqual(0, self.push()[0])
 
+    OTHER = "업무 목록은 매일 오전 아홉 시에 갱신됩니다."
+    OTHER_FACT = {"line": 3, "phrase": "매일 오전 아홉 시에", "category": "고치다 뜻이 바뀐 곳",
+                  "fix": "매일", "why": "기준 판과 다름", "check": "갱신 시각이 실제로 아홉 시인지"}
+
+    def judged_elsewhere(self) -> None:
+        """같은 저장소의 다른 checkout 이 3행을 커밋하지 않은 채 고쳐 판정했고 사실 확인 지적이 남았다.
+
+        이번 가지의 줄은 따로 판정을 마쳤다 — 막는 까닭이 그 지적 하나만 남게 한다.
+        """
+        here = coverage.read_doc(self.doc).splitlines()
+        there = [self.OTHER if i == 2 else l for i, l in enumerate(here)]
+        rows = [{"ok": True, "key": coverage.doc_key(self.doc), "when": time.time(),
+                 "seen": coverage.seen_keys(here)},
+                {"ok": True, "key": coverage.doc_key(self.doc), "when": time.time(),
+                 "seen": coverage.seen_keys(there),
+                 "fixes": [dict(self.OTHER_FACT, line_key=coverage.line_key(self.OTHER), text=self.OTHER)]}]
+        self.log.write_text("".join(json.dumps(r, ensure_ascii=False) + "\n" for r in rows), encoding="utf-8")
+
+    def test_a_fact_fix_from_another_checkout_does_not_stick_to_an_untouched_line(self) -> None:
+        """(2026-10-30) 다른 checkout 의 미커밋 판에서 남은 사실 확인 지적이, 이번 가지가 손대지 않은
+        줄(기준 가지와 같은 줄)을 「고친 줄」로 잡아 push 를 막았다. 지적한 문장은 내보내는 내용에 없었다."""
+        self.judged_elsewhere()
+        line3 = coverage.read_doc(self.doc).splitlines()[2]
+        self.assertGreaterEqual(coverage._ratio(line3, self.OTHER), coverage.IN_PLACE,
+                                "시험 문장이 고친 줄로 잡힐 만큼 비슷하지 않아 이 시험이 아무것도 못 지킵니다")
+        rc, out = self.push()
+        self.assertEqual(0, rc, f"다른 checkout 의 지적이 손대지 않은 줄에 붙어 막았습니다: {out[:400]}")
+
+    def test_a_fact_fix_still_follows_a_line_this_branch_changed(self) -> None:
+        """대조 — 이번 가지가 그 줄을 고쳤으면 확인 없이 고친 것이라 계속 막는다."""
+        self.doc.write_text(DOC.replace("매일 갱신됩니다", "매일 오전 열 시에 갱신됩니다"), encoding="utf-8")
+        git(self.repo, "commit", "-am", "edit line 3")
+        self.judged_elsewhere()
+        rc, out = self.push()
+        self.assertEqual(2, rc, out)
+        self.assertIn("고칠 지적 1개", out)
+
     def test_records_without_a_repo_id_still_count(self) -> None:
         """열쇠에 저장소 식별자를 넣기 전 기록 — 버리면 같은 줄을 다시 판정하고 다시 닫아야 한다."""
         lines = coverage.read_doc(self.doc).splitlines()

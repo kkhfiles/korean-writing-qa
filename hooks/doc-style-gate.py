@@ -774,7 +774,10 @@ def push_gaps(repo, conf, judge, commit="HEAD"):
                     gaps.append(f"사용자 답을 못 받은 사람 확인 지적 {len(asks)}개 — "
                                 f"{n}행 「{str(ask.get('phrase') or '')[:30]}」")
             if hasattr(cov, "open_fixes"):
-                fixes = cov.open_fixes(key, lines)
+                try:                        # 기준 판을 주면 손대지 않은 줄에 사실 확인 지적이 안 붙는다
+                    fixes = cov.open_fixes(key, lines, base=base)
+                except TypeError:           # base 를 모르는 옛 설치본
+                    fixes = cov.open_fixes(key, lines)
                 if fixes:
                     n, fx = fixes[0]
                     gaps.append(f"처리 기록 없는 고칠 지적 {len(fixes)}개 — "
