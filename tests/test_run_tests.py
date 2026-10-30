@@ -37,6 +37,15 @@ class RunTestsTests(unittest.TestCase):
                           "ERROR: test_b (tests.test_x.XTests.test_b)",
                           "Ran 5 tests in 0.010s", "FAILED (failures=1, errors=1)"], got)
 
+    def test_old_logs_are_pruned(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            folder = Path(tmp)
+            for i in range(5):
+                (folder / f"tests-2026103{i}-000000.log").write_text("x", encoding="utf-8")
+            run_tests.prune(folder, 2)
+            self.assertEqual(["tests-20261033-000000.log", "tests-20261034-000000.log"],
+                             sorted(p.name for p in folder.iterdir()))
+
     def test_a_failing_run_keeps_its_exit_code_and_names(self) -> None:
         with tempfile.TemporaryDirectory(dir=ROOT / "tests") as tmp:
             mod = Path(tmp) / "test_always_fails.py"

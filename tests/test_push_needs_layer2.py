@@ -56,7 +56,9 @@ class PushGateTests(unittest.TestCase):
         self.env = dict(os.environ, KOREAN_CHECK_RECORD=str(self.store),
                         KOREAN_QA_JUDGE_LOG=str(self.log), KOREAN_QA_RECORDER=str(RECORDER),
                         KOREAN_QA_COVERAGE=str(ROOT / "scripts" / "layer2_coverage.py"),
-                        KOREAN_QA_JUDGE=str(ROOT / "scripts" / "judge_layer2.py"))
+                        KOREAN_QA_JUDGE=str(ROOT / "scripts" / "judge_layer2.py"),
+                        # 이 PC 의 개인 push 판정 목록을 읽지 않게 — 시험 결과가 PC 마다 달라지지 않는다
+                        KOREAN_QA_PUBLISH_REPOS=str(t / "no-list.toml"))
         self.doc = self.repo / "dyn" / "docs" / "a.md"
         (self.repo / "korean-qa.toml").write_text(CONFIG, encoding="utf-8")
         self.write(["# 진행 현황", "", "- **상태**: 진행 중", "- **다음**: 검토 회의"])

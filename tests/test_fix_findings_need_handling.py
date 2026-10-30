@@ -368,7 +368,8 @@ class GateTests(unittest.TestCase):
                         KOREAN_QA_DISMISS_LOG=str(self.dismissals),
                         KOREAN_QA_COVERAGE=str(ROOT / "scripts" / "layer2_coverage.py"),
                         KOREAN_CHECK_RECORD=str(self.dir / "store.jsonl"),
-                        KOREAN_PUBLISH_REQUIRE="structure")
+                        KOREAN_PUBLISH_REQUIRE="structure",
+                        KOREAN_QA_PUBLISH_REPOS=str(self.dir / "no-list.toml"))
         self.log.write_text(_fix_row(self.doc), encoding="utf-8")
 
     def tearDown(self) -> None:
@@ -438,7 +439,9 @@ class PushFixTests(unittest.TestCase):
                         KOREAN_QA_DISMISS_LOG=str(self.dismissals),
                         KOREAN_QA_RECORDER=str(ROOT / "scripts" / "check_record.py"),
                         KOREAN_QA_COVERAGE=str(ROOT / "scripts" / "layer2_coverage.py"),
-                        KOREAN_QA_JUDGE=str(ROOT / "scripts" / "judge_layer2.py"))
+                        KOREAN_QA_JUDGE=str(ROOT / "scripts" / "judge_layer2.py"),
+                        # 이 PC 의 개인 push 판정 목록을 읽지 않게 — 시험 결과가 PC 마다 달라지지 않는다
+                        KOREAN_QA_PUBLISH_REPOS=str(t / "no-list.toml"))
         (self.repo / "korean-qa.toml").write_text(self.CONFIG, encoding="utf-8")
         self.doc = self.repo / "docs" / "a.md"
         self.doc.write_text("# 소개\n\n업무 목록은 매일 갱신됩니다.\n", encoding="utf-8")

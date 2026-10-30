@@ -10,6 +10,7 @@
 **종료 코드는 unittest 의 것 그대로** — 실패가 있으면 0 이 아니다.
 **로그 자리** — 시스템 임시 폴더의 `korean-qa-tests/`(저장소 밖이라 커밋될 일이 없다).
 시작할 때 그 경로를 먼저 찍는다 — 중간에 끊겨도 어디까지 돌았는지 볼 수 있다.
+최근 `KEEP` 개만 남기고 오래된 로그는 지운다 — 지우지 않으면 돌릴 때마다 쌓인다.
 """
 from __future__ import annotations
 
@@ -22,6 +23,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 LOG_DIR = Path(tempfile.gettempdir()) / "korean-qa-tests"
+KEEP = 20
 
 #: unittest 가 실패마다 내는 머리 줄 · 끝의 합계 줄
 FAILED_LINE = re.compile(r"^(FAIL|ERROR): (.+)$")
@@ -38,9 +40,19 @@ def summarize(text: str) -> list[str]:
     return failed + ran[-1:] + result[-1:]
 
 
+def prune(folder: Path, keep: int) -> None:
+    """최근 `keep` 개 로그만 남긴다 — 이름에 시각이 들어가 이름순이 시간순이다."""
+    for old in sorted(folder.glob("tests-*.log"))[:-keep]:
+        try:
+            old.unlink()
+        except OSError:
+            pass                        # 다른 실행이 열고 있는 로그 — 다음에 지운다
+
+
 def main(argv: list[str] | None = None) -> int:
     argv = sys.argv[1:] if argv is None else argv
     LOG_DIR.mkdir(parents=True, exist_ok=True)
+    prune(LOG_DIR, KEEP - 1)
     log = LOG_DIR / time.strftime("tests-%Y%m%d-%H%M%S.log")
     cmd = [sys.executable, "-X", "utf8", "-m", "unittest"]
     cmd += argv if argv else ["discover", "-s", "tests"]
