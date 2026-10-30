@@ -75,7 +75,7 @@ python doc-style-check.py <파일…|디렉터리> [-v]
 
 **훅이 하는 일** — Artifact 발행과 Edit·Write 뒤에 검사가 돌아 위반을 그 자리에서 알립니다. `--hooks` 는 `~/.claude/settings.json` 을 고치므로 백업을 먼저 뜹니다.
 
-**push 전 판정은 본인 PC 목록으로 켬** — 여러 사람이 함께 쓰는 저장소는 그 저장소 `korean-qa.toml` 에 `[publish]` 를 두지 않습니다. 두면 이 훅을 설치한 다른 작성자의 push 도 막힙니다. 대신 `data/catalog/local-publish-repos.example.toml` 을 `local-publish-repos.toml` 로 복사해 원격 주소를 적고 `python install.py` 를 실행합니다. 그러면 본인 PC 의 AI 세션이 그 저장소에 push 할 때만 새 줄의 판정을 요구합니다.
+**push 전 판정은 본인 PC 의 저장소 목록으로 켬** — 여러 사람이 함께 쓰는 저장소에서는 `korean-qa.toml` 에 `[publish]` 를 추가하지 않습니다. 추가하면 이 훅을 설치한 다른 작성자의 push 도 차단됩니다. 대신 `data/catalog/local-publish-repos.example.toml` 을 `local-publish-repos.toml` 로 복사해 원격 저장소 주소를 입력하고 `python install.py` 를 실행합니다. 그러면 본인 PC 의 AI 세션이 그 저장소에 push 할 때만, 훅이 그 브랜치에서 새로 쓰거나 고친 줄의 판정을 요구합니다.
 
 **한 번에 설치** — `python bootstrap.py` 가 형태소 판정 모듈 설치, 스킬과 훅 설치, 시험용 문서 두 개 검사, 설치본 대조, 스킬의 도구 호출 확인까지 하고 요약을 출력합니다. Claude Code 와 Codex 가운데 이 PC 에 있는 쪽에 설치합니다.
 
