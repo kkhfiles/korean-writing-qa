@@ -608,16 +608,41 @@ def judge_command():
 
 def judge_script():
     """스킬이 세션에게 부르라고 적은 판정기 경로 · 없으면 None. 모델이 있는지는 안 본다 —
-    답 기록(`--answer`)은 모델 없이 돈다."""
+    답 기록(`--answer`)은 모델 없이 돈다.
+
+    스킬은 판정기를 입구 형식(`korean_qa_run.py judge_layer2`)으로 부른다(2026-10-30). 그 꼴을
+    못 읽으면 판정기가 있는 PC 를 없는 PC 로 보고 손으로 남기는 판정 기록을 요구해 push 를 막았다.
+    """
     try:
         text = SKILL_MD.read_text(encoding="utf-8")
     except (OSError, AttributeError):
         return None
     m = re.search(r"python -X utf8 (\S+judge_layer2\.py)", text)
+    if m:
+        path = Path(os.path.expanduser(m.group(1)))
+        return path if path.is_file() else None
+    m = re.search(r'python -X utf8 "?(\S+?korean_qa_run\.py)"? judge_layer2\b', text)
     if not m:
         return None
-    path = Path(os.path.expanduser(m.group(1)))
-    return path if path.is_file() else None
+    entry = Path(re.sub(r"^(\$HOME|~)", HOME.as_posix(), m.group(1)))
+    root = entry_root(entry) if entry.is_file() else None
+    path = root / "scripts" / "judge_layer2.py" if root else None
+    return path if path and path.is_file() else None
+
+
+def entry_root(entry):
+    """입구(`korean_qa_run.py`)가 찾는 저장소 — 입구와 같은 차례(환경 변수, 저장소 안의 입구, 설치 기록)."""
+    env = os.environ.get("KOREAN_WRITING_QA_HOME")
+    if env:
+        return Path(env)
+    if (entry.resolve().parents[1] / "install.py").is_file():
+        return entry.resolve().parents[1]
+    pointer = Path(os.environ.get("CLAUDE_HOME") or HOME / ".claude") / "data" / "korean-writing-qa-home.txt"
+    try:
+        text = pointer.read_text(encoding="utf-8").strip()
+    except OSError:
+        return None
+    return Path(text) if text else None
 
 
 def judge_backend_ready():

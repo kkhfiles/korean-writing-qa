@@ -147,6 +147,32 @@ class GateAsksOnlyWhenAModelExistsTests(unittest.TestCase):
         with FakeLadder({"claude"}):
             self.assertEqual(self.judge, self.gate.judge_command())
 
+    def test_entry_form_in_the_skill_is_read(self) -> None:
+        """스킬이 입구 형식(`korean_qa_run.py judge_layer2`)이어도 판정기를 찾는다.
+
+        2026-10-30 스킬 예시가 입구 형식으로 바뀐 뒤 게이트가 `…judge_layer2.py` 꼴만 찾아,
+        판정기가 있는 PC 를 없는 PC 로 읽고 손으로 남기는 판정 기록을 요구해 push 를 막았다.
+        """
+        tmp = Path(self.tmp.name)
+        entry = tmp / "korean_qa_run.py"
+        entry.write_text("# 시험용\n", encoding="utf-8")
+        repo = tmp / "repo"
+        (repo / "scripts").mkdir(parents=True)
+        judge_file = repo / "scripts" / "judge_layer2.py"
+        judge_file.write_text("# 시험용\n", encoding="utf-8")
+        self.gate.SKILL_MD.write_text(
+            f'python -X utf8 "{entry.as_posix()}" judge_layer2 <수정문> --backend claude\n', encoding="utf-8")
+        saved = self.gate.os.environ.get("KOREAN_WRITING_QA_HOME")
+        self.gate.os.environ["KOREAN_WRITING_QA_HOME"] = str(repo)
+        try:
+            with FakeLadder({"claude"}):
+                self.assertEqual(judge_file, self.gate.judge_command())
+        finally:
+            if saved is None:
+                self.gate.os.environ.pop("KOREAN_WRITING_QA_HOME", None)
+            else:
+                self.gate.os.environ["KOREAN_WRITING_QA_HOME"] = saved
+
 
 if __name__ == "__main__":
     unittest.main()
