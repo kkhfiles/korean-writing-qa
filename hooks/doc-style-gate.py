@@ -501,7 +501,8 @@ def publish_block(payload, files):
 
 # ── push 직전 2층 판정 ────────────────────────────────────────────────────────
 #
-# **저장소가 스스로 켠다** — 뿌리의 `korean-qa.toml` 에 `[publish]` 절이 있을 때만 본다.
+# **켜는 곳 둘** — 뿌리의 `korean-qa.toml` 의 `[publish]` 절(그 저장소를 쓰는 모두가 합의했을 때),
+#   또는 이 PC 의 개인 목록(`PERSONAL_PUBLISH` · 아래 `publish_config`). 여럿이 쓰는 저장소는 개인 목록.
 #
 #     [publish]
 #     require = ["judgment"]                       # 새 줄이 있는 문서에 요구할 기록
@@ -556,22 +557,74 @@ def _push_parser():
     return mod
 
 
-def publish_config(repo):
-    """`[publish]` 절 · 없으면 None · 못 읽으면 그 까닭(문자열)."""
-    path = repo / "korean-qa.toml"
-    if not path.is_file():
+#: 개인 push 판정 목록 — 저장소에 `[publish]` 를 두지 않고 **이 PC 에서만** 켠다.
+#
+#     [[repo]]
+#     origin = "github.com/<소유자>/<저장소>"     # 원격 origin 주소 · https 와 ssh 를 같게 본다
+#     require = ["judgment"]
+#     targets = ["*/docs/*.md", "README.md"]
+#     base = "origin/main"
+#
+# ⛔ **여럿이 쓰는 저장소의 `korean-qa.toml` 에 `[publish]` 를 두지 않는다** — 그러면 이 훅을
+#   설치한 다른 사람의 push 까지 막는다. 한 사람의 검사 기준을 저장소가 남에게 거는 셈이다
+#   (2026-10-30 사용자 결정 · dynamic-docs 의 절을 이 목록으로 옮김).
+# **원격 주소로 가른다** — 작업 트리마다 폴더 경로가 달라 경로로는 같은 저장소를 못 알아본다.
+PERSONAL_PUBLISH = Path(os.environ.get("KOREAN_QA_PUBLISH_REPOS")
+                        or HOME / ".claude" / "data" / "catalog" / "local-publish-repos.toml")
+
+
+def _publish_fields(conf, source):
+    return {"require": [str(s) for s in conf.get("require") or ["judgment"]],
+            "targets": [str(s) for s in conf.get("targets") or []],
+            "base": str(conf.get("base") or "origin/main"),
+            "source": source}
+
+
+def norm_origin(url):
+    """원격 주소를 `호스트/소유자/저장소` 로 — https · ssh · `.git` 꼬리를 같게 본다."""
+    u = url.strip().lower()
+    u = re.sub(r"^[a-z][a-z0-9+.-]*://", "", u)     # https:// · ssh://
+    u = re.sub(r"^[^@/]+@", "", u)                  # git@ · 사용자@
+    u = re.sub(r"^([^/:]+):(?!\d+/)", r"\1/", u)    # scp 꼴 `호스트:소유자` (포트 번호는 그대로)
+    u = u.rstrip("/")
+    return u[:-4] if u.endswith(".git") else u
+
+
+def personal_publish(repo):
+    """개인 목록에서 이 저장소의 `[publish]` · 없으면 None · 목록을 못 읽으면 그 까닭(문자열)."""
+    if not PERSONAL_PUBLISH.is_file():
         return None
     try:
         import tomllib
-        data = tomllib.loads(path.read_text(encoding="utf-8"))
-    except Exception as e:              # 설정을 못 읽고 조용히 넘기면 켠 게이트가 꺼진다
-        return f"{path.name} 을 못 읽었습니다 — {type(e).__name__}: {e}"[:300]
-    conf = data.get("publish")
-    if not isinstance(conf, dict):
+        data = tomllib.loads(PERSONAL_PUBLISH.read_text(encoding="utf-8"))
+    except Exception as e:              # 목록을 못 읽고 조용히 넘기면 켠 게이트가 꺼진다
+        return f"{PERSONAL_PUBLISH.name} 을 못 읽었습니다 — {type(e).__name__}: {e}"[:300]
+    got = _git(repo, "remote", "get-url", "origin")
+    origin = norm_origin(got.stdout.decode("utf-8", "replace")) if got.returncode == 0 else ""
+    if not origin:
         return None
-    return {"require": [str(s) for s in conf.get("require") or ["judgment"]],
-            "targets": [str(s) for s in conf.get("targets") or []],
-            "base": str(conf.get("base") or "origin/main")}
+    for entry in data.get("repo") or []:
+        if isinstance(entry, dict) and norm_origin(str(entry.get("origin") or "")) == origin:
+            return _publish_fields(entry, f"개인 목록 {PERSONAL_PUBLISH.name}")
+    return None
+
+
+def publish_config(repo):
+    """`[publish]` 절 · 없으면 None · 못 읽으면 그 까닭(문자열).
+
+    저장소의 `korean-qa.toml` 이 앞서고, 없으면 개인 목록(`PERSONAL_PUBLISH`)을 본다.
+    """
+    path = repo / "korean-qa.toml"
+    if path.is_file():
+        try:
+            import tomllib
+            data = tomllib.loads(path.read_text(encoding="utf-8"))
+        except Exception as e:          # 설정을 못 읽고 조용히 넘기면 켠 게이트가 꺼진다
+            return f"{path.name} 을 못 읽었습니다 — {type(e).__name__}: {e}"[:300]
+        conf = data.get("publish")
+        if isinstance(conf, dict):
+            return _publish_fields(conf, "korean-qa.toml [publish] 설정")
+    return personal_publish(repo)
 
 
 def matches(rel, patterns):
@@ -783,7 +836,7 @@ def push_block(payload):
     if conf is None:
         return ""
     head = ["⛔ push 보류 — 이번 가지에서 새로 쓴 줄의 2층 판정이 끝나지 않았습니다",
-            f"   ({repo.name} 의 korean-qa.toml [publish] 설정)", ""]
+            f"   ({repo.name} 의 {conf['source'] if isinstance(conf, dict) else 'push 판정 설정'})", ""]
     tail = ["", f"  정말 그대로 올려야 하면 명령 앞에 `{FORCE}` 을 붙입니다 — 명령문에 남습니다."]
     if isinstance(conf, str):
         return "\n".join(head + [f"  {conf}"] + tail)

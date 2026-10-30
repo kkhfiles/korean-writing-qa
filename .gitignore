@@ -26,3 +26,5 @@ data/catalog/local-personal-words.tsv
 data/catalog/local-personal-rules.txt
 data/catalog/local-layer2-rules.md
 data/catalog/local-install-personal.txt
+# 개인 push 판정 목록 — 사내 저장소 주소가 들어간다(hooks/doc-style-gate.py 의 PERSONAL_PUBLISH)
+data/catalog/local-publish-repos.toml

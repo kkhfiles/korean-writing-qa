@@ -1,0 +1,13 @@
+# 개인 push 판정 목록 — 이 PC 의 AI 세션이 push 할 때만 2층 판정을 요구한다.
+#
+# 여럿이 쓰는 저장소는 그 저장소의 korean-qa.toml 에 [publish] 를 두지 않고 여기에 적는다.
+# 저장소에 두면 이 훅을 설치한 다른 사람의 push 까지 막는다.
+#
+# 쓰는 법 — 이 파일을 local-publish-repos.toml 로 복사해 고친 뒤 `python install.py`
+#   (설치 폴더 ~/.claude/data/catalog/ 로 복사된다). 실제 목록은 gitignore 대상이다.
+
+[[repo]]
+origin = "github.com/<소유자>/<저장소>"     # 원격 origin 주소 · https 와 ssh 를 같게 본다
+require = ["judgment"]
+targets = ["*/docs/*.md", "*/pages/*.html", "README.md"]   # 뿌리 기준 · 칸 수까지 맞아야 함
+base = "origin/main"                                       # 이 가지와 갈라진 뒤의 새 줄만 본다
