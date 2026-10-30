@@ -73,7 +73,7 @@
 ## 일할 때 지키는 절차
 
 - **전역 자산을 고쳤으면 `python install.py`** — 설치본이 어긋나면 다른 프로젝트에서 이전 버전이 돈다.
-- **시험은 `python -X utf8 -m unittest discover -s tests`** — 파이프로 넘기지 않는다(종료 코드가 가려진다).
+- **시험은 `python -X utf8 scripts/run_tests.py`** — 전체 출력은 로그 파일에 두고 실패한 시험 이름과 합계만 낸다. 일부만 돌릴 때는 모듈 이름을 넘긴다(`… run_tests.py tests.test_x`). `unittest` 출력을 파이프나 `tail` 로 자르지 않는다 — 종료 코드가 가려지고 실패 이름이 사라져 9분짜리 전체 시험을 다시 돌렸다(2026-10-30).
 - **공개 저장소이므로 발행 전 `python -X utf8 scripts/check_publish_safety.py`** — 사람 이름·고객사는 저장소 밖 목록으로 본다.
 - **표현 하나를 짚어 주면 그 하나만 고치지 않음** — 같은 갈래를 전수로 찾고 대장(`data/cases/flagged-rounds.jsonl`)에 올린다.
 - **여럿이 쓰는 저장소에 이 검사기를 필수 조건으로 넣지 않는다** (2026-10-30 사용자 결정) — 빌드·CI 게이트, 그 저장소 `korean-qa.toml` 의 `[publish]` 모두. 저장소에 두면 그 저장소의 다른 작성자에게 한 사람의 기준을 거는 것이다. lab-docs(dynamic-docs) 빌드에서 이 까닭으로 검사기를 뺐다.
