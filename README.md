@@ -75,11 +75,11 @@ python doc-style-check.py <파일…|디렉터리> [-v]
 
 **훅이 하는 일** — Artifact 발행과 Edit·Write 뒤에 검사가 돌아 위반을 그 자리에서 알립니다. `--hooks` 는 `~/.claude/settings.json` 을 고치므로 백업을 먼저 뜹니다.
 
-**한 번에 설치** — `python bootstrap.py` 가 형태소 판정 모듈 설치, 스킬과 훅 설치, 시료 검사, 설치본 대조, 스킬의 도구 호출 확인까지 하고 요약을 출력합니다. Claude Code 와 Codex 가운데 이 PC 에 있는 쪽에 겁니다.
+**한 번에 설치** — `python bootstrap.py` 가 형태소 판정 모듈 설치, 스킬과 훅 설치, 시험용 문서 두 개 검사, 설치본 대조, 스킬의 도구 호출 확인까지 하고 요약을 출력합니다. Claude Code 와 Codex 가운데 이 PC 에 있는 쪽에 설치합니다.
 
-**지우는 법** — `python install.py --uninstall` 이 이 설치기가 넣은 파일과 훅 줄만 지웁니다. Codex 쪽도 지우려면 `--codex` 를 더합니다. 저장소 폴더는 그대로 남습니다.
+**제거 방법** — `python install.py --uninstall` 이 이 설치기가 추가한 파일과 훅 설정 줄만 삭제합니다. Codex용 설치 항목도 삭제하려면 `--codex` 를 추가합니다. 저장소 폴더는 그대로 남습니다.
 
-**작성자 PC 의 개인 훅** — 셸 겹 역슬래시 차단, 공개 저장소 push 차단, 저장소 매일 점검은 기본 설치에서 빠집니다. 앞의 둘은 한글 검사와 무관하고, 매일 점검은 이 저장소를 고치는 사람용입니다. `data/catalog/local-install-personal.txt` 가 있으면 함께 설치합니다.
+**작성자 PC 의 개인 훅** — 셸 명령의 겹 역슬래시(`\\`) 차단, 공개 저장소 push 차단, 저장소 매일 점검은 기본 설치에서 빠집니다. 앞의 둘은 한글 검사와 무관하고, 매일 점검은 이 저장소를 수정하는 사람을 위한 기능입니다. `data/catalog/local-install-personal.txt` 가 있으면 함께 설치합니다.
 
 ## 갈래를 골라 쓰기
 
