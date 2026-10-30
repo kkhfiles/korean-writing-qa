@@ -855,7 +855,7 @@ def push_block(payload):
     conf = publish_config(repo) if repo else None
     if conf is None:
         return ""
-    head = ["⛔ push 보류 — 이번 가지에서 새로 쓴 줄의 2층 판정이 끝나지 않았습니다",
+    head = ["⛔ push 보류 — 이번 가지에서 새로 쓴 줄의 검사와 판정이 끝나지 않았습니다",
             f"   ({repo.name} 의 {conf['source'] if isinstance(conf, dict) else 'push 판정 설정'})", ""]
     tail = ["", f"  정말 그대로 올려야 하면 명령 앞에 `{FORCE}` 을 붙입니다 — 명령문에 남습니다."]
     if isinstance(conf, str):
