@@ -1610,14 +1610,22 @@ def finalize_notice(payload, files, state):
     return NOTICE
 
 
-def deny(reason):
+def deny(reason, payload=None):
     """PreToolUse 에서 막는다 — `permissionDecision: deny` JSON 을 내고 종료 코드 0.
 
     ⛔ **종료 코드 2 로 막지 않는다** — Codex 0.159.1 은 그것을 막음이 아니라 「Failed」로 받고
        명령을 그대로 실행했다(2026-10-01 실측 · 공식 문서는 종료 코드 2 가 막는다고 적었다).
        이 JSON 은 Claude Code 와 Codex 둘 다 막음으로 받는다(둘 다 실측). `install.py --codex`
        로 설치한 PC 는 어댑터 없이 이 훅을 바로 부르므로 훅이 직접 이 모양으로 답해야 한다.
+    **셸 명령을 막으면 명령 전체가 실행되지 않았다고 덧붙인다** — 문구는 `public-push-gate.py` 의
+       `not_run_notice` 하나다(이어 붙인 commit 까지 안 돌았는데 됐다고 본 일 · 2026-10-30).
     """
+    payload = payload or {}
+    if (payload.get("tool_name") or "") in ("Bash", "PowerShell"):
+        cmd = str((payload.get("tool_input") or {}).get("command") or "")
+        parser = _push_parser()
+        if parser is not None and hasattr(parser, "not_run_notice"):
+            reason = f"{reason}\n\n{parser.not_run_notice(cmd)}"
     print(json.dumps({"hookSpecificOutput": {"hookEventName": "PreToolUse",
                                              "permissionDecision": "deny",
                                              "permissionDecisionReason": reason}},
@@ -1668,7 +1676,7 @@ def main():
         import traceback
         traceback.print_exc()
         stop = gate_error(payload, e)
-        return deny(stop) if stop else 0
+        return deny(stop, payload) if stop else 0
 
 
 def _main(payload):
@@ -1682,7 +1690,7 @@ def _main(payload):
     # (배포 통과 기록만 시험 통로에서 안 쓴다)
     stop = push_block(payload) or deploy_block(payload, probe="--probe" in sys.argv)
     if stop:
-        return deny(stop)
+        return deny(stop, payload)
 
     files, errors_only, mode = targets(payload)
     korean_files = korean_targets(payload)
@@ -1741,13 +1749,13 @@ def _main(payload):
         if stop:
             if not probe:
                 save(state)
-            return deny(stop)
+            return deny(stop, payload)
     if not probe:
         stop = publish_block(payload, korean_files or files)
         if stop:
             if mode == "once" or True:
                 save(state)
-            return deny(stop)
+            return deny(stop, payload)
 
     notice = finalize_notice(payload, files, state.setdefault(key, {}))
     if mode == "once" or notice:

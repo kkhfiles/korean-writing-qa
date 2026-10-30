@@ -286,6 +286,23 @@ def gate(repo: Path) -> tuple[int, str]:
                f"   정말 보내야 하면 `{ESCAPE}=1` 을 붙이십시오.")
 
 
+#: 따옴표 밖에서 명령을 이어 붙이는 표시 — `&&` · `||` · `;` · 줄바꿈
+CHAINED = re.compile(r"&&|\|\||;|\n")
+
+
+def not_run_notice(command: str) -> str:
+    """훅이 셸 명령을 막을 때 붙이는 안내 — 막힘은 명령 **전체**를 거절한다.
+
+    ⛔ `git commit … && git push` 를 한 명령으로 보내면 push 를 막는 순간 앞의 commit 도 실행되지
+       않는다. 세션이 그것을 모르고 「커밋 완료」로 보고하거나, 고친 내용을 커밋했다고 믿고 다시 push
+       했다가 같은 이유로 또 막혔다(2026-10-30 · 두 번). 그래서 막을 때마다 그 사실을 적는다.
+    """
+    line = "ℹ️ 요청한 명령 전체가 실행되지 않았습니다."
+    if CHAINED.search(mask_quoted(command).strip()):
+        line += " 앞뒤에 이어 붙인 명령(commit 등)도 실행되지 않았습니다 — commit 과 push 를 따로 실행합니다."
+    return line
+
+
 def main(argv: list[str] | None = None) -> int:
     argv = sys.argv[1:] if argv is None else argv
 
@@ -322,7 +339,8 @@ def main(argv: list[str] | None = None) -> int:
         #    스크립트 호출(`--repo`)은 위에서 종료 코드로 답한다 — `sync.sh` 가 그것을 읽는다.
         print(json.dumps({"hookSpecificOutput": {"hookEventName": "PreToolUse",
                                                  "permissionDecision": "deny",
-                                                 "permissionDecisionReason": msg}},
+                                                 "permissionDecisionReason":
+                                                     f"{msg}\n\n{not_run_notice(command)}"}},
                          ensure_ascii=False))
         return 0
     if msg:

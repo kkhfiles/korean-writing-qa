@@ -118,6 +118,17 @@ class PushGateTests(unittest.TestCase):
         self.assertNotIn("judgment 기록 없음", out, "판정기를 부를 수 있는데 손 판정 기록까지 요구했습니다")
         self.assertIn("--since main", out, "고치는 법에 새 줄만 판정하는 명령이 없습니다")
 
+    def test_a_block_says_a_chained_commit_did_not_run(self) -> None:
+        """(2026-10-30) commit 과 push 를 이어 붙여 보내면 막힘이 commit 까지 거절한다 — 그 사실을 적는다."""
+        self.add_line()
+        rc, out = self.push("git commit -qam '고침' && git push -u origin HEAD")
+        self.assertEqual(2, rc, out)
+        self.assertIn("명령 전체가 실행되지 않았습니다", out)
+        self.assertIn("commit 등", out, "이어 붙인 commit 도 안 돌았다는 안내가 없습니다")
+        rc, out = self.push()
+        self.assertIn("명령 전체가 실행되지 않았습니다", out)
+        self.assertNotIn("commit 등", out, "이어 붙이지 않은 명령에 이어 붙임 안내를 붙였습니다")
+
     def test_judged_and_recorded_lets_it_through(self) -> None:
         self.add_line()
         self.judged()

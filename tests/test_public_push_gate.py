@@ -205,6 +205,17 @@ class PublicPushGateTests(unittest.TestCase):
         self.assertEqual(0, done.returncode)
         self.assertIn("넘겼습니다", done.stderr)
 
+    def test_a_block_says_the_whole_command_did_not_run(self) -> None:
+        """(2026-10-30) `git commit … && git push` 를 막으면 앞의 commit 도 안 돈다 — 세션이 그것을
+        모르고 「커밋 완료」로 보고했다. 막을 때 그 사실을 적는다. 따옴표 안의 `;` 는 이어 붙임이 아니다."""
+        notice = load_hook().not_run_notice
+        self.assertIn("명령 전체가 실행되지 않았습니다", notice("git push"))
+        self.assertNotIn("commit 등", notice("git push"))
+        for cmd in ("git commit -qm x && git push", "git add . ; git push", "git commit -m x\ngit push"):
+            with self.subTest(cmd):
+                self.assertIn("commit 등", notice(cmd))
+        self.assertNotIn("commit 등", notice("git push -o 'ci.skip;x'"))
+
     def test_public_repo_push_is_gated_and_says_why(self) -> None:
         """이 저장소는 공개다 — 검사를 거쳐야 하고, 통과하면 보내야 한다."""
         code, said = gate_result.read(run("git push"))
