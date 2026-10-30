@@ -79,6 +79,8 @@ python doc-style-check.py <파일…|디렉터리> [-v]
 
 **push 전 판정은 본인 PC 의 저장소 목록으로 켬** — 여러 사람이 함께 쓰는 저장소에서는 `korean-qa.toml` 에 `[publish]` 를 추가하지 않습니다. 추가하면 이 훅을 설치한 다른 작성자의 push 도 차단됩니다. 대신 `data/catalog/local-publish-repos.example.toml` 을 `local-publish-repos.toml` 로 복사해 원격 저장소 주소를 입력하고 `python install.py` 를 실행합니다. 그러면 본인 PC 의 AI 세션이 그 저장소에 push 할 때만, 훅이 그 브랜치에서 새로 쓰거나 고친 줄의 판정을 요구합니다.
 
+**빌드가 문체를 검사하지 않는 저장소는 `"lint"` 추가** — `local-publish-repos.toml` 에서 그 저장소 항목의 `require` 값에 `"lint"` 를 추가합니다. 이렇게 하면 새로 쓰거나 고친 줄에 1층 오류가 있을 때도 push 가 차단됩니다.
+
 **한 번에 설치** — `python bootstrap.py` 가 형태소 판정 모듈 설치, 스킬과 훅 설치, 시험용 문서 두 개 검사, 설치본 대조, 스킬의 도구 호출 확인까지 하고 요약을 출력합니다. Claude Code 와 Codex 가운데 이 PC 에 있는 쪽에 설치합니다.
 
 **제거 방법** — `python install.py --uninstall` 이 이 설치기가 추가한 파일과 훅 설정 줄만 삭제합니다. Codex용 설치 항목도 삭제하려면 `--codex` 를 추가합니다. 저장소 폴더는 그대로 남습니다.
