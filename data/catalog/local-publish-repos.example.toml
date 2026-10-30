@@ -8,6 +8,6 @@
 
 [[repo]]
 origin = "github.com/<소유자>/<저장소>"     # 원격 origin 주소 · https 와 ssh 를 같게 본다
-require = ["judgment"]
+require = ["judgment", "lint"]   # lint — 이번 브랜치에서 새로 쓰거나 고친 줄의 1층 오류도 막음(빌드가 문체를 안 보는 저장소)
 targets = ["*/docs/*.md", "*/pages/*.html", "README.md"]   # 뿌리 기준 · 칸 수까지 맞아야 함
 base = "origin/main"                                       # 이 가지와 갈라진 뒤의 새 줄만 본다

@@ -516,7 +516,8 @@ def publish_block(payload, files):
 #   또는 이 PC 의 개인 목록(`PERSONAL_PUBLISH` · 아래 `publish_config`). 여럿이 쓰는 저장소는 개인 목록.
 #
 #     [publish]
-#     require = ["judgment"]                       # 새 줄이 있는 문서에 요구할 기록
+#     require = ["judgment"]                       # 새 줄이 있는 문서에 요구할 기록 · "lint" 를 더하면
+#                                                  # 새 줄의 1층 오류도 막는다(`lint_gaps` · 기록이 아님)
 #     targets = ["*/docs/*.md", "*/pages/*.html"]  # 뿌리 기준 · 칸 수까지 맞아야 함
 #     base = "origin/main"                         # 이 가지와 갈라진 뒤의 새 줄만 본다
 #
@@ -793,11 +794,16 @@ def push_gaps(repo, conf, judge, commit="HEAD"):
                     n, fx = fixes[0]
                     gaps.append(f"처리 기록 없는 고칠 지적 {len(fixes)}개 — "
                                 f"{n}행 「{str(fx.get('phrase') or '')[:30]}」 · 고치거나 --dismiss · --escalate")
+        if "lint" in conf["require"]:
+            old_raw = (old.stdout.decode("utf-8", "replace").splitlines()
+                       if cov is not None and old.returncode == 0 else [])
+            gaps += lint_gaps(repo, rel, blob, old_raw)
         with tempfile.TemporaryDirectory() as tmp:
             # 기록은 내용 해시에 묶인다 — 커밋된 내용을 파일로 꺼내 그 해시로 묻는다
             probe_file = Path(tmp) / f"head{suffix}"
             probe_file.write_bytes(blob)
-            missing = missing_stages(probe_file, conf["require"])
+            # "lint" 는 게이트가 위에서 직접 본다 — 적을 길이 없는 기록으로 요구하지 않는다
+            missing = missing_stages(probe_file, [s for s in conf["require"] if s != "lint"])
         if judge is not None and cov is not None:
             # ⛔ 손으로 남기는 판정 기록(judgment)을 요구하지 않는다 — 판정기 기록으로 「새 줄을 다
             #    봤나 · 지운 자리를 봤나」를 위에서 직접 보고, 남긴 지적은 지적마다 처리 기록이나
@@ -1258,6 +1264,57 @@ def _same_line(line):
     return re.sub(r"\s+", " ", line).strip()
 
 
+def origin_lines(path):
+    """문서가 선언한 원본과 그 원본의 줄(공백을 맞춘 글자) — (원본 경로 | None, 줄 집합 | None).
+
+    선언이 없으면 (None, None) · 선언한 파일이 없거나 못 읽으면 (원본 경로, None).
+    """
+    cov = load_coverage()
+    origin = cov.origin_of(Path(path)) if cov is not None and hasattr(cov, "origin_of") else None
+    if origin is None or not origin.is_file():
+        return origin, None
+    try:
+        return origin, {_same_line(l) for l in origin.read_text(encoding="utf-8", errors="replace").splitlines()
+                        if l.strip()}
+    except OSError:
+        return origin, None
+
+
+def lint_gaps(repo, rel, blob, base_raw):
+    """`require` 에 "lint" 를 둔 저장소 — 이번 브랜치에서 새로 쓰거나 고친 줄의 1층 오류 · [빠진 것…].
+
+    (2026-10-30 사용자 결정 「A」) 여럿이 쓰는 저장소의 빌드에서 문체 검사기를 빼자 사용자 본인 원고의 1층
+    오류를 막던 장치도 함께 사라졌다. **남의 줄은 안 본다** — 갈라진 지점에 이미 있던 줄과 원본 선언의 줄은
+    뺀다. 줄 번호가 없는 문서 단위 오류(진입점 등)는 새로 만든 문서에서만 센다.
+    ⛔ 검사기를 못 돌리면 막는다 — 검사되지 않은 줄을 내보내지 않는다.
+    """
+    import tempfile
+    with tempfile.TemporaryDirectory() as tmp:
+        probe = Path(tmp) / Path(rel).name          # 이름을 지킨다 — 지시 파일 예외가 이름으로 갈린다
+        probe.write_bytes(blob)
+        out = call_checker(probe, "--no-rules")
+    if out is None:
+        return ["1층 검사를 못 돌림 — 검사되지 않은 줄은 내보내지 않습니다"]
+    mine = blob.decode("utf-8", "replace").splitlines()
+    old = {_same_line(l) for l in base_raw if l.strip()}
+    old |= origin_lines(repo / rel)[1] or set()
+    rows = []
+    for l in out.splitlines():
+        if "❌" not in l:
+            continue
+        m = FINDING_ROW.search(l)
+        if m:
+            n = int(m.group(1))
+            if 0 < n <= len(mine) and _same_line(mine[n - 1]) not in old:
+                rows.append(l.strip())
+        elif not base_raw:
+            rows.append(l.strip())
+    if not rows:
+        return []
+    return [f"1층 오류 {len(rows)}건(이번 브랜치에서 새로 쓰거나 고친 줄) — {rows[0][:90]}",
+            f"확인 — python -X utf8 {CHECKER.as_posix()} {(repo / rel).as_posix()}"]
+
+
 def drop_theirs(path, hits):
     """원본을 선언한 문서에서 원본과 글자가 같은 줄의 지적을 뺀다 — (남은 지적, 알림 줄 | "").
 
@@ -1265,15 +1322,12 @@ def drop_theirs(path, hits):
     고칠 만한 것은 작성자에게 제안한다 — 알림 줄이 그 길과 원본 검사 명령을 적는다.
     선언한 원본 파일이 없으면 하나도 빼지 않고 그 사실을 알린다(조용히 전체를 보면 남의 글을 고치게 된다).
     """
-    cov = load_coverage()
-    origin = cov.origin_of(Path(path)) if cov is not None and hasattr(cov, "origin_of") else None
+    origin, theirs = origin_lines(path)
     if origin is None:
         return hits, ""
-    if not origin.is_file():
+    if theirs is None:
         return hits, f"⚠️ 원본 선언의 파일이 없어 남이 쓴 줄을 가르지 못했다 — {origin.as_posix()}"
     try:
-        theirs = {_same_line(l) for l in origin.read_text(encoding="utf-8", errors="replace").splitlines()
-                  if l.strip()}
         mine = Path(path).read_text(encoding="utf-8", errors="replace").splitlines()
     except OSError:
         return hits, ""
