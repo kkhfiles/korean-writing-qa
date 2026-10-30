@@ -1,5 +1,6 @@
 """Run the skill's documented calls without sending any document to a model."""
 import contextlib
+import importlib.util
 import io
 import json
 import re
@@ -16,6 +17,11 @@ import judge_layer2 as judge
 import layer2_coverage as coverage
 
 
+# llm_playbook 은 비공개 조직 저장소라 CI 가 설치하지 못한다 — 없으면 건너뛴다(로컬 전체 시험이 본다).
+HAS_PLAYBOOK = importlib.util.find_spec("llm_playbook") is not None
+
+
+@unittest.skipUnless(HAS_PLAYBOOK, "llm_playbook 이 없는 PC — 판정기 서비스 선택을 못 부른다")
 class SkillJudgeBackendTests(unittest.TestCase):
     def test_documented_calls_keep_the_current_service(self):
         skill = (ROOT / "skills/finalize-korean-document/SKILL.md").read_text(encoding="utf-8")

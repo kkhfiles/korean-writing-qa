@@ -6,6 +6,7 @@
 """
 from __future__ import annotations
 
+import importlib.util
 import sys
 import unittest
 from pathlib import Path
@@ -23,6 +24,12 @@ def failing(detail: str, kind=None):
     return lambda *a, **k: {"text": "", "error": FAIL, "kind": kind, "detail": detail, "attempts": []}
 
 
+# llm_playbook 은 비공개 조직 저장소라 CI 가 설치하지 못한다 — 없으면 건너뛴다(로컬 전체 시험이 본다).
+# 안 건너뛰면 CI 가 ModuleNotFoundError 로 붉었다(2026-10-30 확인).
+HAS_PLAYBOOK = importlib.util.find_spec("llm_playbook") is not None
+
+
+@unittest.skipUnless(HAS_PLAYBOOK, "llm_playbook 이 없는 PC — Codex 클라이언트 경로를 못 부른다")
 class CodexErrorDetailTests(unittest.TestCase):
 
     def call(self, fake):
