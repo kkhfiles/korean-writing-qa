@@ -90,6 +90,23 @@ def usage_tokens(u: dict | None) -> tuple[int, int]:
 
 
 # ── 모델 호출 ─────────────────────────────────────────────────────────────────
+CODEX_WEEK_MAX = 93      # 주간 사용률이 이 값 이상이면 부르지 않음 — 사용자의 평일 Codex 작업 몫을 남김(2026-10-31)
+_quota = {"at": 0.0, "q": None}
+
+
+def codex_guard() -> None:
+    if time.time() - _quota["at"] > 300:
+        from llm_playbook.backends import codex_sdk
+        _quota["q"], _quota["at"] = codex_sdk.quota(), time.time()
+    q = _quota["q"] or {}
+    week = (q.get("secondary") or {}).get("used_percent")
+    five = (q.get("primary") or {}).get("used_percent")
+    if week is not None and week >= CODEX_WEEK_MAX:
+        raise RuntimeError(f"Codex 주간 사용률 {week}% — 실험 상한 {CODEX_WEEK_MAX}% 이상이라 부르지 않음")
+    if five is not None and five >= 100:
+        raise RuntimeError("Codex 5시간 사용률 100% — 풀린 뒤 다시 돌림")
+
+
 def call_model(vendor: str, model: str, system: str, user: str, timeout: float = 900) -> dict:
     if vendor == "claude":
         from llm_playbook.backends.claude_sdk import call_messages
@@ -97,6 +114,7 @@ def call_model(vendor: str, model: str, system: str, user: str, timeout: float =
         return {"text": r.get("text") or "", "model": r.get("model") or model,
                 "cost_usd": r.get("cost_usd"), "usage": r.get("usage")}
     if vendor == "codex":
+        codex_guard()
         from llm_playbook.backends import codex_http
         r = codex_http.call(user, model=model, system_prompt=system, fallback=False, timeout=timeout)
         if r.get("error"):
@@ -146,16 +164,16 @@ L1_LINE = re.compile(r"^\s*(❌|⚠️)\s+\[(.+?)\]\s+(\d+)행\s+(.*)$")
 FRONT = ["---", "form: prose", "---", ""]
 
 
-def write_doc(lines: list[str], work: Path) -> Path:
+def write_doc(lines: list[str], work: Path, front: list[str] = FRONT) -> Path:
     work.mkdir(parents=True, exist_ok=True)
     p = work / "doc.md"
-    p.write_text("\n".join(FRONT + lines) + "\n", encoding="utf-8")
+    p.write_text("\n".join(front + lines) + "\n", encoding="utf-8")
     return p
 
 
-def run_l1(lines: list[str], work: Path) -> Result:
+def run_l1(lines: list[str], work: Path, front: list[str] = FRONT) -> Result:
     res = Result("l1", model="결정론")
-    p = write_doc(lines, work)
+    p = write_doc(lines, work, front)
     t = time.time()
     out = subprocess.run([sys.executable, "-X", "utf8", str(CHECKER), "--no-rules", str(p)],
                          capture_output=True, text=True, encoding="utf-8")
@@ -164,18 +182,19 @@ def run_l1(lines: list[str], work: Path) -> Result:
         m = L1_LINE.match(raw)
         if not m:
             continue
-        n = int(m.group(3)) - len(FRONT)
+        n = int(m.group(3)) - len(front)
         body = m.group(4)
         q = re.search(r"「(.+?)」", body)
         res.findings.append({"line": n, "quote": q.group(1) if q else body.split(" — ")[0],
-                             "fix": None, "kind": ("오류 " if m.group(1) == "❌" else "주의 ") + m.group(2)})
+                             "fix": None, "kind": ("오류 " if m.group(1) == "❌" else "주의 ") + m.group(2),
+                             "msg": body.split(" — ", 1)[1] if " — " in body else ""})
     return res
 
 
-def run_l2(lines: list[str], work: Path, model: str = "opus") -> Result:
+def run_l2(lines: list[str], work: Path, model: str = "opus", front: list[str] = FRONT) -> Result:
     """2층 판정기를 격리한 기록 폴더로 부른다 — 쌓인 사용자 답이 프롬프트에 섞이지 않게."""
     res = Result("l2", model=model)
-    p = write_doc(lines, work)
+    p = write_doc(lines, work, front)
     env = dict(os.environ)
     for k, f in (("KOREAN_QA_JUDGE_LOG", "judge.jsonl"), ("KOREAN_QA_ANSWER_LOG", "answers.jsonl"),
                  ("KOREAN_QA_DECISION_LOG", "decisions.jsonl"), ("KOREAN_QA_DISMISS_LOG", "dismissals.jsonl"),
@@ -198,7 +217,7 @@ def run_l2(lines: list[str], work: Path, model: str = "opus") -> Result:
             for f in items:
                 n = f.get("line")
                 if isinstance(n, int):
-                    res.findings.append({"line": n - len(FRONT), "quote": str(f.get("phrase") or ""),
+                    res.findings.append({"line": n - len(front), "quote": str(f.get("phrase") or ""),
                                          "fix": f.get("fix"), "kind": f"{kind} {f.get('category') or ''}".strip()})
     return res
 

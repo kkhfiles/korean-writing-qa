@@ -18,7 +18,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
-from common import DATA, apply_fixes, boot, cached_run, finding_range, hangul, overlaps  # noqa: E402
+from common import DATA, apply_fixes, boot, cached_run, finding_range, hangul, is_local, overlaps  # noqa: E402
 
 SRC = DATA / "dl/K-NCT/K-NCT_v1.4.json"
 OUT = DATA / "knct"
@@ -83,22 +83,33 @@ def score(names: list[str] | None = None) -> dict:
     for name in names:
         rec = collections.defaultdict(dict)       # 갈래 → 문서 → (맞힌 구간, 구간)
         exact = collections.defaultdict(dict)
+        rec_strict: dict = {}
         noise, cost = {}, collections.Counter()
         for d, g in enumerate(groups):
             fe, fo = OUT / f"err{d:02d}/{name}.json", OUT / f"ok{d:02d}/{name}.json"
             if not fe.exists() or not fo.exists():
                 continue
             re_, ro = json.loads(fe.read_text(encoding="utf-8")), json.loads(fo.read_text(encoding="utf-8"))
-            by_line = collections.defaultdict(list)
+            by_line, ok_kinds = collections.defaultdict(list), collections.defaultdict(set)
             for f in re_["findings"]:
                 by_line[f["line"]].append(f)
+            for f in ro["findings"]:
+                ok_kinds[f["line"]].add(f["kind"])
             outs = (re_.get("text_out") or "").split("\n") if re_.get("text_out") is not None else None
             for i, x in enumerate(g, 1):
                 fl = by_line.get(i, [])
-                ranges = [r for r in (finding_range(f, x["error"]) for f in fl) if r]
-                hit = sum(1 for s in x["spans"] if any(overlaps(s, r) for r in ranges))
+                if name == "l1":    # 결정론 — 정답 문장에도 나는 갈래의 지적은 오류를 잡은 것이 아님
+                    hit = len(x["spans"]) if any(f["kind"] not in ok_kinds[i] for f in fl) else 0
+                    strict = hit
+                else:
+                    ranges = [r for r in (finding_range(f, x["error"]) for f in fl) if r]
+                    hit = sum(1 for s in x["spans"] if any(overlaps(s, r) for r in ranges))
+                    strict = sum(1 for s in x["spans"]
+                                 if any(overlaps(s, r) and is_local(r, x["error"]) for r in ranges))
                 a, b = rec[x["family"]].get(d, (0, 0))
                 rec[x["family"]][d] = (a + hit, b + len(x["spans"]))
+                a, b = rec_strict.get(d, (0, 0))
+                rec_strict[d] = (a + strict, b + len(x["spans"]))
                 fixed = outs[i - 1] if outs is not None else apply_fixes(x["error"], fl)
                 ok = re.sub(r"\s+", " ", fixed).strip() == re.sub(r"\s+", " ", x["correct"]).strip()
                 a, b = exact[x["family"]].get(d, (0, 0))
@@ -126,6 +137,7 @@ def score(names: list[str] | None = None) -> dict:
                 allex[d] = (allex[d][0] + a, allex[d][1] + b)
         table[name] = {
             "회수율": {fam: boot(v) for fam, v in sorted(rec.items())} | {"전체": boot(dict(allrec))},
+            "회수율(엄격)": boot(rec_strict),
             "교정 정확도": {fam: boot(v) for fam, v in sorted(exact.items())} | {"전체": boot(dict(allex))},
             "정답 문장 지적 밀도(1천 자당)": boot(noise),
             "비용": {k: round(v, 4) for k, v in cost.items()},
@@ -149,7 +161,7 @@ def main() -> int:
     t = score()
     for name, v in t.items():
         rc, ex = v["회수율"]["전체"], v["교정 정확도"]["전체"]
-        print(f"{name:16s} 회수 {rc[0]:.2f} [{rc[1]:.2f}~{rc[2]:.2f}]  교정 {ex[0]:.2f}  "
+        print(f"{name:16s} 회수 {rc[0]:.2f} [{rc[1]:.2f}~{rc[2]:.2f}] 엄격 {v['회수율(엄격)'][0]:.2f}  교정 {ex[0]:.2f}  "
               f"정답글 지적/1천자 {v['정답 문장 지적 밀도(1천 자당)'][0]:.1f}  "
               + " ".join(f"{f}:{x[0]:.2f}" for f, x in v["회수율"].items() if f != "전체"))
     if a.json:

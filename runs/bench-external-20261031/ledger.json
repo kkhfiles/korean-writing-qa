@@ -1,0 +1,102 @@
+[
+ {
+  "arm": "l2",
+  "rep": 0,
+  "tight": 148,
+  "loose": 150,
+  "total": 152,
+  "ledger_tight": 124,
+  "ledger_total": 127,
+  "heldout_tight": 24,
+  "heldout_total": 25,
+  "cited": {
+   "total": 96,
+   "tight": 96,
+   "loose": 96
+  },
+  "uncited": {
+   "total": 56,
+   "tight": 52,
+   "loose": 54
+  },
+  "said": 171,
+  "extra": 16,
+  "cost_usd": 1.0753,
+  "sec": 339
+ },
+ {
+  "arm": "plain-claude",
+  "rep": 0,
+  "tight": 40,
+  "loose": 63,
+  "total": 152,
+  "ledger_tight": 30,
+  "ledger_total": 127,
+  "heldout_tight": 10,
+  "heldout_total": 25,
+  "cited": {
+   "total": 96,
+   "tight": 22,
+   "loose": 38
+  },
+  "uncited": {
+   "total": 56,
+   "tight": 18,
+   "loose": 25
+  },
+  "said": 64,
+  "extra": 5,
+  "cost_usd": 0.3501,
+  "sec": 137
+ },
+ {
+  "arm": "l2",
+  "rep": 1,
+  "tight": 148,
+  "loose": 151,
+  "total": 152,
+  "ledger_tight": 124,
+  "ledger_total": 127,
+  "heldout_tight": 24,
+  "heldout_total": 25,
+  "cited": {
+   "total": 96,
+   "tight": 96,
+   "loose": 96
+  },
+  "uncited": {
+   "total": 56,
+   "tight": 52,
+   "loose": 55
+  },
+  "said": 186,
+  "extra": 22,
+  "cost_usd": 0.9777,
+  "sec": 353
+ },
+ {
+  "arm": "plain-claude",
+  "rep": 1,
+  "tight": 40,
+  "loose": 62,
+  "total": 152,
+  "ledger_tight": 28,
+  "ledger_total": 127,
+  "heldout_tight": 12,
+  "heldout_total": 25,
+  "cited": {
+   "total": 96,
+   "tight": 22,
+   "loose": 36
+  },
+  "uncited": {
+   "total": 56,
+   "tight": 18,
+   "loose": 26
+  },
+  "said": 61,
+  "extra": 4,
+  "cost_usd": 0.3525,
+  "sec": 136
+ }
+]

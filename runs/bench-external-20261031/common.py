@@ -53,6 +53,11 @@ def overlaps(a: tuple[int, int], b: tuple[int, int], slack: int = 2) -> bool:
     return a[0] < b[1] + slack and b[0] < a[1] + slack
 
 
+def is_local(r: tuple[int, int], line: str) -> bool:
+    """엄격 기준 — 문장 전체를 인용한 지적은 어디가 틀렸는지 짚은 것이 아님(20자 또는 줄의 40% 이하만)."""
+    return r[1] - r[0] <= max(20, int(0.4 * len(line)))
+
+
 def finding_range(f: dict, line: str) -> tuple[int, int] | None:
     if f.get("span"):
         a, b = f["span"]
