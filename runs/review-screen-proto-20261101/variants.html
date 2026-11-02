@@ -1,0 +1,491 @@
+<title>검토 화면 시안 다섯</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+:root {
+  color-scheme: light;
+  --bg: #f3f5f7;
+  --paper: #ffffff;
+  --ink: #1c2026;
+  --muted: #59626e;
+  --line: #dbe0e6;
+  --accent: #234f8c;
+  --accent-bg: #e8eef7;
+  --del: #b0362e;
+  --del-bg: #fbe8e6;
+  --ins: #1d6b41;
+  --ins-bg: #e3f3e8;
+  --info: #865709;
+  --info-bg: #fcf2da;
+  --style: #584888;
+  --style-bg: #eeeaf9;
+  --cost: #8b2f4a;
+  --cost-bg: #f9e9ee;
+  --kr: "Doc KR", Pretendard, "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", system-ui, sans-serif;
+  --mono: Consolas, ui-monospace, monospace;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--kr); font-size: 15px; line-height: 1.7;
+  word-break: keep-all; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 24px 120px; }
+main { max-width: 1240px; margin: 0 auto; display: grid; gap: 18px; }
+h1 { font-size: 25px; letter-spacing: -.02em; margin: 0 0 4px; }
+h2 { font-size: 17px; letter-spacing: -.01em; margin: 0 0 10px; }
+h3 { font-size: 15px; margin: 0; }
+p { margin: 0; }
+.muted, .note { color: var(--muted); }
+.note { font-size: 13px; }
+.panel { background: var(--paper); border: 1px solid var(--line); border-radius: 10px; padding: 18px 20px; min-width: 0; }
+.num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+del { color: var(--del); background: var(--del-bg); text-decoration-thickness: 1.5px; }
+ins { color: var(--ins); background: var(--ins-bg); text-decoration: none; border-bottom: 1.5px solid var(--ins); }
+button { font: inherit; font-size: 13.5px; border: 1px solid var(--line); background: #fff; color: var(--ink); border-radius: 6px;
+  padding: 5px 12px; min-height: 36px; cursor: pointer; }
+button:hover { border-color: #b4bcc7; }
+button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+button.cost.on { background: var(--cost); border-color: var(--cost); }
+button.ghost { border-style: dashed; color: var(--muted); }
+button:focus-visible, input:focus-visible, select:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+@media (max-width: 900px) { button { min-height: 44px; } }
+input[type=text] { font: inherit; font-size: 14px; width: 100%; border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; }
+select { font: inherit; font-size: 13.5px; border: 1px solid var(--line); border-radius: 6px; padding: 4px 6px; background: #fff; }
+.btns { display: flex; flex-wrap: wrap; gap: 6px; }
+.pill { display: inline-flex; align-items: center; gap: 4px; font-size: 12.5px; padding: 1px 9px; border-radius: 999px; white-space: nowrap; }
+.pill.replace { background: var(--ins-bg); color: var(--ins); }
+.pill.info { background: var(--info-bg); color: var(--info); }
+.pill.style { background: var(--style-bg); color: var(--style); }
+.pill.cost { background: var(--cost-bg); color: var(--cost); }
+.pill.free { background: var(--accent-bg); color: var(--accent); }
+
+/* 머리: 원칙과 탭 */
+.rules { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px 18px; margin: 12px 0 0; padding: 0; list-style: none; }
+.rules li { font-size: 14px; display: grid; gap: 2px; }
+.rules b { font-size: 14.5px; }
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; position: sticky; top: 0; z-index: 5; background: var(--bg); padding-block: 8px; }
+@media (max-width: 760px) { .tabs { position: static; flex-wrap: nowrap; overflow-x: auto; } .tabs button { min-width: 140px; flex: none; } .dock .in { font-size: 12.5px; } }
+.tabs button { display: grid; text-align: left; gap: 0; padding: 6px 14px; min-width: 150px; }
+.tabs button small { font-size: 12px; color: var(--muted); }
+.tabs button.on small { color: #dfe7f3; }
+.brief { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px 18px; margin: 0; }
+.brief div { display: grid; gap: 1px; }
+.brief dt { font-size: 12.5px; color: var(--muted); }
+.brief dd { margin: 0; font-size: 14px; }
+
+/* 원문 diff 공통 */
+.doc .ln { display: grid; grid-template-columns: 30px 1fr; gap: 8px; }
+.doc .no { color: var(--muted); font-family: var(--mono); font-size: 12px; text-align: right; padding-top: 3px; user-select: none; }
+.doc .tx { min-width: 0; overflow-wrap: anywhere; }
+.doc .h { font-weight: 700; }
+.doc .tbl { font-family: var(--mono); font-size: 12.5px; color: #3a414b; }
+.doc .gap { color: var(--muted); font-size: 12.5px; padding: 2px 0 2px 38px; }
+.mark { cursor: pointer; border-radius: 4px; padding: 0 1px; }
+.mark sup { font-family: var(--mono); font-size: 10px; color: var(--muted); margin-left: 1px; }
+.mark.info.pending { background: var(--info-bg); border-bottom: 2px dashed var(--info); }
+.mark.style.pending { text-decoration: underline wavy var(--style); text-underline-offset: 4px; }
+.mark.delegate { background: var(--cost-bg); border-bottom: 2px dotted var(--cost); }
+.mark.kept { border-bottom: 1px dotted var(--muted); }
+.mark.focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* 카드 공통 */
+.card { border: 1px solid var(--line); border-radius: 8px; padding: 11px 13px; display: grid; gap: 7px; scroll-margin: 70px; background: #fff; }
+.card.done { opacity: .6; }
+.card.focus { box-shadow: 0 0 0 2px var(--accent); }
+.card .top { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
+.card .top .num { color: var(--ink); font-weight: 700; }
+.card .chg { font-size: 14.5px; }
+.card .why { font-size: 13.5px; color: #39404a; }
+.card .q { font-size: 14px; background: var(--info-bg); color: #5a3c06; border-radius: 6px; padding: 6px 10px; }
+
+/* A: 문서 위에서 */
+.va { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 18px; align-items: start; }
+.va .side { display: grid; gap: 10px; position: sticky; top: 70px; max-height: calc(100vh - 160px); overflow: auto; }
+@media (max-width: 960px) { .va { grid-template-columns: 1fr; } .va .side { position: static; max-height: none; } }
+
+/* B: 한 장씩 */
+.vb { display: grid; gap: 14px; max-width: 760px; margin: 0 auto; width: 100%; }
+.vb .progress { height: 6px; background: var(--line); border-radius: 999px; overflow: hidden; }
+.vb .progress i { display: block; height: 100%; background: var(--accent); }
+.vb .big { padding: 22px 24px; display: grid; gap: 12px; }
+.vb .ctx { font-size: 13.5px; color: var(--muted); border-left: 3px solid var(--line); padding-left: 10px; display: grid; gap: 2px; }
+.vb .ctx .cur { color: var(--ink); }
+.vb .big .chg { font-size: 17px; }
+.vb .keys button { min-width: 112px; justify-content: center; }
+.vb kbd { font-family: var(--mono); font-size: 11.5px; border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; margin-right: 6px; color: var(--muted); background: #f7f8fa; }
+.vb .on kbd { color: #fff; background: transparent; border-color: #8aa3c9; }
+.vb .nav { display: flex; justify-content: space-between; gap: 8px; }
+
+/* C: 갈래로 묶어서 */
+.vc { display: grid; gap: 12px; }
+.vc .group { display: grid; gap: 8px; }
+.vc .ghead { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; justify-content: space-between; }
+.vc .row { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 6px 0; border-top: 1px solid var(--line); font-size: 14px; }
+@media (max-width: 700px) { .vc .row { grid-template-columns: 30px minmax(0, 1fr); } .vc .row .btns { grid-column: 2; } }
+.vc .row .btns button { padding: 3px 10px; min-height: 32px; }
+@media (max-width: 900px) { .vc .row .btns button { min-height: 44px; } }
+.switchrow { display: flex; gap: 8px; align-items: center; font-size: 13.5px; }
+.switch { appearance: none; width: 38px; height: 22px; border-radius: 999px; background: #ccd3db; position: relative; cursor: pointer; flex: none; margin: 0; }
+.switch::after { content: ""; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: left .15s; }
+.switch:checked { background: var(--ins); }
+.switch:checked::after { left: 19px; }
+@media (prefers-reduced-motion: reduce) { .switch::after { transition: none; } }
+
+/* D: 비용 계기판 */
+.vd { display: grid; gap: 14px; }
+.meters { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px; }
+.meter { background: var(--paper); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; display: grid; gap: 2px; }
+.meter dt { font-size: 12.5px; color: var(--muted); }
+.meter dd { margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -.01em; font-variant-numeric: tabular-nums; }
+.meter dd small { font-size: 13px; font-weight: 400; color: var(--muted); }
+.meter.hot { border-color: var(--cost); background: var(--cost-bg); }
+.tablewrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th, td { text-align: left; vertical-align: top; padding: 8px 10px; border-top: 1px solid var(--line); }
+th { font-size: 12.5px; color: var(--muted); font-weight: 600; border-top: 0; white-space: nowrap; }
+td.n { font-family: var(--mono); color: var(--muted); white-space: nowrap; }
+@media (max-width: 760px) {
+  table, thead, tbody, tr, td { display: block; } thead { display: none; }
+  tr { border: 1px solid var(--line); border-radius: 8px; margin-bottom: 10px; padding: 4px 0; background: #fff; }
+  td { border: 0; padding: 4px 12px; } td::before { content: attr(data-k); display: block; font-size: 12px; color: var(--muted); }
+}
+
+/* E: 확인할 것만 */
+.ve { display: grid; gap: 14px; max-width: 860px; margin: 0 auto; width: 100%; }
+.fold { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; justify-content: space-between; background: var(--ins-bg); border: 1px solid #c4e2cf; border-radius: 10px; padding: 12px 16px; }
+.fold.style { background: var(--style-bg); border-color: #d8d0f0; }
+.qa { display: grid; gap: 8px; padding: 12px 0; border-top: 1px solid var(--line); }
+.qa:first-of-type { border-top: 0; }
+.qa .q { font-size: 15px; }
+
+/* 아래 고정 줄 */
+.dock { position: fixed; left: 0; right: 0; bottom: 0; z-index: 10; background: rgba(255,255,255,.97); border-top: 1px solid var(--line);
+  padding: 10px max(16px, env(safe-area-inset-left, 0px)); }
+.dock .in { max-width: 1240px; margin: 0 auto; display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: center; font-size: 13.5px; }
+.dock .sp { margin-left: auto; display: flex; gap: 6px; }
+.dock b { font-variant-numeric: tabular-nums; }
+.summary { white-space: pre-wrap; font-family: var(--kr); font-size: 12.5px; background: #f8f9fb; border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; margin: 8px 0 0; }
+.final { white-space: pre-wrap; font-size: 13.5px; background: #fafbfc; border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; max-height: 360px; overflow: auto; }
+</style>
+
+<main>
+  <header class="panel">
+    <h1>검토 화면 시안 다섯</h1>
+    <p><b>검사기와 판정기가 제안한 수정을 사람이 선택하는 화면 — 판정표를 대신할 도구의 시안 다섯 개</b> (자료는 가상 회사 채용 공고 초안에 1층 검사기와 2층 판정기가 실제로 낸 지적 18건이며, 다섯 시안은 같은 선택 상태를 공유함)</p>
+    <ul class="rules">
+      <li><b>선택하면 파일에 바로 반영</b><span class="note">선택한 결과를 서버가 문서에 바로 저장함 — 세션이 지적마다 파일을 열어 수정하는 데 드는 토큰이 없음</span></li>
+      <li><b>사람이 고른 줄은 다시 판정하지 않음</b><span class="note">지금 규칙 그대로 — 재판정 호출은 「세션에 맡김」을 선택한 줄에서만 발생함. 10월 실사용 판정 1,697회에서 나온 지적 가운데 73%가 재판정에서 새로 나왔으므로, 재판정 호출을 줄이면 세션이 처리할 지적도 줄어듦</span></li>
+      <li><b>세션 의견 칸을 기본으로 두지 않음</b><span class="note">지금 판정표는 세션이 지적마다 「제 의견」을 써서 건수만큼 출력 토큰이 듦 — 판정기 수정안을 기본값으로 표시하고, 의견은 사람이 원할 때만 요청</span></li>
+      <li><b>세션에는 요약만 전달</b><span class="note">제출하면 세션이 받는 것은 집계 한 줄과 맡긴 지적뿐 — 화면 아래 고정 줄의 「세션이 받을 요약」 버튼으로 실제 내용을 확인할 수 있음</span></li>
+    </ul>
+  </header>
+
+  <nav class="tabs" id="tabs" aria-label="시안 고르기"></nav>
+  <section class="panel" id="brief" aria-label="이 시안의 설명"></section>
+  <section id="stage" aria-live="polite"></section>
+
+  <section class="panel">
+    <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:baseline">
+      <h2>선택한 대로 반영한 문서</h2><span class="note">실제 도구에서는 이 글이 원본 파일에 저장됨</span>
+    </div>
+    <div class="final" id="final"></div>
+  </section>
+</main>
+
+<div class="dock" role="region" aria-label="제출 요약">
+  <div class="in" id="dock"></div>
+</div>
+
+<script>
+const D = /*DATA*/null;
+const JUDGE_COST = 0.098;        // 이 초안의 첫 판정 실측(e2e/work/06/r0-l2/judge.jsonl)
+const REJUDGE = "0.06~0.08";     // 2026-11-02 재판정 실측(문서 하나, 대상 1~3줄)
+const S = { v: "A", dec: {}, own: {}, trust: {}, styleOff: false, focus: null, qi: 0, opinion: {}, showSum: false,
+            eTrusted: false };
+const TYPES = { replace: "바로 반영", info: "작성자 확인", style: "문체 규칙" };
+const V = [
+  { k: "A", name: "문서 위에서", sub: "원문 diff와 카드", strength: 2,
+    fit: "지적이 20건 안쪽이고 문서 흐름을 보며 고를 때", human: "중간 — 원문과 카드를 오가며 읽음",
+    token: "기본형 — 사람이 다 고르면 재판정 0회", lose: "지적이 많으면 카드 목록이 길어져 스크롤이 많음" },
+  { k: "B", name: "한 장씩", sub: "키보드로 넘기기", strength: 3,
+    fit: "지적이 많고(20건 이상) 빨리 처리할 때", human: "가장 적음 — 숫자키 1~4로 고르고 다음으로 넘어감",
+    token: "A와 같음, 앞뒤 줄만 보여 주므로 화면 자체도 가벼움", lose: "문서 전체 흐름이 안 보임 — 같은 문제가 여러 줄에 걸친 것을 놓치기 쉬움" },
+  { k: "C", name: "갈래로 묶어서", sub: "같은 종류는 한 번에", strength: 2,
+    fit: "같은 갈래 지적이 여러 건 반복될 때(번역투, 문체 규칙)", human: "적음 — 갈래마다 한 번 정하고 예외만 고침",
+    token: "A와 같음, 갈래 신뢰 스위치를 켜 두면 다음 문서부터 고를 일 자체가 줄어듦", lose: "한 건씩 읽지 않고 넘어가므로 묶음 안의 예외를 놓칠 수 있음" },
+  { k: "D", name: "비용 계기판", sub: "선택마다 드는 비용 표시", strength: 4,
+    fit: "판정 비용을 아끼고 싶거나 재판정이 반복되던 문서", human: "중간 — 표로 한눈에 보고 고름",
+    token: "가장 명시적 — 고를 때마다 재판정 호출과 발행 막힘이 바로 보임", lose: "숫자가 많아 처음 쓰는 사람에게는 부담" },
+  { k: "E", name: "확인할 것만", sub: "자동 반영은 접고 질문만", strength: 3,
+    fit: "검사기를 몇 번 써 보고 믿는 갈래를 켜 둔 사람", human: "가장 적음 — 작성자만 아는 정보에만 답함",
+    token: "가장 적음 — 신뢰 갈래는 사람이 이미 정한 것으로 확정, 질문 답은 사람 답으로 확정", lose: "자동 반영된 것을 다시 보려면 펼쳐야 함, 처음 쓰는 사람에게는 맞지 않음" },
+];
+
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const shown = s => esc(String(s ?? "").replace(/\*\*/g, ""));
+const md = s => esc(s).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>");
+const st = it => S.dec[it.id] || "pending";
+const item = id => D.items.find(x => x.id === id);
+const clip = (s, n) => (s.length > n ? s.slice(0, n) + "…" : s);
+
+/* 원문 위 표시 */
+function spans(n) {
+  const line = D.lines[n - 1] || "", out = [];
+  for (const it of D.items.filter(x => x.line === n)) {
+    const i = line.indexOf(it.phrase);
+    if (i < 0 || !it.phrase || out.some(o => i < o.end && o.start < i + it.phrase.length)) continue;
+    out.push({ start: i, end: i + it.phrase.length, it });
+  }
+  return out.sort((a, b) => a.start - b.start);
+}
+function markHtml(it, text) {
+  const s = st(it), sup = `<sup>${it.id}</sup>`, f = S.focus === it.id ? " focus" : "";
+  if (s === "keep") return `<span class="mark kept${f}" data-id="${it.id}" tabindex="0">${shown(text)}${sup}</span>`;
+  let inner = shown(text);
+  if (s === "accept") inner = `<ins>${shown(it.fix)}</ins>`;
+  else if (s === "own") inner = `<del>${shown(text)}</del><ins>${shown(S.own[it.id] || "")}</ins>`;
+  else if (s === "pending" && it.type === "replace" && it.fix) inner = `<del>${shown(text)}</del><ins>${shown(it.fix)}</ins>`;
+  return `<span class="mark ${it.type} ${s}${f}" data-id="${it.id}" tabindex="0">${inner}${sup}</span>`;
+}
+function lineHtml(n) {
+  const line = D.lines[n - 1]; let html = "", pos = 0;
+  for (const s of spans(n)) { html += md(line.slice(pos, s.start)) + markHtml(s.it, line.slice(s.start, s.end)); pos = s.end; }
+  return html + md(line.slice(pos));
+}
+function lnHtml(n) {
+  const l = D.lines[n - 1], cls = l.startsWith("#") ? "tx h" : l.trim().startsWith("|") ? "tx tbl" : "tx";
+  return `<div class="ln"><span class="no">${n}</span><span class="${cls}">${lineHtml(n) || "&nbsp;"}</span></div>`;
+}
+function docHtml(only) {
+  if (!only) return D.lines.map((_, i) => lnHtml(i + 1)).join("");
+  let out = "", prev = 0;
+  for (const n of only) { if (n > prev + 1) out += `<div class="gap">…(${n - prev - 1}줄 그대로)…</div>`; out += lnHtml(n); prev = n; }
+  return out + (prev < D.lines.length ? `<div class="gap">…(${D.lines.length - prev}줄 그대로)…</div>` : "");
+}
+function finalLines() {
+  return D.lines.map((line, i) => {
+    let out = "", pos = 0;
+    for (const s of spans(i + 1)) {
+      const v = st(s.it), orig = line.slice(s.start, s.end);
+      out += line.slice(pos, s.start) + (v === "accept" ? s.it.fix : v === "own" ? (S.own[s.it.id] || orig) : orig);
+      pos = s.end;
+    }
+    return out + line.slice(pos);
+  });
+}
+
+/* 선택과 그 결과 */
+function decide(id, v) {
+  if (v === "own" && S.own[id] === undefined) S.own[id] = item(id).phrase;
+  S.dec[id] = S.dec[id] === v && v !== "own" ? undefined : v;
+  if (S.dec[id] === undefined) delete S.dec[id];
+  S.focus = id; render();
+}
+const OUTCOME = {
+  accept: ["확정, 다시 판정 안 함", "free"], own: ["사람 답으로 확정, 다시 판정 안 함", "free"],
+  keep: ["답 기록, 다시 묻지 않음", "free"], delegate: ["세션이 고치고 다시 판정", "cost"],
+  pending: ["남음, 제출하면 발행 막힘", "info"],
+};
+function counts() {
+  const c = { accept: 0, own: 0, keep: 0, delegate: 0, pending: 0 };
+  D.items.forEach(x => c[st(x)]++);
+  return c;
+}
+function delegatedLines() { return [...new Set(D.items.filter(x => st(x) === "delegate").map(x => x.line))].sort((a, b) => a - b); }
+function opinions() { return Object.values(S.opinion).filter(Boolean).length; }
+function sessionSummary() {
+  const c = counts(), dl = D.items.filter(x => st(x) === "delegate");
+  const lines = [`검토 화면 제출 — 반영 ${c.accept}, 직접 ${c.own}, 그대로 ${c.keep}, 보류 ${c.pending}, 맡김 ${c.delegate}`,
+    `파일 반영 완료(화면이 씀), 확정한 지적 ${c.accept + c.own + c.keep}건은 다시 판정하지 않음`];
+  dl.forEach(x => lines.push(`맡김 #${x.id} ${x.line}행 「${clip(x.phrase.replace(/\*\*/g, ""), 30)}」 — ${x.type === "info" ? x.check || x.why : x.cat}`));
+  if (opinions()) lines.push(`세션 의견 요청 ${opinions()}건: ${Object.keys(S.opinion).filter(k => S.opinion[k]).map(k => "#" + k).join(", ")}`);
+  if (c.pending) lines.push(`보류 ${c.pending}건 — 답이 없어 발행 검사가 막음`);
+  return lines.join("\n");
+}
+
+/* 카드 하나 — A, C, E 가 같이 씀 */
+function btn(it, v, label, extra = "") {
+  const on = st(it) === v ? " on" : "";
+  return `<button class="${v === "delegate" ? "cost" : ""}${on}" data-act="${v}" data-id="${it.id}" ${extra}>${label}</button>`;
+}
+function ownBox(it) {
+  return st(it) === "own" ? `<input type="text" data-own="${it.id}" value="${esc(S.own[it.id] ?? it.phrase)}" aria-label="${it.id}번 직접 고친 표현">` : "";
+}
+function cardHtml(it, compact) {
+  const s = st(it), top = `<div class="top"><span class="num">${it.id}</span><span>${it.line}행</span><span class="pill ${it.type}">${TYPES[it.type]}</span><span>${esc(it.cat)}</span></div>`;
+  const cls = `card${s !== "pending" ? " done" : ""}${S.focus === it.id ? " focus" : ""}`;
+  if (it.type === "replace") {
+    const chg = it.fix ? `<del>${shown(it.phrase)}</del> → <ins>${shown(it.fix)}</ins>` : `<del>${shown(it.phrase)}</del> <span class="note">(수정안 없음)</span>`;
+    return `<div class="${cls}" id="card-${it.id}">${top}<div class="chg">${chg}</div>${!compact && it.why ? `<div class="why">${esc(it.why)}</div>` : ""}
+      <div class="btns">${it.fix ? btn(it, "accept", "반영") : ""}${btn(it, "keep", "그대로")}${btn(it, "own", "직접 고침")}${btn(it, "delegate", "세션에 맡김")}</div>${ownBox(it)}</div>`;
+  }
+  if (it.type === "info") {
+    return `<div class="${cls}" id="card-${it.id}">${top}<div class="chg">「${shown(it.phrase)}」</div><div class="q">${esc(it.check || it.why)}</div>
+      <div class="btns">${btn(it, "own", "직접 채움")}${btn(it, "keep", "그대로")}${btn(it, "delegate", "세션에 맡김")}</div>${ownBox(it)}
+      <details><summary class="note">판정기 참고 수정안 — 원문에 없는 정보가 들어 있을 수 있음</summary><div class="chg"><ins>${shown(it.fix)}</ins></div>
+      <div class="btns">${btn(it, "accept", "맞는지 확인했고 이 수정안 씀")}</div></details></div>`;
+  }
+  return `<div class="${cls}" id="card-${it.id}">${top}<div class="chg">「${shown(clip(it.phrase, 56))}」</div>${compact ? "" : `<div class="why">${esc(it.why)}</div>`}
+    <div class="btns">${btn(it, "own", "직접 고침")}${btn(it, "keep", "그대로")}${btn(it, "delegate", "세션에 맡김")}</div>${ownBox(it)}</div>`;
+}
+
+/* A — 문서 위에서 */
+function viewA() {
+  const order = ["replace", "info", "style"];
+  const side = order.map(t => {
+    const xs = D.items.filter(x => x.type === t);
+    return `<h3>${TYPES[t]} <span class="pill ${t}">${xs.length}건</span></h3>${xs.map(x => cardHtml(x)).join("")}`;
+  }).join("");
+  return `<div class="va"><section class="panel doc" aria-label="원문과 수정 제안"><h2>원문과 수정 제안</h2>${docHtml()}</section>
+    <aside class="side">${side}</aside></div>`;
+}
+
+/* B — 한 장씩 */
+function viewB() {
+  const xs = D.items, i = Math.min(S.qi, xs.length - 1), it = xs[i], done = xs.filter(x => st(x) !== "pending").length;
+  const ctx = [it.line - 1, it.line, it.line + 1].filter(n => n >= 1 && n <= D.lines.length && D.lines[n - 1].trim())
+    .map(n => `<div class="${n === it.line ? "cur" : ""}"><span class="num">${n}</span> ${n === it.line ? lineHtml(n) : md(clip(D.lines[n - 1], 90))}</div>`).join("");
+  const k = (v, key, label) => (v === "accept" && !it.fix) ? "" : `<button class="${v === "delegate" ? "cost " : ""}${st(it) === v ? "on" : ""}" data-act="${v}" data-id="${it.id}" data-next="1"><kbd>${key}</kbd>${label}</button>`;
+  const q = it.type === "info" ? `<div class="q card" style="padding:8px 12px">${esc(it.check || it.why)}</div>` : "";
+  const chg = it.type === "replace" && it.fix ? `<del>${shown(it.phrase)}</del> → <ins>${shown(it.fix)}</ins>` : `「${shown(clip(it.phrase, 70))}」`;
+  return `<div class="vb"><div class="note">${done} / ${xs.length} 처리, 남은 것 ${xs.length - done}</div><div class="progress"><i style="width:${(done / xs.length) * 100}%"></i></div>
+    <section class="panel big" aria-label="${it.id}번 지적"><div class="card top" style="border:0;padding:0"><div class="top"><span class="num">${it.id} / ${xs.length}</span><span>${it.line}행</span><span class="pill ${it.type}">${TYPES[it.type]}</span><span>${esc(it.cat)}</span></div></div>
+      <div class="ctx">${ctx}</div><div class="chg">${chg}</div>${q}<div class="why note">${esc(it.why)}</div>
+      <div class="btns keys">${k("accept", "1", it.type === "info" ? "참고 수정안 씀" : "반영")}${k("keep", "2", "그대로")}${k("own", "3", it.type === "info" ? "직접 채움" : "직접 고침")}${k("delegate", "4", "세션에 맡김")}</div>${ownBox(it)}
+      <div class="nav"><button data-go="-1" ${i === 0 ? "disabled" : ""}>← 이전</button><span class="note">숫자키로 고르면 다음으로 넘어감, Enter 직접 고침 확정</span><button data-go="1" ${i === xs.length - 1 ? "disabled" : ""}>다음 →</button></div>
+    </section></div>`;
+}
+
+/* C — 갈래로 묶어서 */
+function viewC() {
+  const groups = {};
+  D.items.forEach(x => (groups[x.type + "|" + x.cat] ||= []).push(x));
+  const keyOrder = k => ({ replace: 0, info: 1, style: 2 }[k.split("|")[0]]);
+  return `<div class="vc">${Object.keys(groups).sort((a, b) => keyOrder(a) - keyOrder(b)).map(k => {
+    const xs = groups[k], [t, cat] = k.split("|");
+    const all = t === "info" ? "" : `<button data-all="${esc(k)}" data-v="${t === "replace" ? "accept" : "keep"}">${t === "replace" ? "모두 반영" : "모두 그대로"}</button>`;
+    const trust = t === "replace" ? `<label class="switchrow"><input class="switch" type="checkbox" data-trust="${esc(cat)}" ${S.trust[cat] ? "checked" : ""}>앞으로 묻지 않고 반영</label>`
+      : t === "style" ? `<label class="switchrow"><input class="switch" type="checkbox" id="styleOff" ${S.styleOff ? "checked" : ""}>채용 공고에는 이 규칙을 쓰지 않음</label>`
+      : `<span class="note">작성자만 아는 정보 — 묶어서 정할 수 없음</span>`;
+    const rows = xs.map(it => {
+      const chg = it.type === "replace" && it.fix ? `<del>${shown(it.phrase)}</del> → <ins>${shown(it.fix)}</ins>` : `「${shown(clip(it.phrase, 48))}」${it.type === "info" ? `<div class="note">${esc(it.check || it.why)}</div>` : ""}`;
+      return `<div class="row"><span class="num note">${it.line}행</span><div>${chg}${ownBox(it)}</div><div class="btns">${it.fix && it.type === "replace" ? btn(it, "accept", "반영") : ""}${btn(it, "keep", "그대로")}${btn(it, "own", "직접")}${btn(it, "delegate", "맡김")}</div></div>`;
+    }).join("");
+    return `<section class="panel group"><div class="ghead"><h3>${esc(cat)} <span class="pill ${t}">${TYPES[t]} ${xs.length}건</span></h3><div class="btns" style="align-items:center">${trust}${all}</div></div>${rows}</section>`;
+  }).join("")}</div>`;
+}
+
+/* D — 비용 계기판 */
+function viewD() {
+  const c = counts(), dl = delegatedLines();
+  const rows = D.items.map(it => {
+    const s = st(it), [txt, cls] = OUTCOME[s];
+    const opts = [["pending", "고르지 않음"], ...(it.fix ? [["accept", it.type === "info" ? "참고 수정안" : "반영"]] : []), ["keep", "그대로"], ["own", "직접"], ["delegate", "세션에 맡김"]];
+    const chg = it.type === "replace" && it.fix ? `<del>${shown(it.phrase)}</del> → <ins>${shown(it.fix)}</ins>` : `「${shown(clip(it.phrase, 44))}」${it.type === "info" ? `<div class="note">${esc(it.check || it.why)}</div>` : ""}`;
+    return `<tr><td class="n" data-k="번호">${it.id}번 ${it.line}행</td><td data-k="지적"><span class="pill ${it.type}">${TYPES[it.type]}</span> ${chg}${ownBox(it)}</td>
+      <td data-k="고르기"><select data-sel="${it.id}" aria-label="${it.id}번 고르기">${opts.map(([v, l]) => `<option value="${v}" ${s === v ? "selected" : ""}>${l}</option>`).join("")}</select></td>
+      <td data-k="제출하면"><span class="pill ${cls}">${txt}</span></td>
+      <td data-k="세션 의견"><label class="switchrow"><input type="checkbox" data-op="${it.id}" ${S.opinion[it.id] ? "checked" : ""}> 요청</label></td></tr>`;
+  }).join("");
+  return `<div class="vd"><dl class="meters">
+      <div class="meter"><dt>이 문서 첫 판정</dt><dd>${JUDGE_COST.toFixed(3)}<small> 달러, 1회</small></dd></div>
+      <div class="meter ${dl.length ? "hot" : ""}"><dt>제출하면 생길 재판정</dt><dd>${dl.length ? "1" : "0"}<small> 회, ${dl.length}줄${dl.length ? `, 약 ${REJUDGE}달러` : ""}</small></dd></div>
+      <div class="meter ${opinions() ? "hot" : ""}"><dt>세션 의견 요청</dt><dd>${opinions()}<small> 건, 세션 출력 토큰</small></dd></div>
+      <div class="meter ${c.pending ? "hot" : ""}"><dt>제출하면 발행 막힘</dt><dd>${c.pending}<small> 건 남음</small></dd></div>
+      <div class="meter"><dt>같은 줄 재판정 상한</dt><dd>3<small> 회 중 0회 사용</small></dd></div>
+    </dl>
+    <section class="panel tablewrap"><table><thead><tr><th>번호</th><th>지적</th><th>고르기</th><th>제출하면</th><th>세션 의견</th></tr></thead><tbody>${rows}</tbody></table></section></div>`;
+}
+
+/* E — 확인할 것만 */
+function viewE() {
+  const rep = D.items.filter(x => x.type === "replace" && x.fix), info = D.items.filter(x => x.type === "info"), sty = D.items.filter(x => x.type === "style");
+  const autoN = rep.filter(x => st(x) === "accept").length;
+  const changed = [...new Set(D.items.filter(x => ["accept", "own"].includes(st(x))).map(x => x.line))].sort((a, b) => a - b);
+  return `<div class="ve">
+    <div class="fold"><div><b>바로 반영할 표현 ${rep.length}건</b> <span class="note">${S.eTrusted ? `지난 문서에서 켠 신뢰 갈래로 ${autoN}건 반영됨(예시 가정)` : "신뢰 갈래를 켜면 여기서 묻지 않음"}</span></div>
+      <div class="btns"><button data-etrust="1" class="${S.eTrusted ? "on" : ""}">${S.eTrusted ? "자동 반영 되돌리기" : "신뢰 갈래 켠 상태로 보기"}</button><button data-v="A" class="ghost">하나씩 보기</button></div></div>
+    <section class="panel"><h2>작성자만 답할 수 있는 것 <span class="pill info">${info.length}건</span></h2>
+      <p class="note">답을 적으면 그 말로 원문을 고치고 사람 답으로 확정합니다, 모르면 비워 두면 보류</p>
+      ${info.map(it => `<div class="qa"><div class="top note"><span class="num">${it.line}행</span> 「${shown(clip(it.phrase, 40))}」</div><div class="q">${esc(it.check || it.why)}</div>
+        <input type="text" data-own="${it.id}" value="${esc(st(it) === "own" ? S.own[it.id] : "")}" placeholder="고친 표현을 적거나, 비워 두면 보류" aria-label="${it.id}번 답">
+        <div class="btns">${btn(it, "keep", "원문 그대로")}${btn(it, "delegate", "세션에 맡김")}</div></div>`).join("")}</section>
+    <div class="fold style"><div><b>문체 규칙 ${sty.length}건</b> <span class="note">공고 끝 안내문의 서술형 종결</span></div>
+      <label class="switchrow"><input class="switch" type="checkbox" id="styleOff" ${S.styleOff ? "checked" : ""}>채용 공고에는 이 규칙을 쓰지 않음</label></div>
+    <section class="panel doc"><h2>바뀐 줄만</h2>${changed.length ? docHtml(changed) : `<p class="note">아직 바뀐 줄 없음</p>`}</section></div>`;
+}
+
+/* 그리기 */
+function renderTabs() {
+  document.getElementById("tabs").innerHTML = V.map(v => `<button class="${S.v === v.k ? "on" : ""}" data-v="${v.k}" aria-pressed="${S.v === v.k}"><span>${v.k}, ${v.name}</span><small>${v.sub}, 강도 ${v.strength}</small></button>`).join("");
+  const v = V.find(x => x.k === S.v);
+  document.getElementById("brief").innerHTML = `<dl class="brief"><div><dt>맞는 경우</dt><dd>${v.fit}</dd></div><div><dt>사람 시간</dt><dd>${v.human}</dd></div>
+    <div><dt>토큰</dt><dd>${v.token}</dd></div><div><dt>잃는 것</dt><dd>${v.lose}</dd></div></dl>`;
+}
+function renderDock() {
+  const c = counts(), dl = delegatedLines();
+  document.getElementById("dock").innerHTML = `<span>반영 <b>${c.accept}</b>, 직접 <b>${c.own}</b>, 그대로 <b>${c.keep}</b>, 남음 <b>${c.pending}</b>, 맡김 <b>${c.delegate}</b></span>
+    <span class="pill free">파일 반영은 화면이 함</span>
+    <span class="pill ${dl.length ? "cost" : "free"}">재판정 ${dl.length ? `1회, ${dl.length}줄, 약 ${REJUDGE}달러` : "0회"}</span>
+    ${c.pending ? `<span class="pill info">남은 ${c.pending}건은 제출하면 보류로 남아 발행 막힘</span>` : ""}
+    <span class="sp"><button id="sum" class="${S.showSum ? "on" : ""}">세션이 받을 요약</button></span>
+    ${S.showSum ? `<pre class="summary" style="flex-basis:100%">${esc(sessionSummary())}\n— ${sessionSummary().length}자</pre>` : ""}`;
+}
+function render() {
+  renderTabs();
+  document.getElementById("stage").innerHTML = { A: viewA, B: viewB, C: viewC, D: viewD, E: viewE }[S.v]();
+  renderDock();
+  document.getElementById("final").textContent = finalLines().join("\n");
+}
+
+function setTrust(cat, on) {
+  S.trust[cat] = on;
+  D.items.filter(x => x.type === "replace" && x.fix && x.cat === cat).forEach(x => { if (on && st(x) === "pending") S.dec[x.id] = "accept"; if (!on && S.dec[x.id] === "accept") delete S.dec[x.id]; });
+}
+function setStyleOff(on) {
+  S.styleOff = on;
+  D.items.filter(x => x.type === "style").forEach(x => { if (on) S.dec[x.id] = "keep"; else if (S.dec[x.id] === "keep") delete S.dec[x.id]; });
+}
+
+document.addEventListener("click", e => {
+  const t = e.target.closest("button, .mark");
+  if (!t) return;
+  if (t.classList.contains("mark")) {
+    S.focus = +t.dataset.id; render();
+    document.getElementById(`card-${S.focus}`)?.scrollIntoView({ block: "nearest" });
+    return;
+  }
+  if (t.dataset.v && !t.dataset.all) { S.v = t.dataset.v; S.focus = null; render(); window.scrollTo({ top: 0 }); return; }
+  if (t.id === "sum") { S.showSum = !S.showSum; return renderDock(); }
+  if (t.dataset.go) { S.qi = Math.max(0, Math.min(D.items.length - 1, S.qi + +t.dataset.go)); return render(); }
+  if (t.dataset.all) { D.items.filter(x => x.type + "|" + x.cat === t.dataset.all && st(x) === "pending").forEach(x => (S.dec[x.id] = t.dataset.v)); return render(); }
+  if (t.dataset.etrust) {
+    S.eTrusted = !S.eTrusted;
+    [...new Set(D.items.filter(x => x.type === "replace" && x.fix).map(x => x.cat))].forEach(c => setTrust(c, S.eTrusted));
+    return render();
+  }
+  if (t.dataset.act) {
+    const id = +t.dataset.id, v = t.dataset.act;
+    decide(id, v);
+    if (t.dataset.next && v !== "own" && S.qi < D.items.length - 1) { S.qi++; render(); }
+    if (v === "own") document.querySelector(`[data-own="${id}"]`)?.focus();
+  }
+});
+document.addEventListener("change", e => {
+  const t = e.target;
+  if (t.dataset.trust) { setTrust(t.dataset.trust, t.checked); return render(); }
+  if (t.id === "styleOff") { setStyleOff(t.checked); return render(); }
+  if (t.dataset.sel) { const id = +t.dataset.sel; if (t.value === "pending") delete S.dec[id]; else { if (t.value === "own" && S.own[id] === undefined) S.own[id] = item(id).phrase; S.dec[id] = t.value; } return render(); }
+  if (t.dataset.op) { S.opinion[+t.dataset.op] = t.checked; return render(); }
+  if (t.dataset.own) { const id = +t.dataset.own; if (t.value.trim()) { S.own[id] = t.value; S.dec[id] = "own"; } else if (S.dec[id] === "own") delete S.dec[id]; return render(); }
+});
+document.addEventListener("keydown", e => {
+  if (S.v !== "B" || e.target.matches("input, select, textarea")) { if (S.v === "B" && e.key === "Enter" && e.target.dataset.own) { e.target.blur(); if (S.qi < D.items.length - 1) { S.qi++; render(); } } return; }
+  const it = D.items[S.qi], map = { 1: "accept", 2: "keep", 3: "own", 4: "delegate" };
+  if (map[e.key]) {
+    if (map[e.key] === "accept" && !it.fix) return;
+    decide(it.id, map[e.key]);
+    if (map[e.key] === "own") { document.querySelector(`[data-own="${it.id}"]`)?.focus(); return; }
+    if (S.qi < D.items.length - 1) { S.qi++; render(); }
+  } else if (e.key === "ArrowRight") { S.qi = Math.min(D.items.length - 1, S.qi + 1); render(); }
+  else if (e.key === "ArrowLeft") { S.qi = Math.max(0, S.qi - 1); render(); }
+});
+render();
+</script>

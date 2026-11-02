@@ -68,3 +68,8 @@ html = (Path(__file__).parent / "template.html").read_text(encoding="utf-8").rep
 OUT.parent.mkdir(parents=True, exist_ok=True)
 OUT.write_text(html, encoding="utf-8")
 print(OUT, len(items), "지적", {t: sum(x["type"] == t for x in items) for t in ("replace", "info", "style")})
+# 같은 자료로 시안 다섯(2026-11-02 사용자 「화면 시안 5개 정도 … 토큰 사용량도 고려」)
+VAR = OUT.with_name("review-variants.html")
+VAR.write_text((Path(__file__).parent / "variants.html").read_text(encoding="utf-8").replace("/*DATA*/null", data),
+               encoding="utf-8")
+print(VAR)
