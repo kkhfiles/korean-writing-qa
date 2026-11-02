@@ -90,7 +90,7 @@ def usage_tokens(u: dict | None) -> tuple[int, int]:
 
 
 # ── 모델 호출 ─────────────────────────────────────────────────────────────────
-CODEX_WEEK_MAX = 93      # 주간 사용률이 이 값 이상이면 부르지 않음 — 사용자의 평일 Codex 작업 몫을 남김(2026-10-31)
+CODEX_WEEK_MAX = 100     # 주간 사용률이 이 값 이상이면 부르지 않음 — 10-31 에 93 으로 두었다가 11-02 사용자가 sol 재측정을 위해 풀어 달라고 함
 _quota = {"at": 0.0, "q": None}
 
 
@@ -134,6 +134,8 @@ MODEL_SYSTEMS = {
     "plain-claude": ("claude", "opus", PLAIN_SYSTEM),
     "plain-gpt": ("codex", "astra-medium", PLAIN_SYSTEM),
     "plain-argon": ("agy", "argon-medium", PLAIN_SYSTEM),
+    "plain-sol": ("codex", "sol-high", PLAIN_SYSTEM),       # 2026-11-02 사용자 요청으로 더한 재측정
+    "plain-flash": ("agy", "flash-high", PLAIN_SYSTEM),
     "imnotai-claude": ("claude", "opus", None),
 }
 
@@ -307,7 +309,7 @@ def diff_findings(before: list[str], after: list[str]) -> list[dict]:
 
 # hunspell-ko 는 뺐다(2026-10-31) — 순수 파이썬 구현(spylls)이 한국어 사전의 ICONV 를 못 읽어 「회의」도 철자 오류로
 # 내고, 네이티브 바인딩(cyhunspell · hunspell)은 이 PC 에 컴파일러가 없어 설치가 안 됨. 함수는 다시 잴 때를 위해 둠
-SYSTEMS = ["l1", "l2", "plain-claude", "plain-gpt", "plain-argon", "imnotai-claude", "kiwi-space", "kobart-gec"]
+SYSTEMS = ["l1", "l2", "plain-claude", "plain-gpt", "plain-argon", "plain-sol", "plain-flash", "imnotai-claude", "kiwi-space", "kobart-gec"]
 
 
 def run(name: str, lines: list[str], work: Path) -> Result:

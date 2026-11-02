@@ -29,6 +29,7 @@ INJ = DATA / "inject"
 OUT = DATA / "precision"
 PER_SYSTEM, SEED = 40, 20261101
 L1_CONTENT = "l1(문체 결정 밖 전부)"
+FIRST_EIGHT = ("imnotai-claude", "kiwi-space", "kobart-gec", "l1", "l2", "plain-argon", "plain-claude", "plain-gpt")
 HOUSE = ("반말 서술형", "서술형 종결", "서술형 문단", "진입점", "제목")
 VERDICTS = {"고쳐야 함": 1.0, "고치면 나음": 1.0, "고칠 필요 없음": 0.0, "고치면 틀림": 0.0}
 SYSTEM = """당신은 회사 업무 문서와 공공기관 글을 감수하는 한국어 전문가입니다. 사용자가 글의 일부(앞뒤 줄 포함)와
@@ -46,7 +47,13 @@ def items() -> list[dict]:
             for p in (INJ / "docs").glob("*.json")}
     rng = random.Random(SEED)
     out = []
-    for name in sorted({p.stem for p in INJ.glob("runs/*/clean/*.json")}):
+    # 처음 판정한 여덟 도구는 같은 난수 하나를 이어 써서 뽑았음 — 도구를 더해도 그 표본이 바뀌지 않게 순서를 고정하고,
+    # 나중에 더한 도구는 이름별 난수로 뽑음(2026-11-02)
+    names = sorted({p.stem for p in INJ.glob("runs/*/clean/*.json")})
+    names = [n for n in FIRST_EIGHT if n in names] + [n for n in names if n not in FIRST_EIGHT]
+    for name in names:
+        if name not in FIRST_EIGHT:
+            rng = random.Random(f"{SEED}|{name}")
         pool = []
         for doc_id, d in docs.items():
             f = INJ / f"runs/{doc_id}/clean/{name}.json"

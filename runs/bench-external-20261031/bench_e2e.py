@@ -65,10 +65,12 @@ JUDGE_SYSTEM = """당신은 회사 업무 문서 편집자입니다. 사용자�
 4. 어색한 표현이나 AI가 쓴 티(상투적 표현, 과장된 수식, 번역투)가 남았는가
 출력은 JSON 하나만: {"winner": "A" 또는 "B" 또는 "tie", "meaning_changes_A": 정수, "meaning_changes_B": 정수,
 "defects_A": 정수, "defects_B": 정수, "why": "한두 문장"}"""
-JUDGES = {"claude": ("claude", "opus"), "gpt": ("codex", "astra-medium"), "argon": ("agy", "argon-medium")}
-RIVALS = ["none", "plain-claude", "plain-gpt", "plain-argon", "imnotai"]
+JUDGES = {"claude": ("claude", "opus"), "gpt": ("codex", "astra-medium"), "argon": ("agy", "argon-medium"),
+          "sol": ("codex", "sol-high"), "flash": ("agy", "flash-high")}     # sol, flash 는 2026-11-02 재측정
+RIVALS = ["none", "plain-claude", "plain-gpt", "plain-argon", "imnotai", "plain-sol", "plain-flash"]
 REWRITERS = {"plain-claude": ("claude", "opus", REWRITE_SYSTEM), "plain-gpt": ("codex", "astra-medium", REWRITE_SYSTEM),
-             "plain-argon": ("agy", "argon-medium", REWRITE_SYSTEM), "imnotai": ("claude", "opus", None)}
+             "plain-argon": ("agy", "argon-medium", REWRITE_SYSTEM), "imnotai": ("claude", "opus", None),
+             "plain-sol": ("codex", "sol-high", REWRITE_SYSTEM), "plain-flash": ("agy", "flash-high", REWRITE_SYSTEM)}
 
 
 def strip_fence(text: str) -> str:
