@@ -248,7 +248,7 @@ function renderDock() {
   document.getElementById("dock").innerHTML = `<span>반영 <b>${c.accept}</b>, 직접 <b>${c.own}</b>, 그대로 <b>${c.keep}</b>, 남음 <b>${c.pending}</b>, 맡김 <b>${c.delegate}</b></span>
     <span class="pill ${dl ? "cost" : "free"}">재판정 ${dl ? `1회, ${dl}줄` : "0회"}</span>
     ${c.pending ? `<span class="pill info">남은 ${c.pending}건은 제출하면 보류로 남아 발행 막힘</span>` : ""}
-    <span class="note">${S.sent ? "제출함 — 판정 기록에 남김, 파일은 세션이 고침" : SERVED ? "제출하면 판정 기록에 남김, 파일은 아직 안 고침(세션이 고침)" : "파일로 연 화면이라 제출 불가 — --serve 로 띄운 주소에서 제출"}</span>
+    <span class="note">${S.sent ? "제출함 — 아래 요약대로 판정 기록에 남기고 파일을 고침" : SERVED ? "제출하면 판정 기록에 남기고 고른 글로 파일을 고침" : "파일로 연 화면이라 제출 불가 — --serve 로 띄운 주소에서 제출"}</span>
     <span class="sp">${S.sent ? "" : `<button id="sum" class="${S.showSum ? "on" : ""}">세션이 받을 요약</button>`}
       ${SERVED && !S.sent ? `<button id="submit" class="primary" ${S.sending ? "disabled" : ""}>제출</button>` : ""}</span>
     ${S.error ? `<p class="summary" role="alert">제출 실패 — ${esc(S.error)}</p>` : ""}

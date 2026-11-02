@@ -7,9 +7,9 @@
 서로 따라가고(시안 A3, `draft-redline` 의 비교 화면과 같은 방식), 전체와 갈래별로 한꺼번에 고를 수 있다.
 시안과 그 결정은 `runs/review-screen-proto-20261101/README.md`.
 
-**지금 단계** — 2단계(답 기록). `--serve` 로 띄운 화면에서 「제출」을 누르면 고른 답을 판정표의 답과 같은
-기록에 남기고, 세션에는 요약만 낸다(`submit`). 파일은 아직 세션이 고친다 — 파일 반영(3단계), 신뢰 설정과
-규칙 저장(4단계)은 뒤에 붙인다.
+**지금 단계** — 3단계(파일 반영). `--serve` 로 띄운 화면에서 「제출」을 누르면 고른 답을 판정표의 답과 같은
+기록에 남기고, 고른 글로 파일을 고치고, 세션에는 요약만 낸다(`submit`). 신뢰 설정과 규칙 저장(4단계)은
+뒤에 붙인다.
 
 - **127.0.0.1 의 빈 포트에만 연다** — 화면에 문서 원문이 들어 있다
 - **HTML 은 저장소 밖에 쓴다** — 판정 기록 옆 `korean-review/`(문서 원문이 들어 있어 커밋하지 않는다)
@@ -27,6 +27,7 @@ import secrets
 import subprocess
 import sys
 import threading
+import time
 import webbrowser
 from collections import defaultdict
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -133,14 +134,69 @@ def literal(new: str) -> bool:
     return bool(new) and not new.startswith("(") and "○○" not in new and "\n" not in new
 
 
+def backup_dir() -> Path:
+    return out_dir() / "backup"
+
+
+def apply_file(path: Path, changes: dict[int, tuple[str, list[tuple[str, str]]]]) -> tuple[list[int], str]:
+    """고른 글로 파일을 고친다 — (고친 줄 번호, 못 고친 까닭). 못 고치면 아무것도 쓰지 않는다.
+
+    `changes` 는 {보이는 줄 번호: (바뀐 줄, [(원래 표현, 고른 글)…])}.
+    - **md, 텍스트** — 그 줄을 바뀐 줄로 바꾼다. 줄 끝 문자와 BOM 은 그대로 둔다
+    - **HTML** — 보이는 줄과 원본 줄이 다르므로 원래 표현이 원본에 **한 번만** 나올 때만 그 자리를 바꾼다
+    - **쓰기 전에 대조** — 고친 원본을 다시 읽은 보이는 줄이 「고를 줄만 바뀐 지금 줄」과 같아야 쓴다.
+      HTML 의 다른 곳이 바뀌거나 줄이 갈리면 쓰지 않고 세션에 넘긴다
+    - **git 밖 파일은 백업** — 판정 기록 옆 `korean-review/backup/`. git 안 파일은 `git diff` 로 되돌린다
+    """
+    if not changes:
+        return [], ""
+    raw = path.read_bytes()
+    bom = raw.startswith(b"\xef\xbb\xbf")
+    try:
+        text = raw[3 if bom else 0:].decode("utf-8")
+    except UnicodeDecodeError:
+        return [], "UTF-8 이 아닌 파일이라 고치지 않음"
+    lines = coverage.visible_text(text, path.suffix).splitlines()
+    expected = list(lines)
+    for n, (target, _) in changes.items():
+        expected[n - 1] = target
+    if path.suffix.lower() in coverage.HTML_SUFFIXES:
+        import html
+        new = text
+        for n, (_, pairs) in sorted(changes.items()):
+            for phrase, repl in pairs:
+                old = html.escape(phrase, quote=False)
+                if new.count(old) != 1:
+                    return [], f"{n}행 「{phrase[:30]}」 이 HTML 원본에 한 번만 나오지 않아 고치지 않음"
+                new = new.replace(old, html.escape(repl, quote=False), 1)
+    else:
+        parts = text.splitlines(keepends=True)
+        if len(parts) != len(lines):
+            return [], "줄 나눔이 판정 기록과 달라 고치지 않음"
+        for n, (target, _) in changes.items():
+            body = parts[n - 1]
+            parts[n - 1] = target + body[len(body.rstrip("\r\n")):]
+        new = "".join(parts)
+    if coverage.visible_text(new, path.suffix).splitlines() != expected:
+        return [], "고친 결과가 고른 줄만 바꾼 글과 달라 고치지 않음"
+    if coverage.repo_of(path) is None:
+        backup_dir().mkdir(parents=True, exist_ok=True)
+        stamp = time.strftime("%Y%m%d-%H%M%S")
+        (backup_dir() / f"{path.stem}-{stamp}{path.suffix}").write_bytes(raw)
+    tmp = path.with_name(path.name + ".review-tmp")
+    tmp.write_bytes((b"\xef\xbb\xbf" if bom else b"") + new.encode("utf-8"))
+    os.replace(tmp, path)
+    return sorted(changes), ""
+
+
 def submit(path: Path, data: dict, picks: list[dict]) -> tuple[int, str]:
-    """화면에서 고른 답을 판정 기록에 남긴다 — (종료 코드, 세션이 받을 요약).
+    """화면에서 고른 답을 판정 기록에 남기고 파일을 고친다 — (종료 코드, 세션이 받을 요약).
 
     판정표의 답 처리(`judge_layer2.read_answers`)와 같은 기록에 같은 규칙으로 적는다.
 
     - **반영과 직접 고침** — 답 기록에 「고침」으로 남기고, 그 줄을 고른 글로 바꾼 결과를 사람이 판정한 줄로
-      확정한다(`approve`). 세션이 그 글대로 고치면 판정기가 다시 보지 않는다. 판정표의 「직접」과 달리
-      고친 말이 화면에서 글자로 오므로 고친 뒤 `--answer` 를 따로 부르지 않는다
+      확정한 뒤(`approve`) 파일을 그 글로 고친다(`apply_file`). 판정기가 그 줄을 다시 보지 않는다.
+      자리표시가 든 수정안처럼 글자로 넣을 수 없는 줄과 `apply_file` 이 거절한 줄은 세션에 넘긴다
     - **그대로** — 사람 확인은 그 줄의 사람 확인을 모두 그대로 골랐을 때 `answer` 로 닫는다. 고칠 지적은
       사유 「사용자답」으로 닫는다(세션이 쓰는 `--dismiss` 사유와 따로 둔다 — 세션이 고를 수 없는 사유다)
     - **세션에 맡김과 남음** — 둘 다 기록하지 않는다. 맡긴 것은 요약에 싣는다
@@ -168,11 +224,13 @@ def submit(path: Path, data: dict, picks: list[dict]) -> tuple[int, str]:
             continue
         by_line[n].append((it, dec, own))
     counts = defaultdict(int)
-    edits, loose, delegated, l1_kept = [], [], [], []
+    loose, delegated, l1_kept = [], [], []
+    changes: dict[int, tuple[str, list[tuple[str, str]]]] = {}
+    told: dict[int, list[str]] = {}
     learned = closed = settled = 0
     for n, picked in sorted(by_line.items()):
         line, lk = lines[n - 1], coverage.line_key(lines[n - 1]) or ""
-        target, exact = line, True
+        target, exact, pairs, mine = line, True, [], []
         for it, dec, own in sorted(picked, key=lambda t: line.find(t[0]["phrase"])):
             counts[dec] += 1
             two = it["layer"] == "2층"
@@ -182,8 +240,9 @@ def submit(path: Path, data: dict, picks: list[dict]) -> tuple[int, str]:
                 ok = literal(new) and bool(it["phrase"]) and it["phrase"] in target
                 if ok:
                     target = target.replace(it["phrase"], new, 1)
+                    pairs.append((it["phrase"], new))
                 exact &= ok
-                (edits if ok else loose).append(f"{n}행 「{it['phrase']}」 → 「{new}」")
+                mine.append(f"{n}행 「{it['phrase']}」 → 「{new}」")
                 if two:
                     raw = ask_sheet.EDIT if dec == "accept" else f"{ask_sheet.DIRECT}: {own}"
                     learned += judge.record_decision(path, lk, raw, ask_sheet.EDIT, f"{src} #{it['id']}", line, [item])
@@ -205,17 +264,28 @@ def submit(path: Path, data: dict, picks: list[dict]) -> tuple[int, str]:
         if target != line and exact and lk in seen and not any(d == "delegate" for _, d, _ in picked):
             judge.approve(path, target, f"사용자 답({src}): 고른 글로 확정", lk)
             settled += 1
+        if target != line and exact:
+            changes[n], told[n] = (target, pairs), mine
+        else:
+            loose += mine
+    done, why = apply_file(path, changes)
+    if why:
+        loose = [e for n in sorted(told) for e in told[n]] + loose
+    lines = coverage.read_doc(path).splitlines()
     left_asks = len(coverage.open_asks(key, lines))
     left_fixes = len(coverage.open_fixes(key, lines))
     pending = len(items) - sum(counts.values()) - len(refused)
     out = [f"검토 화면 제출 — {path.name}: 반영 {counts['accept']}, 직접 {counts['own']}, 그대로 {counts['keep']}, "
            f"맡김 {counts['delegate']}, 남음 {pending}",
            f"  답 기록 {learned}건, 그대로로 닫은 지적 {closed}건, 다시 판정하지 않을 줄 {settled}개"]
-    if edits:
-        out.append(f"  고칠 것 {len(edits)}건 — 화면에서 고른 글자 그대로 고칩니다(확정한 줄은 다시 판정하지 않음)")
-        out += [f"    {e}" for e in edits]
+    if done:
+        out.append(f"  파일에 고친 줄 {len(done)}개 — 화면에서 고른 글자 그대로"
+                   + ("" if coverage.repo_of(path) else f"(고치기 전 파일은 {backup_dir().as_posix()})"))
+        out += [f"    {e}" for n in done for e in told[n]]
+    if why:
+        out.append(f"  ⛔ 파일을 고치지 않음 — {why}")
     if loose:
-        out.append(f"  세션이 고칠 것 {len(loose)}건 — 글자로 넣을 수 없는 수정안이라 고친 뒤 --since 로 다시 판정")
+        out.append(f"  세션이 고칠 것 {len(loose)}건 — 고친 뒤 --since 로 다시 판정(고른 글자 그대로 고친 줄은 다시 판정하지 않음)")
         out += [f"    {e}" for e in loose]
     if delegated:
         out.append(f"  세션에 맡김 {len(delegated)}건 — 고친 뒤 --since 로 다시 판정")
@@ -225,7 +295,7 @@ def submit(path: Path, data: dict, picks: list[dict]) -> tuple[int, str]:
                    "(check_record --stage review)을 남깁니다")
         out += [f"    {k}" for k in l1_kept]
     out += [f"  ⛔ {r}" for r in refused]
-    out.append(f"  고치기 전 기준 — 남은 사람 확인 {left_asks}건, 처리 안 된 고칠 지적 {left_fixes}건")
+    out.append(f"  남은 사람 확인 {left_asks}건, 처리 안 된 고칠 지적 {left_fixes}건")
     return (1 if left_asks or left_fixes or pending else 0), "\n".join(out)
 
 

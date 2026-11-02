@@ -129,10 +129,12 @@ class CollectTests(unittest.TestCase):
         self.assertEqual(1, code, "고치기 전에는 그 지적이 아직 열려 있음")
         self.assertIn("「모놀리식 구조에서 MSA로의 단계적 전환 참여」 → 「모놀리식 구조를 MSA로", out)
         self.assertEqual(["고침"], [d["answer"] for d in self.rows(coverage.DECISIONS)])
-        # 세션이 화면에서 고른 글자 그대로 고치면 그 줄은 판정기가 다시 보지 않고, 지적은 표현이 사라져 닫힌다
+        # 화면이 고른 글자 그대로 파일을 고치고, 그 줄은 판정기가 다시 보지 않고, 지적은 표현이 사라져 닫힌다
+        self.assertIn("파일에 고친 줄 1개", out)
         src = self.doc.read_text(encoding="utf-8")
-        self.doc.write_text(src.replace("모놀리식 구조에서 MSA로의 단계적 전환 참여",
-                                        "모놀리식 구조를 MSA로 단계적으로 전환하는 작업 참여"), encoding="utf-8")
+        self.assertIn("모놀리식 구조를 MSA로 단계적으로 전환하는 작업 참여 인원이 맡음", src)
+        self.assertEqual(DOC.replace("모놀리식 구조에서 MSA로의 단계적 전환 참여",
+                                     "모놀리식 구조를 MSA로 단계적으로 전환하는 작업 참여"), src, "다른 줄은 그대로")
         new = next(l for l in coverage.read_doc(self.doc).splitlines() if "MSA" in l)
         self.assertIn(coverage.line_key(new), coverage.approved(coverage.doc_key(self.doc)))
         self.assertNotIn("모놀리식 구조에서 MSA로의 단계적 전환 참여", self.open_fix_phrases())
@@ -179,8 +181,57 @@ class CollectTests(unittest.TestCase):
         coverage.LOG.write_text(json.dumps(self.row, ensure_ascii=False) + "\n", encoding="utf-8")
         data = screen.collect(self.doc)
         _, out = screen.submit(self.doc, data, [self.pick(data, lambda x: x["type"] == "style", "own", "공유함")])
-        self.assertIn("고칠 것 1건", out)
+        self.assertIn("파일에 고친 줄 1개", out)
         self.assertEqual([], self.rows(coverage.ANSWERS), "판정기가 안 본 줄을 확정하면 판정을 건너뜀")
+
+    # 3단계 — 파일 반영
+
+    def test_line_endings_and_bom_are_kept_and_an_outside_file_is_backed_up(self) -> None:
+        self.doc.write_bytes(b"\xef\xbb\xbf" + DOC.replace("\n", "\r\n").encode("utf-8"))
+        data = screen.collect(self.doc)
+        screen.submit(self.doc, data, [self.pick(data, lambda x: "MSA" in x["phrase"], "accept")])
+        raw = self.doc.read_bytes()
+        self.assertTrue(raw.startswith(b"\xef\xbb\xbf"))
+        self.assertEqual(raw.count(b"\n"), raw.count(b"\r\n"), "줄 끝 문자가 그대로")
+        self.assertIn("단계적으로 전환하는 작업 참여".encode("utf-8"), raw)
+        backups = list(screen.backup_dir().glob("notice-*.md"))
+        self.assertEqual(1, len(backups), "git 밖 파일은 고치기 전 판을 남김")
+        self.assertIn("MSA로의 단계적 전환".encode("utf-8"), backups[0].read_bytes())
+
+    def test_a_placeholder_fix_goes_to_the_session_and_the_file_is_untouched(self) -> None:
+        self.row["fixes"][0]["fix"] = "(무엇을 전환하는지 적음)"
+        coverage.LOG.write_text(json.dumps(self.row, ensure_ascii=False) + "\n", encoding="utf-8")
+        data = screen.collect(self.doc)
+        _, out = screen.submit(self.doc, data, [self.pick(data, lambda x: "MSA" in x["phrase"], "accept")])
+        self.assertIn("세션이 고칠 것 1건", out)
+        self.assertEqual(DOC, self.doc.read_text(encoding="utf-8"))
+
+    def html_doc(self, body: str) -> tuple[Path, dict]:
+        page = self.dir / "page.html"
+        page.write_text(f"<!doctype html><html><head><title>배포</title></head><body>{body}</body></html>", encoding="utf-8")
+        lines = coverage.read_doc(page).splitlines()
+        n = next(i for i, l in enumerate(lines, 1) if "MSA" in l)
+        row = {"ok": True, "key": coverage.doc_key(page), "when": time.time(), "seen": coverage.seen_keys(lines),
+               "fixes": [{"line": n, "line_key": coverage.line_key(lines[n - 1]), "text": lines[n - 1],
+                          "phrase": "MSA로의 전환", "fix": "MSA로 전환하는 작업", "why": "번역투", "category": "번역투 줄이기"}],
+               "asks": []}
+        coverage.LOG.write_text(json.dumps(row, ensure_ascii=False) + "\n", encoding="utf-8")
+        return page, screen.collect(page)
+
+    def test_html_is_edited_where_the_phrase_appears_once(self) -> None:
+        page, data = self.html_doc("<h1>배포 안내</h1><p>모놀리식 구조에서 <b>단계적</b> MSA로의 전환 참여 인원</p>")
+        _, out = screen.submit(page, data, [self.pick(data, lambda x: x["layer"] == "2층", "accept")])
+        self.assertIn("파일에 고친 줄 1개", out)
+        self.assertIn("<b>단계적</b> MSA로 전환하는 작업 참여", page.read_text(encoding="utf-8"), "태그는 그대로")
+
+    def test_html_with_the_phrase_twice_is_left_to_the_session(self) -> None:
+        body = "<p>모놀리식 구조에서 MSA로의 전환 참여 인원</p><p>지난달에도 MSA로의 전환 회의를 했음</p>"
+        page, data = self.html_doc(body)
+        before = page.read_text(encoding="utf-8")
+        _, out = screen.submit(page, data, [self.pick(data, lambda x: x["layer"] == "2층", "accept")])
+        self.assertIn("HTML 원본에 한 번만 나오지 않아", out)
+        self.assertIn("세션이 고칠 것 1건", out)
+        self.assertEqual(before, page.read_text(encoding="utf-8"))
 
     def test_submit_needs_the_page_token_and_the_local_host(self) -> None:
         page, data = screen.write_html(self.doc)
