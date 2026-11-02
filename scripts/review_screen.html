@@ -1,0 +1,365 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>검토 화면</title>
+<style>
+/* 원문은 페이지 스크롤, 지적 카드는 고정된 칸 안에서 따로 스크롤하며 서로 따라감(시안 A3, draft-redline 방식) */
+:root {
+  color-scheme: light;
+  --bg: #f3f5f7;
+  --paper: #ffffff;
+  --ink: #1c2026;
+  --muted: #59626e;
+  --line: #dbe0e6;
+  --accent: #234f8c;
+  --del: #b0362e;
+  --del-bg: #fbe8e6;
+  --ins: #1d6b41;
+  --ins-bg: #e3f3e8;
+  --info: #865709;
+  --info-bg: #fcf2da;
+  --style: #584888;
+  --style-bg: #eeeaf9;
+  --cost: #8b2f4a;
+  --cost-bg: #f9e9ee;
+  --free-bg: #e8eef7;
+  --kr: "Doc KR", Pretendard, "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", system-ui, sans-serif;
+  --mono: Consolas, ui-monospace, monospace;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--kr); font-size: 15px; line-height: 1.7;
+  word-break: keep-all; padding: 20px max(16px, env(safe-area-inset-left, 0px)) 120px; }
+main { max-width: 1320px; margin: 0 auto; display: grid; gap: 16px; }
+h1 { font-size: 22px; letter-spacing: -.02em; margin: 0; }
+h2 { font-size: 16px; margin: 0 0 8px; }
+p { margin: 0; }
+.note { color: var(--muted); font-size: 13px; }
+.panel { background: var(--paper); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; min-width: 0; }
+header.panel { display: grid; gap: 4px; }
+del { color: var(--del); background: var(--del-bg); text-decoration-thickness: 1.5px; }
+ins { color: var(--ins); background: var(--ins-bg); text-decoration: none; border-bottom: 1.5px solid var(--ins); }
+button { font: inherit; font-size: 13.5px; border: 1px solid var(--line); background: #fff; color: var(--ink); border-radius: 6px;
+  padding: 4px 11px; min-height: 34px; cursor: pointer; }
+button:hover { border-color: #b4bcc7; }
+button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+button.cost.on { background: var(--cost); border-color: var(--cost); }
+button.ghost { border-style: dashed; color: var(--muted); }
+button:disabled { opacity: .45; cursor: default; }
+button:focus-visible, input:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+input[type=text] { font: inherit; font-size: 14px; width: 100%; border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; }
+.btns { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.pill { display: inline-flex; align-items: center; font-size: 12.5px; padding: 1px 9px; border-radius: 999px; white-space: nowrap; }
+.pill.replace { background: var(--ins-bg); color: var(--ins); }
+.pill.info { background: var(--info-bg); color: var(--info); }
+.pill.style { background: var(--style-bg); color: var(--style); }
+.pill.cost { background: var(--cost-bg); color: var(--cost); }
+.pill.free { background: var(--free-bg); color: var(--accent); }
+.pill.err { background: var(--del-bg); color: var(--del); }
+
+.grid { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+.doc .ln { display: grid; grid-template-columns: 34px 1fr; gap: 8px; }
+.doc .no { color: var(--muted); font-family: var(--mono); font-size: 12px; text-align: right; padding-top: 3px; user-select: none; }
+.doc .tx { min-width: 0; overflow-wrap: anywhere; }
+.doc .h { font-weight: 700; }
+.doc .tbl { font-family: var(--mono); font-size: 12.5px; color: #3a414b; }
+.doc .flash { background: #fff3c4; transition: background .3s; }
+.mark { cursor: pointer; border-radius: 4px; padding: 0 1px; }
+.mark sup { font-family: var(--mono); font-size: 10px; color: var(--muted); margin-left: 1px; }
+.mark.info.pending { background: var(--info-bg); border-bottom: 2px dashed var(--info); }
+.mark.style.pending { text-decoration: underline wavy var(--style); text-underline-offset: 4px; }
+.mark.replace.pending.nofix { border-bottom: 2px solid #d88f88; }
+.mark.delegate { background: var(--cost-bg); border-bottom: 2px dotted var(--cost); }
+.mark.kept { border-bottom: 1px dotted var(--muted); }
+.mark.focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.mark.dim { opacity: .35; }
+
+.side { display: grid; gap: 10px; position: sticky; top: 12px; max-height: calc(100vh - 100px); overflow-y: auto;
+  padding: 0 4px 40vh 2px; overscroll-behavior: contain; }
+.tool { position: sticky; top: 0; z-index: 2; background: var(--bg); padding: 2px 0 10px; display: grid; gap: 8px; border-bottom: 1px solid var(--line); }
+.chips { display: flex; flex-wrap: nowrap; gap: 6px; overflow-x: auto; padding-bottom: 2px; }
+.chip { flex: none; font-size: 13px; padding: 2px 10px; min-height: 30px; border-radius: 999px; }
+.chip .num { color: var(--muted); margin-left: 4px; font-size: 12px; }
+.chip.on .num { color: #dfe7f3; }
+.tool .btns button { font-size: 13px; padding: 3px 10px; min-height: 32px; }
+.card { border: 1px solid var(--line); border-radius: 8px; padding: 11px 13px; display: grid; gap: 7px; background: #fff; cursor: pointer; }
+.card.done { opacity: .6; }
+.card.focus { box-shadow: 0 0 0 2px var(--accent); opacity: 1; }
+.card .top { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
+.card .top .num { font-family: var(--mono); color: var(--ink); font-weight: 700; }
+.card .chg { font-size: 14.5px; overflow-wrap: anywhere; }
+.card .why { font-size: 13.5px; color: #39404a; }
+.card .q { font-size: 14px; background: var(--info-bg); color: #5a3c06; border-radius: 6px; padding: 6px 10px; }
+.card details summary { font-size: 13px; color: var(--muted); cursor: pointer; }
+.empty { padding: 20px; text-align: center; }
+
+.dock { position: fixed; left: 0; right: 0; bottom: 0; z-index: 10; background: rgba(255,255,255,.97); border-top: 1px solid var(--line);
+  padding: 10px max(16px, env(safe-area-inset-left, 0px)); }
+.dock .in { max-width: 1320px; margin: 0 auto; display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; font-size: 13.5px; }
+.dock .sp { margin-left: auto; }
+.dock b { font-variant-numeric: tabular-nums; }
+.summary { flex-basis: 100%; white-space: pre-wrap; font-size: 13px; background: #f8f9fb; border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; margin: 6px 0 0; }
+@media (prefers-reduced-motion: reduce) { .doc .flash { transition: none; } }
+@media (max-width: 960px) {
+  .grid { grid-template-columns: 1fr; }
+  .side { position: static; max-height: none; padding-bottom: 0; }
+  button, .chip { min-height: 44px; }
+}
+</style>
+</head>
+<body>
+<main>
+  <header class="panel">
+    <h1 id="title">검토 화면</h1>
+    <p><b>원문 위에서 지적을 검토하고 반영 여부를 선택하는 화면</b></p>
+    <p class="note" id="sub"></p>
+  </header>
+  <div class="grid">
+    <section class="panel doc" aria-label="원문과 수정 제안">
+      <h2>원문과 수정 제안</h2>
+      <p class="note">원문과 지적 카드 중 한쪽을 스크롤하면 다른 쪽도 대응하는 위치로 함께 스크롤됨</p>
+      <p class="note" style="margin:0 0 8px">원문의 표시나 지적 카드를 누르면 해당 위치로 이동</p>
+      <div id="doc"></div>
+    </section>
+    <aside class="side" id="side" aria-label="지적 카드(줄 순서)"></aside>
+  </div>
+</main>
+<div class="dock" role="region" aria-label="선택 요약"><div class="in" id="dock"></div></div>
+
+<script>
+const D = /*DATA*/null;
+const S = { dec: {}, own: {}, trust: {}, styleOff: false, focus: null, cat: "", undo: null, showSum: false };
+const SYNC = { lockDoc: 0, lockSide: 0, ticking: false };
+const TYPES = { replace: "바로 반영", info: "작성자 확인", style: "문체 규칙" };
+const OUTCOME = { accept: "확정, 다시 판정 안 함", own: "사람 답으로 확정, 다시 판정 안 함", keep: "답 기록, 다시 묻지 않음",
+                  delegate: "세션이 고치고 다시 판정", pending: "남음, 제출하면 발행 막힘" };
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const shown = s => esc(String(s ?? "").replace(/\*\*/g, ""));
+const md = s => esc(s).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>");
+const clip = (s, n) => (s.length > n ? s.slice(0, n) + "…" : s);
+const st = it => S.dec[it.id] || "pending";
+const item = id => D.items.find(x => x.id === id);
+const key = it => it.type + "|" + it.cat;
+const inScope = it => !S.cat || key(it) === S.cat;
+
+/* 원문 위 표시 */
+function spans(n) {
+  const line = D.lines[n - 1] || "", out = [];
+  for (const it of D.items.filter(x => x.line === n)) {
+    const i = it.phrase ? line.indexOf(it.phrase) : -1;
+    if (i < 0 || out.some(o => i < o.end && o.start < i + it.phrase.length)) continue;
+    out.push({ start: i, end: i + it.phrase.length, it });
+  }
+  return out.sort((a, b) => a.start - b.start);
+}
+function markHtml(it, text) {
+  const s = st(it), f = S.focus === it.id ? " focus" : "", dim = inScope(it) ? "" : " dim", sup = `<sup>${it.id}</sup>`;
+  if (s === "keep") return `<span class="mark kept${f}${dim}" data-id="${it.id}" tabindex="0">${shown(text)}${sup}</span>`;
+  let inner = shown(text);
+  if (s === "accept") inner = `<ins>${shown(it.fix)}</ins>`;
+  else if (s === "own") inner = `<del>${shown(text)}</del><ins>${shown(S.own[it.id] || "")}</ins>`;
+  else if (s === "pending" && it.type === "replace" && it.fix) inner = `<del>${shown(text)}</del><ins>${shown(it.fix)}</ins>`;
+  const nofix = it.type === "replace" && !it.fix ? " nofix" : "";
+  return `<span class="mark ${it.type} ${s}${nofix}${f}${dim}" data-id="${it.id}" tabindex="0">${inner}${sup}</span>`;
+}
+function lineHtml(n) {
+  const line = D.lines[n - 1];
+  let html = "", pos = 0;
+  for (const s of spans(n)) { html += md(line.slice(pos, s.start)) + markHtml(s.it, line.slice(s.start, s.end)); pos = s.end; }
+  return html + md(line.slice(pos));
+}
+function docHtml() {
+  return D.lines.map((l, i) => {
+    const n = i + 1, cls = l.startsWith("#") ? "tx h" : l.trim().startsWith("|") ? "tx tbl" : "tx";
+    return `<div class="ln" data-n="${n}"><span class="no">${n}</span><span class="${cls}">${lineHtml(n) || "&nbsp;"}</span></div>`;
+  }).join("");
+}
+
+/* 카드 */
+function btn(it, v, label) {
+  return `<button class="${v === "delegate" ? "cost" : ""}${st(it) === v ? " on" : ""}" data-act="${v}" data-id="${it.id}">${label}</button>`;
+}
+function ownBox(it) {
+  return st(it) === "own" ? `<input type="text" data-own="${it.id}" value="${esc(S.own[it.id] ?? it.phrase)}" aria-label="${it.id}번 고친 표현">` : "";
+}
+function cardHtml(it) {
+  const s = st(it), lv = it.level === "오류" ? "err" : it.level === "사람 확인" ? "info" : "free";
+  const top = `<div class="top"><span class="num">${it.id}</span><span>${it.line}행</span><span class="pill ${it.type}">${TYPES[it.type]}</span>
+    <span>${esc(it.layer)} ${esc(it.cat)}</span><span class="pill ${lv}">${esc(it.level)}</span></div>`;
+  const cls = `card${s !== "pending" ? " done" : ""}${S.focus === it.id ? " focus" : ""}`;
+  const out = S.focus === it.id ? `<div class="note">제출하면: ${OUTCOME[s]}</div>` : "";
+  if (it.type === "replace") {
+    const chg = it.fix ? `<del>${shown(it.phrase)}</del> → <ins>${shown(it.fix)}</ins>` : `「${shown(clip(it.phrase, 70))}」`;
+    return `<div class="${cls}" id="card-${it.id}">${top}<div class="chg">${chg}</div>${it.why ? `<div class="why">${esc(it.why)}</div>` : ""}
+      <div class="btns">${it.fix ? btn(it, "accept", "반영") : ""}${btn(it, "keep", "그대로")}${btn(it, "own", "직접 고침")}${btn(it, "delegate", "세션에 맡김")}</div>${ownBox(it)}${out}</div>`;
+  }
+  if (it.type === "info") {
+    const fix = it.fix ? `<details><summary>판정기 참고 수정안 — 원문에 없는 정보가 들어 있을 수 있음</summary><div class="chg"><ins>${shown(it.fix)}</ins></div>
+      <div class="btns">${btn(it, "accept", "맞는지 확인했고 이 수정안 씀")}</div></details>` : "";
+    return `<div class="${cls}" id="card-${it.id}">${top}<div class="chg">「${shown(clip(it.phrase, 70))}」</div>
+      ${it.check || it.why ? `<div class="q">${esc(it.check || it.why)}</div>` : ""}${it.check && it.why ? `<div class="why">${esc(it.why)}</div>` : ""}
+      <div class="btns">${btn(it, "own", "직접 채움")}${btn(it, "keep", "그대로")}${btn(it, "delegate", "세션에 맡김")}</div>${ownBox(it)}${fix}${out}</div>`;
+  }
+  return `<div class="${cls}" id="card-${it.id}">${top}<div class="chg">「${shown(clip(it.phrase, 70))}」</div>${it.why ? `<div class="why">${esc(it.why)}</div>` : ""}
+    <div class="btns">${btn(it, "own", "직접 고침")}${btn(it, "keep", "그대로")}${btn(it, "delegate", "세션에 맡김")}</div>${ownBox(it)}${out}</div>`;
+}
+
+/* 일괄 처리 — 전체 또는 고른 갈래. 작성자 정보가 필요한 지적은 하나씩만 */
+function bulkTargets(v) {
+  return D.items.filter(x => inScope(x) && st(x) === "pending" && x.type !== "info" && (v === "keep" || (x.type === "replace" && x.fix)));
+}
+function toolHtml() {
+  const order = { replace: 0, info: 1, style: 2 };
+  const keys = [...new Set([...D.items].sort((a, b) => order[a.type] - order[b.type]).map(key))];
+  const chip = (k, label, xs) => `<button class="chip${S.cat === k ? " on" : ""}" data-cat="${esc(k)}" aria-pressed="${S.cat === k}">${esc(label)}<span class="num">${xs.filter(x => st(x) === "pending").length}/${xs.length}</span></button>`;
+  const chips = chip("", "전체", D.items) + keys.map(k => chip(k, k.split("|")[1], D.items.filter(x => key(x) === k))).join("");
+  const [t, cat] = (S.cat || "|").split("|");
+  const acc = bulkTargets("accept").length, keep = bulkTargets("keep").length;
+  const tip = `title="작성자 정보가 필요한 지적은 일괄 처리에서 빠짐"`;
+  const extra = t === "replace" ? `<label class="note"><input type="checkbox" data-trust="${esc(cat)}" ${S.trust[cat] ? "checked" : ""}> 앞으로 묻지 않고 반영</label>`
+    : t === "style" ? `<label class="note"><input type="checkbox" id="styleOff" ${S.styleOff ? "checked" : ""}> 이 종류 글에는 이 규칙을 쓰지 않음</label>`
+    : t === "info" ? `<span class="note">작성자만 아는 정보라 하나씩 정함</span>` : "";
+  return `<div class="tool"><div class="chips" role="group" aria-label="갈래로 거르기">${chips}</div>
+    <div class="btns">${t !== "info" ? `<button data-bulk="accept" ${tip} ${acc ? "" : "disabled"}>${S.cat ? "이 갈래" : "바로 반영할 것"} 모두 반영 ${acc}</button>
+      <button data-bulk="keep" ${tip} ${keep ? "" : "disabled"}>${S.cat ? "이 갈래" : "남은 것"} 모두 그대로 ${keep}</button>` : ""}${extra}
+      ${S.undo ? `<button class="ghost" data-undo="1">방금 일괄 처리 되돌리기 ${S.undo.n}</button>` : ""}</div></div>`;
+}
+
+/* 고른 결과 */
+function counts() {
+  const c = { accept: 0, own: 0, keep: 0, delegate: 0, pending: 0 };
+  D.items.forEach(x => c[st(x)]++);
+  return c;
+}
+function summary() {
+  const c = counts(), dl = D.items.filter(x => st(x) === "delegate");
+  const out = [`검토 화면 — 반영 ${c.accept}, 직접 ${c.own}, 그대로 ${c.keep}, 남음 ${c.pending}, 맡김 ${c.delegate}`];
+  dl.forEach(x => out.push(`맡김 #${x.id} ${x.line}행 「${clip(x.phrase.replace(/\*\*/g, ""), 30)}」 — ${x.check || x.cat}`));
+  return out.join("\n");
+}
+function renderDock() {
+  const c = counts(), dl = new Set(D.items.filter(x => st(x) === "delegate").map(x => x.line)).size;
+  document.getElementById("dock").innerHTML = `<span>반영 <b>${c.accept}</b>, 직접 <b>${c.own}</b>, 그대로 <b>${c.keep}</b>, 남음 <b>${c.pending}</b>, 맡김 <b>${c.delegate}</b></span>
+    <span class="pill ${dl ? "cost" : "free"}">재판정 ${dl ? `1회, ${dl}줄` : "0회"}</span>
+    ${c.pending ? `<span class="pill info">남은 ${c.pending}건은 제출하면 보류로 남아 발행 막힘</span>` : ""}
+    <span class="note">보기만 하는 단계 — 고른 결과는 아직 파일과 판정 기록에 저장되지 않음</span>
+    <span class="sp"><button id="sum" class="${S.showSum ? "on" : ""}">세션이 받을 요약</button></span>
+    ${S.showSum ? `<pre class="summary">${esc(summary())}\n— ${summary().length}자</pre>` : ""}`;
+}
+function render() {
+  const side = document.getElementById("side"), keep = side.scrollTop;
+  document.getElementById("doc").innerHTML = docHtml();
+  const cards = [...D.items].filter(inScope).sort((a, b) => a.line - b.line || a.id - b.id).map(cardHtml).join("");
+  side.innerHTML = toolHtml() + (cards || `<p class="note empty">지적 없음</p>`);
+  SYNC.lockSide = Date.now() + 300;
+  side.scrollTop = keep;
+  renderDock();
+}
+
+/* 양쪽 스크롤 연동 */
+const wide = () => getComputedStyle(document.getElementById("side")).position === "sticky";
+const markOf = id => document.querySelector(`#doc .mark[data-id="${id}"]`) || document.querySelector(`#doc .ln[data-n="${item(id).line}"]`);
+function activate(id, followSide) {
+  if (S.focus !== id) {
+    document.querySelectorAll("#doc .mark.focus, #side .card.focus").forEach(x => x.classList.remove("focus"));
+    S.focus = id;
+    markOf(id)?.classList.add("focus");
+    document.getElementById(`card-${id}`)?.classList.add("focus");
+  }
+  const side = document.getElementById("side"), card = document.getElementById(`card-${id}`);
+  if (followSide && card && wide()) {
+    SYNC.lockSide = Date.now() + 700;
+    const toolH = side.querySelector(".tool")?.offsetHeight || 0;
+    side.scrollTo({ top: Math.max(0, card.getBoundingClientRect().top - side.getBoundingClientRect().top + side.scrollTop - toolH - 12), behavior: "smooth" });
+  }
+}
+function docSync() {
+  if (Date.now() < SYNC.lockDoc) return;
+  const line = innerHeight * 0.35;
+  let best = null, bd = 1e9;
+  document.querySelectorAll("#doc .mark:not(.dim)").forEach(m => { const r = m.getBoundingClientRect(), d = Math.abs(r.top - line); if (r.height && d < bd) { bd = d; best = m; } });
+  if (best && +best.dataset.id !== S.focus) activate(+best.dataset.id, true);
+}
+function sideSync() {
+  if (Date.now() < SYNC.lockSide || !wide()) return;
+  const side = document.getElementById("side"), line = side.getBoundingClientRect().top + (side.querySelector(".tool")?.offsetHeight || 0) + 30;
+  let best = null, bd = 1e9;
+  side.querySelectorAll(".card").forEach(c => { const d = Math.abs(c.getBoundingClientRect().top - line); if (d < bd) { bd = d; best = c; } });
+  if (!best) return;
+  const id = +best.id.slice(5);
+  if (id === S.focus) return;
+  activate(id, false);
+  SYNC.lockDoc = Date.now() + 900;
+  scrollTo({ top: markOf(id).getBoundingClientRect().top + scrollY - innerHeight * 0.35, behavior: "smooth" });
+}
+function goDoc(id) {
+  activate(id, false);
+  SYNC.lockDoc = SYNC.lockSide = Date.now() + 900;
+  const m = markOf(id), blk = m.closest(".ln") || m;
+  scrollTo({ top: m.getBoundingClientRect().top + scrollY - innerHeight * 0.35, behavior: "smooth" });
+  blk.classList.add("flash"); setTimeout(() => blk.classList.remove("flash"), 1400);
+}
+
+/* 고르기 */
+function decide(id, v) {
+  S.undo = null;
+  if (v === "own" && S.own[id] === undefined) S.own[id] = item(id).phrase;
+  if (S.dec[id] === v && v !== "own") delete S.dec[id]; else S.dec[id] = v;
+  S.focus = id; render();
+}
+function setTrust(cat, on) {
+  S.trust[cat] = on;
+  D.items.filter(x => x.type === "replace" && x.fix && x.cat === cat).forEach(x => { if (on && st(x) === "pending") S.dec[x.id] = "accept"; if (!on && S.dec[x.id] === "accept") delete S.dec[x.id]; });
+}
+function setStyleOff(on) {
+  S.styleOff = on;
+  D.items.filter(x => x.type === "style").forEach(x => { if (on && st(x) === "pending") S.dec[x.id] = "keep"; if (!on && S.dec[x.id] === "keep") delete S.dec[x.id]; });
+}
+
+document.addEventListener("click", e => {
+  const card = e.target.closest("#side .card");
+  if (card && !e.target.closest("button, input, summary, details")) return goDoc(+card.id.slice(5));
+  const t = e.target.closest("button, .mark");
+  if (!t) return;
+  if (t.classList.contains("mark")) return activate(+t.dataset.id, true);
+  if (t.dataset.cat !== undefined) {
+    S.cat = t.dataset.cat === S.cat ? "" : t.dataset.cat; S.focus = null; render(); document.getElementById("side").scrollTop = 0;
+    const on = document.querySelector(".chip.on"), row = on?.parentElement;
+    if (on && row) row.scrollLeft = on.offsetLeft - row.offsetLeft - 8;
+    return;
+  }
+  if (t.dataset.bulk) {
+    const xs = bulkTargets(t.dataset.bulk);
+    S.undo = { dec: { ...S.dec }, n: xs.length };
+    xs.forEach(x => (S.dec[x.id] = t.dataset.bulk));
+    return render();
+  }
+  if (t.dataset.undo) { S.dec = S.undo.dec; S.undo = null; return render(); }
+  if (t.id === "sum") { S.showSum = !S.showSum; return renderDock(); }
+  if (t.dataset.act) {
+    const id = +t.dataset.id;
+    decide(id, t.dataset.act);
+    if (t.dataset.act === "own") document.querySelector(`[data-own="${id}"]`)?.focus();
+  }
+});
+document.addEventListener("change", e => {
+  const t = e.target;
+  if (t.dataset.trust !== undefined) { setTrust(t.dataset.trust, t.checked); return render(); }
+  if (t.id === "styleOff") { setStyleOff(t.checked); return render(); }
+  if (t.dataset.own) { const id = +t.dataset.own; if (t.value.trim()) { S.own[id] = t.value; S.dec[id] = "own"; } else if (S.dec[id] === "own") delete S.dec[id]; return render(); }
+});
+document.addEventListener("scroll", e => {   // 스크롤은 거품이 안 일어 잡기 단계에서 받음
+  if (SYNC.ticking) return;
+  const fromSide = e.target.id === "side";
+  SYNC.ticking = true;
+  requestAnimationFrame(() => { SYNC.ticking = false; fromSide ? sideSync() : docSync(); });
+}, { capture: true, passive: true });
+
+document.title = `검토 화면 — ${D.title}`;
+document.getElementById("title").textContent = `검토 화면 — ${D.title}`;
+document.getElementById("sub").textContent = `${D.path}, 지적 ${D.items.length}건(바로 반영 ${D.items.filter(x => x.type === "replace").length}, 작성자 확인 ${D.items.filter(x => x.type === "info").length}, 문체 규칙 ${D.items.filter(x => x.type === "style").length})`;
+render();
+</script>
+</body>
+</html>
