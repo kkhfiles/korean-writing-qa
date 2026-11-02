@@ -117,7 +117,7 @@ err  = []                                 # 주의에서 오류로 올린다
 - **★ 끈 것은 반드시 출력에 적힘** — 맨 위와 합계 줄 양쪽. 안 보이면 「오류 0」이 통과인지 안 본 것인지 갈리지 않습니다.
 - **발행 게이트** — `--no-rules` 로 설정을 무시하고 전부 봄
 - **제품 이름은 저장소 밖 목록에 둠** — `data/catalog/local-brand-names.example.txt` 를 `local-brand-names.txt` 로 복사해 자사 제품 이름과 잘못 적은 꼴을 적음 · 복사본은 `.gitignore` 대상이라 안 올라감 · 목록이 없으면 그 갈래는 안 돌고 **안 봤다고 출력에 적음**
-- **맞춤법 목록은 저장소에 있음** — `data/catalog/spelling-errors.tsv`(어문 규범 고시에서 옮긴 틀린 꼴과 바른 꼴), 「맞춤법」 오류와 「맞춤법 의심」 주의로 나옴, `python install.py` 가 설치 폴더로 복사함
+- **맞춤법 목록은 저장소에 있음** — `data/catalog/spelling-errors.tsv`(자주 틀리는 말을 어문 규범 고시에 비추어 정리한 틀린 꼴과 바른 꼴), 「맞춤법」 오류와 「맞춤법 의심」 주의로 나옴, 외래어 표기는 사내에 굳은 표기와 어긋나는 일이 많아 모두 주의, `python install.py` 가 설치 폴더로 복사함
   - **항목을 더할 때** — 틀린 꼴이 다른 낱말 안에 들어 있거나 맞는 말로도 쓰이면 「제외」 칸에 더 긴 꼴을 적거나 등급을 「주의」로 둠, 잡을 문장과 잡으면 안 될 문장을 `tests/test_spelling_rule.py` 에 함께 넣음
 - **안 쓸 동사는 개인 목록에 둠** — `data/catalog/local-personal-words.example.tsv` 를 `local-personal-words.tsv` 로 복사해 「동사 · 명사 · 바꿀 말 · 까닭」을 적음(「결함을 잡다 → 검출」) · 「업무 글에 없는 말」 주의로 나옴 · 형태소 분석기가 있어야 돎 · 복사본은 `.gitignore` 대상
   - **고친 뒤 `python install.py`** — 제품 이름 목록과 개인 목록을 설치 폴더(`~/.claude/data/catalog/`)로 복사해, 이 저장소 밖 프로젝트의 검사에도 적용함
