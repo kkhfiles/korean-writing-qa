@@ -169,7 +169,9 @@ def score() -> dict:
                      if vote("claude", x["id"]) is not None and vote("claude", x["id"]) == vote("gpt", x["id"])}
         else:
             major = {x["id"]: (m, 1) for x in xs if (m := majority(x["id"])) is not None}
-        pair = ("claude", "gpt") if name == L1_CONTENT else FIRST_TWO
+        # 나중에 더한 도구(2026-11-02)는 Argon 주간 한도로 Argon 판정이 없음 — Claude 와 Flash 를 두 판정자로 씀.
+        # plain-flash 는 Flash 가 자기 결과를 판정하는 셈이라 README 에 적음(앞 여덟도 Claude, Argon 이 자기 결과를 판정함)
+        pair = ("claude", "gpt") if name == L1_CONTENT else FIRST_TWO if name in FIRST_EIGHT else ("claude", "flash")
         two = [x["id"] for x in xs if all(vote(j, x["id"]) is not None for j in pair)]
         row["두 판정자 일치율"] = round(sum(len({vote(j, i) for j in pair}) == 1 for i in two) / len(two), 3) if two else None
         # GPT 셋째 판정이 한도로 빠져 다수결을 다 못 냄 — 두 판정자 기준 범위로 적음(2026-10-31)

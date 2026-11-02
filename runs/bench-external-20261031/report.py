@@ -54,7 +54,7 @@ def pairs(table: dict, metric_path, base: str, others: list[str]) -> dict:
 def main() -> int:
     res: dict = {}
     k = bench_knct.score()
-    models = ["plain-claude", "plain-gpt", "plain-argon", "imnotai-claude", "kiwi-space", "kobart-gec"]
+    models = ["plain-claude", "plain-gpt", "plain-argon", "plain-flash", "imnotai-claude", "kiwi-space", "kobart-gec"]
     res["D1 K-NCT"] = {
         n: {"회수율": r3(v["회수율"]["전체"]), "회수율(엄격)": r3(v["회수율(엄격)"]),
             "갈래별 회수율": {f: round(x[0], 3) for f, x in v["회수율"].items() if f != "전체"},
@@ -74,7 +74,7 @@ def main() -> int:
             "원문 지적/1천 자": r3(v["원문 지적 밀도(1천 자당)"]), "비용": cost_row(v["비용"])}
         for n, v in i.items()}
     pi = {n: v["_per_doc"] for n, v in i.items()}
-    others = ["l1", "plain-claude", "plain-gpt", "plain-argon", "imnotai-claude", "kiwi-space", "kobart-gec"]
+    others = ["l1", "plain-claude", "plain-gpt", "plain-argon", "plain-flash", "imnotai-claude", "kiwi-space", "kobart-gec"]
     res["D2 짝지은 차이"] = {
         "F1~F4 회수율": pairs(pi, lambda t: t["F1~F4"], "l2", others),
         "F1~F4 보정 회수율": pairs(pi, lambda t: t["F1~F4 보정"], "l2", others),
