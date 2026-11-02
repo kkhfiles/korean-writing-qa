@@ -1865,9 +1865,17 @@ def main(argv=None, backend=None) -> int:
                   "--reply '의견대로, 단 3 그대로'")
             print()
             print(listing)
+        elif asks and len(a.docs) == 1:
+            # 2026-11-02 사용자 결정 — 검토 화면이 판정표를 대신한다. 답을 화면이 판정 기록에 바로 남기므로
+            # 표의 「답」 칸과 --answers-from 을 거치지 않는다
+            print(f"  지적이 {ask_sheet.SCREEN_MAX}건을 넘어 검토 화면으로 묻습니다 — 백그라운드로 띄웁니다(사용자가 "
+                  "「제출」을 누르면 답을 판정 기록에 남기고 고른 글로 파일을 고친 뒤 요약을 내고 끝남):")
+            print(f"    python -X utf8 {(Path(__file__).parent / 'review_screen.py').resolve().as_posix()} "
+                  f"{Path(a.docs[0]).resolve().as_posix()} --serve")
+            print("  끝나면 요약의 「세션이 고칠 것」과 「세션에 맡김」을 고치고 「다시 판정할 줄」과 함께 --since 로 다시 판정합니다")
         elif asks:
-            print(f"  지적이 {ask_sheet.SCREEN_MAX}건을 넘어 판정표로 묻습니다 — 「제 의견」 칸을 채운 뒤 카드형 판정표를 "
-                  "백그라운드로 띄웁니다(사용자가 「제출」을 누르면 답이 표에 적히고 명령이 끝남):")
+            print(f"  지적이 {ask_sheet.SCREEN_MAX}건을 넘고 문서가 여럿이라 판정표로 묻습니다 — 「제 의견」 칸을 채운 뒤 "
+                  "카드형 판정표를 백그라운드로 띄웁니다(사용자가 「제출」을 누르면 답이 표에 적히고 명령이 끝남):")
             print(f"    python -X utf8 {(Path(__file__).parent / 'ask_sheet_html.py').resolve().as_posix()} "
                   f"{out.resolve().as_posix()} --serve")
             print(f"  끝나면: python -X utf8 {Path(__file__).resolve().as_posix()} --answers-from {out.resolve().as_posix()}")
