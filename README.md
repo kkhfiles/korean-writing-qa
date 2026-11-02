@@ -96,10 +96,10 @@ python doc-style-check.py <파일…|디렉터리> [-v]
 **해라체로 통일한 문서는 결함이 아님, 말투가 섞인 줄은 오류** — 「~한다」로 일관되게 쓴 보고서나 기사체 글은 그대로 통과합니다. 한 문서 안에서 합쇼체(「~합니다」)와 해라체가 섞이면, 많은 쪽 말투에 어긋난 줄을 「말투 섞임」 오류로 냅니다. 두 말투가 비슷하게 많아 어느 쪽에 맞출지 정할 수 없으면 주의 한 줄로 알립니다.
 - **합쇼체로 통일하려면** — `korean-qa.toml` 의 `[rules]` 에 `on = ["반말 서술형"]` 추가
   - **결과** — 해라체 문장 전부를 오류로 냄
-  - **발행 게이트**(`--no-rules`) — 이 켬 설정은 따름
+  - **발행 게이트**(`--no-rules`) — 다른 설정은 무시하지만 `on = ["반말 서술형"]` 설정은 따름
 - **작성자 PC** — 개인 항목 스위치(`data/catalog/local-personal-rules.txt`)가 있으면 설정 없이 해라체 문장 전부가 오류
-- **빠지는 파일** — Claude 만 읽는 지시 파일(`CLAUDE.md`, `AGENTS.md`, `SKILL.md`, `.claude/` 와 `skills/` 아래)
-- **이미 쓴 문서를 합쇼체로 바꾸기** — `python -X utf8 scripts/make_polite.py <파일…>` 로 끝 낱말만 바꿈(목록만 보이고 `--apply` 를 붙여야 씀, 형태소 분석기 kiwipiepy 필요)
+- **「반말 서술형」 검사에서 빠지는 파일** — Claude 만 읽는 지시 파일(`CLAUDE.md`, `AGENTS.md`, `SKILL.md`, `.claude/` 와 `skills/` 아래)
+- **이미 쓴 문서를 합쇼체로 바꾸기** — `python -X utf8 scripts/make_polite.py <파일…>` 로 끝 낱말만 바꿈(기본은 바꿀 목록만 출력하고 `--apply` 를 붙여야 파일에 반영함, 형태소 분석기 kiwipiepy 필요)
 
 ```
 python assets/doc-style-check.py --list-rules      # 갈래와 묶음 이름 목록
