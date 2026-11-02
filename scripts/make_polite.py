@@ -157,7 +157,9 @@ def _polite(word, phrase):
 def plain_parts(path, raw):
     """(줄 번호, 반말 조각) — 검사기가 「반말 서술형」을 낸 줄에서만 찾는다."""
     dsc = checker()
-    err, _, _ = dsc.scan_md(path)
+    # 합쇼체로 바꾸는 도구라 반말 전부를 본다 — 개인 기준이 없는 설치는 기본으로 섞인 줄만 내서(2026-11-02)
+    # 그대로 부르면 해라체로 통일한 문서에서 아무것도 못 찾는다
+    err, _, _ = dsc.scan_md(path, False, None, dsc.Selection(on={"반말 서술형"}, source="make_polite"))
     # 지적은 (갈래, "12행  …") 꼴이다 — 줄 번호는 설명 앞머리에 있다
     flagged = {int(m.group(1)) for kind, msg in err if kind == "반말 서술형"
                for m in [re.match(r"(\d+)행", msg)] if m}

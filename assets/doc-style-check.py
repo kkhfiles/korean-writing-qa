@@ -1631,7 +1631,8 @@ def is_plain_speech(sent):
 
     **문서에는 반말을 쓰지 않는다 — 전부**(2026-09-23 사용자). 예전에는 「업무
     보고서의 63%가 반말이고 그게 정상」이라며 기본으로 꺼 두었는데 빈도 논증이었다.
-    Claude 만 읽는 지시 파일만 뺀다(`is_instruction_file`).
+    Claude 만 읽는 지시 파일만 뺀다(`is_instruction_file`). 개인 기준이 없는 설치에서는
+    `apply_register` 가 이 갈래를 섞임 판정으로 바꾼다(2026-11-02).
     """
     probe = drop_tail(QUOTE_SPAN.sub(' ', sent)).rstrip('.!?… ')
     return is_narrative(sent) and not is_polite(probe)
@@ -1668,6 +1669,56 @@ def register_mix(sents):
         return []
     side = '존댓말' if minor is polite else '반말'
     return [(s, side, len(polite), len(plain)) for s in minor]
+
+
+# ★ 반말은 개인 기준이고 섞임은 누구에게나 결함이다 (2026-11-02)
+#
+#   「문서는 합쇼체」는 저장소 주인 한 사람의 기준이다 — 2026-10-30 사용자 결정 「이 규칙과
+#   검사기는 사용자 본인의 글에만 적용, 다른 사람에게 강요하지 않음」. 그런데 「반말 서술형」은
+#   형식 선언으로도 안 꺼져서, 해라체로 일관되게 쓴 보고서와 기사체 글이 문장마다 오류였다
+#   (정책브리핑 정책뉴스 40편에서 한글 1천 자당 17.3건, 909건 중 878건이 이 갈래,
+#   `runs/bench-external-20261031`). 해라체로 통일한 글은 잘 쓴 업무 글에서 결함이 아니다.
+#   한 문서 안에서 합쇼체와 해라체가 섞인 것은 누구에게나 결함이다.
+#
+#   그래서 둘로 가른다(`apply_register`).
+#   - 개인 기준이 있는 PC(`PROFILE`) 또는 설정 `[rules] on = ["반말 서술형"]` — 지금 그대로
+#     반말 서술 문장 전부가 오류다. 위 `register_mix` 의 「말투 섞임」 주의도 그대로 낸다.
+#   - 그 밖의 설치 — 「반말 서술형」을 내지 않고, 주인 말투에 어긋난 줄만 「말투 섞임」 오류로 낸다.
+#     주인 말투를 못 정하면 주의 한 줄로 사람에게 넘긴다.
+#
+#   센 범위는 「반말 서술형」과 같다(문단, 목록, 표 칸, 결론 뒤 근거 문장, 대시 앞뒤 따로).
+#   위 `register_mix` 는 값 슬롯의 결론 쪽만 세서 근거 문장의 반말을 못 본다.
+#
+#   ★ 주인 말투 — **많은 쪽이 적은 쪽의 두 배 이상**일 때만 정한다(소수 쪽 비율 1/3 이하)
+#   실측(2026-11-02, 문서마다 이 범위로 존댓말과 반말 서술 문장을 셈)
+#   - 정책뉴스 40편: 전부 반말만(인터뷰 인용의 존댓말은 인용 가림으로 빠짐) → 섞임 0편
+#   - 이 저장소 사람용 문서 4편과 `docs/` 17편, AI 초안 12편: 섞임 0편
+#   - 사용자 문서 372편: 존댓말만 127, 반말만 86, 서술 없음 130, 둘 다 29
+#     둘 다 있는 29편의 소수 쪽 비율 — 0.10 미만 13편, 0.10~0.25 6편, 0.25~1/3 8편, 그 위 2편
+#   - 비율에 끊기는 구간이 없다. 0.25~1/3 의 8편은 한 절을 통째로 다른 말투로 쓴 문서라
+#     읽어 보면 섞임이 분명했고(존댓말 37 대 반말 18 등), 1/3 위(19 대 27 등)는 어느 쪽이
+#     주인인지 글만으로 못 정한다 → 두 배를 경계로 둠
+#   - 소수 쪽 줄 가운데에는 인용 부호 없이 옮긴 설문 보기(「그렇다」), 기사 제목, 남이 쓴 답이
+#     섞인다. 개인 기준에서는 같은 줄이 이미 「반말 서술형」 오류라 오류로 둔다(그 부분집합).
+#   - 서술 문장 수 하한은 두지 않는다 — 두 배 조건이 1 대 1 을 이미 막고, 2 대 1 이면 섞임이다.
+SHARED_MIX_RATIO = 2
+
+
+def register_strays(parts):
+    """[(줄, 문장, 반말인가)] 에서 주인 말투에 어긋난 **소수 쪽** 문장을 낸다.
+
+    주인 말투를 못 정하면(두 말투가 비슷하게 많으면) 빈 목록 — 그 경우는
+    `apply_register` 가 주의 한 줄로 사람에게 넘긴다.
+    """
+    polite = [p for p in parts if not p[2]]
+    plain = [p for p in parts if p[2]]
+    if not polite or not plain:
+        return []
+    minor, major = (polite, plain) if len(polite) < len(plain) else (plain, polite)
+    if len(major) < SHARED_MIX_RATIO * len(minor):
+        return []
+    side = '존댓말' if minor is polite else '반말'
+    return [(n, s, side, len(polite), len(plain)) for n, s, _ in minor]
 
 
 def sentences(t):
@@ -1977,6 +2028,7 @@ def scan_html(path, relaxed=False, form=None, rules=None):
     slot_chunks = [m.group(2) for m in re.finditer(
         r'<(li|dd|td|figcaption)(?![a-zA-Z])[^>]*>(.*?)</\1>', body, re.S)]
     mix_sents, told, not_but_texts = [], set(), []
+    tally, told_polite = [], set()     # 말투를 센 문장 — 개인 기준이 없는 설치의 섞임 판정(`apply_register`)
     for p, count_mix in [(c, True) for c in chunks] + [(c, False) for c in slot_chunks]:
         t = strip(p)
         if not t or is_example(t):
@@ -1995,7 +2047,11 @@ def scan_html(path, relaxed=False, form=None, rules=None):
                     if part not in told:
                         told.add(part)
                         err.append(('반말 서술형', f'{part[:52]} — 존댓말로 쓰거나 개조식으로 끝낼 것'))
+                        tally.append((None, part, True))
                     break
+                if is_narrative(part) and part not in told_polite:
+                    told_polite.add(part)
+                    tally.append((None, part, False))
     for sent, side, np, nq in register_mix(mix_sents):
         warn.append(('말투 섞임',
                      f'{sent[:50]} — 이 문서는 존댓말 {np} · 반말 {nq} 이라 '
@@ -2132,6 +2188,7 @@ def scan_html(path, relaxed=False, form=None, rules=None):
     if resolved == 'notice':
         frame = notice_frame_html(body)
         err, warn = drop_notice_frame(err, warn, lambda m: any(m.strip() in t for t in frame))
+    err, warn = apply_register(err, warn, tally, rules, path, numbered=False)
     err, warn = apply_form(err, warn, resolved)
     err, warn = apply_instruction_file(err, warn, path)
     err, warn = apply_selection(err, warn, rules) if rules else (err, warn)
@@ -2437,6 +2494,10 @@ RULES_FILENAME = 'korean-qa.toml'
 #  탓에 2026-09-08 에 발행 원고 열 개에서 반말 149줄이 그대로 통과한 적도 있다.
 #  그래서 기본으로 꺼 두던 장치를 통째로 걷어냈다.
 #
+#  ⚠️ 2026-11-02 부터 이 결정은 **개인 기준이 있는 PC** 에만 걸린다(2026-10-30 사용자 결정
+#     「다른 사람에게 강요하지 않음」). 그 밖의 설치는 섞인 줄만 본다 — `register_strays` 주석.
+#     꺼 두던 옛 장치와 다른 점은 해라체로 통일한 문서만 조용하고 섞임은 오류라는 것이다.
+#
 #  ⚠️ 빼는 것은 하나 — **Claude 만 읽는 지시 파일.** 사람이 읽는 문서 산출물이
 #     아니라 모델에게 주는 지시다(전역 규칙의 「사람이 읽느냐로 가른다」 표와 같다).
 #     이름(CLAUDE.md · AGENTS.md · SKILL.md)이나 자리(`.claude/` · `.agents/` ·
@@ -2555,6 +2616,44 @@ def apply_instruction_file(err, warn, path):
     return pick(err), pick(warn)
 
 
+def plain_speech_is_error(rules):
+    """반말 서술 문장 전부를 오류로 보나 — 개인 기준이 있는 PC 이거나 설정에서 켰을 때.
+
+    `--no-rules`(발행 게이트)는 설정을 무시할 뿐 기준을 바꾸지 않는다 — 개인 기준이 없는
+    설치에서 게이트가 해라체 문서를 막으면 기본에서 결함이 아니라고 한 것과 어긋난다.
+    """
+    return PROFILE or (rules is not None and '반말 서술형' in rules.on)
+
+
+def apply_register(err, warn, tally, rules, path, numbered):
+    """개인 기준이 없는 설치 — 「반말 서술형」을 빼고 말투가 섞인 줄만 「말투 섞임」 오류로 낸다.
+
+    주인 말투를 못 정하면 주의 한 줄로 사람에게 넘긴다(침묵하면 그 섞임은 미탐이 된다).
+    지시 파일은 개인 기준과 같이 둔다 — `apply_instruction_file` 이 반말을 빼고 옛 주의는 남긴다.
+    """
+    if plain_speech_is_error(rules) or is_instruction_file(path):
+        return err, warn
+    err = [i for i in err if i[0] != '반말 서술형']
+    # `register_mix` 의 옛 주의는 값 슬롯 결론 쪽만 센 것이라 아래 판정으로 바꾼다
+    warn = [i for i in warn if i[0] != '말투 섞임']
+    where = lambda n: f'{n}행  ' if (numbered and n) else ''  # noqa: E731
+    strays, seen = register_strays(tally), set()
+    for n, sent, side, np, nq in strays:
+        key = n if (numbered and n) else sent
+        if key in seen:
+            continue
+        seen.add(key)
+        other = '반말' if side == '존댓말' else '존댓말'
+        err.append(('말투 섞임', f'{where(n)}{sent[:50]} — 이 문서는 존댓말 {np}, 반말 {nq} 문장이라 '
+                                f'{side} 한 줄이 섞였다, {other}로 맞출 것'))
+    plain = sum(1 for p in tally if p[2])
+    if not strays and plain and plain < len(tally):
+        first = next(p for p in tally if p[2])
+        warn.append(('말투 섞임', f'{where(first[0])}{first[1][:40]} — 이 문서는 존댓말 {len(tally) - plain}, '
+                                 f'반말 {plain} 문장이라 주인 말투를 못 정했다, 한 말투로 맞출 것'))
+    return err, warn
+
+
 def apply_selection(err, warn, sel):
     """끄고 · 낮추고 · 올린다. 순서는 끄기가 먼저다."""
     if not sel:
@@ -2576,9 +2675,11 @@ def list_rules():
         for k in kinds:
             print(f'    {k}')
         print()
-    print('반말 서술형은 문서 전부에 건다 — 문서에는 반말을 쓰지 않는다(2026-09-23).')
-    print('Claude 만 읽는 지시 파일(CLAUDE.md · AGENTS.md · SKILL.md · .claude/ · skills/ 아래)만')
-    print('뺀다 — 사람이 읽는 문서가 아니라 모델에게 주는 지시라서다.\n')
+    print('반말 서술형은 개인 기준이다 — 개인 항목 스위치(local-personal-rules.txt)가 있으면 문서 전부에')
+    print('건다. 없으면 해라체로 통일한 문서는 그대로 두고, 한 문서에 합쇼체와 해라체가 섞인 줄만')
+    print('「말투 섞임」으로 낸다. 합쇼체로 통일하려면 설정에 on = ["반말 서술형"] 을 적는다.')
+    print('Claude 만 읽는 지시 파일(CLAUDE.md, AGENTS.md, SKILL.md, .claude/ 와 skills/ 아래)은')
+    print('어느 쪽이든 뺀다 — 사람이 읽는 문서가 아니라 모델에게 주는 지시라서다.\n')
     print('띄어 쓴 가운뎃점은 새로 쓰거나 고친 줄만 본다 — AI 세션이 문서를 처음 고치기 직전에')
     print('그때 있던 줄을 대장에 적는다(2026-10-13). 손댄 적 없는 문서는 건수만 알린다.\n')
     print('보기 — 표 머리 「비고」를 쓰는 조직, 제목 형식은 자유로 두는 조직\n')
@@ -2782,6 +2883,7 @@ def scan_md(path, relaxed=False, form=None, rules=None):
 
     # 1. 값·목록·표 칸·본문 문단의 서술형 종결
     md_mix = []          # 말투 섞임은 문서 전체를 봐야 해서 모았다가 끝에 판정한다
+    tally = []           # 「반말 서술형」과 같은 범위로 센 문장 — 개인 기준이 없는 설치의 섞임 판정(`apply_register`)
     wrapped = wrapped_lines(body)
     prev_is_table = contrast_table = False
     for n, line in body:
@@ -2842,7 +2944,10 @@ def scan_md(path, relaxed=False, form=None, rules=None):
                 for part in re.split(r'\s+[—–]\s+', sent):
                     if is_plain_speech(part):
                         err.append((n, '반말 서술형', f'{part[:52]} — 존댓말로 쓰거나 개조식으로 끝낼 것'))
+                        tally.append((n, part, True))
                         break
+                    if is_narrative(part):
+                        tally.append((n, part, False))
         prev_is_table = s.startswith('|')
         for cell in parts:
             for v in cell:
@@ -3176,6 +3281,7 @@ def scan_md(path, relaxed=False, form=None, rules=None):
         ))
     for msg in middot_errors(path, raw, numbered=True):
         err.append(('띄어 쓴 가운뎃점', msg))
+    err, warn = apply_register(err, warn, tally, rules, path, numbered=True)
     err, warn = apply_form(err, warn, resolved)
     err, warn = apply_instruction_file(err, warn, path)
     err, warn = apply_selection(err, warn, rules) if rules else (err, warn)
@@ -3372,9 +3478,18 @@ def main():
     # 갈래 설정 — 명시한 것이 먼저, 없으면 대상에서 위로 올라가며 찾는다.
     # `--no-rules` 는 발행 게이트용이다. 설정이 무엇을 끄든 전부 보게 한다.
     # (2026-09-23 까지는 기본으로 꺼 둔 반말 갈래를 켜는 일도 했다 — 그 장치는 걷어냈다.)
+    # ⚠️ 켠 갈래(`on`)는 `--no-rules` 에서도 따른다(2026-11-02) — 개인 기준이 없는 설치에서
+    #    합쇼체로 통일하려고 `on = ["반말 서술형"]` 을 적은 저장소가 발행 순간에만 그 기준을 잃지 않게.
+    #    끄고 낮추는 것만 무시한다. 설정을 못 읽으면 예전처럼 아무것도 안 따른다.
     rules = None
     if '--no-rules' in argv:
         rules = Selection(source='--no-rules')
+        found = find_rules(args)
+        if found:
+            try:
+                rules = Selection(on=load_rules(found).on, source=f'--no-rules (켬은 {found})')
+            except (ValueError, OSError, ModuleNotFoundError):
+                pass
     if '--no-rules' not in argv:
         found = rules_path or find_rules(args)
         if found:
@@ -3390,6 +3505,8 @@ def main():
     # ⛔ 껐다는 사실이 안 보이면 「오류 0」이 무엇을 뜻하는지 알 수 없다.
     if rules:
         print(f'갈래 설정 {rules.source} — {rules.summary()}')
+        for kind in sorted(rules.on):
+            print(f'   ✓ {kind} — 켬')
         for kind in sorted(rules.off):
             print(f'   ⊘ {kind} — 끔')
         for kind in sorted(rules.warn):

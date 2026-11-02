@@ -34,6 +34,21 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import repo_paths  # noqa: E402
 
+# 이 파일은 개인 기준(문서는 합쇼체, 「반말 서술형」 오류)을 시험한다 — 개인 항목 스위치가 없는
+# 기계(CI)에서도 같은 기준으로 보게 고정한다. 공유 기준은 `test_register_by_profile.py` 가 본다.
+import os as _os  # noqa: E402
+from unittest import mock as _mock  # noqa: E402
+
+_PERSONAL = _mock.patch.dict(_os.environ, {"KOREAN_QA_PERSONAL_RULES": "on"})
+
+
+def setUpModule() -> None:
+    _PERSONAL.start()
+
+
+def tearDownModule() -> None:
+    _PERSONAL.stop()
+
 CHECKER = repo_paths.CHECKER
 
 MD_HEAD = ("---\nform: structured\n---\n\n# 검토 결과\n\n"

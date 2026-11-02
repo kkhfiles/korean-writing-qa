@@ -63,8 +63,12 @@ class MakePoliteTests(unittest.TestCase):
         return path
 
     def plain(self, path: Path) -> list:
-        """검사기가 낸 반말 지적의 줄 번호 — 지적은 (갈래, "12행  …") 꼴이다."""
-        err, _, _ = self.tool.checker().scan_md(str(path))
+        """검사기가 낸 반말 지적의 줄 번호 — 지적은 (갈래, "12행  …") 꼴이다.
+
+        변환기와 같이 반말 서술형을 켜고 본다 — 개인 기준이 없는 설치(CI)에서도 같은 줄을 대조한다.
+        """
+        dsc = self.tool.checker()
+        err, _, _ = dsc.scan_md(str(path), False, None, dsc.Selection(on={"반말 서술형"}, source="시험"))
         return [int(msg.split("행")[0]) for kind, msg in err if kind == "반말 서술형"]
 
     # ── 끝 음절 ──────────────────────────────────────────────────────────────
