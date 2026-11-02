@@ -15,6 +15,7 @@
 
 from __future__ import annotations
 
+import os
 import re
 import subprocess
 import sys
@@ -36,9 +37,12 @@ TOTAL = re.compile(r"합계\s*—\s*오류\s*(\d+)\s*·\s*주의\s*(\d+)")
 
 
 def run_checker(path: Path) -> tuple[int, int]:
+    # 표는 저장소를 처음 받은 사람이 보는 값이다 — 개인 항목 스위치가 없는 설치로 고정한다
+    # (스위치가 있으면 「반말 서술형」이 더 걸려 값이 다르다, 2026-11-02)
     done = subprocess.run(
         [sys.executable, "-X", "utf8", str(repo_paths.CHECKER), str(path)],
-        capture_output=True, text=True, encoding="utf-8")
+        capture_output=True, text=True, encoding="utf-8",
+        env={**os.environ, "KOREAN_QA_PERSONAL_RULES": "off"})
     m = TOTAL.search(done.stdout or "")
     if not m:                      # 위반이 하나도 없으면 합계 줄 대신 ✅ 만 나온다
         return (0, 0)

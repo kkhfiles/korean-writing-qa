@@ -42,9 +42,11 @@ python -X utf8 -m unittest discover -s tests
 | 명령 | 나와야 하는 것 |
 |---|---|
 | `exempt-fixture.md` 검사 | `오류 0 · 주의 0` |
-| `violation-fixture.md` 검사 | `오류 16 · 주의 6` |
+| `violation-fixture.md` 검사 | `오류 11 · 주의 6` |
 | `install.py --check` | `다름 0 · 없음 0` · 앞의 「같음」은 설치한 파일 수라 버전마다 다름 |
 | 시험 | `OK` · 건너뛰기와 「알려진 실패」가 함께 나오는 것이 정상 |
+
+**개인 항목 스위치(`data/catalog/local-personal-rules.txt`)가 있는 PC** — `violation-fixture.md` 검사 결과는 `오류 16`. 해라체로 끝난 값 다섯 줄이 「반말 서술형」으로도 걸리기 때문입니다.
 
 **`OK` 뒤에 붙는 것을 읽는 법** — 검사기와 스킬을 재는 시험은 전부 돕니다.
 

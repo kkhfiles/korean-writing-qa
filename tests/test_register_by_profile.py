@@ -156,6 +156,20 @@ class SharedTests(Base):
             err, _warn, _ = self.dsc.scan_md(str(p))
         self.assertEqual(self.of(err, "말투 섞임") + self.of(err, "반말 서술형"), [])
 
+    def test_paired_fixtures_lose_no_line(self) -> None:
+        """위반 시료의 해라체 값 줄은 공유 기준에서도 「서술형 종결」로 걸린다 — 빠지는 줄이 없다."""
+        paired = repo_paths.REPO / "tests" / "fixtures" / "paired"
+        personal = load("on")
+        mine, theirs = (self.dsc.scan_md(str(paired / "violation-fixture.md"))[0],
+                        personal.scan_md(str(paired / "violation-fixture.md"))[0])
+        line = lambda m: m.split("행")[0]  # noqa: E731
+        plain_lines = {line(m) for k, m in theirs if k == "반말 서술형"}
+        self.assertTrue(plain_lines)
+        self.assertEqual(plain_lines - {line(m) for k, m in mine}, set(), "공유 기준에서 지적이 사라진 줄")
+        self.assertEqual([i for i in theirs if i[0] != "반말 서술형"], mine)
+        exempt = self.dsc.scan_md(str(paired / "exempt-fixture.md"))
+        self.assertEqual((exempt[0], exempt[1]), ([], []))
+
     def test_publish_gate_follows_opt_in(self) -> None:
         """`--no-rules` 는 끄고 낮춘 것만 무시한다 — 켠 합쇼체 기준을 발행 순간에 잃지 않게."""
         with tempfile.TemporaryDirectory() as d:
