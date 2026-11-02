@@ -120,6 +120,14 @@ select { font: inherit; font-size: 13.5px; border: 1px solid var(--line); border
 @media (prefers-reduced-motion: reduce) { .va2 .slot { transition: none; } }
 @media (max-width: 960px) { .va2 { grid-template-columns: 1fr; } .va2 .rail { display: none; } .va2 .inline { display: grid; } .va2 .keyhint { display: none; } }
 
+/* A3: 양쪽 스크롤 연동 — 원문은 페이지 스크롤, 카드는 고정된 칸 안에서 따로 스크롤(draft-redline 방식) */
+.va3 { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 18px; align-items: start; }
+.va3 .side3 { display: grid; gap: 10px; position: sticky; top: 76px; max-height: calc(100vh - 150px); overflow-y: auto;
+  padding: 2px 4px 40vh 2px; overscroll-behavior: contain; }
+.va3 .card { cursor: pointer; }
+.va3 .flash { background: #fff3c4; transition: background .3s; }
+@media (max-width: 960px) { .va3 { grid-template-columns: 1fr; } .va3 .side3 { position: static; max-height: none; padding-bottom: 0; } }
+
 /* B: 한 장씩 */
 .vb { display: grid; gap: 14px; max-width: 760px; margin: 0 auto; width: 100%; }
 .vb .progress { height: 6px; background: var(--line); border-radius: 999px; overflow: hidden; }
@@ -217,7 +225,7 @@ td.n { font-family: var(--mono); color: var(--muted); white-space: nowrap; }
 const D = /*DATA*/null;
 const JUDGE_COST = 0.098;        // 이 초안의 첫 판정 실측(e2e/work/06/r0-l2/judge.jsonl)
 const REJUDGE = "0.06~0.08";     // 2026-11-02 재판정 실측(문서 하나, 대상 1~3줄)
-const S = { v: "A2", dec: {}, own: {}, trust: {}, styleOff: false, focus: null, qi: 0, opinion: {}, showSum: false,
+const S = { v: "A3", dec: {}, own: {}, trust: {}, styleOff: false, focus: null, qi: 0, opinion: {}, showSum: false,
             eTrusted: false };
 const TYPES = { replace: "바로 반영", info: "작성자 확인", style: "문체 규칙" };
 const V = [
@@ -227,6 +235,9 @@ const V = [
   { k: "A2", name: "좌우 맞춤", sub: "카드가 해당 줄 옆에 붙음", strength: 2,
     fit: "문맥을 보며 고를 때 — A를 고른 뒤 좌우가 따로 스크롤되던 점을 고친 판", human: "A보다 적음 — 줄과 카드가 같은 높이라 눈을 옮기지 않음",
     token: "A와 같음 — 사람이 다 고르면 재판정 0회", lose: "지적이 한 곳에 몰리면 카드가 아래로 밀려 줄과 조금 어긋남" },
+  { k: "A3", name: "양쪽 스크롤 연동", sub: "따로 스크롤하고 서로 따라감", strength: 2,
+    fit: "문맥을 보며 고를 때 — 백서 검토 비교 화면(draft-redline)과 같은 방식", human: "A보다 적음 — 어느 쪽을 스크롤해도 짝이 따라옴",
+    token: "A와 같음 — 사람이 다 고르면 재판정 0회", lose: "따라가는 동안 반대쪽이 움직여 처음에는 낯설 수 있음" },
   { k: "B", name: "한 장씩", sub: "키보드로 넘기기", strength: 3,
     fit: "지적이 많고(20건 이상) 빨리 처리할 때", human: "가장 적음 — 숫자키 1~4로 고르고 다음으로 넘어감",
     token: "A와 같음, 앞뒤 줄만 보여 주므로 화면 자체도 가벼움", lose: "문서 전체 흐름이 안 보임 — 같은 문제가 여러 줄에 걸친 것을 놓치기 쉬움" },
@@ -401,6 +412,58 @@ function focusA2(id, scroll) {
   if (scroll) document.querySelector(`#a2doc .mark[data-id="${id}"], #a2doc .ln[data-n="${item(id).line}"]`)?.scrollIntoView({ block: "center" });
 }
 
+/* A3 — 양쪽 스크롤 연동: 원문을 스크롤하면 카드 목록이, 카드 목록을 스크롤하면 원문이 따라감 */
+function viewA3() {
+  const cards = [...D.items].sort((a, b) => a.line - b.line || a.id - b.id).map(x => cardHtml(x)).join("");
+  return `<div class="va3"><section class="panel doc" aria-label="원문과 수정 제안"><h2>원문과 수정 제안</h2>
+    <p class="note" style="margin:0 0 8px">어느 쪽을 스크롤해도 짝이 따라옴, 표시나 카드를 누르면 그 자리로 이동</p><div id="a3doc">${docHtml()}</div></section>
+    <aside class="side3" id="side3" aria-label="지적 카드(줄 순서)">${cards}</aside></div>`;
+}
+const SYNC = { lockDoc: 0, lockSide: 0, ticking: false };
+function a3mark(id) { return document.querySelector(`#a3doc .mark[data-id="${id}"]`) || document.querySelector(`#a3doc .ln[data-n="${item(id).line}"]`); }
+function a3active(id, followSide) {
+  if (S.focus !== id) {
+    document.querySelectorAll("#a3doc .mark.focus, #side3 .card.focus").forEach(x => x.classList.remove("focus"));
+    S.focus = id;
+    a3mark(id)?.classList.add("focus");
+    document.getElementById(`card-${id}`)?.classList.add("focus");
+  }
+  const side = document.getElementById("side3"), card = document.getElementById(`card-${id}`);
+  if (followSide && side && card && getComputedStyle(side).position === "sticky") {
+    SYNC.lockSide = Date.now() + 700;
+    const top = card.getBoundingClientRect().top - side.getBoundingClientRect().top + side.scrollTop - 12;
+    side.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+  }
+}
+function a3docSync() {
+  if (Date.now() < SYNC.lockDoc) return;
+  const line = innerHeight * 0.35;
+  let best = null, bd = 1e9;
+  document.querySelectorAll("#a3doc .mark").forEach(m => { const r = m.getBoundingClientRect(); const d = Math.abs(r.top - line); if (r.height && d < bd) { bd = d; best = m; } });
+  if (best && +best.dataset.id !== S.focus) a3active(+best.dataset.id, true);   // 바뀔 때만 따라감
+}
+function a3sideSync() {
+  if (Date.now() < SYNC.lockSide) return;
+  const side = document.getElementById("side3");
+  const line = side.getBoundingClientRect().top + 40;
+  let best = null, bd = 1e9;
+  side.querySelectorAll(".card").forEach(c => { const d = Math.abs(c.getBoundingClientRect().top - line); if (d < bd) { bd = d; best = c; } });
+  if (!best) return;
+  const id = +best.id.slice(5);
+  if (id === S.focus) return;
+  a3active(id, false);
+  SYNC.lockDoc = Date.now() + 900;
+  const m = a3mark(id);
+  scrollTo({ top: m.getBoundingClientRect().top + scrollY - innerHeight * 0.35, behavior: "smooth" });
+}
+function a3goDoc(id) {
+  a3active(id, false);
+  SYNC.lockDoc = Date.now() + 900;
+  const m = a3mark(id), blk = m.closest(".ln") || m;
+  scrollTo({ top: m.getBoundingClientRect().top + scrollY - innerHeight * 0.35, behavior: "smooth" });
+  blk.classList.add("flash"); setTimeout(() => blk.classList.remove("flash"), 1400);
+}
+
 /* B — 한 장씩 */
 function viewB() {
   const xs = D.items, i = Math.min(S.qi, xs.length - 1), it = xs[i], done = xs.filter(x => st(x) !== "pending").length;
@@ -494,9 +557,11 @@ function renderDock() {
 }
 function render() {
   renderTabs();
-  document.getElementById("stage").innerHTML = { A: viewA, A2: viewA2, B: viewB, C: viewC, D: viewD, E: viewE }[S.v]();
+  const keep = document.getElementById("side3")?.scrollTop;   // 고를 때마다 다시 그려도 카드 목록 위치 유지
+  document.getElementById("stage").innerHTML = { A: viewA, A2: viewA2, A3: viewA3, B: viewB, C: viewC, D: viewD, E: viewE }[S.v]();
   renderDock();
   if (S.v === "A2") requestAnimationFrame(layoutRail);
+  if (S.v === "A3" && keep !== undefined && document.getElementById("side3")) { SYNC.lockSide = Date.now() + 300; document.getElementById("side3").scrollTop = keep; }
   document.getElementById("final").textContent = finalLines().join("\n");
 }
 
@@ -512,9 +577,12 @@ function setStyleOff(on) {
 document.addEventListener("click", e => {
   const slot = e.target.closest(".slot");
   if (slot && !e.target.closest("button, input, select, summary, details")) return focusA2(+slot.dataset.slot, false);
+  const c3 = e.target.closest("#side3 .card");
+  if (c3 && !e.target.closest("button, input, select, summary, details")) return a3goDoc(+c3.id.slice(5));
   const t = e.target.closest("button, .mark");
   if (!t) return;
   if (t.classList.contains("mark") && S.v === "A2") return focusA2(+t.dataset.id, false);
+  if (t.classList.contains("mark") && S.v === "A3") return a3active(+t.dataset.id, true);
   if (t.classList.contains("mark")) {
     S.focus = +t.dataset.id; render();
     document.getElementById(`card-${S.focus}`)?.scrollIntoView({ block: "nearest" });
@@ -567,6 +635,13 @@ document.addEventListener("mouseover", e => {
   if (id) document.querySelectorAll(`.va2 .mark[data-id="${id}"], #rc-${id}`).forEach(x => x.classList.add("hl"));
 });
 addEventListener("resize", () => S.v === "A2" && layoutRail());
+// 스크롤은 거품이 안 일어 잡기 단계에서 받음 — 다시 그려도 붙여 둔 것이 그대로 남음
+document.addEventListener("scroll", e => {
+  if (S.v !== "A3" || SYNC.ticking) return;
+  const fromSide = e.target.id === "side3";
+  SYNC.ticking = true;
+  requestAnimationFrame(() => { SYNC.ticking = false; fromSide ? a3sideSync() : a3docSync(); });
+}, { capture: true, passive: true });
 document.fonts?.ready.then(() => S.v === "A2" && layoutRail());
 render();
 </script>
