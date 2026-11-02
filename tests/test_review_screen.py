@@ -218,6 +218,36 @@ class CollectTests(unittest.TestCase):
         self.assertIn("세션이 고칠 것 1건", out)
         self.assertEqual(DOC, self.doc.read_text(encoding="utf-8"))
 
+    def test_a_phrase_that_appears_twice_on_the_line_goes_to_the_session(self) -> None:
+        self.doc.write_text(DOC.replace("인원이 맡음", "인원이 맡고 전환 참여 일정은 따로 공유함"), encoding="utf-8")
+        lines = coverage.read_doc(self.doc).splitlines()
+        n = next(i for i, l in enumerate(lines, 1) if "MSA" in l)
+        self.row["fixes"] = [{"line": n, "line_key": coverage.line_key(lines[n - 1]), "text": lines[n - 1],
+                              "phrase": "전환 참여", "fix": "전환 작업 참여", "why": "번역투", "category": "번역투 줄이기"}]
+        self.row["asks"], self.row["seen"] = [], coverage.seen_keys(lines)
+        coverage.LOG.write_text(json.dumps(self.row, ensure_ascii=False) + "\n", encoding="utf-8")
+        before = self.doc.read_text(encoding="utf-8")
+        data = screen.collect(self.doc)
+        _, out = screen.submit(self.doc, data, [self.pick(data, lambda x: x["phrase"] == "전환 참여", "accept")])
+        self.assertIn("세션이 고칠 것 1건", out, "어느 「전환 참여」인지 모르면 고치지 않음")
+        self.assertEqual(before, self.doc.read_text(encoding="utf-8"))
+
+    def test_a_line_the_file_could_not_take_is_not_settled(self) -> None:
+        page = self.dir / "page.html"
+        page.write_text("<!doctype html><html><body><p>대용량 트래픽 처리 개선</p><p>대용량 트래픽 회고</p></body></html>",
+                        encoding="utf-8")
+        lines = coverage.read_doc(page).splitlines()
+        n = next(i for i, l in enumerate(lines, 1) if "개선" in l)
+        row = {"ok": True, "key": coverage.doc_key(page), "when": time.time(), "seen": coverage.seen_keys(lines),
+               "fixes": [], "asks": [{"line": n, "line_key": coverage.line_key(lines[n - 1]), "text": lines[n - 1],
+                                      "phrase": "대용량 트래픽", "fix": "", "why": "기준 없음", "category": "판단어의 기준 누락"}]}
+        coverage.LOG.write_text(json.dumps(row, ensure_ascii=False) + "\n", encoding="utf-8")
+        data = screen.collect(page)
+        _, out = screen.submit(page, data, [self.pick(data, lambda x: x["level"] == "사람 확인", "own", "일 320만 건 트래픽")])
+        self.assertIn("HTML 원본에 한 번만 나오지 않아", out)
+        self.assertIn("사람 답으로 확정한 줄 0개", out, "파일에 못 쓴 줄을 확정했다고 내지 않음")
+        self.assertEqual([], [r for r in self.rows(coverage.ANSWERS) if r.get("approved")])
+
     # 4단계 — 신뢰 설정과 규칙으로 남기기
 
     def test_trust_is_saved_per_person_only_for_categories_with_a_ready_fix(self) -> None:

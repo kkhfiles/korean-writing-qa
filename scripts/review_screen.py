@@ -339,7 +339,8 @@ def submit(path: Path, data: dict, picks: list[dict], trust: dict | None = None)
             item = {"category": it["cat"], "phrase": it["phrase"], "fix": it["fix"]}
             if dec in ("accept", "own"):
                 new = it["fix"] if dec == "accept" else own
-                ok = literal(new) and bool(it["phrase"]) and it["phrase"] in target
+                # 같은 줄에 그 표현이 둘 이상이면 판정기가 짚은 것이 어느 쪽인지 모르므로 세션에 넘긴다
+                ok = literal(new) and bool(it["phrase"]) and target.count(it["phrase"]) == 1
                 if literal(new) and rule_of.get(it["id"]) == "mine":
                     my_rules.append((it, new))
                 elif literal(new) and rule_of.get(it["id"]) == "team":
@@ -370,7 +371,6 @@ def submit(path: Path, data: dict, picks: list[dict], trust: dict | None = None)
         edited = [it for it, d, _ in picked if d in ("accept", "own")]
         if (target != line and exact and lk in seen and not any(d == "delegate" for _, d, _ in picked)
                 and all(it["level"] == "사람 확인" for it in edited)):
-            judge.approve(path, target, f"사용자 답({src}): 고른 글로 확정", lk)
             settled.add(n)
         if target != line and exact:
             changes[n], told[n] = (target, pairs), mine
@@ -379,6 +379,10 @@ def submit(path: Path, data: dict, picks: list[dict], trust: dict | None = None)
     done, why = apply_file(path, changes)
     if why:
         loose = [e for n in sorted(told) for e in told[n]] + loose
+    # 확정은 파일에 실제로 쓴 줄만 — 못 쓴 줄을 확정했다고 요약에 내지 않는다
+    settled &= set(done)
+    for n in sorted(settled):
+        judge.approve(path, changes[n][0], f"사용자 답({src}): 고른 글로 확정", coverage.line_key(lines[n - 1]) or "")
     lines = coverage.read_doc(path).splitlines()
     left_asks = len(coverage.open_asks(key, lines))
     left_fixes = len(coverage.open_fixes(key, lines))
