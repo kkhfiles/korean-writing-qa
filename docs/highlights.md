@@ -4,7 +4,7 @@ form: structured
 
 # 한글 교정기의 장점과 기술 요소
 
-**장점별 기술 요소와 근거, 홈페이지 문구 후보** — 사례집([showcase.html](showcase.html))과 README에 옮길 내용의 기준 문서(수치는 2026-10-28 기준, 측정 결과 상세는 [현재 상태](status.md), 부품 설명은 [시스템 구조와 역할](architecture.md))
+**장점별 기술 요소와 근거, 홈페이지 문구 후보** — 소개 페이지([showcase.html](showcase.html))와 README에 옮길 내용의 기준 문서(수치는 2026-10-28 기준, 측정 결과 상세는 [현재 상태](status.md), 부품 설명은 [시스템 구조와 역할](architecture.md))
 
 ## 이 도구의 의도와 가치
 
