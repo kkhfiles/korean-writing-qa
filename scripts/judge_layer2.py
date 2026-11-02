@@ -557,12 +557,13 @@ def asks_on(path: Path, line_key: str) -> list[dict]:
 
 
 def record_decision(path: Path, line_key: str, raw: str, kind: str, source: str,
-                    text: str | None = None) -> int:
+                    text: str | None = None, items: list[dict] | None = None) -> int:
     """사용자가 표에 적은 답을 그 줄의 지적마다 남긴다 — 남긴 수. 같은 답을 두 번 적지 않는다.
 
     ⛔ 지적을 닫지 않는다 — 닫는 것은 `answer`(그대로만)다. 이것은 다음 판정이 따를 기록이다.
     `text` 는 사용자가 본 줄 — 그 줄을 고친 뒤의 판정에 이 답을 싣고(`decided_on`), 답대로 고친 줄을
     확정할 때(`answered_origin`) 글자로 잇는다.
+    `items` 를 주면 그 줄의 사람 확인 전부 대신 그 지적에만 단다 — 검토 화면은 지적 하나씩 답을 받는다.
     """
     have = set()
     if coverage.DECISIONS.is_file():
@@ -573,7 +574,7 @@ def record_decision(path: Path, line_key: str, raw: str, kind: str, source: str,
                 continue
             have.add((d.get("line_key"), d.get("phrase"), d.get("answer")))
     rows = []
-    for ask in asks_on(path, line_key):
+    for ask in asks_on(path, line_key) if items is None else items:
         if (line_key, ask.get("phrase"), raw) in have:
             continue
         rows.append({"at": datetime.now().isoformat(timespec="seconds"), "when": time.time(),

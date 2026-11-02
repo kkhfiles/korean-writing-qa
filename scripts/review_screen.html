@@ -46,6 +46,9 @@ button:hover { border-color: #b4bcc7; }
 button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
 button.cost.on { background: var(--cost); border-color: var(--cost); }
 button.ghost { border-style: dashed; color: var(--muted); }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; padding-inline: 18px; }
+body.sent .card .btns, body.sent .tool .btns { opacity: .45; pointer-events: none; }
+.dock .summary { max-height: 40vh; overflow: auto; font-family: var(--kr); }
 button:disabled { opacity: .45; cursor: default; }
 button:focus-visible, input:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 input[type=text] { font: inherit; font-size: 14px; width: 100%; border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; }
@@ -129,7 +132,9 @@ input[type=text] { font: inherit; font-size: 14px; width: 100%; border: 1px soli
 
 <script>
 const D = /*DATA*/null;
-const S = { dec: {}, own: {}, trust: {}, styleOff: false, focus: null, cat: "", undo: null, showSum: false };
+const S = { dec: {}, own: {}, trust: {}, styleOff: false, focus: null, cat: "", undo: null, showSum: false, sent: "", sending: false, error: "" };
+const TOKEN = new URLSearchParams(location.search).get("t") || "";
+const SERVED = location.protocol.startsWith("http") && !!TOKEN;
 const SYNC = { lockDoc: 0, lockSide: 0, ticking: false };
 const TYPES = { replace: "바로 반영", info: "작성자 확인", style: "문체 규칙" };
 const OUTCOME = { accept: "확정, 다시 판정 안 함", own: "사람 답으로 확정, 다시 판정 안 함", keep: "답 기록, 다시 묻지 않음",
@@ -243,9 +248,23 @@ function renderDock() {
   document.getElementById("dock").innerHTML = `<span>반영 <b>${c.accept}</b>, 직접 <b>${c.own}</b>, 그대로 <b>${c.keep}</b>, 남음 <b>${c.pending}</b>, 맡김 <b>${c.delegate}</b></span>
     <span class="pill ${dl ? "cost" : "free"}">재판정 ${dl ? `1회, ${dl}줄` : "0회"}</span>
     ${c.pending ? `<span class="pill info">남은 ${c.pending}건은 제출하면 보류로 남아 발행 막힘</span>` : ""}
-    <span class="note">보기만 하는 단계 — 고른 결과는 아직 파일과 판정 기록에 저장되지 않음</span>
-    <span class="sp"><button id="sum" class="${S.showSum ? "on" : ""}">세션이 받을 요약</button></span>
-    ${S.showSum ? `<pre class="summary">${esc(summary())}\n— ${summary().length}자</pre>` : ""}`;
+    <span class="note">${S.sent ? "제출함 — 판정 기록에 남김, 파일은 세션이 고침" : SERVED ? "제출하면 판정 기록에 남김, 파일은 아직 안 고침(세션이 고침)" : "파일로 연 화면이라 제출 불가 — --serve 로 띄운 주소에서 제출"}</span>
+    <span class="sp">${S.sent ? "" : `<button id="sum" class="${S.showSum ? "on" : ""}">세션이 받을 요약</button>`}
+      ${SERVED && !S.sent ? `<button id="submit" class="primary" ${S.sending ? "disabled" : ""}>제출</button>` : ""}</span>
+    ${S.error ? `<p class="summary" role="alert">제출 실패 — ${esc(S.error)}</p>` : ""}
+    ${S.sent ? `<pre class="summary">${esc(S.sent)}</pre>` : S.showSum ? `<pre class="summary">${esc(summary())}\n— ${summary().length}자</pre>` : ""}`;
+}
+async function send() {
+  S.sending = true; S.error = ""; renderDock();
+  const picks = D.items.filter(x => st(x) !== "pending").map(x => ({ id: x.id, dec: st(x), ...(st(x) === "own" ? { own: S.own[x.id] } : {}) }));
+  try {
+    const r = await fetch("/submit", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ t: TOKEN, picks }) });
+    const j = await r.json();
+    if (!j.ok) throw new Error(j.error || r.status);
+    S.sent = j.summary;
+    document.body.classList.add("sent");
+  } catch (e) { S.error = String(e.message || e); }
+  S.sending = false; renderDock();
 }
 function render() {
   const side = document.getElementById("side"), keep = side.scrollTop;
@@ -329,6 +348,8 @@ document.addEventListener("click", e => {
     if (on && row) row.scrollLeft = on.offsetLeft - row.offsetLeft - 8;
     return;
   }
+  if (t.id === "submit") return send();
+  if (S.sent) return;   // 제출한 뒤에는 고른 것을 바꾸지 않음 — 기록과 화면이 어긋나지 않게
   if (t.dataset.bulk) {
     const xs = bulkTargets(t.dataset.bulk);
     S.undo = { dec: { ...S.dec }, n: xs.length };
@@ -345,6 +366,7 @@ document.addEventListener("click", e => {
 });
 document.addEventListener("change", e => {
   const t = e.target;
+  if (S.sent) return render();
   if (t.dataset.trust !== undefined) { setTrust(t.dataset.trust, t.checked); return render(); }
   if (t.id === "styleOff") { setStyleOff(t.checked); return render(); }
   if (t.dataset.own) { const id = +t.dataset.own; if (t.value.trim()) { S.own[id] = t.value; S.dec[id] = "own"; } else if (S.dec[id] === "own") delete S.dec[id]; return render(); }
