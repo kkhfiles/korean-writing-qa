@@ -102,6 +102,7 @@ def replay(case: dict, mode: str, backend, model: str, timeout: float = 900, rea
     closed = [tuple(x) for x in case.get("closed") or []]
     decided = [tuple(x) for x in case.get("decided") or []]
     instructed = [tuple(x) for x in case.get("instructed") or []]
+    evidenced = [tuple(x) for x in case.get("evidenced") or []]
     system = probe.system_prompt().format(rules=probe.rules_for("guided")) + (case.get("decisions_prompt") or "")
     heads = {int(k): v for k, v in case["heads"].items()} if case.get("heads") is not None else None
     queue = judge.parts_for(lines, want, mode, path, heads)
@@ -110,7 +111,7 @@ def replay(case: dict, mode: str, backend, model: str, timeout: float = 900, rea
     while queue:
         piece = queue.pop(0)
         windowed = piece["mode"] in ("fixed", "block")
-        user = judge.rejudge_user(piece, info, closed, decided, instructed, case.get("extra") or "")
+        user = judge.rejudge_user(piece, info, closed, decided, instructed, case.get("extra") or "", evidenced)
         got["prompts"].append(prompt_print(system, user, effort))
         if call_messages is None:
             continue

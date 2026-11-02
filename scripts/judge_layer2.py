@@ -74,8 +74,10 @@ push 직전에 같은 기록으로 「새 줄을 다 봤나」를 가른다.
 from __future__ import annotations
 
 import argparse
+import collections
 import hashlib
 import json
+import math
 import os
 import re
 import sys
@@ -295,6 +297,50 @@ def excerpt(lines: list[str], keep: list[int]) -> str:
     return "\n".join(out)
 
 
+#: 창 밖에서 함께 보낼 줄 — 대상 줄과 낱말 두 글자 묶음과 수치가 가장 많이 겹치는 줄. (2026-11-02) 요약 줄의 「낮음」을
+#: 재판정하며 38줄 떨어진 신뢰구간을 못 보고 「문서만으로 확인할 수 없음」을 냈다. 그 README 에서 이 점수로 상위
+#: 여섯 줄에 근거 줄 셋(106~108행)이 들었다.
+SUPPORT_MAX = 6
+SUPPORT_MIN = 0.18
+_NUM = re.compile(r"\d+(?:\.\d+)+%?|\d+(?:,\d{3})+|\d+%")
+SUPPORT_NOTE = ("\n\n아래는 생략된 곳에서 대상 줄과 같은 낱말이나 수치가 많이 나오는 줄이다. 대상 줄의 근거나 정의가 "
+                "여기 있으면 그것으로 판단한다. 이 줄들은 지적하지 않는다.\n")
+
+
+def _grams(s: str) -> collections.Counter:
+    out: collections.Counter = collections.Counter()
+    s = s.replace("−", "-")
+    for w in re.findall(r"[가-힣]+|[A-Za-z][\w-]*", s):
+        out.update(w[i:i + 2] for i in range(len(w) - 1))
+    for n in _NUM.findall(s):
+        out["#" + n] += 2
+    return out
+
+
+def support_lines(lines: list[str], want: list[int], keep: set[int]) -> list[int]:
+    """창 밖 줄 가운데 대상 줄과 가장 닮은 줄 — 문서 안 희소도로 무게를 단 두 글자 묶음 코사인."""
+    grams = [_grams(l) for l in lines]
+    df = collections.Counter(g for c in grams for g in c)
+    total = len(lines)
+
+    def vec(c):
+        return {g: v * math.log(total / df[g]) for g, v in c.items()}
+
+    def cos(a, b):
+        dot = sum(v * b.get(g, 0.0) for g, v in a.items())
+        na, nb = math.sqrt(sum(v * v for v in a.values())), math.sqrt(sum(v * v for v in b.values()))
+        return dot / (na * nb) if na and nb else 0.0
+    cands = [i for i in range(1, total + 1) if i not in keep and coverage.HANGUL.search(lines[i - 1])]
+    best: dict[int, float] = {}
+    for n in want:
+        t = vec(grams[n - 1])
+        for i in cands:
+            s = cos(t, vec(grams[i - 1]))
+            if s >= SUPPORT_MIN:
+                best[i] = max(best.get(i, 0.0), s)
+    return sorted(sorted(best, key=lambda i: -best[i])[:SUPPORT_MAX])
+
+
 def parts_for(lines: list[str], want: set[int] | None, mode: str, path: Path,
               html_heads: dict[int, int] | None = None) -> list[dict]:
     """이번에 부를 조각 — {"mine": 대상 줄, "document": 프롬프트에 넣을 글, "seen": 판정기가 본 줄, "label", "mode"}.
@@ -333,7 +379,12 @@ def parts_for(lines: list[str], want: set[int] | None, mode: str, path: Path,
         if b != a + 1:
             runs.append(f"{start}-{a}")
             start = b
-    return [{"mine": sorted(want), "document": excerpt(lines, ordered), "seen": [lines[n - 1] for n in ordered],
+    # 창 밖 근거 줄은 글에만 붙이고 「판정기가 본 줄」에는 넣지 않는다 — 대상 아닌 먼 줄이 판정을 마친 것으로 잡히면
+    # 게이트가 그 줄의 새 글을 안 막는다
+    support = support_lines(lines, sorted(want), keep)
+    document = excerpt(lines, ordered) + (
+        SUPPORT_NOTE + "\n".join(f"{n:>3} | {lines[n - 1]}" for n in support) if support else "")
+    return [{"mine": sorted(want), "document": document, "seen": [lines[n - 1] for n in ordered],
              "label": ",".join(runs), "mode": mode}]
 
 
@@ -1058,7 +1109,8 @@ def replay_dir() -> Path:
     return LOG.parent / "korean-replay"
 
 
-def rejudge_user(piece: dict, info: dict, closed: list, decided: list, instructed: list = (), extra: str = "") -> str:
+def rejudge_user(piece: dict, info: dict, closed: list, decided: list, instructed: list = (), extra: str = "",
+                 evidenced: list = ()) -> str:
     """재판정 한 조각의 사용자 메시지 — 판정과 재생(`replay_rejudge.py`)이 같이 쓴다(같은 입력이어야 견준다)."""
     mine = piece["mine"]
     plain = {n for n in mine if not info[n].get("anchor")}
@@ -1067,7 +1119,8 @@ def rejudge_user(piece: dict, info: dict, closed: list, decided: list, instructe
             + ", ".join(map(str, mine))
             + before_after(mine, info, [(n, r) for n, r in closed if n in plain],
                            [(n, d) for n, d in decided if n in plain],
-                           [(n, r) for n, r in instructed if n in plain])
+                           [(n, r) for n, r in instructed if n in plain],
+                           [(n, r) for n, r in evidenced if n in plain])
             + extra)        # 다시 쓰는 시스템 프롬프트 뒤에 받은 답(`new_answers`)
     return probe.USER.format(document=piece["document"]) + (WINDOW_NOTE if windowed else "") + rest
 
@@ -1075,7 +1128,7 @@ def rejudge_user(piece: dict, info: dict, closed: list, decided: list, instructe
 def save_case(path: Path, key: str, text: str, want: set[int], anchors: dict, base, info: dict,
               rules_sha: str, system: str, model: str, context: str, closed: list, decided: list,
               instructed: list = (), heads: dict | None = None, decisions_text: str | None = None,
-              extra: str = "") -> None:
+              extra: str = "", evidenced: list = ()) -> None:
     """재판정 한 번의 입력 — 그때 문서 · 대상 · 기준 판 · 계보 · 닫은 지적 · 사용자 답 · 시스템 프롬프트.
 
     못 쓰면(Codex 샌드박스 등) 알리고 건너뛴다 — 재생 자료 하나를 잃을 뿐이고, 여기서 죽으면 모델을 부르기도
@@ -1099,6 +1152,7 @@ def save_case(path: Path, key: str, text: str, want: set[int], anchors: dict, ba
             "extra": extra,
             "closed": [[n, r] for n, r in closed], "decided": [[n, d] for n, d in decided],
             "instructed": [[n, r] for n, r in instructed],
+            "evidenced": [[n, r] for n, r in evidenced],
             # HTML 제목 줄 — 재생 때 파일이 바뀌어 있어도 같은 창을 잡게
             "heads": {str(n): v for n, v in (heads or {}).items()}}
     name = f"{datetime.now():%Y%m%d-%H%M%S}-{hashlib.sha256(text.encode('utf-8')).hexdigest()[:8]}.json"
@@ -1278,6 +1332,52 @@ def instruct(path: Path, n: int, note: str) -> str:
     return lines[n - 1].strip()[:40]
 
 
+def record_evidence(path: Path, n: int, note: str) -> str:
+    """n행의 사실 주장을 자료로 확인하고 고쳤다고 적는다 — 근거는 경로와 그 파일 원문 인용, 또는 이 문서의 「N행」.
+
+    (2026-11-02) 사람 확인 2건이 모두 문서 안이나 저장소 자료에 근거가 있는 줄이었다. 재판정은 대상 앞뒤 20줄만
+    받아 38줄 떨어진 신뢰구간을 못 보고 「문서만으로 확인할 수 없음」을 냈다. 「확인함」 닫기는 짚인 뒤에 하나씩
+    닫는 길이고, 이것은 고칠 때 근거를 함께 적어 재판정이 받게 하는 길이다. 규칙에 안 맞으면 ValueError.
+    """
+    note = note.strip()
+    lines = read_doc(path).splitlines()
+    if not 0 < n <= len(lines) or not coverage.line_key(lines[n - 1]):
+        raise ValueError(f"{n}행은 한글이 든 줄이 아닙니다")
+    quoted = any(QUOTE_AFTER.match(note, m.end()) for m in PATH_REF.finditer(note))
+    if len(note) < NOTE_MIN or not (quoted or LINE_REF.search(note)):
+        raise ValueError("--note 에 근거를 적습니다 — 「<경로> 「그 파일 원문」」 또는 이 문서의 「N행」")
+    problems = evidence_problems(path, note, lines)
+    if problems:
+        raise ValueError(problems[0])
+    row = {"at": datetime.now().isoformat(timespec="seconds"), "when": time.time(), "doc": str(path),
+           "key": coverage.doc_key(path), "line": n, "line_key": coverage.line_key(lines[n - 1]),
+           "text": lines[n - 1], "evidence": note}
+    coverage.EVIDENCE.parent.mkdir(parents=True, exist_ok=True)
+    with coverage.EVIDENCE.open("a", encoding="utf-8", newline="\n") as f:
+        f.write(json.dumps(row, ensure_ascii=False) + "\n")
+    return lines[n - 1].strip()[:40]
+
+
+def evidenced_on(key: str, lines: list[str], mine: list[int]) -> list[tuple[int, dict]]:
+    """대상 줄(또는 그 앞 판)에 적힌 근거 — (줄, 기록). 줄마다 최근 것 둘까지. 근거가 가리키는 이 문서의 줄을 붙인다."""
+    rows = [r for r in coverage._rows(key, coverage.EVIDENCE, None, fresh=False) if r.get("text")]
+    out = []
+    for n in mine:
+        k = coverage.line_key(lines[n - 1])
+        near = [r for r in rows if r.get("line_key") == k
+                or coverage._similar(lines[n - 1], r["text"]) >= coverage.SUCCESSOR]
+        for r in near[-2:]:
+            r = dict(r)
+            note = r.get("evidence") or ""
+            files = [m.end() for m in PATH_REF.finditer(note)]
+            # 이 문서의 「N행」만 붙인다 — 경로 뒤의 「N행」은 그 파일의 줄이다(`evidence_problems` 와 같은 귀속)
+            r["doc_lines"] = [(int(m.group(1)), lines[int(m.group(1)) - 1]) for m in re.finditer(r"(\d+)\s?행", note)
+                              if (not any(e <= m.start() for e in files) or "문서" in note[max(0, m.start() - 6):m.start()])
+                              and 0 < int(m.group(1)) <= len(lines)]
+            out.append((n, r))
+    return out
+
+
 def instructed_on(key: str, lines: list[str], mine: list[int]) -> list[tuple[int, dict]]:
     """대상 줄(또는 그 앞 판)에 적힌 사용자 지시 — (줄, 기록). 줄마다 최근 것 둘까지."""
     rows = [r for r in coverage._rows(key, coverage.INSTRUCTIONS, None, fresh=False) if r.get("text")]
@@ -1305,7 +1405,8 @@ def decided_on(key: str, lines: list[str], mine: list[int]) -> list[tuple[int, d
 
 
 def before_after(mine: list[int], info: dict[int, dict], closed: list[tuple[int, dict]] = (),
-                 decided: list[tuple[int, dict]] = (), instructed: list[tuple[int, dict]] = ()) -> str:
+                 decided: list[tuple[int, dict]] = (), instructed: list[tuple[int, dict]] = (),
+                 evidenced: list[tuple[int, dict]] = ()) -> str:
     """대상 줄의 기준 판과 지운 줄 — 고친 말이 뜻을 바꿨는지 판정기가 대조하게 하는 글.
 
     세션이 자료로 확인하거나 까닭을 적어 닫은 지적도 함께 싣는다 — 줄이 바뀌면 판정기가 같은 의문을
@@ -1355,6 +1456,14 @@ def before_after(mine: list[int], info: dict[int, dict], closed: list[tuple[int,
                 "짚지 않는다. 지시가 말하지 않은 변경(수치 · 주체 · 범위 · 조건 · 시점), 확인이 필요한 새 주장, 다른 "
                 "규칙 위반은 그대로 짚는다."]
         out += [f"- {n}행 지시: {r.get('instruction')}" for n, r in instructed]
+    if evidenced:
+        # 근거가 받치는 사실만 덜 짚는다 — 근거 밖의 새 주장과 근거와 다른 값은 그대로 짚는다(지시와 같은 선)
+        out += ["", "아래 줄은 세션이 자료로 확인하고 쓴 사실 주장이다. 근거가 받치는 수치와 사실은 「확인 필요」나 "
+                "「고치다 뜻이 바뀐 곳」으로 짚지 않는다. 근거와 다른 값, 근거가 말하지 않는 새 주장, 다른 규칙 위반은 "
+                "그대로 짚는다."]
+        for n, r in evidenced:
+            out.append(f"- {n}행 근거: {r.get('evidence')}")
+            out += [f"  (문서 {m}행: {t.strip()})" for m, t in r.get("doc_lines") or []]
     return "\n".join(out)
 
 
@@ -1426,15 +1535,15 @@ def judge(path: Path, model: str, timeout: float, backend, targets: list[int] | 
     found, calls, hidden, foreign, held = [], [], 0, 0, 0
     held_done: set[int] = set()
     queue = parts_for(lines, want, context, path)
-    closed_all, decided_all, instructed_all = [], [], []
+    closed_all, decided_all, instructed_all, evidenced_all = [], [], [], []
     if want is not None:
         plain = [n for n in sorted(want) if not info[n].get("anchor")]
         closed_all, decided_all = closed_on(key, lines, plain), decided_on(key, lines, plain)
-        instructed_all = instructed_on(key, lines, plain)
+        instructed_all, evidenced_all = instructed_on(key, lines, plain), evidenced_on(key, lines, plain)
         save_case(path, key, text, want, anchors, base, info, rules_sha, system, model, context,
                   closed_all, decided_all, instructed_all,
                   coverage.html_heads(path, lines) if path.suffix.lower() in coverage.HTML_SUFFIXES else None,
-                  system[len(base_system):] if system.startswith(base_system) else None, extra)
+                  system[len(base_system):] if system.startswith(base_system) else None, extra, evidenced_all)
     while queue:
         piece = queue.pop(0)
         mine, windowed = piece["mine"], piece["mode"] in ("fixed", "block")
@@ -1449,7 +1558,8 @@ def judge(path: Path, model: str, timeout: float, backend, targets: list[int] | 
                "context": piece["mode"],
                # 게이트가 「이번 가지의 새 줄을 판정기가 다 봤나」를 이것으로 가른다 — 창이면 보낸 줄만
                "seen": coverage.seen_keys(piece["seen"])}
-        user = rejudge_user(piece, info, closed_all, decided_all, instructed_all, extra) if want is not None \
+        user = rejudge_user(piece, info, closed_all, decided_all, instructed_all, extra, evidenced_all) \
+            if want is not None \
             else probe.USER.format(document=piece["document"]) + note
         if want is not None:
             # 묶음은 문맥으로 통째로 보내되 지적은 새 줄에만 받는다. 전에는 묶음 전체에
@@ -1703,6 +1813,9 @@ def main(argv=None, backend=None) -> int:
     ap.add_argument("--phrase", help="--dismiss · --escalate 에서 그 줄의 지적이 둘 이상일 때 고르는 표현")
     ap.add_argument("--instructed", type=int, action="append", metavar="행",
                     help="사용자 지시로 뜻을 일부러 바꾼 줄 — --note 에 지시 원문(「」) · 재판정이 지시 안의 뜻 변경은 안 짚음")
+    ap.add_argument("--evidence", type=int, action="append", metavar="행",
+                    help="자료로 확인하고 고친 사실 주장 — --note 에 「<경로> 「원문」」 또는 이 문서의 「N행」 · "
+                         "재판정이 근거가 받치는 사실은 「확인 필요」로 안 짚음")
     a = ap.parse_args(argv)
     if a.cost:
         cost_report(a.by)
@@ -1719,6 +1832,18 @@ def main(argv=None, backend=None) -> int:
         try:
             for n in a.instructed:
                 print(f"  지시 기록 — {n}행 「{instruct(Path(a.docs[0]), n, a.note)}」 · 재판정이 지시 안의 뜻 변경은 안 짚음")
+        except ValueError as e:
+            print(f"⛔ {e}")
+            return 2
+        return 0
+    if a.evidence:
+        if len(a.docs) != 1 or not a.note:
+            print("⛔ --evidence 는 문서 하나에 --note 와 함께 씁니다 — 줄 번호가 문서마다 다릅니다")
+            return 2
+        try:
+            for n in a.evidence:
+                print(f"  근거 기록 — {n}행 「{record_evidence(Path(a.docs[0]), n, a.note)}」 · "
+                      "재판정이 근거가 받치는 사실은 안 짚음")
         except ValueError as e:
             print(f"⛔ {e}")
             return 2

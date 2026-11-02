@@ -65,6 +65,10 @@ DISMISSALS = Path(os.environ.get("KOREAN_QA_DISMISS_LOG")
 #: 세션이 적되 사용자가 한 말만 옮긴다(사람 확인 답과 같은 규칙).
 INSTRUCTIONS = Path(os.environ.get("KOREAN_QA_INSTRUCTION_LOG")
                     or Path.home() / ".claude" / "state" / "korean-layer2-instructions.jsonl")
+#: 세션이 자료로 확인하고 고친 사실 주장과 그 근거 — 재판정이 근거가 받치는 사실을 「확인 필요」로 다시 짚지 않게 한다.
+#: 근거는 `evidence_problems` 가 파일과 인용을 대조한 것만 받는다.
+EVIDENCE = Path(os.environ.get("KOREAN_QA_EVIDENCE_LOG")
+                or Path.home() / ".claude" / "state" / "korean-layer2-evidence.jsonl")
 FRESH_DAYS = 14
 HANGUL = re.compile(r"[가-힣]")
 #: 근거에 이 말이 있으면 문서 밖 자료로 확인할 사실이 걸린 지적으로 본다 — 판정기가 `check`
