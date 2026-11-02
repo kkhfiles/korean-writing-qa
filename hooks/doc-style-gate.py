@@ -720,7 +720,11 @@ def judge_backend_ready():
     """
     import importlib.util
     if importlib.util.find_spec("llm_playbook") is None:
-        return False
+        # 공개판을 받은 PC — 판정기는 저장소 안의 최소 호출부로 Claude 를 부른다(`scripts/layer2_client.py`
+        # 의 `available` 과 같은 조건 · 2026-11-02). 그 조건이 아니면 판정기가 못 도니 판정을 요구하지 않는다
+        import shutil
+        return (importlib.util.find_spec("claude_agent_sdk") is not None
+                and bool(os.environ.get("CLAUDE_CLI_PATH") or shutil.which("claude")))
     try:
         from llm_playbook.ladder import available
     except Exception:

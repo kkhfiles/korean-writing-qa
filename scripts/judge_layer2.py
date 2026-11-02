@@ -1057,6 +1057,11 @@ def pick_backend(which: str = "auto") -> str | None:
     """
     if which != "auto":
         return which
+    import importlib.util
+    if importlib.util.find_spec("llm_playbook") is None:
+        # 공개판을 받은 PC — 저장소 안의 최소 호출부(Claude 만)로 부를 수 있으면 Claude(`layer2_client`)
+        import layer2_client
+        return "claude" if layer2_client.available()[0] else None
     try:
         from llm_playbook.ladder import available
     except Exception:
@@ -1072,6 +1077,12 @@ def load_backend(which: str = "claude"):
     """
     try:
         client = probe.load_client(which)
+    except ImportError:
+        # `llm_playbook` 이 없는 PC(공개판) — 저장소 안의 최소 호출부로 Claude 를 부른다(`layer2_client`)
+        import layer2_client
+        if which != "claude" or not layer2_client.available()[0]:
+            return None
+        return layer2_client.call_messages, layer2_client.parse_json_from_text
     except Exception:
         return None
     return via_review(which, client)
