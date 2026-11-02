@@ -23,6 +23,7 @@ import tempfile
 import threading
 import time
 import unittest
+import unittest.mock
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -217,6 +218,50 @@ class CollectTests(unittest.TestCase):
         self.assertIn("세션이 고칠 것 1건", out)
         self.assertEqual(DOC, self.doc.read_text(encoding="utf-8"))
 
+    # 4단계 — 신뢰 설정과 규칙으로 남기기
+
+    def test_trust_is_saved_per_person_only_for_categories_with_a_ready_fix(self) -> None:
+        data = screen.collect(self.doc)
+        _, out = screen.submit(self.doc, data, [], {"번역투 줄이기": True, "판단어의 기준 누락": True})
+        self.assertEqual(["번역투 줄이기"], screen.load_trust(), "사람 확인 갈래는 켤 수 없음")
+        self.assertEqual(self.dir, screen.trust_file().parent, "판정 기록 옆(사람별)")
+        self.assertIn("켬 「번역투 줄이기」", out)
+        self.assertEqual(["번역투 줄이기"], screen.collect(self.doc)["trust"], "다음 화면이 미리 골라 둘 갈래")
+        screen.submit(self.doc, screen.collect(self.doc), [], {"번역투 줄이기": False})
+        self.assertEqual([], screen.load_trust())
+
+    def test_my_rule_is_added_once_and_keep_is_never_a_rule(self) -> None:
+        rules = self.dir / "local-layer2-rules.md"
+        with unittest.mock.patch.dict("os.environ", {"KOREAN_QA_LOCAL_RULES": str(rules)}):
+            data = screen.collect(self.doc)
+            pick = dict(self.pick(data, lambda x: "MSA" in x["phrase"], "accept"), rule="mine")
+            _, out = screen.submit(self.doc, data, [pick])
+            self.assertIn("내 규칙 1건 더함", out)
+            text = rules.read_text(encoding="utf-8")
+            self.assertIn("- **「모놀리식 구조에서 MSA로의 단계적 전환 참여」 대신 「모놀리식 구조를 MSA로 단계적으로 전환하는 작업 참여」**: 번역투", text)
+            self.assertTrue(text.startswith("---\nform: prose\n---\n"), "검사기가 산문으로 읽게")
+            self.doc.write_text(DOC, encoding="utf-8")
+            screen.submit(self.doc, screen.collect(self.doc), [pick])
+            self.assertEqual(1, rules.read_text(encoding="utf-8").count("대신 「모놀리식"), "같은 규칙은 한 번")
+            self.doc.write_text(DOC, encoding="utf-8")
+            data = screen.collect(self.doc)
+            keep = dict(self.pick(data, lambda x: "MSA" in x["phrase"], "keep"), rule="mine")
+            before = rules.read_text(encoding="utf-8")
+            screen.submit(self.doc, data, [keep])
+            self.assertEqual(before, rules.read_text(encoding="utf-8"), "그대로는 규칙이 되지 않음")
+
+    def test_a_team_candidate_goes_to_a_rule_sheet_outside_the_repo(self) -> None:
+        import rule_sheet
+        data = screen.collect(self.doc)
+        pick = dict(self.pick(data, lambda x: "MSA" in x["phrase"], "accept"), rule="team")
+        _, out = screen.submit(self.doc, data, [pick])
+        sheets = list(screen.out_dir().glob("rule-candidates-notice-*.md"))
+        self.assertEqual(1, len(sheets))
+        self.assertIn("팀 공통 후보 1건", out)
+        _, raw = rule_sheet.rows_of(sheets[0].read_text(encoding="utf-8"))
+        self.assertEqual(["1"], list(raw), "rule_sheet 가 읽는 규칙 후보 표")
+        self.assertIn("**모놀리식 구조에서 MSA로의 단계적 전환 참여**", raw["1"][2])
+
     def html_doc(self, body: str) -> tuple[Path, dict]:
         page = self.dir / "page.html"
         page.write_text(f"<!doctype html><html><head><title>배포</title></head><body>{body}</body></html>", encoding="utf-8")
@@ -253,7 +298,7 @@ class CollectTests(unittest.TestCase):
             got["url"] = url
             ready.set()
         t = threading.Thread(target=lambda: got.update(code=screen.serve(
-            page, 20, False, on_ready, lambda picks: screen.submit(self.doc, data, picks))))
+            page, 20, False, on_ready, lambda req: screen.submit(self.doc, data, req.get("picks") or []))))
         with contextlib.redirect_stdout(io.StringIO()):
             t.start()
             self.assertTrue(ready.wait(10))

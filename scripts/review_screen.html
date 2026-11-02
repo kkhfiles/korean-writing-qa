@@ -132,7 +132,7 @@ input[type=text] { font: inherit; font-size: 14px; width: 100%; border: 1px soli
 
 <script>
 const D = /*DATA*/null;
-const S = { dec: {}, own: {}, trust: {}, styleOff: false, focus: null, cat: "", undo: null, showSum: false, sent: "", sending: false, error: "" };
+const S = { dec: {}, own: {}, rule: {}, trust: {}, styleOff: false, focus: null, cat: "", undo: null, showSum: false, sent: "", sending: false, error: "" };
 const TOKEN = new URLSearchParams(location.search).get("t") || "";
 const SERVED = location.protocol.startsWith("http") && !!TOKEN;
 const SYNC = { lockDoc: 0, lockSide: 0, ticking: false };
@@ -190,7 +190,15 @@ function btn(it, v, label) {
   return `<button class="${v === "delegate" ? "cost" : ""}${st(it) === v ? " on" : ""}" data-act="${v}" data-id="${it.id}">${label}</button>`;
 }
 function ownBox(it) {
-  return st(it) === "own" ? `<input type="text" data-own="${it.id}" value="${esc(S.own[it.id] ?? it.phrase)}" aria-label="${it.id}번 고친 표현">` : "";
+  return (st(it) === "own" ? `<input type="text" data-own="${it.id}" value="${esc(S.own[it.id] ?? it.phrase)}" aria-label="${it.id}번 고친 표현">` : "") + ruleRow(it);
+}
+/* 규칙으로 남기기 — 글자로 넣을 수 있는 반영과 직접 고침만. 「그대로」는 표현 하나를 정상으로 열어 다른 문맥까지 통과시키므로 뺌 */
+const literal = s => !!s && !s.startsWith("(") && !s.includes("○○") && !s.includes("\n");
+function ruleRow(it) {
+  const s = st(it), text = s === "accept" ? it.fix : s === "own" ? S.own[it.id] : "";
+  if (!literal(text) || text === it.phrase) return "";
+  const b = (v, label) => `<button class="${S.rule[it.id] === v ? "on" : ""}" data-rule="${v}" data-id="${it.id}" aria-pressed="${S.rule[it.id] === v}">${label}</button>`;
+  return `<div class="btns rule"><span class="note">규칙으로 남기기</span>${b("mine", "내 규칙")}${b("team", "팀 공통 후보")}</div>`;
 }
 function cardHtml(it) {
   const s = st(it), lv = it.level === "오류" ? "err" : it.level === "사람 확인" ? "info" : "free";
@@ -226,8 +234,9 @@ function toolHtml() {
   const [t, cat] = (S.cat || "|").split("|");
   const acc = bulkTargets("accept").length, keep = bulkTargets("keep").length;
   const tip = `title="작성자 정보가 필요한 지적은 일괄 처리에서 빠짐"`;
-  const extra = t === "replace" ? `<label class="note"><input type="checkbox" data-trust="${esc(cat)}" ${S.trust[cat] ? "checked" : ""}> 앞으로 묻지 않고 반영</label>`
-    : t === "style" ? `<label class="note"><input type="checkbox" id="styleOff" ${S.styleOff ? "checked" : ""}> 이 종류 글에는 이 규칙을 쓰지 않음</label>`
+  const trustable = D.items.some(x => x.type === "replace" && x.fix && x.cat === cat);
+  const extra = t === "replace" && trustable ? `<label class="note" title="이 PC 에서 내 설정으로만 저장됨, 반영은 제출해야 됨"><input type="checkbox" data-trust="${esc(cat)}" ${S.trust[cat] ? "checked" : ""}> 앞으로 이 갈래는 「반영」을 미리 골라 둠</label>`
+    : t === "style" ? `<label class="note"><input type="checkbox" id="styleOff" ${S.styleOff ? "checked" : ""}> 이 문서에는 이 규칙을 적용하지 않음</label>`
     : t === "info" ? `<span class="note">작성자만 아는 정보라 하나씩 정함</span>` : "";
   return `<div class="tool"><div class="chips" role="group" aria-label="갈래로 거르기">${chips}</div>
     <div class="btns">${t !== "info" ? `<button data-bulk="accept" ${tip} ${acc ? "" : "disabled"}>${S.cat ? "이 갈래" : "바로 반영할 것"} 모두 반영 ${acc}</button>
@@ -260,9 +269,10 @@ function renderDock() {
 }
 async function send() {
   S.sending = true; S.error = ""; renderDock();
-  const picks = D.items.filter(x => st(x) !== "pending").map(x => ({ id: x.id, dec: st(x), ...(st(x) === "own" ? { own: S.own[x.id] } : {}) }));
+  const picks = D.items.filter(x => st(x) !== "pending").map(x => ({ id: x.id, dec: st(x), ...(st(x) === "own" ? { own: S.own[x.id] } : {}),
+    ...(S.rule[x.id] && ruleRow(x) ? { rule: S.rule[x.id] } : {}) }));
   try {
-    const r = await fetch("/submit", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ t: TOKEN, picks }) });
+    const r = await fetch("/submit", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ t: TOKEN, picks, trust: S.trust }) });
     const j = await r.json();
     if (!j.ok) throw new Error(j.error || r.status);
     S.sent = j.summary;
@@ -362,6 +372,11 @@ document.addEventListener("click", e => {
   }
   if (t.dataset.undo) { S.dec = S.undo.dec; S.undo = null; return render(); }
   if (t.id === "sum") { S.showSum = !S.showSum; return renderDock(); }
+  if (t.dataset.rule) {
+    const id = +t.dataset.id;
+    if (S.rule[id] === t.dataset.rule) delete S.rule[id]; else S.rule[id] = t.dataset.rule;
+    return render();
+  }
   if (t.dataset.act) {
     const id = +t.dataset.id;
     decide(id, t.dataset.act);
@@ -385,6 +400,7 @@ document.addEventListener("scroll", e => {   // 스크롤은 거품이 안 일�
 document.title = `검토 화면 — ${D.title}`;
 document.getElementById("title").textContent = `검토 화면 — ${D.title}`;
 document.getElementById("sub").textContent = `${D.path}, 지적 ${D.items.length}건(바로 반영 ${D.items.filter(x => x.type === "replace").length}, 작성자 확인 ${D.items.filter(x => x.type === "info").length}, 문체 규칙 ${D.items.filter(x => x.type === "style").length})`;
+(D.trust || []).forEach(cat => setTrust(cat, true));   // 내 신뢰 설정 — 「반영」을 미리 골라 둘 뿐, 제출해야 반영됨
 render();
 </script>
 </body>

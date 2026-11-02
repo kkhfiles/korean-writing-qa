@@ -7,9 +7,8 @@
 서로 따라가고(시안 A3, `draft-redline` 의 비교 화면과 같은 방식), 전체와 갈래별로 한꺼번에 고를 수 있다.
 시안과 그 결정은 `runs/review-screen-proto-20261101/README.md`.
 
-**지금 단계** — 3단계(파일 반영). `--serve` 로 띄운 화면에서 「제출」을 누르면 고른 답을 판정표의 답과 같은
-기록에 남기고, 고른 글로 파일을 고치고, 세션에는 요약만 낸다(`submit`). 신뢰 설정과 규칙 저장(4단계)은
-뒤에 붙인다.
+**하는 일** — `--serve` 로 띄운 화면에서 「제출」을 누르면 고른 답을 판정표의 답과 같은 기록에 남기고,
+고른 글로 파일을 고치고, 고른 규칙과 신뢰 설정을 저장한 뒤 세션에는 요약만 낸다(`submit`).
 
 - **127.0.0.1 의 빈 포트에만 연다** — 화면에 문서 원문이 들어 있다
 - **HTML 은 저장소 밖에 쓴다** — 판정 기록 옆 `korean-review/`(문서 원문이 들어 있어 커밋하지 않는다)
@@ -109,7 +108,7 @@ def collect(path: Path) -> dict:
     for i, x in enumerate(items, 1):
         x["id"] = i
         x["line_key"] = coverage.line_key(lines[x["line"] - 1]) or ""
-    return {"title": path.name, "path": str(path.resolve()), "lines": lines, "items": items}
+    return {"title": path.name, "path": str(path.resolve()), "lines": lines, "items": items, "trust": load_trust()}
 
 
 def render(data: dict) -> str:
@@ -136,6 +135,100 @@ def literal(new: str) -> bool:
 
 def backup_dir() -> Path:
     return out_dir() / "backup"
+
+
+def trust_file() -> Path:
+    """신뢰 설정 — 사람별(이 PC 의 판정 기록 옆, 2026-11-02 결정 O). 저장소 공통 설정에 두지 않는다."""
+    return Path(os.environ.get("KOREAN_QA_JUDGE_LOG") or coverage.LOG).parent / "korean-review-trust.json"
+
+
+def load_trust() -> list[str]:
+    try:
+        return list(json.loads(trust_file().read_text(encoding="utf-8")).get("trust") or [])
+    except (OSError, ValueError):
+        return []
+
+
+def save_trust(data: dict, asked: dict) -> list[str]:
+    """화면에서 켜고 끈 갈래를 저장한다 — 바뀐 갈래 설명 목록.
+
+    ⛔ 켤 수 있는 갈래는 이 화면에 수정안이 있는 「바로 반영」 지적이 있는 갈래뿐이다 — 사실 확인과 작성자
+       정보가 필요한 지적은 켤 수 없다(`docs/decisions-pending.md` 「지키는 조건」). 켠 갈래는 화면을 열 때
+       「반영」을 미리 골라 둘 뿐이고, 사람이 제출해야 반영된다.
+    """
+    allowed = {x["cat"] for x in data["items"] if x["type"] == "replace" and x["fix"]}
+    now = set(load_trust())
+    changed = []
+    for cat, on in (asked or {}).items():
+        if on and cat in allowed and cat not in now:
+            now.add(cat)
+            changed.append(f"켬 「{cat}」")
+        elif not on and cat in now:
+            now.discard(cat)
+            changed.append(f"끔 「{cat}」")
+    if changed:
+        trust_file().parent.mkdir(parents=True, exist_ok=True)
+        trust_file().write_text(json.dumps({"trust": sorted(now), "updated": time.strftime("%Y-%m-%dT%H:%M:%S")},
+                                           ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+    return changed
+
+
+#: 개인 판정 기준 — 정본은 저장소 `data/catalog/`, 설치본은 판정기가 먼저 읽는 `~/.claude/data/catalog/`
+LOCAL_RULES = "local-layer2-rules.md"
+
+
+def local_rules_paths() -> list[Path]:
+    """개인 규칙을 적을 파일 — 환경 변수가 있으면 그 파일만, 없으면 정본과(있으면) 설치본."""
+    pinned = os.environ.get("KOREAN_QA_LOCAL_RULES", "").strip()
+    if pinned and pinned.lower() not in ("off", "0"):
+        return [Path(pinned)]
+    home = HERE.parent / "data" / "catalog" / LOCAL_RULES
+    installed = Path.home() / ".claude" / "data" / "catalog"
+    return [home] + ([installed / LOCAL_RULES] if installed.is_dir() else [])
+
+
+def save_rules(path: Path, mine: list[tuple[dict, str]], team: list[tuple[dict, str, str]]) -> list[str]:
+    """규칙으로 남기기 — 요약 줄 목록.
+
+    - **내 규칙** — 개인 판정 기준(`local-layer2-rules.md`)에 한 줄을 더한다. 정본과 설치본에 같은 글을 써서
+      `install.py` 를 다시 부르지 않아도 다음 판정부터 듣는다. 같은 줄이 있으면 더하지 않는다
+    - **팀 공통 후보** — 저장소 밖 규칙 후보 표(`rule_sheet.py` 양식)에 적는다. 공통 규칙으로 넣는 일은
+      `fix-korean-finding` 절차(실측, 회귀 시험 데이터, 돌연변이)와 사용자 답을 거친다
+    ⛔ 「그대로」는 규칙으로 남기지 않는다 — 표현 하나를 정상으로 여는 규칙은 다른 문맥까지 통과시킨다
+    """
+    out = []
+    if mine:
+        bare = lambda s: s.replace("**", "")  # noqa: E731 — 규칙 줄의 굵게 표시와 섞이지 않게
+        bullets = [f"- **「{bare(it['phrase'])}」 대신 「{bare(new)}」**: {it['why'] or it['cat']} "
+                   f"(검토 화면에서 고름, {time.strftime('%Y-%m-%d')}, {path.name})" for it, new in mine]
+        targets = local_rules_paths()
+        src = targets[0]
+        text = src.read_text(encoding="utf-8") if src.is_file() else "---\nform: prose\n---\n"
+        added = [b for b in bullets if b[:b.index("**: ") + 2] not in text]
+        if added:
+            text = text.rstrip("\n") + "\n" + "\n".join(added) + "\n"
+            for t in targets:
+                t.parent.mkdir(parents=True, exist_ok=True)
+                t.write_text(text, encoding="utf-8", newline="\n")
+        out.append(f"  내 규칙 {len(added)}건 더함 — {src.as_posix()}"
+                   + ("(설치본도 같은 글로 맞춤)" if len(targets) > 1 else "")
+                   + (f", 이미 있는 {len(bullets) - len(added)}건은 건너뜀" if len(added) < len(bullets) else ""))
+    if team:
+        import ask_sheet_html as sheet_html
+
+        def cell(s: str) -> str:
+            return s.replace("\n", " ").replace("|", "\\|")
+        rows = [f"| {i} | 「{cell(it['phrase'])}」 → 「{cell(new)}」 | {cell(line.replace(it['phrase'], '**' + it['phrase'] + '**', 1))} "
+                f"|  |  | {cell(it['level'])} |  |  |" for i, (it, new, line) in enumerate(team, 1)]
+        sheet = out_dir() / f"rule-candidates-{path.stem}-{time.strftime('%Y%m%d-%H%M%S')}.md"
+        sheet.parent.mkdir(parents=True, exist_ok=True)
+        cols = sheet_html.RULE_COLUMNS
+        sheet.write_text(f"# 규칙 후보 — 검토 화면 {path.name}\n\n**묻는 것**: 이 규칙을 넣을까요?\n\n"
+                         f"## 검토 화면에서 고른 것\n\n| {' | '.join(cols)} |\n|{'---|' * len(cols)}\n"
+                         + "\n".join(rows) + "\n", encoding="utf-8", newline="\n")
+        out.append(f"  팀 공통 후보 {len(team)}건 — {sheet.as_posix()}. 잡으면 안 될 문장과 실문서 오탐을 실측해 "
+                   "채운 뒤 ask_sheet_html 로 묻습니다(fix-korean-finding 절차)")
+    return out
 
 
 def apply_file(path: Path, changes: dict[int, tuple[str, list[tuple[str, str]]]]) -> tuple[list[int], str]:
@@ -189,7 +282,7 @@ def apply_file(path: Path, changes: dict[int, tuple[str, list[tuple[str, str]]]]
     return sorted(changes), ""
 
 
-def submit(path: Path, data: dict, picks: list[dict]) -> tuple[int, str]:
+def submit(path: Path, data: dict, picks: list[dict], trust: dict | None = None) -> tuple[int, str]:
     """화면에서 고른 답을 판정 기록에 남기고 파일을 고친다 — (종료 코드, 세션이 받을 요약).
 
     판정표의 답 처리(`judge_layer2.read_answers`)와 같은 기록에 같은 규칙으로 적는다.
@@ -203,6 +296,7 @@ def submit(path: Path, data: dict, picks: list[dict]) -> tuple[int, str]:
       사유 「사용자답」으로 닫는다(세션이 쓰는 `--dismiss` 사유와 따로 둔다 — 세션이 고를 수 없는 사유다)
     - **세션에 맡김과 남음** — 둘 다 기록하지 않는다. 맡긴 것은 요약에 싣는다
     - **1층 지적** — 판정 기록이 아니라 검사기 몫이라 고칠 것과 그대로 둔 것을 요약에만 싣는다
+    - **규칙으로 남기기와 신뢰 설정** — `save_rules`, `save_trust`
 
     ⛔ 화면을 연 뒤 바뀐 줄의 답은 받지 않는다 — 사용자가 본 문장과 지금 문장이 다르다.
     ⛔ 판정기가 본 적 없는 줄은 확정하지 않는다 — 확정하면 판정기가 한 번도 안 본 글이 판정을 건너뛴다.
@@ -215,6 +309,7 @@ def submit(path: Path, data: dict, picks: list[dict]) -> tuple[int, str]:
     src = f"검토 화면 {path.name}"
     by_line: dict[int, list[tuple[dict, str, str]]] = defaultdict(list)
     refused = []
+    rule_of: dict[int, str] = {}
     for p in picks:
         it, dec = items.get(int(p.get("id") or 0)), p.get("dec")
         own = str(p.get("own") or "").strip() if dec == "own" else ""
@@ -225,8 +320,12 @@ def submit(path: Path, data: dict, picks: list[dict]) -> tuple[int, str]:
             refused.append(f"#{it['id']} {n}행 — 화면을 연 뒤 그 줄이 바뀌었습니다. 화면을 다시 엽니다")
             continue
         by_line[n].append((it, dec, own))
+        if p.get("rule") in ("mine", "team"):
+            rule_of[it["id"]] = p["rule"]
     counts = defaultdict(int)
     loose, delegated, l1_kept = [], [], []
+    my_rules: list[tuple[dict, str]] = []
+    team_rules: list[tuple[dict, str, str]] = []
     changes: dict[int, tuple[str, list[tuple[str, str]]]] = {}
     told: dict[int, list[str]] = {}
     learned = closed = 0
@@ -241,6 +340,10 @@ def submit(path: Path, data: dict, picks: list[dict]) -> tuple[int, str]:
             if dec in ("accept", "own"):
                 new = it["fix"] if dec == "accept" else own
                 ok = literal(new) and bool(it["phrase"]) and it["phrase"] in target
+                if literal(new) and rule_of.get(it["id"]) == "mine":
+                    my_rules.append((it, new))
+                elif literal(new) and rule_of.get(it["id"]) == "team":
+                    team_rules.append((it, new, line))
                 if ok:
                     target = target.replace(it["phrase"], new, 1)
                     pairs.append((it["phrase"], new))
@@ -303,6 +406,11 @@ def submit(path: Path, data: dict, picks: list[dict]) -> tuple[int, str]:
         out.append(f"  1층 그대로 {len(l1_kept)}건 — 오류는 그대로 두면 발행이 막히고, 주의는 판단 기록"
                    "(check_record --stage review)을 남깁니다")
         out += [f"    {k}" for k in l1_kept]
+    out += save_rules(path, my_rules, team_rules)
+    changed = save_trust(data, trust or {})
+    if changed:
+        out.append(f"  신뢰 설정 {', '.join(changed)} — 다음에 화면을 열면 그 갈래의 「반영」을 미리 골라 둠"
+                   f"({trust_file().as_posix()})")
     out += [f"  ⛔ {r}" for r in refused]
     out.append(f"  남은 사람 확인 {left_asks}건, 처리 안 된 고칠 지적 {left_fixes}건")
     return (1 if left_asks or left_fixes or pending else 0), "\n".join(out)
@@ -349,7 +457,7 @@ def serve(page: Path, timeout: float, open_browser: bool = True, ready=None, on_
             if stop.is_set() or on_submit is None:
                 return self._send(409, {"ok": False, "error": "이미 제출했거나 제출을 받지 않는 화면"})
             try:
-                result["code"], summary = on_submit(req.get("picks") or [])
+                result["code"], summary = on_submit(req)
             except (ValueError, OSError) as e:
                 return self._send(500, {"ok": False, "error": str(e)})
             print(summary, flush=True)
@@ -402,7 +510,8 @@ def main(argv=None) -> int:
     if coverage.repo_of(page) is not None:
         print("  ⚠️ 화면이 git 저장소 안에 있습니다 — 문서 원문이 들어 있으니 커밋하지 않습니다")
     if a.serve:
-        return serve(page, a.timeout, not a.no_open, on_submit=lambda picks: submit(path, data, picks))
+        return serve(page, a.timeout, not a.no_open,
+                     on_submit=lambda req: submit(path, data, req.get("picks") or [], req.get("trust")))
     return 0
 
 
