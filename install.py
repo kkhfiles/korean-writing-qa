@@ -131,6 +131,11 @@ def pairs() -> list[tuple[Path, Path]]:
     known = repo_paths.REPO / "data" / "catalog" / "known-words.jsonl"
     if known.exists():
         out.append((known, repo_paths.installed("assets", known.name)))
+    # ⛔ 맞춤법 목록도 옮긴다 — 설치본 검사기는 자기 옆 `../data/catalog/`(= `~/.claude/data/catalog/`)
+    #    에서 찾는다. 안 옮기면 다른 프로젝트의 검사에서 「됬다」, 「역활」이 조용히 빠진다.
+    spelling = repo_paths.REPO / "data" / "catalog" / "spelling-errors.tsv"
+    if spelling.exists():
+        out.append((spelling, repo_paths.installed("data", "catalog", spelling.name)))
     # ⛔ 푸시 게이트가 `~/.claude/assets/check_publish_safety.py` 를 찾는다.
     #    안 옮기면 설치한 PC 에서 게이트가 「검사기를 못 찾았다」로 막기만 한다.
     safety = repo_paths.REPO / "scripts" / "check_publish_safety.py"

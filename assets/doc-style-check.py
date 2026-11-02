@@ -1368,6 +1368,167 @@ def brand_pairs():
 
 BRANDS = brand_pairs()
 
+# ── 맞춤법 ────────────────────────────────────────────────────────────────
+#
+# 「됬다」, 「역활」, 「금새」, 「보낼께」를 1층이 하나도 못 잡았다(2026-11-02). 처음 써 보는
+# 사람이 가장 먼저 기대하는 기능인데 무료로 쓸 로컬 맞춤법 검사기가 사실상 없고, 형태소
+# 분석기의 오타 교정은 고친 결과만 내고 틀린 자리를 알리지 않아 못 쓴다.
+#
+# **목록은 데이터 파일** — `data/catalog/spelling-errors.tsv`(출처와 고시 번호는 그 파일 머리).
+#    공개 규범에서 옮긴 것이라 저장소에 두고 `install.py` 가 설치본 옆으로 옮긴다.
+# **문법 꼴은 여기 규칙** — 「ㄹ께」, 「ㄹ꺼」, 「ㄹ런지」, 「-구요」, 「-률/-율」, 낱자모는 낱말을
+#    늘어놓아서는 못 덮는다(앞 글자의 받침이 가른다).
+#
+# ⛔ **낱말 첫머리 조건이 없으면 오탐** — 진단(2026-11-02)에서 「지역활성화」 안의 「역활」,
+#    「31일부로」의 「일부로」가 걸렸다. 목록 항목은 기본으로 앞 글자가 한글이나 숫자가 아닐 때만 잡는다.
+SPELL_FILE = 'spelling-errors.tsv'
+SPELL_SCOPES = {'첫머리', '어디나', '낱말'}
+
+
+def spelling_list():
+    """[(틀린 꼴, 바른 꼴, 범위, 등급 'err'|'warn', 제외 꼴들, 근거)] — 목록이 없으면 빈 목록.
+
+    찾는 곳 — 지정한 것 · 검사기 옆(`../data/catalog/`) · 설치본 자리 · 검사기와 같은 폴더.
+    저장소 검사기는 저장소 목록을, 설치본은 설치본 목록을 먼저 본다 — 둘이 어긋나면
+    `install.py --check` 가 알린다. 지정한 자리에 파일이 없으면 끈 것이다(시험이 쓰는 길).
+    """
+    here = os.path.dirname(os.path.abspath(__file__))
+    pinned = os.environ.get('KOREAN_QA_SPELLING', '')
+    cands = [pinned] if pinned else [
+        os.path.join(here, '..', 'data', 'catalog', SPELL_FILE),
+        os.path.join(os.path.expanduser('~'), '.claude', 'data', 'catalog', SPELL_FILE),
+        os.path.join(here, SPELL_FILE)]
+    for cand in cands:
+        if not cand or not os.path.isfile(cand):
+            continue
+        out = []
+        for line in io.open(cand, encoding='utf-8'):
+            if not line.strip() or line.lstrip().startswith('#'):
+                continue
+            cells = [c.strip() for c in line.rstrip('\n').split('\t')] + [''] * 6
+            wrong, right, scope, level, excepts, why = cells[:6]
+            if not wrong or not right:
+                continue
+            scope = scope if scope in SPELL_SCOPES else '첫머리'
+            out.append((wrong, right, scope, 'warn' if level == '주의' else 'err',
+                        tuple(e.strip() for e in excepts.split(',') if e.strip()), why))
+        return out
+    return []
+
+
+SPELLING = spelling_list()
+_HANGUL_OR_DIGIT = re.compile(r'[가-힣0-9]')
+
+
+def _jong(ch):
+    """완성형 한 글자의 받침 번호(0 = 받침 없음, 4 = ㄴ, 8 = ㄹ, 20 = ㅆ) — 한글이 아니면 -1."""
+    o = ord(ch) - 0xAC00
+    return o % 28 if 0 <= o < 11172 else -1
+
+
+#: 받침 ㄹ 뒤 「께」, 「껄」 — 「할께요」, 「갈껄」. 「께」가 조사(높임)나 접미사(「15일께」,
+#: 「월말께」)인 꼴은 앞 글자로 가른다 — 들(「선생님들께」) · 월 · 일 · 말 · 달 · 설.
+L_KKE = re.compile(r'([가-힣])(께|껄)(?=요|[^가-힣]|$)')
+L_KKE_OK = set('들월일말달설')
+#: 받침 ㄹ 뒤 「꺼」 — 「할꺼야」. 「불 꺼」, 「스위치를꺼」(끄다)는 앞 글자로 뺀다.
+L_KKEO = re.compile(r'([가-힣])꺼(?=야|요|예요|에요|다|라|니|든|면|[^가-힣]|$)')
+L_KKEO_OK = L_KKE_OK | set('불를')
+#: 받침 ㄹ 뒤 「런지」 — 「할런지」 → 「할는지」. 「덤벨 런지」(운동)만 뺀다.
+L_RUNJI = re.compile(r'([가-힣])런지')
+#: 받침 ㅆ 뒤 「구요」 — 「했구요」 → 「했고요」. 「연구요」는 앞 글자 받침이 없어 안 걸린다.
+SS_GUYO = re.compile(r'([가-힣])구요(?=[^가-힣]|$)')
+#: 「-율/-률」 — 받침 없는 말과 ㄴ 받침 뒤는 「율」, 그 밖은 「률」(한글 맞춤법 제11항 붙임).
+#: 사람 이름(「정율」)에도 같은 꼴이 나와 **주의**다.
+YUL = re.compile(r'([가-힣])(율|률)')
+#: 낱자모 — 완성형 글자 옆에 붙은 자음·모음(「받으시ㄹ」, 「아ㄴ녕」).
+JAMO_AFTER = re.compile(r'[가-힣]([ㄱ-ㅣ]+)(?![ㄱ-ㅣ])')
+JAMO_BEFORE = re.compile(r'(?<![가-힣ㄱ-ㅣ])([ㄱ-ㅣ]+)[가-힣]')
+#: 일부러 쓴 자모 — 웃음과 울음(「ㅋㅋ」, 「ㅠㅠ」), 같은 자모 되풀이(「ㅇㅇ」 자리 표시)
+JAMO_PLAY = set('ㅋㅎㅠㅜ')
+#: 글자 앞에 혼자 선 자음이 정상인 꼴 — 문법 표기(「ㄴ다」, 「ㄹ게」, 「ㅂ니다」, 「ㅁ」),
+#: 모양(「ㄱ자」, 「ㄷ자형」). 그 밖은 오타와 비속어가 섞여 주의로 낸다(K-NCT 정답 문장 실측).
+JAMO_NOTATION = set('ㄴㄹㅁㅂㅅ')
+
+
+def _jamo_play(run):
+    return set(run) <= JAMO_PLAY or (len(run) > 1 and len(set(run)) == 1)
+
+
+def spelling_hits(text):
+    """맞춤법에 어긋난 곳 — [(등급 'err'|'warn', 걸린 글자, 바른 꼴, 시작, 근거)].
+
+    ⛔ 인용·코드 구간은 부르는 쪽이 `mask` 로 지운 뒤 넘긴다(그 말을 언급한 것이지 쓴 것이 아니다).
+    """
+    out = []
+    if not re.search(r'[가-힣ㄱ-ㅣ]', text):
+        return out
+    taken = set()
+    for wrong, right, scope, level, excepts, why in SPELLING:
+        start = 0
+        while True:
+            i = text.find(wrong, start)
+            if i < 0:
+                break
+            start = i + 1
+            j = i + len(wrong)
+            if scope != '어디나' and i > 0 and _HANGUL_OR_DIGIT.match(text[i - 1]):
+                continue
+            if scope == '낱말' and j < len(text) and re.match(r'[가-힣]', text[j]):
+                continue
+            if any(e.find(wrong) >= 0 and i - e.find(wrong) >= 0
+                   and text[i - e.find(wrong):i - e.find(wrong) + len(e)] == e for e in excepts):
+                continue
+            out.append((level, wrong, right, i, why))
+            taken.update(range(i, j))
+    for m in L_KKE.finditer(text):
+        c = m.group(1)
+        if _jong(c) == 8 and c not in L_KKE_OK and m.start() not in taken:
+            right = '게' if m.group(2) == '께' else '걸'
+            out.append(('err', m.group(0), c + right, m.start(),
+                        f'맞춤법 — 받침 ㄹ 뒤 어미는 예사소리 「ㄹ{right}」'))
+    for m in L_KKEO.finditer(text):
+        c = m.group(1)
+        if _jong(c) == 8 and c not in L_KKEO_OK and m.start() not in taken:
+            out.append(('err', m.group(0), c + ' 거', m.start(),
+                        '맞춤법 — 의존 명사 「것」의 입말은 「거」'))
+    for m in L_RUNJI.finditer(text):
+        c = m.group(1)
+        if _jong(c) == 8 and c != '벨' and m.start() not in taken:
+            out.append(('err', m.group(0), c + '는지', m.start(), '표준어 — 「-ㄹ는지」가 표준'))
+    for m in SS_GUYO.finditer(text):
+        if _jong(m.group(1)) == 20 and m.start() not in taken:
+            out.append(('err', m.group(0), m.group(1) + '고요', m.start(), '표준어 — 「-고요」가 표준'))
+    for m in YUL.finditer(text):
+        c, tail = m.group(1), m.group(2)
+        if m.start() in taken or m.start() + 1 in taken:
+            continue
+        jong = _jong(c)
+        if tail == '율' and jong not in (0, 4):
+            out.append(('warn', m.group(0), c + '률', m.start(),
+                        '맞춤법 — ㄴ 말고 다른 받침 뒤는 「률」, 사람 이름이면 그대로'))
+        elif tail == '률' and jong in (0, 4):
+            out.append(('warn', m.group(0), c + '율', m.start(),
+                        '맞춤법 — 받침 없는 말과 ㄴ 받침 뒤는 「율」, 사람 이름이면 그대로'))
+    for m in JAMO_AFTER.finditer(text):
+        if not _jamo_play(m.group(1)):
+            out.append(('err', m.group(0), None, m.start(),
+                        '맞춤법 — 완성형 글자 옆에 낱자모가 붙음(입력 실수)'))
+    for m in JAMO_BEFORE.finditer(text):
+        run, nxt = m.group(1), m.group(0)[-1]
+        if _jamo_play(run) or (len(run) == 1 and (run in JAMO_NOTATION or nxt == '자')):
+            continue
+        out.append(('warn', m.group(0), None, m.start(),
+                    '맞춤법 — 낱자모 뒤에 글자가 붙음, 문법이나 모양을 적은 것이면 그대로'))
+    out.sort(key=lambda h: h[3])
+    return out
+
+
+def spelling_note(hit, near):
+    level, word, right, _pos, why = hit
+    if right is None:
+        return f'「{word}」 — {why}, 한 글자로 모아 쓸 것 · {near}'
+    return f'「{word}」 → 「{right}」 — {why} · {near}'
+
 #: ★ **개인 낱말 목록** — 각자 채워 넣는 「안 쓸 동사」 목록(2026-09-29 사용자 — 「1층에서 별도
 #:   명시하는 파일을 두고, 개인이 채워넣는 방식을 사용하면 된다」).
 #:   입말 동사(잡다·재다·넘기다)는 흔한 낱말이라 단어 점검이 못 보고, 공용 규칙으로 하나씩 넣으면
@@ -1879,6 +2040,12 @@ def scan_html(path, relaxed=False, form=None, rules=None):
         for m in re.finditer(re.escape(wrong), text):
             near = ' '.join(text[max(0, m.start() - 18):m.end() + 18].split())
             err.append(('제품 이름 음차', f'「{wrong}」 → 「{canon}」 · {near[:48]}'))
+    for hit in spelling_hits(text):
+        near = ' '.join(text[max(0, hit[3] - 18):hit[3] + len(hit[1]) + 18].split())
+        if hit[0] == 'err':
+            err.append(('맞춤법', spelling_note(hit, near[:48])))
+        else:
+            warn.append(('맞춤법 의심', spelling_note(hit, near[:48])))
     for kind, level, fix, hit in translationese_hits(text):
         near = ' '.join(text[max(0, hit.start() - 20):hit.end() + 20].split())
         (err if level == 'err' else warn).append(
@@ -2469,6 +2636,9 @@ RULE_GROUPS = {
         '말투 섞임', '제품 이름 음차', '다른 낱말로 읽힘', '낯선 사내 용어',
         '띄어 쓴 가운뎃점', '머리말 되풀이',
     ]),
+    '표기': ('맞춤법과 외래어 표기법 — 고시된 어문 규범에 어긋난 글자', [
+        '맞춤법', '맞춤법 의심',
+    ]),
     '번역투': ('번역에서 옮아온 문형', [
         '이중 피동', '번역투 이중 조사', '번역투 그녀', '「~가 아니라」 반복', '상투 문형',
         '반복 문형',
@@ -3013,6 +3183,11 @@ def scan_md(path, relaxed=False, form=None, rules=None):
             if wrong in m:
                 err.append((n, '제품 이름 음차',
                             f'「{wrong}」 → 「{canon}」 — {excerpt(line, wrong, 46)}'))
+        for hit in spelling_hits(m):
+            if hit[0] == 'err':
+                err.append((n, '맞춤법', spelling_note(hit, excerpt(line, hit[1], 40))))
+            else:
+                warn.append((n, '맞춤법 의심', spelling_note(hit, excerpt(line, hit[1], 40))))
         for h in HOEGI.finditer(m):
             if HOEGI_OK.search(m[max(0, h.start() - 6):h.end() + 6]):
                 continue
@@ -3227,7 +3402,8 @@ def scan_md(path, relaxed=False, form=None, rules=None):
     # ⛔ **낱말마다 고쳐야 하는 갈래는 예외다**(외부 검토 2026-09-18).
     #    「여기에 저장하고 거기에서 확인」은 이름을 **둘** 붙여야 하는데 한 건으로
     #    접혀 HTML(2건)과 갈렸다. 그 갈래만 발췌까지 열쇠에 넣는다.
-    PER_HIT = {'지시어 확인'}
+    #    맞춤법도 낱말마다 고친다 — 「됬다」와 「역활」이 한 줄에 있으면 두 건이다(2026-11-02).
+    PER_HIT = {'지시어 확인', '맞춤법', '맞춤법 의심'}
 
     def dedupe(items):
         seen, out = set(), []
@@ -3564,6 +3740,11 @@ def main():
         print(f'\n제품 이름 목록이 없어 음차는 안 봤습니다 — 이름은 저장소 밖에 둡니다'
               f'\n   만들려면 data/catalog/local-brand-names.example.txt 를 '
               f'{BRAND_FILE} 로 복사하십시오')
+    # ⛔ 맞춤법 목록이 없으면 목록 항목은 안 본 것이다 — 검사기 파일 하나만 옮긴 설치에서 난다
+    if not SPELLING:
+        tail += ' · 맞춤법 목록 안 봄'
+        print(f'\n맞춤법 목록({SPELL_FILE})을 못 찾아 목록 항목은 안 봤습니다 — 「ㄹ께」와 낱자모 규칙만 봤습니다'
+              '\n   고치려면 저장소에서 python install.py')
     # ⛔ 대장 밖 문서의 가운뎃점은 오류로 안 셌다 — 말하지 않으면 「오류 0」이 안 본 것인지 갈리지 않는다
     if MIDDOT_UNTRACKED[0]:
         tail += f' · 가운뎃점 대장 밖 {MIDDOT_UNTRACKED[0]}줄'
