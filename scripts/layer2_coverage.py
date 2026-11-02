@@ -435,6 +435,111 @@ def needs_check(item: dict) -> bool:
     return bool(str(item.get("check") or "").strip()) or bool(NEEDS_CHECK.search(str(item.get("why") or "")))
 
 
+#: 수(아라비아 숫자) — 천 단위 쉼표와 소수, 뒤에 붙는 한자어 큰 수 단위(「3천만」, 「1.5억」)까지 한 덩어리
+#: 영문자가 바로 붙은 수는 단위(「300ms」)일 때만 받는다 — 커밋 해시(「61947a8」)나 이름(「H2」)의 숫자는 수가 아니다
+_NUMBER = re.compile(r"(?<![A-Za-z0-9.,])(\d{1,3}(?:,\d{3})+|\d+)(?:\.(\d+))?(?![0-9])"
+                     r"(?!(?!(?:[kmgtKMGT][bB]|ms|px|km|kg)(?![A-Za-z]))[A-Za-z])([십백천만억조]*)")
+#: 수 뒤의 단위 — 긴 것부터. 같은 값이라도 단위가 다르면 다른 정보다(「3일」과 「3명」)
+_UNITS = ("퍼센트", "개월", "시간", "분기", "가지", "차례", "단계", "달러", "%", "％", "년", "월", "일", "주", "시",
+          "분", "초", "건", "개", "명", "원", "배", "회", "차", "번", "곳", "쪽", "장", "줄", "행", "자", "점", "위",
+          "대", "권", "편", "종", "층", "kb", "mb", "gb", "tb", "ms", "px", "km", "kg")
+_UNIT_SAME = {"퍼센트": "%", "％": "%"}
+_BIG = {"십": 10, "백": 100, "천": 1000}
+_MYRIAD = {"만": 10 ** 4, "억": 10 ** 8, "조": 10 ** 12}
+#: 번호 목록의 번호(「3. 」) — 문서에 있는 수로 치지 않는다. 치면 「3.」 항목이 있는 문서에서 새로 들인 「3일」을 못 잡는다
+_LIST_MARK = re.compile(r"^\s*\d+[.)]\s")
+#: 따옴표 안 이름 — 겹친 따옴표는 가장 안쪽만(바깥 따옴표가 줄을 통째로 감싸 원문과 안 맞는 일을 막는다)
+_QUOTED = re.compile(r"「([^「」]{2,})」|『([^『』]{2,})』|“([^“”]{2,})”|\"([^\"]{2,})\"|‘([^‘’]{2,})’")
+#: 영문 낱말 — 숫자가 섞인 이름(「H2」, 커밋 해시)도 한 낱말. 수와 단위만 붙은 것(「300ms」)은 수로 본다
+_LATIN = re.compile(r"(?<![A-Za-z0-9])[A-Za-z0-9]*[A-Za-z][A-Za-z0-9]*(?:[.+#_-][A-Za-z0-9]+)*")
+_NUMBER_UNIT = re.compile(r"\d+(?:\.\d+)?(?:[kmgt]b|ms|px|km|kg)")
+_TAG = re.compile(r"<[^>]{0,200}>")
+#: 문서 안이나 이웃 파일 링크의 주소(「](#1030-스냅샷-갱신)」) — 제목과 파일 이름에서 만든 주소라 새 정보가 아니다.
+#: 바깥 주소(http)는 그대로 본다
+_ANCHOR = re.compile(r"\]\((?!https?:)[^)\s]*\)")
+#: 범위의 앞 수(「329~330행」, 「3~5일」) — 뒤 수의 단위를 함께 쓴다
+_RANGE_TAIL = re.compile(r"\s?[~∼–-]\s?\d[\d,.]*\s?")
+#: 줄을 가리키는 수(「765행과 766행을 합침」) — 문서 내용이 아니라 고치는 법을 적은 말이다
+_LINE_REF = {"행", "줄"}
+
+
+def _numbers(text: str) -> list[tuple[str, tuple[float, ...], str]]:
+    """글의 수 — (보이는 글자, 값 후보, 단위). 「3천만」과 「3,000만」은 같은 값이다.
+
+    단위 없이 「만」만 붙은 수는 조사로도 읽는다 — 「숫자 8800만 나온 문서」의 8800 을 8,800만으로만 읽어 새 수로 잡았다.
+    """
+    out = []
+    for m in _NUMBER.finditer(text):
+        raw = float(m.group(1).replace(",", "") + ("." + m.group(2) if m.group(2) else ""))
+        value, group = raw, 1
+        for ch in m.group(3):
+            if ch in _BIG:
+                group *= _BIG[ch]
+            else:
+                value *= group * _MYRIAD[ch]
+                group = 1
+        value *= group
+        end = m.end()
+        if m.group(3) and text[end:end + 1] == " ":     # 「320만 건」 — 큰 수 단위 뒤에만 띄어 쓴 단위를 받는다
+            end += 1
+        unit = next((u for u in _UNITS if text[end:end + len(u)].lower() == u), "")
+        stop = end + len(unit) if unit else m.end()
+        tail = _RANGE_TAIL.match(text, m.end()) if not unit else None
+        if tail:
+            unit = next((u for u in _UNITS if text[tail.end():tail.end() + len(u)].lower() == u), "")
+        values = (round(value, 6),) + ((round(raw, 6),) if m.group(3) == "만" and not unit else ())
+        out.append((text[m.start():stop].strip(), values, _UNIT_SAME.get(unit, unit)))
+    return out
+
+
+def _squash(text: str) -> str:
+    return re.sub(r"[\s*_`]", "", text).lower()
+
+
+def new_info(fix: str, doc: str) -> list[str]:
+    """수정안(`fix`)이 들여오는, 문서(`doc`) 어디에도 없는 정보 — 새로 나온 수, 따옴표 안 이름, 영문 낱말.
+
+    **왜 있나** (2026-11-02) — 판정기 지적을 모델이 그대로 반영한 업무 문서가 고치지 않은 초안보다 낮게
+    평가됐고, 판정 사유에 가장 많이 나온 것이 「원문에 없던 조건, 정의, 계산값을 넣음」이다
+    (`runs/bench-external-20261031/README.md` 「D3」). 판정기가 `check` 칸을 비우고 근거도 `NEEDS_CHECK` 낱말을
+    피하면, 새 숫자를 넣은 수정안이 「바로 반영」으로 일괄 반영에 들어갔다.
+
+    **가르는 기준** — 문서 전체와 대조한다(그 줄만이 아니다). 원문의 수를 옮겨 쓰거나 표기만 바꾼 것(「3천만」과
+    「3,000만」, 「30퍼센트」와 「30%」)은 새 정보가 아니다. 문서의 수에 단위가 없으면 같은 값을 안다고 본다(날짜
+    「2026-10-30」의 30 과 「30일」). 번호 목록의 번호는 문서의 수로 치지 않는다. 줄을 가리키는 수(「765행」)와 문서 안
+    링크 주소는 새 정보로 치지 않는다 — 실제 판정 기록에서 이 둘이 오탐의 대부분이었다(2026-11-02).
+
+    **어디서 쓰나** — 검토 화면(`review_screen.collect`)이 이 값이 있는 고칠 지적을 「작성자 확인」으로 돌려 일괄
+    반영과 신뢰 설정에서 뺀다. `needs_check` 에는 안 넣는다(까닭은 `collect` 의 주석).
+
+    ⛔ 수 없이 들여온 조건이나 정의(「승인 후」, 「주문 기준」)는 못 잡는다 — 판정기의 `check` 칸과 사람이 본다.
+    ⛔ 한글로 쓴 수(「세 번」)는 안 본다 — 「한 번 더」 같은 굳은 말이 많아 오탐이 앞선다.
+    """
+    if not fix or not fix.strip():
+        return []
+    fix = _ANCHOR.sub("]", fix)
+    known = {(v, u) for _, vs, u in _numbers("\n".join(_LIST_MARK.sub(" ", l) for l in doc.splitlines()))
+             for v in vs}
+    values = {v for v, _ in known}
+    bare = {v for v, u in known if not u}
+    out: list[str] = []
+    for shown, vs, u in _numbers(fix):
+        if u in _LINE_REF or any((v, u) in known or v in bare or (not u and v in values) for v in vs):
+            continue
+        out.append(shown)
+    flat = _squash(doc)
+    for m in _QUOTED.finditer(fix):
+        name = next(g for g in m.groups() if g)
+        if _squash(name).strip("○") and _squash(name) not in flat:     # 「○○」 자리표시는 이름이 아니다
+            out.append(f"「{name}」")
+    plain = _TAG.sub(" ", fix)
+    for word in _LATIN.findall(plain):
+        if (len(word) >= 2 and not _NUMBER_UNIT.fullmatch(word.lower()) and word.lower() not in doc.lower()
+                and not any(word in o for o in out)):
+            out.append(word)
+    return list(dict.fromkeys(out))
+
+
 def _plain(text: str) -> str:
     """강조 표시를 뺀 글 — 판정기는 `**굵게**` 를 빼고 표현을 옮겨 적는다(2026-10-12 고리 시험)."""
     return re.sub(r"[*_`]", "", text)

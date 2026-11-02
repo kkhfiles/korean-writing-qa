@@ -12,7 +12,8 @@
 
 - **127.0.0.1 의 빈 포트에만 연다** — 화면에 문서 원문이 들어 있다
 - **HTML 은 저장소 밖에 쓴다** — 판정 기록 옆 `korean-review/`(문서 원문이 들어 있어 커밋하지 않는다)
-- **작성자 정보가 필요한 지적**(판정기의 「확인할 사실」이 있거나 사람 확인으로 넘어온 것)은 수정안을 미리 넣지 않고
+- **작성자 정보가 필요한 지적**(판정기의 「확인할 사실」이 있거나, 수정안이 문서에 없는 수나 이름을 들여오거나,
+  사람 확인으로 넘어온 것)은 수정안을 미리 넣지 않고
   일괄 처리와 신뢰 스위치에서 뺀다(`docs/decisions-pending.md` 「지키는 조건」)
 """
 from __future__ import annotations
@@ -92,12 +93,22 @@ def collect(path: Path) -> dict:
     """화면에 실을 자료 — 원문 줄과 지적. 지적마다 줄 해시를 붙여 2단계가 답을 그 줄에 단다."""
     lines = coverage.read_doc(path).splitlines()
     key = coverage.doc_key(path)
+    doc = "\n".join(lines)
     items = []
     for n, fx in coverage.open_fixes(key, lines):
+        check = str(fx.get("check") or "")
+        # 수정안이 문서에 없는 수나 이름을 들여오면 판정기가 「확인할 사실」을 비웠어도 작성자 확인으로 돌린다
+        # (`coverage.new_info`). ⛔ `needs_check` 에는 넣지 않는다 — `needs_check` 는 지적만 보고 가르는데 이것은
+        # 문서와 대조해야 하고, 수정안을 반영하면 그 수가 문서에 들어가 판정이 뒤집힌다. 게이트(`open_fixes`)와
+        # 받지 않음 규칙(`dismiss`)이 그 뒤집힌 값을 보면 반영 전에는 사실 확인, 반영 뒤에는 보통 지적이 된다.
+        # 판정 때 문서로 가른 값을 판정 기록에 남기는 일은 판정기(`judge_layer2.py`) 쪽 몫이다.
+        new = [] if coverage.needs_check(fx) else coverage.new_info(str(fx.get("fix") or ""), doc)
+        if new:
+            check = f"수정안에 원문에 없는 정보가 있음: {', '.join(new)} — 맞는지 확인"
         items.append({"layer": "2층", "level": "고칠 지적", "line": n, "phrase": str(fx.get("phrase") or ""),
                       "fix": str(fx.get("fix") or ""), "cat": str(fx.get("category") or ""),
-                      "check": str(fx.get("check") or ""), "why": str(fx.get("why") or ""),
-                      "type": "info" if coverage.needs_check(fx) else "replace"})
+                      "check": check, "why": str(fx.get("why") or ""), "new_info": new,
+                      "type": "info" if coverage.needs_check(fx) or new else "replace"})
     for n, ask in coverage.open_asks(key, lines):
         items.append({"layer": "2층", "level": "사람 확인", "line": n, "phrase": str(ask.get("phrase") or ""),
                       "fix": str(ask.get("fix") or ""), "cat": str(ask.get("category") or "사람 확인"),
