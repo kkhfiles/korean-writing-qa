@@ -4,7 +4,7 @@ form: structured
 
 # 한글 교정기의 장점과 기술 요소
 
-**장점별 기술 요소와 근거, 홈페이지 문구 후보** — 소개 페이지(<https://dispatchflow.cc/vermilion/>)와 README에 옮길 내용의 기준 문서(수치는 2026-10-28 기준, 측정 결과 상세는 [현재 상태](status.md), 부품 설명은 [시스템 구조와 역할](architecture.md))
+**장점별 기술 요소와 근거, 홈페이지 문구 후보** — 사례집([showcase.html](showcase.html))과 README에 옮길 내용의 기준 문서(수치는 2026-10-28 기준, 측정 결과 상세는 [현재 상태](status.md), 부품 설명은 [시스템 구조와 역할](architecture.md))
 
 ## 이 도구의 의도와 가치
 
@@ -183,14 +183,14 @@ form: structured
 
 | 장점 | 소개 페이지 현황 | 할 일 |
 |---|---|---|
-| 사람이 쓴 업무 문서와 비교 | [목록에 없는 말](https://dispatchflow.cc/vermilion/#words), [규칙을 만든 근거](https://dispatchflow.cc/vermilion/#src)에 있음 | 유지 |
+| 사람이 쓴 업무 문서와 비교 | [목록에 없는 말](showcase.html#words), [규칙을 만든 근거](showcase.html#src)에 있음 | 유지 |
 | 글자 검사와 문맥 판정 | 없음 | 새 절 후보 |
 | 발행을 막되 해제 방법을 둠 | 없음 | 새 절 후보 |
-| 판정을 규칙에 반영 | [조직 관행에 맞추기](https://dispatchflow.cc/vermilion/#fit)의 「새 규칙 추가」 한 행 | 새 절 후보 |
-| 지적 없는 결과를 합격으로 안 봄 | [조직 관행에 맞추기](https://dispatchflow.cc/vermilion/#fit)에 끈 유형 표시만 있음 | 「발행을 막되 해제 방법을 둠」 새 절에 합침 |
-| 정상 문장은 지적 안 함 | [지적하지 않는 표현](https://dispatchflow.cc/vermilion/#exempt)에 있음 | 형식 선언, 밀집 조건 보강 |
-| 모든 프로젝트에 같은 검사 | [설치 방법](https://dispatchflow.cc/vermilion/#run)에 명령만 있음 | Codex 지원과 매일 점검 보강 |
-| 검사기 자체 시험 | [규칙을 만든 근거](https://dispatchflow.cc/vermilion/#src)에 있음 | 수치 갱신 |
+| 판정을 규칙에 반영 | [조직 관행에 맞추기](showcase.html#fit)의 「새 규칙 추가」 한 행 | 새 절 후보 |
+| 지적 없는 결과를 합격으로 안 봄 | [조직 관행에 맞추기](showcase.html#fit)에 끈 유형 표시만 있음 | 「발행을 막되 해제 방법을 둠」 새 절에 합침 |
+| 정상 문장은 지적 안 함 | [지적하지 않는 표현](showcase.html#exempt)에 있음 | 형식 선언, 밀집 조건 보강 |
+| 모든 프로젝트에 같은 검사 | [설치 방법](showcase.html#run)에 명령만 있음 | Codex 지원과 매일 점검 보강 |
+| 검사기 자체 시험 | [규칙을 만든 근거](showcase.html#src)에 있음 | 수치 갱신 |
 | 공개 전 이력 검사 | 없음 | 저장소 소개 쪽에 한 줄 |
 
 - **낡은 수치**: 「규칙을 만든 근거」의 시험 300여 건과 회귀 시험 데이터 68건은 이 문서 수치로 갱신, 결함 주입 86회는 다시 집계해 갱신
