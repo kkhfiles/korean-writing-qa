@@ -798,6 +798,12 @@ def show_open_fixes(path: Path) -> int:
         print(f"  {n:>4}행{tag}  「{fx.get('phrase')}」 — {fx.get('category')} → {fx.get('fix')}")
         if fx.get("check"):
             print(f"         확인할 사실: {fx['check']}")
+        new = [] if tag else coverage.new_info(str(fx.get("fix") or ""), "\n".join(lines))
+        if new:
+            # 세션이 이 목록을 보고 직접 고치는 길에도 같은 표시를 단다 — 검토 화면만 막으면 이 길로 지어낸 수가
+            # 들어간다(2026-11-02 · 판정기 지적을 그대로 반영한 문서가 초안에 진 까닭 1위가 「원문에 없던 값」)
+            print(f"         [새 정보] 수정안에 원문에 없는 정보가 있음: {', '.join(new)} — 그대로 넣지 말고 "
+                  "원자료나 작성자에게 확인한 뒤 고침")
         if tag and coverage._plain(str(fx.get("phrase") or "")) not in coverage._plain(lines[n - 1]):
             # 고쳐서 표현이 사라졌는데도 남은 까닭을 알린다 — 「이미 고쳤는데 열려 있다」로 읽혔다(2026-11-02 현장 보고)
             print(f"         짚은 표현은 고쳐서 없어졌지만 사실 확인 지적은 고쳐도 닫히지 않음 — 지금 {n}행의 사실을 "

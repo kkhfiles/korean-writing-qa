@@ -152,6 +152,16 @@ class OpenTests(_Base):
         _, out = self.run_main([str(self.doc), "--fixes"])
         self.assertIn("사실 확인 지적은 고쳐도 닫히지 않음", out)
 
+    def test_a_fix_that_brings_a_new_number_is_marked(self) -> None:
+        # 2026-11-02 — 검토 화면만 막으면 세션이 --fixes 를 보고 지어낸 수를 그대로 넣는 길이 남는다
+        self.judged(dict(FIX, fix="3일 동안 맨 위에 둡니다"))
+        _, out = self.run_main([str(self.doc), "--fixes"])
+        self.assertIn("[새 정보]", out)
+        self.assertIn("3일", out)
+        self.judged(dict(SECOND))
+        _, out = self.run_main([str(self.doc), "--fixes"])
+        self.assertEqual(1, out.count("[새 정보]"), "수를 들이지 않은 수정안까지 표시함")
+
     def test_the_fixes_command_reports_open_ones(self) -> None:
         self.judged()
         rc, out = self.run_main([str(self.doc), "--fixes"])
