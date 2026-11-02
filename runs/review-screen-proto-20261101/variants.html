@@ -100,6 +100,26 @@ select { font: inherit; font-size: 13.5px; border: 1px solid var(--line); border
 .va .side { display: grid; gap: 10px; position: sticky; top: 70px; max-height: calc(100vh - 160px); overflow: auto; }
 @media (max-width: 960px) { .va { grid-template-columns: 1fr; } .va .side { position: static; max-height: none; } }
 
+/* A2: 좌우 맞춤 — 카드가 해당 줄 옆에 붙어 원문과 함께 스크롤됨 */
+.va2 { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(320px, 1fr); gap: 18px; align-items: start; }
+.va2 .rail { position: relative; }
+.va2 .slot { position: absolute; left: 0; right: 0; transition: top .18s ease; }
+.va2 .slot .card { box-shadow: 0 1px 2px rgba(20, 30, 45, .06); }
+.va2 .slot.focus .card { box-shadow: 0 0 0 2px var(--accent), 0 6px 18px rgba(20, 30, 45, .12); }
+.va2 .card .why { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.va2 .slot.focus .card .why { display: block; }
+.va2 .outcome { font-size: 13px; }
+.va2 .slot:not(.focus) :is(details, .btns, .why, .q, input) { display: none; }
+.va2 .slot:not(.focus) .card { cursor: pointer; gap: 2px; padding: 8px 12px; }
+.va2 .slot:not(.focus) .chg { font-size: 13.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.va2 .slot.off { visibility: hidden; }
+.va2 .state { position: absolute; top: 8px; right: 10px; }
+.va2 .mark.hl, .va2 .slot.hl .card { outline: 2px solid #9fb6d8; outline-offset: 1px; }
+.va2 .inline { display: none; margin: 6px 0 10px 38px; gap: 8px; }
+.va2 .keyhint { font-size: 12.5px; color: var(--muted); margin: 0 0 8px; }
+@media (prefers-reduced-motion: reduce) { .va2 .slot { transition: none; } }
+@media (max-width: 960px) { .va2 { grid-template-columns: 1fr; } .va2 .rail { display: none; } .va2 .inline { display: grid; } .va2 .keyhint { display: none; } }
+
 /* B: 한 장씩 */
 .vb { display: grid; gap: 14px; max-width: 760px; margin: 0 auto; width: 100%; }
 .vb .progress { height: 6px; background: var(--line); border-radius: 999px; overflow: hidden; }
@@ -197,13 +217,16 @@ td.n { font-family: var(--mono); color: var(--muted); white-space: nowrap; }
 const D = /*DATA*/null;
 const JUDGE_COST = 0.098;        // 이 초안의 첫 판정 실측(e2e/work/06/r0-l2/judge.jsonl)
 const REJUDGE = "0.06~0.08";     // 2026-11-02 재판정 실측(문서 하나, 대상 1~3줄)
-const S = { v: "A", dec: {}, own: {}, trust: {}, styleOff: false, focus: null, qi: 0, opinion: {}, showSum: false,
+const S = { v: "A2", dec: {}, own: {}, trust: {}, styleOff: false, focus: null, qi: 0, opinion: {}, showSum: false,
             eTrusted: false };
 const TYPES = { replace: "바로 반영", info: "작성자 확인", style: "문체 규칙" };
 const V = [
   { k: "A", name: "문서 위에서", sub: "원문 diff와 카드", strength: 2,
     fit: "지적이 20건 안쪽이고 문서 흐름을 보며 고를 때", human: "중간 — 원문과 카드를 오가며 읽음",
     token: "기본형 — 사람이 다 고르면 재판정 0회", lose: "지적이 많으면 카드 목록이 길어져 스크롤이 많음" },
+  { k: "A2", name: "좌우 맞춤", sub: "카드가 해당 줄 옆에 붙음", strength: 2,
+    fit: "문맥을 보며 고를 때 — A를 고른 뒤 좌우가 따로 스크롤되던 점을 고친 판", human: "A보다 적음 — 줄과 카드가 같은 높이라 눈을 옮기지 않음",
+    token: "A와 같음 — 사람이 다 고르면 재판정 0회", lose: "지적이 한 곳에 몰리면 카드가 아래로 밀려 줄과 조금 어긋남" },
   { k: "B", name: "한 장씩", sub: "키보드로 넘기기", strength: 3,
     fit: "지적이 많고(20건 이상) 빨리 처리할 때", human: "가장 적음 — 숫자키 1~4로 고르고 다음으로 넘어감",
     token: "A와 같음, 앞뒤 줄만 보여 주므로 화면 자체도 가벼움", lose: "문서 전체 흐름이 안 보임 — 같은 문제가 여러 줄에 걸친 것을 놓치기 쉬움" },
@@ -251,7 +274,7 @@ function lineHtml(n) {
 }
 function lnHtml(n) {
   const l = D.lines[n - 1], cls = l.startsWith("#") ? "tx h" : l.trim().startsWith("|") ? "tx tbl" : "tx";
-  return `<div class="ln"><span class="no">${n}</span><span class="${cls}">${lineHtml(n) || "&nbsp;"}</span></div>`;
+  return `<div class="ln" data-n="${n}"><span class="no">${n}</span><span class="${cls}">${lineHtml(n) || "&nbsp;"}</span></div>`;
 }
 function docHtml(only) {
   if (!only) return D.lines.map((_, i) => lnHtml(i + 1)).join("");
@@ -308,21 +331,21 @@ function btn(it, v, label, extra = "") {
 function ownBox(it) {
   return st(it) === "own" ? `<input type="text" data-own="${it.id}" value="${esc(S.own[it.id] ?? it.phrase)}" aria-label="${it.id}번 직접 고친 표현">` : "";
 }
-function cardHtml(it, compact) {
+function cardHtml(it, compact, idp = "card-") {
   const s = st(it), top = `<div class="top"><span class="num">${it.id}</span><span>${it.line}행</span><span class="pill ${it.type}">${TYPES[it.type]}</span><span>${esc(it.cat)}</span></div>`;
   const cls = `card${s !== "pending" ? " done" : ""}${S.focus === it.id ? " focus" : ""}`;
   if (it.type === "replace") {
     const chg = it.fix ? `<del>${shown(it.phrase)}</del> → <ins>${shown(it.fix)}</ins>` : `<del>${shown(it.phrase)}</del> <span class="note">(수정안 없음)</span>`;
-    return `<div class="${cls}" id="card-${it.id}">${top}<div class="chg">${chg}</div>${!compact && it.why ? `<div class="why">${esc(it.why)}</div>` : ""}
+    return `<div class="${cls}" id="${idp}${it.id}">${top}<div class="chg">${chg}</div>${!compact && it.why ? `<div class="why">${esc(it.why)}</div>` : ""}
       <div class="btns">${it.fix ? btn(it, "accept", "반영") : ""}${btn(it, "keep", "그대로")}${btn(it, "own", "직접 고침")}${btn(it, "delegate", "세션에 맡김")}</div>${ownBox(it)}</div>`;
   }
   if (it.type === "info") {
-    return `<div class="${cls}" id="card-${it.id}">${top}<div class="chg">「${shown(it.phrase)}」</div><div class="q">${esc(it.check || it.why)}</div>
+    return `<div class="${cls}" id="${idp}${it.id}">${top}<div class="chg">「${shown(it.phrase)}」</div><div class="q">${esc(it.check || it.why)}</div>
       <div class="btns">${btn(it, "own", "직접 채움")}${btn(it, "keep", "그대로")}${btn(it, "delegate", "세션에 맡김")}</div>${ownBox(it)}
       <details><summary class="note">판정기 참고 수정안 — 원문에 없는 정보가 들어 있을 수 있음</summary><div class="chg"><ins>${shown(it.fix)}</ins></div>
       <div class="btns">${btn(it, "accept", "맞는지 확인했고 이 수정안 씀")}</div></details></div>`;
   }
-  return `<div class="${cls}" id="card-${it.id}">${top}<div class="chg">「${shown(clip(it.phrase, 56))}」</div>${compact ? "" : `<div class="why">${esc(it.why)}</div>`}
+  return `<div class="${cls}" id="${idp}${it.id}">${top}<div class="chg">「${shown(clip(it.phrase, 56))}」</div>${compact ? "" : `<div class="why">${esc(it.why)}</div>`}
     <div class="btns">${btn(it, "own", "직접 고침")}${btn(it, "keep", "그대로")}${btn(it, "delegate", "세션에 맡김")}</div>${ownBox(it)}</div>`;
 }
 
@@ -335,6 +358,47 @@ function viewA() {
   }).join("");
   return `<div class="va"><section class="panel doc" aria-label="원문과 수정 제안"><h2>원문과 수정 제안</h2>${docHtml()}</section>
     <aside class="side">${side}</aside></div>`;
+}
+
+/* A2 — 좌우 맞춤: 카드를 해당 줄 높이에 놓고, 고른 카드는 줄에 정확히 맞춤 */
+function viewA2() {
+  const doc = D.lines.map((_, i) => {
+    const n = i + 1, mine = D.items.filter(x => x.line === n);
+    return lnHtml(n) + (mine.length ? `<div class="inline">${mine.map(x => cardHtml(x, false, "in-")).join("")}</div>` : "");
+  }).join("");
+  const LABEL = { accept: "반영", own: "직접 고침", keep: "그대로", delegate: "세션에 맡김" };
+  const slots = D.items.map(it => `<div class="slot${S.focus === it.id ? " focus" : ""}" id="rc-${it.id}" data-slot="${it.id}">${cardHtml(it, false, "rcard-")}
+    ${S.focus !== it.id && LABEL[st(it)] ? `<span class="state pill ${st(it) === "delegate" ? "cost" : "free"}">${LABEL[st(it)]}</span>` : ""}
+    ${S.focus === it.id ? `<div class="outcome note" style="padding:4px 2px 0">제출하면: ${OUTCOME[st(it)][0]}</div>` : ""}</div>`).join("");
+  return `<div class="va2"><section class="panel doc" aria-label="원문과 수정 제안"><h2>원문과 수정 제안</h2>
+    <p class="keyhint">줄의 표시나 카드를 누르면 둘이 같은 높이로 맞춰짐, J와 K로 다음과 이전 지적</p><div id="a2doc">${doc}</div></section>
+    <aside class="rail" id="rail" aria-label="지적 카드">${slots}</aside></div>`;
+}
+function layoutRail() {
+  const rail = document.getElementById("rail");
+  if (!rail || getComputedStyle(rail).display === "none") return;
+  const top0 = rail.getBoundingClientRect().top, GAP = 8;
+  const cs = D.items.map(it => {
+    const m = document.querySelector(`#a2doc .mark[data-id="${it.id}"]`) || document.querySelector(`#a2doc .ln[data-n="${it.line}"]`);
+    const el = document.getElementById(`rc-${it.id}`);
+    return { it, el, want: m.getBoundingClientRect().top - top0 - 10, h: el.offsetHeight };
+  }).sort((a, b) => a.want - b.want || a.it.id - b.it.id);
+  const fi = cs.findIndex(c => c.it.id === S.focus);
+  if (fi < 0) {
+    let bottom = -Infinity;
+    cs.forEach(c => { c.top = Math.max(c.want, bottom + GAP); bottom = c.top + c.h; });
+  } else {
+    cs[fi].top = cs[fi].want;
+    for (let i = fi + 1; i < cs.length; i++) cs[i].top = Math.max(cs[i].want, cs[i - 1].top + cs[i - 1].h + GAP);
+    for (let i = fi - 1; i >= 0; i--) cs[i].top = Math.min(cs[i].want, cs[i + 1].top - cs[i].h - GAP);
+  }
+  // 고른 카드는 늘 그 줄 높이 — 위로 밀려 레일 밖으로 나간 카드는 숨김(그 줄들은 대개 화면 위쪽에 있음)
+  cs.forEach(c => { c.el.style.top = `${Math.round(c.top)}px`; c.el.classList.toggle("off", c.top < 0); });
+  rail.style.height = `${Math.max(...cs.map(c => c.top + c.h), 0) + 24}px`;
+}
+function focusA2(id, scroll) {
+  S.focus = id; render();
+  if (scroll) document.querySelector(`#a2doc .mark[data-id="${id}"], #a2doc .ln[data-n="${item(id).line}"]`)?.scrollIntoView({ block: "center" });
 }
 
 /* B — 한 장씩 */
@@ -430,8 +494,9 @@ function renderDock() {
 }
 function render() {
   renderTabs();
-  document.getElementById("stage").innerHTML = { A: viewA, B: viewB, C: viewC, D: viewD, E: viewE }[S.v]();
+  document.getElementById("stage").innerHTML = { A: viewA, A2: viewA2, B: viewB, C: viewC, D: viewD, E: viewE }[S.v]();
   renderDock();
+  if (S.v === "A2") requestAnimationFrame(layoutRail);
   document.getElementById("final").textContent = finalLines().join("\n");
 }
 
@@ -445,8 +510,11 @@ function setStyleOff(on) {
 }
 
 document.addEventListener("click", e => {
+  const slot = e.target.closest(".slot");
+  if (slot && !e.target.closest("button, input, select, summary, details")) return focusA2(+slot.dataset.slot, false);
   const t = e.target.closest("button, .mark");
   if (!t) return;
+  if (t.classList.contains("mark") && S.v === "A2") return focusA2(+t.dataset.id, false);
   if (t.classList.contains("mark")) {
     S.focus = +t.dataset.id; render();
     document.getElementById(`card-${S.focus}`)?.scrollIntoView({ block: "nearest" });
@@ -477,6 +545,11 @@ document.addEventListener("change", e => {
   if (t.dataset.own) { const id = +t.dataset.own; if (t.value.trim()) { S.own[id] = t.value; S.dec[id] = "own"; } else if (S.dec[id] === "own") delete S.dec[id]; return render(); }
 });
 document.addEventListener("keydown", e => {
+  if (S.v === "A2" && !e.target.matches("input, select, textarea") && (e.key === "j" || e.key === "k")) {
+    const ids = D.items.map(x => x.id), i = ids.indexOf(S.focus);
+    const next = e.key === "j" ? ids[Math.min(ids.length - 1, i + 1)] : ids[Math.max(0, i < 0 ? 0 : i - 1)];
+    return focusA2(next, true);
+  }
   if (S.v !== "B" || e.target.matches("input, select, textarea")) { if (S.v === "B" && e.key === "Enter" && e.target.dataset.own) { e.target.blur(); if (S.qi < D.items.length - 1) { S.qi++; render(); } } return; }
   const it = D.items[S.qi], map = { 1: "accept", 2: "keep", 3: "own", 4: "delegate" };
   if (map[e.key]) {
@@ -487,5 +560,13 @@ document.addEventListener("keydown", e => {
   } else if (e.key === "ArrowRight") { S.qi = Math.min(D.items.length - 1, S.qi + 1); render(); }
   else if (e.key === "ArrowLeft") { S.qi = Math.max(0, S.qi - 1); render(); }
 });
+document.addEventListener("mouseover", e => {
+  if (S.v !== "A2") return;
+  const h = e.target.closest(".mark, .slot"), id = h ? (h.dataset.id || h.dataset.slot) : null;
+  document.querySelectorAll(".va2 .hl").forEach(x => x.classList.remove("hl"));
+  if (id) document.querySelectorAll(`.va2 .mark[data-id="${id}"], #rc-${id}`).forEach(x => x.classList.add("hl"));
+});
+addEventListener("resize", () => S.v === "A2" && layoutRail());
+document.fonts?.ready.then(() => S.v === "A2" && layoutRail());
 render();
 </script>
