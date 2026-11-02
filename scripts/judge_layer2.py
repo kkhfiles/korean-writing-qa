@@ -305,6 +305,53 @@ SUPPORT_MIN = 0.18
 _NUM = re.compile(r"\d+(?:\.\d+)+%?|\d+(?:,\d{3})+|\d+%")
 SUPPORT_NOTE = ("\n\n아래는 생략된 곳에서 대상 줄과 같은 낱말이나 수치가 많이 나오는 줄이다. 대상 줄의 근거나 정의가 "
                 "여기 있으면 그것으로 판단한다. 이 줄들은 지적하지 않는다.\n")
+#: HTML 은 보이는 글만 판정기에 가서 링크가 안 보인다 — 링크가 걸린 「(영업기회 크기별 표)」를 「참조는 링크로 걸기」로
+#: 다섯 번 연속 짚었다(2026-11-02 현장 보고). 줄 해시는 보이는 글로 매기므로 글에는 손대지 않고 목록만 덧붙인다
+LINK_NOTE = "\n\n이 조각에서 링크가 걸린 글(HTML 원본의 <a href>) — 여기 있는 글은 이미 링크로 걸려 있다.\n"
+LINKS_MAX = 40
+
+
+def html_links(path: Path) -> list[tuple[str, str]]:
+    """HTML 의 링크 — (보이는 글, 주소). 글이 빈 링크와 스크립트 안은 뺀다."""
+    from html.parser import HTMLParser
+
+    class P(HTMLParser):
+        def __init__(self):
+            super().__init__(convert_charrefs=True)
+            self.out, self.stack, self.skip = [], [], 0
+
+        def handle_starttag(self, tag, attrs):
+            if tag in ("script", "style"):
+                self.skip += 1
+            elif tag == "a" and dict(attrs).get("href"):
+                self.stack.append([dict(attrs)["href"], ""])
+
+        def handle_endtag(self, tag):
+            if tag in ("script", "style") and self.skip:
+                self.skip -= 1
+            elif tag == "a" and self.stack:
+                href, text = self.stack.pop()
+                text = " ".join(text.split())
+                if text:
+                    self.out.append((text, href))
+
+        def handle_data(self, data):
+            if not self.skip:
+                for a in self.stack:
+                    a[1] += data
+    p = P()
+    try:
+        p.feed(path.read_text(encoding="utf-8", errors="replace"))
+    except (OSError, ValueError):
+        return []
+    return p.out
+
+
+def link_note(links: list[tuple[str, str]], seen: list[str]) -> str:
+    """조각에 든 줄에 나오는 링크만 — 없으면 빈 글."""
+    body = "\n".join(seen)
+    got = list(dict.fromkeys(f"「{t[:60]}」 → {h[:80]}" for t, h in links if t in body))[:LINKS_MAX]
+    return LINK_NOTE + "\n".join(got) if got else ""
 
 
 def _grams(s: str) -> collections.Counter:
@@ -346,7 +393,18 @@ def parts_for(lines: list[str], want: set[int] | None, mode: str, path: Path,
     """이번에 부를 조각 — {"mine": 대상 줄, "document": 프롬프트에 넣을 글, "seen": 판정기가 본 줄, "label", "mode"}.
 
     `html_heads` 는 HTML 의 제목 줄 — 안 주면 그 파일에서 읽는다(재생은 남겨 둔 것을 준다).
+    HTML 이면 조각마다 그 안에 든 링크 목록을 붙인다(`link_note`).
     """
+    pieces = _parts_for(lines, want, mode, path, html_heads)
+    if path.suffix.lower() in coverage.HTML_SUFFIXES and path.is_file():
+        links = html_links(path)
+        for piece in pieces:
+            piece["document"] += link_note(links, piece["seen"])
+    return pieces
+
+
+def _parts_for(lines: list[str], want: set[int] | None, mode: str, path: Path,
+               html_heads: dict[int, int] | None = None) -> list[dict]:
     def by_chunk(used: str) -> list[dict]:
         out = []
         for first, part in chunks(lines):
@@ -740,6 +798,10 @@ def show_open_fixes(path: Path) -> int:
         print(f"  {n:>4}행{tag}  「{fx.get('phrase')}」 — {fx.get('category')} → {fx.get('fix')}")
         if fx.get("check"):
             print(f"         확인할 사실: {fx['check']}")
+        if tag and coverage._plain(str(fx.get("phrase") or "")) not in coverage._plain(lines[n - 1]):
+            # 고쳐서 표현이 사라졌는데도 남은 까닭을 알린다 — 「이미 고쳤는데 열려 있다」로 읽혔다(2026-11-02 현장 보고)
+            print(f"         짚은 표현은 고쳐서 없어졌지만 사실 확인 지적은 고쳐도 닫히지 않음 — 지금 {n}행의 사실을 "
+                  "확인했으면 「확인함」, 확인할 수 없으면 --escalate")
         if fx.get("why"):
             print(f"         {fx['why']}")
     return len(left)
@@ -1787,8 +1849,9 @@ def main(argv=None, backend=None) -> int:
     ap.add_argument("--model", help=f"기본 — Claude {DEFAULT_MODEL} · Codex {CODEX_MODEL}")
     ap.add_argument("--timeout", type=float, default=900)
     ap.add_argument("--json", help="지적을 JSON 으로도 씀")
-    ap.add_argument("--since", metavar="REF",
-                    help="REF 와 갈라진 뒤 새로 생겼고 아직 판정 안 한 줄만 판정 — 예: origin/main")
+    ap.add_argument("--since", metavar="REF", nargs="?", const="HEAD",
+                    help="REF 와 갈라진 뒤 새로 생겼고 아직 판정 안 한 줄만 판정 — 예: origin/main. "
+                         "REF 없이 주면 HEAD(git 밖 문서는 아직 판정 안 한 줄만)")
     ap.add_argument("--context", choices=CONTEXT_MODES, default=DEFAULT_CONTEXT,
                     help="--since 재판정에 보낼 문맥 — fixed(기본 · 앞뒤 20줄 + 제목 사슬) · chunk(180줄 묶음) · block(실험)")
     ap.add_argument("--cost", action="store_true", help="누적 비용 보기")
@@ -1935,6 +1998,9 @@ def main(argv=None, backend=None) -> int:
             print(f"⛔ 파일 없음 — {d}")
             return 2
         targets, base, anchors, base_t = None, None, None, None
+        # 이미 판정한 문서를 --since 없이 다시 부르면 고치지 않은 줄까지 다시 판정한다 — 회차마다 새 지적이
+        # 조금씩 나와 끝나지 않는다(2026-11-02 현장 보고 · git 밖 문서 둘을 전체로 일곱 번씩 판정함)
+        rerun = not a.since and bool(coverage.judged(coverage.doc_key(p), LOG))
         if a.since:
             try:
                 targets, in_git = open_for(p, a.since)
@@ -1956,6 +2022,9 @@ def main(argv=None, backend=None) -> int:
             print("   검사되지 않았습니다 — 세션이 규칙을 직접 읽고 판정합니다.")
             return 4
         show(results[-1])
+        if rerun:
+            print(f"  ⚠️ {p.name} 은 앞서 판정한 문서라 이번에 문서 전체를 다시 판정했습니다 — 고친 줄만 다시 보려면 "
+                  "--since 를 붙입니다(git 밖 문서는 REF 없이 --since 만: 판정기가 아직 안 본 줄만 판정)")
     if a.json:
         Path(a.json).write_text(json.dumps(results, ensure_ascii=False, indent=1),
                                 encoding="utf-8")

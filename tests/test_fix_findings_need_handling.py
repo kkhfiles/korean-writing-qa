@@ -145,6 +145,13 @@ class OpenTests(_Base):
             "업무를 맨 위에 표시합니다.", "업무를 맨 위에 둡니다."), encoding="utf-8")
         self.assertEqual([], self.open_fixes(), "같은 표현이 다른 문장에 있다고 고친 지적을 다시 열었습니다")
 
+    def test_a_fixed_fact_finding_says_why_it_is_still_open(self) -> None:
+        # 2026-11-02 현장 보고 — 고쳐서 표현이 사라진 사실 확인 지적을 「이미 고쳤는데 열려 있다」로 읽음
+        self.judged(FACT)
+        self.doc.write_text(DOC.replace("매일 갱신됩니다", "매일 오전에 갱신됩니다"), encoding="utf-8")
+        _, out = self.run_main([str(self.doc), "--fixes"])
+        self.assertIn("사실 확인 지적은 고쳐도 닫히지 않음", out)
+
     def test_the_fixes_command_reports_open_ones(self) -> None:
         self.judged()
         rc, out = self.run_main([str(self.doc), "--fixes"])

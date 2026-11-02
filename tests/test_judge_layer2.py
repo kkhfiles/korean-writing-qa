@@ -279,6 +279,45 @@ class SinceTests(unittest.TestCase):
         self.assertNotIn("옛 줄 지적", out)
         self.assertIn("1건은 숨김", out)
 
+    def test_bare_since_outside_git_judges_only_unseen_lines(self) -> None:
+        """2026-11-02 현장 보고 — git 밖 문서를 --since 없이 일곱 번씩 전체로 판정해 끝나지 않았다."""
+        outside = Path(self.tmp.name) / "outside.md"
+        self.write(["## 공지", "첫 문장입니다.", "둘째 문장입니다."], outside)
+        first = FakeBackend()
+        with contextlib.redirect_stdout(io.StringIO()):
+            judge.main([str(outside)], backend=first.pair())
+        out = io.StringIO()
+        again = FakeBackend()
+        with contextlib.redirect_stdout(out):
+            judge.main([str(outside)], backend=again.pair())
+        self.assertIn("문서 전체를 다시 판정했습니다", out.getvalue(), "전체를 다시 판정한다고 알리지 않음")
+        self.write(["## 공지", "첫 문장을 고쳤습니다.", "둘째 문장입니다."], outside)
+        fake = FakeBackend()
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            self.assertEqual(0, judge.main([str(outside), "--since"], backend=fake.pair()))
+        self.assertEqual(1, len(fake.calls))
+        self.assertIn("고쳤습니다", fake.calls[0]["user"])
+        self.assertIn("이번에는 아래 줄만 점검한다", fake.calls[0]["user"], "REF 없는 --since 가 고친 줄만 고르지 않음")
+        self.assertNotIn("문서 전체를 다시 판정했습니다", out.getvalue())
+
+    def test_html_links_reach_the_judge(self) -> None:
+        """2026-11-02 현장 보고 — 링크가 걸린 「영업기회 크기별」 표 참조를 「참조는 링크로 걸기」로 다섯 번 짚었다."""
+        page = Path(self.tmp.name) / "p.html"
+        page.write_text('<html><body><h1>수주</h1><p>자세한 값은 (<a href="#size">영업기회 크기별</a> 표)에 있음</p>'
+                        '<h2 id="size">크기별</h2><p>표 설명입니다.</p><script>var a="<a href=\'#x\'>숨은 글</a>";</script>'
+                        '</body></html>', encoding="utf-8")
+        fake = FakeBackend()
+        with contextlib.redirect_stdout(io.StringIO()):
+            judge.main([str(page)], backend=fake.pair())
+        user = fake.calls[0]["user"]
+        self.assertIn("「영업기회 크기별」 → #size", user)
+        self.assertNotIn("숨은 글", user)
+        md = FakeBackend()
+        with contextlib.redirect_stdout(io.StringIO()):
+            judge.main([str(self.doc)], backend=md.pair())
+        self.assertNotIn("링크가 걸린 글", md.calls[0]["user"], "md 는 링크가 글에 그대로 보임")
+
     def test_a_second_run_without_changes_calls_nothing(self) -> None:
         self.edit("둘 5번 문장입니다.", "둘 5번 문장을 새로 썼습니다.")
         fake = FakeBackend()
