@@ -120,7 +120,7 @@ err  = []                                 # 주의에서 오류로 올린다
 - **맞춤법 목록은 저장소에 있음** — `data/catalog/spelling-errors.tsv`(자주 틀리는 말을 어문 규범 고시에 비추어 정리한 틀린 꼴과 바른 꼴), `python install.py` 가 설치 폴더로 복사함
   - **출력** — 「맞춤법」 오류와 「맞춤법 의심」 주의로 출력됨
   - **외래어 표기** — 사내에 굳은 표기와 어긋나는 일이 많아 모두 주의로 냄
-  - **항목을 더할 때** — 틀린 꼴이 다른 낱말 안에 들어 있으면 「제외」 칸에 더 긴 꼴을 적고, 맞춤법에 맞는 다른 낱말로도 쓰이면 등급을 「주의」로 둠. 잡을 문장과 잡으면 안 될 문장을 `tests/test_spelling_rule.py` 에 함께 추가함
+  - **항목을 추가할 때** — 틀린 꼴이 다른 낱말 안에 들어 있으면 「제외」 칸에 더 긴 꼴을 적고, 맞춤법에 맞는 다른 낱말로도 쓰이면 등급을 「주의」로 둠. 잡을 문장과 잡으면 안 될 문장을 `tests/test_spelling_rule.py` 에 함께 추가함
 - **안 쓸 동사는 개인 목록에 둠** — `data/catalog/local-personal-words.example.tsv` 를 `local-personal-words.tsv` 로 복사해 「동사 · 명사 · 바꿀 말 · 까닭」을 적음(「결함을 잡다 → 검출」) · 「업무 글에 없는 말」 주의로 나옴 · 형태소 분석기가 있어야 돎 · 복사본은 `.gitignore` 대상
   - **고친 뒤 `python install.py`** — 제품 이름 목록과 개인 목록을 설치 폴더(`~/.claude/data/catalog/`)로 복사해, 이 저장소 밖 프로젝트의 검사에도 적용함
   - **후보 뽑기** — `python -X utf8 scripts/suggest_personal_words.py --informal <구어 글 폴더> --formal <문어 글 폴더>` · 구어 쪽에 치우친 동사를 용례와 함께 냄 · 판정은 안 함
