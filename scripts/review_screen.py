@@ -194,9 +194,11 @@ def submit(path: Path, data: dict, picks: list[dict]) -> tuple[int, str]:
 
     판정표의 답 처리(`judge_layer2.read_answers`)와 같은 기록에 같은 규칙으로 적는다.
 
-    - **반영과 직접 고침** — 답 기록에 「고침」으로 남기고, 그 줄을 고른 글로 바꾼 결과를 사람이 판정한 줄로
-      확정한 뒤(`approve`) 파일을 그 글로 고친다(`apply_file`). 판정기가 그 줄을 다시 보지 않는다.
+    - **반영과 직접 고침** — 2층 지적은 답 기록에 「고침」으로 남기고, 파일을 고른 글로 고친다(`apply_file`).
       자리표시가 든 수정안처럼 글자로 넣을 수 없는 줄과 `apply_file` 이 거절한 줄은 세션에 넘긴다
+    - **확정(다시 판정하지 않음)은 지금 규칙 그대로** — 그 줄에서 고친 것이 모두 사람 확인 지적일 때만
+      고른 글을 사람이 판정한 줄로 확정한다(`approve`, 판정표의 「고침」과 「직접」과 같음). 고칠 지적이나 1층 지적을
+      고친 줄은 다시 판정한다 — 판정기 제안대로 고친 줄을 확정할지는 `docs/decisions-pending.md` 의 L 이 정한다
     - **그대로** — 사람 확인은 그 줄의 사람 확인을 모두 그대로 골랐을 때 `answer` 로 닫는다. 고칠 지적은
       사유 「사용자답」으로 닫는다(세션이 쓰는 `--dismiss` 사유와 따로 둔다 — 세션이 고를 수 없는 사유다)
     - **세션에 맡김과 남음** — 둘 다 기록하지 않는다. 맡긴 것은 요약에 싣는다
@@ -227,7 +229,8 @@ def submit(path: Path, data: dict, picks: list[dict]) -> tuple[int, str]:
     loose, delegated, l1_kept = [], [], []
     changes: dict[int, tuple[str, list[tuple[str, str]]]] = {}
     told: dict[int, list[str]] = {}
-    learned = closed = settled = 0
+    learned = closed = 0
+    settled: set[int] = set()
     for n, picked in sorted(by_line.items()):
         line, lk = lines[n - 1], coverage.line_key(lines[n - 1]) or ""
         target, exact, pairs, mine = line, True, [], []
@@ -261,9 +264,11 @@ def submit(path: Path, data: dict, picks: list[dict]) -> tuple[int, str]:
         if asks and target == line and all(x["id"] in kept for x in asks):
             judge.answer(path, [n], f"사용자 답({src}): 그대로")
             closed += len(asks)
-        if target != line and exact and lk in seen and not any(d == "delegate" for _, d, _ in picked):
+        edited = [it for it, d, _ in picked if d in ("accept", "own")]
+        if (target != line and exact and lk in seen and not any(d == "delegate" for _, d, _ in picked)
+                and all(it["level"] == "사람 확인" for it in edited)):
             judge.approve(path, target, f"사용자 답({src}): 고른 글로 확정", lk)
-            settled += 1
+            settled.add(n)
         if target != line and exact:
             changes[n], told[n] = (target, pairs), mine
         else:
@@ -277,15 +282,19 @@ def submit(path: Path, data: dict, picks: list[dict]) -> tuple[int, str]:
     pending = len(items) - sum(counts.values()) - len(refused)
     out = [f"검토 화면 제출 — {path.name}: 반영 {counts['accept']}, 직접 {counts['own']}, 그대로 {counts['keep']}, "
            f"맡김 {counts['delegate']}, 남음 {pending}",
-           f"  답 기록 {learned}건, 그대로로 닫은 지적 {closed}건, 다시 판정하지 않을 줄 {settled}개"]
+           f"  답 기록 {learned}건, 그대로로 닫은 지적 {closed}건, 사람 답으로 확정한 줄 {len(settled)}개"]
     if done:
         out.append(f"  파일에 고친 줄 {len(done)}개 — 화면에서 고른 글자 그대로"
                    + ("" if coverage.repo_of(path) else f"(고치기 전 파일은 {backup_dir().as_posix()})"))
         out += [f"    {e}" for n in done for e in told[n]]
+        again = [n for n in done if n not in settled]
+        if again:
+            out.append(f"  다시 판정할 줄 {len(again)}개({', '.join(f'{n}행' for n in again)}) — 고칠 지적이나 1층 지적을 고친 줄이라 "
+                       "--since 로 다시 판정")
     if why:
         out.append(f"  ⛔ 파일을 고치지 않음 — {why}")
     if loose:
-        out.append(f"  세션이 고칠 것 {len(loose)}건 — 고친 뒤 --since 로 다시 판정(고른 글자 그대로 고친 줄은 다시 판정하지 않음)")
+        out.append(f"  세션이 고칠 것 {len(loose)}건 — 고친 뒤 --since 로 다시 판정(사람 확인 지적을 고른 글자 그대로 고친 줄은 다시 판정하지 않음)")
         out += [f"    {e}" for e in loose]
     if delegated:
         out.append(f"  세션에 맡김 {len(delegated)}건 — 고친 뒤 --since 로 다시 판정")

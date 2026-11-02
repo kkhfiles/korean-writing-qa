@@ -137,8 +137,12 @@ const TOKEN = new URLSearchParams(location.search).get("t") || "";
 const SERVED = location.protocol.startsWith("http") && !!TOKEN;
 const SYNC = { lockDoc: 0, lockSide: 0, ticking: false };
 const TYPES = { replace: "바로 반영", info: "작성자 확인", style: "문체 규칙" };
-const OUTCOME = { accept: "확정, 다시 판정 안 함", own: "사람 답으로 확정, 다시 판정 안 함", keep: "답 기록, 다시 묻지 않음",
-                  delegate: "세션이 고치고 다시 판정", pending: "남음, 제출하면 발행 막힘" };
+const OUTCOME = { keep: "답 기록, 다시 묻지 않음", delegate: "세션이 고치고 다시 판정", pending: "남음, 제출하면 발행 막힘" };
+/* 확정은 지금 규칙 그대로 — 사람 확인 지적을 고친 줄만. 고칠 지적과 1층 지적을 고친 줄은 다시 판정함 */
+const outcome = it => ["accept", "own"].includes(st(it))
+  ? (it.level === "사람 확인" ? "파일 고침, 사람 답으로 확정(다시 판정 안 함)" : "파일 고침, 그 줄은 다시 판정")
+  : OUTCOME[st(it)];
+const rejudged = it => st(it) === "delegate" || (["accept", "own"].includes(st(it)) && it.level !== "사람 확인");
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const shown = s => esc(String(s ?? "").replace(/\*\*/g, ""));
 const md = s => esc(s).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>");
@@ -193,7 +197,7 @@ function cardHtml(it) {
   const top = `<div class="top"><span class="num">${it.id}</span><span>${it.line}행</span><span class="pill ${it.type}">${TYPES[it.type]}</span>
     <span>${esc(it.layer)} ${esc(it.cat)}</span><span class="pill ${lv}">${esc(it.level)}</span></div>`;
   const cls = `card${s !== "pending" ? " done" : ""}${S.focus === it.id ? " focus" : ""}`;
-  const out = S.focus === it.id ? `<div class="note">제출하면: ${OUTCOME[s]}</div>` : "";
+  const out = S.focus === it.id ? `<div class="note">제출하면: ${outcome(it)}</div>` : "";
   if (it.type === "replace") {
     const chg = it.fix ? `<del>${shown(it.phrase)}</del> → <ins>${shown(it.fix)}</ins>` : `「${shown(clip(it.phrase, 70))}」`;
     return `<div class="${cls}" id="card-${it.id}">${top}<div class="chg">${chg}</div>${it.why ? `<div class="why">${esc(it.why)}</div>` : ""}
@@ -244,7 +248,7 @@ function summary() {
   return out.join("\n");
 }
 function renderDock() {
-  const c = counts(), dl = new Set(D.items.filter(x => st(x) === "delegate").map(x => x.line)).size;
+  const c = counts(), dl = new Set(D.items.filter(rejudged).map(x => x.line)).size;
   document.getElementById("dock").innerHTML = `<span>반영 <b>${c.accept}</b>, 직접 <b>${c.own}</b>, 그대로 <b>${c.keep}</b>, 남음 <b>${c.pending}</b>, 맡김 <b>${c.delegate}</b></span>
     <span class="pill ${dl ? "cost" : "free"}">재판정 ${dl ? `1회, ${dl}줄` : "0회"}</span>
     ${c.pending ? `<span class="pill info">남은 ${c.pending}건은 제출하면 보류로 남아 발행 막힘</span>` : ""}

@@ -7,8 +7,10 @@
 - 지적마다 줄 해시를 붙인다(2단계가 답을 그 줄에 단다)
 - 원문에 든 `</script>` 가 화면 스크립트를 끊지 않는다
 - 화면 HTML 은 판정 기록 옆(저장소 밖)에 쓴다
-- 제출(2단계) — 반영과 직접 고침은 답 기록과 확정 줄로, 그대로는 지적을 닫는 기록으로 남긴다.
-  화면을 연 뒤 바뀐 줄, 판정기가 본 적 없는 줄은 확정하지 않는다
+- 제출(2단계) — 반영과 직접 고침은 답 기록으로, 그대로는 지적을 닫는 기록으로 남긴다. 다시 판정하지 않는
+  확정은 지금 규칙대로 사람 확인 지적을 고친 줄만 — 화면을 연 뒤 바뀐 줄, 판정기가 본 적 없는 줄은 확정하지 않는다
+- 파일 반영(3단계) — 고른 글로 파일을 고치되 줄 끝 문자와 BOM 을 지키고, git 밖 파일은 백업하고, HTML 은
+  표현이 원본에 한 번만 나올 때만 고친다. 글자로 넣을 수 없는 수정안은 세션에 넘긴다
 - 제출은 화면 주소의 토큰과 이 PC 주소(Host)가 맞아야 받는다
 """
 from __future__ import annotations
@@ -123,21 +125,30 @@ class CollectTests(unittest.TestCase):
 
     # 2단계 — 제출
 
-    def test_accepting_a_fix_records_the_answer_and_settles_the_edited_line(self) -> None:
+    def test_accepting_a_fix_records_the_answer_edits_the_file_and_rejudges_the_line(self) -> None:
         data = screen.collect(self.doc)
         code, out = screen.submit(self.doc, data, [self.pick(data, lambda x: "MSA" in x["phrase"], "accept")])
         self.assertEqual(1, code, "고치기 전에는 그 지적이 아직 열려 있음")
         self.assertIn("「모놀리식 구조에서 MSA로의 단계적 전환 참여」 → 「모놀리식 구조를 MSA로", out)
         self.assertEqual(["고침"], [d["answer"] for d in self.rows(coverage.DECISIONS)])
-        # 화면이 고른 글자 그대로 파일을 고치고, 그 줄은 판정기가 다시 보지 않고, 지적은 표현이 사라져 닫힌다
+        # 화면이 고른 글자 그대로 파일을 고치고 지적은 표현이 사라져 닫힌다. 고칠 지적을 고친 줄은 지금 규칙대로
+        # 다시 판정한다 — 판정기 제안대로 고친 줄을 확정할지는 결정 L 이 정한다
         self.assertIn("파일에 고친 줄 1개", out)
+        self.assertIn("다시 판정할 줄 1개", out)
         src = self.doc.read_text(encoding="utf-8")
         self.assertIn("모놀리식 구조를 MSA로 단계적으로 전환하는 작업 참여 인원이 맡음", src)
         self.assertEqual(DOC.replace("모놀리식 구조에서 MSA로의 단계적 전환 참여",
                                      "모놀리식 구조를 MSA로 단계적으로 전환하는 작업 참여"), src, "다른 줄은 그대로")
         new = next(l for l in coverage.read_doc(self.doc).splitlines() if "MSA" in l)
-        self.assertIn(coverage.line_key(new), coverage.approved(coverage.doc_key(self.doc)))
+        self.assertNotIn(coverage.line_key(new), coverage.approved(coverage.doc_key(self.doc)))
         self.assertNotIn("모놀리식 구조에서 MSA로의 단계적 전환 참여", self.open_fix_phrases())
+
+    def test_a_layer_one_edit_is_rejudged(self) -> None:
+        data = screen.collect(self.doc)
+        _, out = screen.submit(self.doc, data, [self.pick(data, lambda x: x["type"] == "style", "own", "공유함")])
+        self.assertIn("파일에 고친 줄 1개", out)
+        self.assertIn("다시 판정할 줄 1개", out)
+        self.assertEqual([], self.rows(coverage.ANSWERS))
 
     def test_keeping_a_fix_closes_it_with_the_user_answer_reason(self) -> None:
         data = screen.collect(self.doc)
@@ -176,11 +187,11 @@ class CollectTests(unittest.TestCase):
         self.assertEqual([], self.rows(coverage.DECISIONS) + self.rows(coverage.DISMISSALS) + self.rows(coverage.ANSWERS))
 
     def test_a_line_the_judge_never_saw_is_not_settled(self) -> None:
-        notice = next(l for l in self.lines if "비고" in l)
-        self.row["seen"] = [k for k in self.row["seen"] if k != coverage.line_key(notice)]
+        traffic = next(l for l in self.lines if "320만" in l)
+        self.row["seen"] = [k for k in self.row["seen"] if k != coverage.line_key(traffic)]
         coverage.LOG.write_text(json.dumps(self.row, ensure_ascii=False) + "\n", encoding="utf-8")
         data = screen.collect(self.doc)
-        _, out = screen.submit(self.doc, data, [self.pick(data, lambda x: x["type"] == "style", "own", "공유함")])
+        _, out = screen.submit(self.doc, data, [self.pick(data, lambda x: x["level"] == "사람 확인", "own", "초당 최대 9천 건 트래픽")])
         self.assertIn("파일에 고친 줄 1개", out)
         self.assertEqual([], self.rows(coverage.ANSWERS), "판정기가 안 본 줄을 확정하면 판정을 건너뜀")
 
