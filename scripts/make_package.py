@@ -8,7 +8,8 @@
 - **바꿔 넣는 것** — `AGENTS.md` 는 설치 안내(`scripts/package_agents.md`), `CLAUDE.md` 는 `@AGENTS.md` 한 줄.
   Claude Code 와 Codex 모두 폴더를 열자마자 안내를 읽는다
 - **나가기 전 검사** — `check_publish_safety.py` 로 사람 이름, 고객사, 사내 주소, 열쇠를 본다. 오류가 있으면 zip 을 안 만든다.
-  작성자를 드러낼 수 있는 표기(개인 도메인 등)는 지우지 않고 목록으로만 알린다 — 익명 처리 방식은 사람이 정한다
+- **익명 처리** — 저장소 주소를 빼고 설치 안내를 이 폴더 기준으로 바꾼다(`ANONYMIZE`). 무늬가 안 맞거나
+  작성자를 드러낼 수 있는 표기가 남으면 zip 을 안 만든다
 """
 
 from __future__ import annotations
@@ -38,8 +39,50 @@ EXCLUDE = (
 )
 #: 남기는 문서 — 쓰는 사람이 보는 것만. 나머지 `docs/` 는 연구 기록이다
 KEEP_DOCS = {"docs/user-guide.md", "docs/showcase.html", "docs/architecture.md", "docs/highlights.md"}
-#: 작성자를 드러낼 수 있는 표기 — 지우지 않고 알리기만 한다
-IDENTIFYING = re.compile(r"dispatchflow\.cc|github\.com/[A-Za-z0-9-]+/korean-writing-qa", re.I)
+#: 작성자를 드러낼 수 있는 표기 — 아래 ANONYMIZE 를 거친 뒤에도 남으면 zip 을 안 만든다
+IDENTIFYING = re.compile(r"dispatchflow\.cc|github\.com/(?!owner/)[A-Za-z0-9-]+/korean-writing-qa", re.I)
+_URL = r"https://github\.com/[A-Za-z0-9-]+/korean-writing-qa[^\s\"')<]*"
+#: 꾸러미는 익명 응모에 쓴다 — 저장소 주소를 빼고 설치 안내를 이 폴더 기준으로 바꾼다
+#: (2026-11-03 사용자 결정 「꾸러미에서만 지움」, 공개 저장소는 그대로). 무늬는 적은 횟수(없으면 한 번)만큼 맞아야 한다
+ANONYMIZE = {
+    "docs/showcase.html": [
+        (rf'\n *<p class="gorow"><a class="gobtn" href="{_URL}">[^<]*</a></p>', "", 2),
+        (rf'<code class="cmd">git clone {_URL}</code>', '<code class="cmd">python bootstrap.py</code>'),
+        # 사이트 바닥 메뉴 — 저장소 주소와 작성자의 다른 서비스 링크라 꾸러미에서는 죽은 링크다
+        (r'\n *<nav class="fnav">.*?</nav>', ""),
+        (r'\n *<span>개발자 [^<]*</span>', ""),
+    ],
+    "docs/user-guide.md": [
+        (r"\*\*이 꾸러미만으로는 발행을 막지 않음\*\* — 이 꾸러미는",
+         "**손으로 복사한 설치는 발행을 막지 않음** — 위 세 단계는"),
+        (rf"\[korean-writing-qa 저장소\]\({_URL}\)를 내려받아 `python install\.py --hooks`로 설치하면",
+         "이 폴더에서 `bootstrap.py`를 실행해 설치하면"),
+        (r"\*\*Codex 는 저장소의 설치 명령으로 연결\*\*", "**Codex 는 이 폴더의 설치 명령으로 연결**"),
+        (r"이 꾸러미만으로는 Codex 에서", "손으로 복사한 설치만으로는 Codex 에서"),
+    ],
+}
+
+
+def owner_pattern() -> re.Pattern | None:
+    """원격 주소의 계정 이름 — 주소 밖에 홀로 적힌 계정 이름(「개발자 …」)도 찾는다. 코드에 이름을 적지 않는다."""
+    url = subprocess.run(["git", "-C", str(REPO), "remote", "get-url", "origin"],
+                         capture_output=True, text=True).stdout.strip()
+    m = re.search(r"github\.com[:/]([A-Za-z0-9-]+)/", url)
+    return re.compile(rf"\b{re.escape(m.group(1))}\b", re.I) if m else None
+
+
+def anonymize(dest: Path) -> list[str]:
+    """ANONYMIZE 를 적용한다 — 맞지 않은 무늬를 돌려준다(원문이 바뀌어 빠져나간 것)."""
+    missed = []
+    for rel, rules in ANONYMIZE.items():
+        f = dest / rel
+        text = f.read_text(encoding="utf-8")
+        for pattern, repl, *want in rules:
+            text, n = re.subn(pattern, repl.replace("\\", "\\\\"), text, flags=re.S)
+            if n != (want[0] if want else 1):
+                missed.append(f"{rel}: {pattern[:60]} ({n}번 맞음)")
+        f.write_text(text, encoding="utf-8", newline="")
+    return missed
 
 
 def wanted(path: str) -> bool:
@@ -112,8 +155,10 @@ def main() -> int:
         dest.mkdir()
         kept = export(args.rev, dest)
         print(f"담은 파일 {len(kept) + 2}개 (설치 안내 AGENTS.md, CLAUDE.md 포함)")
+        missed = anonymize(dest)
         rc = safety(dest)
         hits = []
+        owner = owner_pattern()
         for f in sorted(dest.rglob("*")):
             if f.is_file():
                 try:
@@ -121,14 +166,19 @@ def main() -> int:
                 except UnicodeDecodeError:
                     continue
                 for n, line in enumerate(text.splitlines(), 1):
-                    if IDENTIFYING.search(line):
+                    if IDENTIFYING.search(line) or (owner and owner.search(line)):
                         hits.append(f"{f.relative_to(dest).as_posix()}:{n}")
+        for m in missed:
+            print(f"❌ 익명 처리 무늬가 안 맞음 — {m}")
         if hits:
-            print(f"\n⚠️ 작성자를 드러낼 수 있는 표기 {len(hits)}줄 — 익명으로 낼지 정한 뒤 처리")
+            print(f"\n❌ 작성자를 드러낼 수 있는 표기 {len(hits)}줄 — ANONYMIZE 에 무늬를 더한다")
             for h in hits[:20]:
                 print(f"  {h}")
             if len(hits) > 20:
                 print(f"  … 외 {len(hits) - 20}줄")
+        if missed or hits:
+            print("\n❌ 익명 처리가 끝나지 않아 zip 을 만들지 않습니다")
+            return 2
         if rc not in (0, 1):
             print("\n❌ 발행 검사가 막았습니다 — zip 을 만들지 않습니다")
             return rc

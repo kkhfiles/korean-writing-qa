@@ -32,6 +32,23 @@ class MakePackageTests(unittest.TestCase):
             with self.subTest(path=path):
                 self.assertFalse(make_package.wanted(path))
 
+    def test_anonymize_removes_every_author_trace(self) -> None:
+        """익명 응모용 꾸러미(2026-11-03 사용자 결정) — 문서가 바뀌어 무늬가 빗나가면 여기서 깨진다."""
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            dest = Path(tmp)
+            for rel in make_package.ANONYMIZE:
+                (dest / rel).parent.mkdir(parents=True, exist_ok=True)
+                (dest / rel).write_bytes((ROOT / rel).read_bytes())
+            self.assertEqual(make_package.anonymize(dest), [])
+            owner = make_package.owner_pattern()
+            for rel in make_package.ANONYMIZE:
+                for n, line in enumerate((dest / rel).read_text(encoding="utf-8").splitlines(), 1):
+                    with self.subTest(at=f"{rel}:{n}"):
+                        self.assertIsNone(make_package.IDENTIFYING.search(line), line)
+                        if owner:
+                            self.assertIsNone(owner.search(line), line)
+
     def test_install_guide_passes_the_checker(self) -> None:
         done = subprocess.run([sys.executable, "-X", "utf8", str(ROOT / "assets" / "doc-style-check.py"),
                                "--no-rules", str(ROOT / "scripts" / "package_agents.md")],
