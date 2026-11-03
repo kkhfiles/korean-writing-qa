@@ -206,6 +206,29 @@ form: structured
 - **가리개를 제품에 안 넣음** — 가리개 규칙은 이 12편의 진 까닭을 보고 만들었는데도 단순 요청을 넘지 못했습니다. 검토 화면은 원래 수정안을 자동으로 넣지 않으므로 가리개가 막을 경로가 제품에 없습니다.
 - **결론** — 일반 고쳐 쓰기에서는 판정기 수정안이 Claude 단순 요청을 넘지 못했습니다. 10/31 흐름보다는 뚜렷이 나아졌습니다. 검사기가 앞서는 영역은 사용자가 짚은 표현(D4)입니다.
 
+#### 고친 말의 범위를 좁힌 판정기 (2026-11-03, 이날부터 기본값)
+
+판정기 지시에 「짚은 어절만 바꿈, 원문에 없는 사실은 `check` 로 넘김, 판단과 조건과 근거를 지우지 않음, 제목과 서식 유지, 조사를 받침에 맞춤」을 넣음(`scripts/probe_layer2_kinds.py` 의 `_FIX_SCOPE`)
+
+| 비교 | Claude 판정 승률 | Flash 판정 승률 | 넣기 전 |
+|---|---|---|---|
+| Claude 단순 요청 + 바로 반영 대 Claude 단순 요청 | 0.54 [0.29~0.79] | 0.46 [0.21~0.71] | 0.25, 0.25(악화) |
+| 바로 반영 대 초안 | 0.79 [0.54~1.00] | 0.75 [0.50~1.00] | 0.79, 0.79 |
+| 바로 반영 대 Claude 단순 요청 | 0.17 | 0.42 | 0.17, 0.33 |
+
+| D4 시료 묶음 | 넣기 전(2회) | 넣은 뒤(2회) |
+|---|---:|---:|
+| 전체(삽입한 표현 152건) | 148, 148 | 145, 147 |
+| 사용자 지적 대장 127건 | 124, 124 | 122, 122 |
+| 같은 갈래 예비 예문 25건 | 24, 24 | 23, 25 |
+| 판정 규칙 예문에 그대로 없는 56건 | 52, 52 | 49, 51 |
+| 비용(달러 환산) | 1.08, 0.98 | 1.12, 1.17 |
+
+- **미리 정한 채택 조건**: D4 전체 145 이상과 대장 121 이상은 충족함. D3 「바로 반영 대 초안」의 Flash 하한이 0.50으로 「두 하한 모두 0.5 초과」를 못 넘음
+- **그래도 기본값으로 올림** — 초안 비교는 넣기 전과 점추정이 같아 나빠졌다는 근거가 없습니다. 대신 AI로 다듬은 글에 검사기를 거는 실제 쓰임에서 수정안이 글을 망치던 문제가 비김 수준으로 줄었습니다.
+- **잃은 것**: 사용자 지적 대장 회수가 두 번 모두 124에서 122로 줄어 작지만 일관된 감소로 봄
+- **표본 한계**: 12편과 운반 문서 하나로 잰 결과라 탐색적임. 다른 글 묶음으로 다시 잴 때 `KOREAN_QA_FIX_SCOPE=wide` 로 넣기 전 판정기를 함께 냄
+
 ### D4 사용자가 지적한 표현 (이 저장소의 본래 영역)
 
 결과를 확인한 뒤 추가한 시험 — D1~D3이 모두 일반 결함만 다뤄서, 사용자가 지적한 표현을 삽입한 회귀 시료(`tests/fixtures/layer2-kinds/carrier.md`)로, 같은 모델(Opus)을 쓰는 두 방식을 비교함. `l2` 와 `plain-claude` 모두 2회 실행했고, 둘 다 시료를 같은 절 단위로 나눠 판정함
@@ -282,6 +305,8 @@ form: structured
     python -X utf8 runs/bench-external-20261031/bench_e2e.py drafts
     python -X utf8 runs/bench-external-20261031/bench_e2e.py revise ours ours-noinvent l1only plain-claude plain-gpt plain-argon imnotai
     python -X utf8 runs/bench-external-20261031/bench_e2e.py judge claude argon gpt [--base 변형]
+    python -X utf8 runs/bench-external-20261031/bench_e2e.py revise ours4-apply plain-claude-apply4
+    python -X utf8 runs/bench-external-20261031/bench_ledger.py --reps 2 --arms l2-narrow
     python -X utf8 runs/bench-external-20261031/bench_knct.py run plain-flash
     python -X utf8 runs/bench-external-20261031/bench_inject.py run plain-flash
     python -X utf8 runs/bench-external-20261031/bench_e2e.py revise plain-flash

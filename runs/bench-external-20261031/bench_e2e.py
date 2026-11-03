@@ -258,6 +258,8 @@ def revise(names: list[str]) -> None:
             if f.exists() and not json.loads(f.read_text(encoding="utf-8")).get("error"):
                 continue
             f.parent.mkdir(parents=True, exist_ok=True)
+            # 11-03 부터 판정기 기본값이 좁힌 수정안이라, 그 전 변형은 넣기 전 판정기로 다시 냄
+            os.environ["KOREAN_QA_FIX_SCOPE"] = "narrow" if name in ("ours4-apply", "plain-claude-apply4") else "wide"
             try:
                 if name in ("ours", "ours-noinvent", "l1only"):
                     work = OUT / (f"work/{i:02d}" if name == "ours" else f"work-{name}/{i:02d}")
@@ -271,6 +273,12 @@ def revise(names: list[str]) -> None:
                 elif name == "plain-claude-apply3":
                     rec = revise_apply_guarded(revised("plain-claude", i, load_drafts()),
                                                OUT / f"work-plain-claude-apply/{i:02d}/r0-l2/judge.jsonl")
+                elif name in ("ours4-apply", "plain-claude-apply4"):
+                    # 고친 말의 범위를 좁힌 판정기로 바로 반영(2026-11-03) — `probe_layer2_kinds.FIX_SCOPE_ENV`
+                    base = d["text"] if name == "ours4-apply" else revised("plain-claude", i, load_drafts())
+                    if base is None:
+                        raise RuntimeError("plain-claude 결과 없음")
+                    rec = revise_apply(base, OUT / f"work-{name}/{i:02d}")
                 elif name in ("plain-claude-ours2", "plain-claude-apply"):
                     # Claude 단순 요청으로 고친 글 위에 검사기를 얹음 — 검사기가 단순 요청에 더하는 몫을 잼(2026-11-03)
                     base = revised("plain-claude", i, load_drafts())
@@ -357,7 +365,8 @@ def score(bases: tuple[str, ...] = ("ours",)) -> dict:
     for base in bases:
         score_base(base, ds, table)
     for name in ["ours", "ours-noinvent", "l1only", "ours2", "ours2-apply", "plain-claude-ours2",
-                 "plain-claude-apply", "ours3-apply", "plain-claude-apply3"] + RIVALS[1:]:
+                 "plain-claude-apply", "ours3-apply", "plain-claude-apply3", "ours4-apply",
+                 "plain-claude-apply4"] + RIVALS[1:]:
         c = collections.Counter()
         for i, d in enumerate(ds):
             f = OUT / f"revised/{name}/{i:02d}.json"

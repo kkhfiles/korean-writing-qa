@@ -34,9 +34,17 @@ from test_judge_layer2 import FakeBackend  # noqa: E402
 class PromptTests(unittest.TestCase):
 
     def test_json_brings_back_the_old_prompt(self) -> None:
-        with mock.patch.dict(os.environ, {probe.FORMAT_ENV: "json"}):
+        with mock.patch.dict(os.environ, {probe.FORMAT_ENV: "json", probe.FIX_SCOPE_ENV: "wide"}):
             self.assertEqual("json", probe.output_format())
             self.assertEqual(probe.SYSTEM, probe.system_prompt())
+
+    def test_fix_scope_is_on_by_default(self) -> None:
+        """고친 말의 범위 지시(2026-11-03)가 기본으로 실린다 — 끼울 글이 안 맞아 조용히 빠지는 일을 막는다."""
+        with mock.patch.dict(os.environ, {}, clear=False):
+            os.environ.pop(probe.FIX_SCOPE_ENV, None)
+            self.assertIn("## 고친 말의 범위", probe.system_prompt())
+        with mock.patch.dict(os.environ, {probe.FIX_SCOPE_ENV: "wide"}):
+            self.assertNotIn("## 고친 말의 범위", probe.system_prompt())
 
     def test_the_default_really_replaces_the_format_block(self) -> None:
         self.assertIn(probe._FORMAT_JSON, probe.SYSTEM, "바꿀 형식 절이 프롬프트와 안 맞습니다")

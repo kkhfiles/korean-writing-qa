@@ -169,11 +169,31 @@ def output_format() -> str:
     return "json" if os.environ.get(FORMAT_ENV) == "json" else "compact"
 
 
+#: 고친 말의 범위를 좁히는 지시(2026-11-03 기본값). 다듬은 글에 수정안을 그대로 넣었을 때 진 까닭이 원문에 없는
+#   말, 지운 내용, 바꾼 제목과 서식, 통째로 다시 쓴 문장, 틀어진 조사였다. 이 지시를 넣자 Claude 단순 요청으로 다듬은
+#   글에 수정안을 넣어도 두 판정자 모두 악화(0.25)에서 비김(0.54, 0.46)으로 올라왔고, 사용자 지적 표현 회수는
+#   145, 147/152 로 넣기 전(148, 148)과 같은 수준이었다(`runs/bench-external-20261031/README.md` 「D3 재측정」).
+#   `KOREAN_QA_FIX_SCOPE=wide` 는 넣기 전 판정기 — 옛 측정을 다시 낼 때만 쓴다.
+FIX_SCOPE_ENV = "KOREAN_QA_FIX_SCOPE"
+_FIX_SCOPE = """## 고친 말의 범위
+
+- 고친 말은 `phrase` 자리에 글자 그대로 들어가는 말이다. `phrase` 는 고칠 어절만 짧게 잡고, 고친 말은 그 자리만
+  바꾼다. 문장 전체를 다시 쓰지 않는다.
+- 원문에 없는 사실, 조건, 원인, 수치, 대상을 넣지 않는다. 고치려면 그런 정보가 꼭 필요하면 고친 말에 넣을 문장을
+  적되 `check` 에 「넣은 정보가 맞는지」를 적는다.
+- 원문의 판단, 조건, 근거, 범위를 지우거나 좁히지 않는다. 군더더기 규칙으로 지우는 낱말만 예외다.
+- 제목, 굵은 머리, 서식 기호, 따옴표는 그대로 둔다. 규칙이 그 말 자체를 짚었을 때만 바꾼다.
+- 바꾼 낱말 뒤의 조사가 받침에 맞는지 본다(「수단과」, 「방법이」).
+
+"""
+
+
 def system_prompt() -> str:
     """판정기 시스템 프롬프트 틀 — 판정기와 측정 스크립트가 모두 이것을 쓴다(잰 것과 도는 것이 같게)."""
-    if output_format() == "compact":
-        return SYSTEM.replace(_FORMAT_JSON, _FORMAT_COMPACT)
-    return SYSTEM
+    out = SYSTEM.replace(_FORMAT_JSON, _FORMAT_COMPACT) if output_format() == "compact" else SYSTEM
+    if os.environ.get(FIX_SCOPE_ENV) != "wide":
+        out = out.replace("고칠 것이 없으면 빈 배열", _FIX_SCOPE + "고칠 것이 없으면 빈 배열")
+    return out
 
 
 def as_findings(items) -> list:

@@ -12,6 +12,7 @@ from __future__ import annotations
 import argparse
 import importlib.util
 import json
+import os
 import sys
 import time
 from pathlib import Path
@@ -63,6 +64,8 @@ def row(name: str, rep: int, out: dict, sec: float) -> dict:
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--reps", type=int, default=2)
+    ap.add_argument("--arms", default="l2,plain-claude",
+                    help="l2-narrow 는 고친 말의 범위를 좁힌 판정기(2026-11-03 · probe_layer2_kinds.FIX_SCOPE_ENV)")
     a = ap.parse_args()
     probe = load("probe", REPO / "scripts" / "probe_layer2_kinds.py")
     doc = probe.CARRIER.read_text(encoding="utf-8")
@@ -70,19 +73,23 @@ def main() -> int:
     OUT.mkdir(parents=True, exist_ok=True)
     rows = []
     for rep in range(a.reps):
-        for name in ("l2", "plain-claude"):     # 번갈아 — 캐시와 시간대 차이를 섞음
+        for name in a.arms.split(","):     # 번갈아 — 캐시와 시간대 차이를 섞음
             f = OUT / f"{name}-{rep}.json"
             if f.exists():
                 rows.append(json.loads(f.read_text(encoding="utf-8"))["row"])
                 continue
             t = time.time()
-            out = probe.run_arm("guided", "opus", 600.0, doc, items) if name == "l2" else plain_arm(probe, doc, items)
+            # 11-03 부터 판정기 기본값이 좁힌 수정안 — `l2` 는 넣기 전 판정기로 다시 냄
+            os.environ["KOREAN_QA_FIX_SCOPE"] = "narrow" if name == "l2-narrow" else "wide"
+            out = (plain_arm(probe, doc, items) if name == "plain-claude"
+                   else probe.run_arm("guided", "opus", 600.0, doc, items))
             r = row(name, rep, out, time.time() - t)
             f.write_text(json.dumps({"row": r, "rows": out["rows"], "findings": out["findings"]},
                                     ensure_ascii=False, indent=1, default=str), encoding="utf-8")
             rows.append(r)
             print(json.dumps(r, ensure_ascii=False), flush=True)
-    (HERE / "ledger.json").write_text(json.dumps(rows, ensure_ascii=False, indent=1), encoding="utf-8")
+    if a.arms == "l2,plain-claude":
+        (HERE / "ledger.json").write_text(json.dumps(rows, ensure_ascii=False, indent=1), encoding="utf-8")
     return 0
 
 
