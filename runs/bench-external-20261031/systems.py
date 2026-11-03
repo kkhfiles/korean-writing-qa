@@ -177,8 +177,10 @@ def run_l1(lines: list[str], work: Path, front: list[str] = FRONT) -> Result:
     res = Result("l1", model="결정론")
     p = write_doc(lines, work, front)
     t = time.time()
+    # 공개판 기본값으로 잰다 — 이 PC 의 개인 기준(반말 서술형 전부 오류)이 섞이지 않게(2026-11-03)
+    env = {**os.environ, "KOREAN_QA_PERSONAL_RULES": "off"}
     out = subprocess.run([sys.executable, "-X", "utf8", str(CHECKER), "--no-rules", str(p)],
-                         capture_output=True, text=True, encoding="utf-8")
+                         capture_output=True, text=True, encoding="utf-8", env=env)
     res.seconds = time.time() - t
     for raw in out.stdout.splitlines():
         m = L1_LINE.match(raw)

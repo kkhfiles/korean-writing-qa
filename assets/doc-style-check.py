@@ -1454,6 +1454,72 @@ def _jamo_play(run):
     return set(run) <= JAMO_PLAY or (len(run) > 1 and len(set(run)) == 1)
 
 
+# 띄어쓰기 두 꼴 — 2026-11-03 비교 측정(`runs/bench-external-20261031`)에서 공개 글에 심은
+# 맞춤법 결함 40건 중 39건이 띄어쓰기였고 1층이 하나도 못 잡았다.
+#: 의존 명사 「수」 붙여 씀 — 「할수 있다」(한글 맞춤법 제42항). 받침 ㄹ 뒤 「수」 + 빈칸 + 있/없.
+#: 사내 보고서 380만 자, K-NCT 정답 문장 3,000개, 공개 기사 40편에서 정상 쓰임 0건이라 **오류**.
+#: 낱말 첫 글자가 「실수 없이」, 「별수 없다」, 「홀수」처럼 「~ㄹ수」로 된 명사이면 뺀다.
+SU_STUCK = re.compile(r'([가-힣]?)([가-힣])수 (?=있|없)')
+SU_NOUN_HEAD = set('실별홀말일술필철')
+#: 「하다」, 「되다」 띄어 씀 — 「관리 하고」, 「연동 되지」. 형태소 분석기로 일반 명사 뒤 빈칸 뒤의
+#: 하/되가 한 낱말(접미사)로 읽히는 곳만 낸다. 조사를 생략한 「최근 했던 일」, 「주인 된 삶」 같은
+#: 정상 쓰임이 섞여(K-NCT 정답 문장 3,000개에서 「하다」 2건) **주의**.
+_SPACED_HA = re.compile(r'[가-힣] (?:하|한|할|함|해|했|합|되|된|될|됨|돼|됐|됩)')
+#: 형태소 분석기가 없어 「하다」, 「되다」 띄어쓰기를 안 본 곳이 실제로 있었나
+SPACING_SKIPPED = False
+
+
+def spacing_hits(text, taken=()):
+    """띄어쓰기 — spelling_hits 와 같은 꼴 [(등급, 걸린 글자, 바른 꼴, 시작, 근거)]."""
+    out = []
+    for m in SU_STUCK.finditer(text):
+        before, c = m.group(1), m.group(2)
+        if _jong(c) != 8 or (not before and c in SU_NOUN_HEAD) or m.start(2) in taken:
+            continue
+        out.append(('err', c + '수', c + ' 수', m.start(2),
+                    '띄어쓰기 — 의존 명사 「수」는 앞말과 띄어 씀'))
+    if not _SPACED_HA.search(text):
+        return out
+    k = morph()
+    if k is None:
+        global SPACING_SKIPPED
+        SPACING_SKIPPED = True
+        return out
+    for base, line in _lines_with(text, _SPACED_HA):
+        toks = k.tokenize(line)
+        for i in range(1, len(toks)):
+            p, t = toks[i - 1], toks[i]
+            if p.tag != 'NNG' or t.form not in ('하', '되') or t.tag not in ('VV', 'XSV', 'XSA'):
+                continue
+            if line[p.start + p.len:t.start] != ' ':
+                continue
+            # 「커피 한 잔 했던」, 「몇 종 하려」 — 수를 센 명사 뒤는 조사를 생략한 것. 「세 건 처리 했다」처럼
+            # 단위 명사가 사이에 끼면 그대로 본다(단위 명사까지 빼면 진짜 오류를 놓쳤다)
+            if i >= 2 and toks[i - 2].tag in ('MM', 'NR', 'SN'):
+                continue
+            end = t.start
+            while end < len(line) and re.match(r'[가-힣]', line[end]):
+                end += 1
+            # 「선행 확인 하나」 — 값 끝에 홀로 선 「하나」는 수사. 「데뷔 하나 보네」처럼 말이 이어지면 본다
+            if line[t.start:end] == '하나' and not re.match(r' +[가-힣]', line[end:]):
+                continue
+            # 「해법」, 「해시」를 하다의 활용으로 읽은 것 — 같은 어절 안에 명사가 있으면 뺀다
+            if any(x.tag.startswith('N') and t.start < x.start < end for x in toks[i + 1:]):
+                continue
+            if t.tag == 'VV':   # 띄어 쓴 채로는 동사 — 붙였을 때 접미사로 읽히는 것만
+                # 뒷말까지 넣는다 — 「다음할」만 주면 접미사로, 「다음할 일」을 주면 동사로 읽는다
+                joined = line[max(0, p.start - 10):p.start + p.len] + line[t.start:end + 6]
+                if not any(x.form == t.form and x.tag in ('XSV', 'XSA') for x in k.tokenize(joined)):
+                    continue
+            if base + p.start in taken:
+                continue
+            word = line[p.start:end]
+            out.append(('warn', word, word.replace(' ', '', 1), base + p.start,
+                        f'띄어쓰기 — 「{t.form}다」가 붙는 말은 붙여 씀, '
+                        f'「{"~을 하다" if t.form == "하" else "~이 되다"}」에서 조사를 생략한 것이면 그대로'))
+    return out
+
+
 def spelling_hits(text):
     """맞춤법에 어긋난 곳 — [(등급 'err'|'warn', 걸린 글자, 바른 꼴, 시작, 근거)].
 
@@ -1519,6 +1585,7 @@ def spelling_hits(text):
             continue
         out.append(('warn', m.group(0), None, m.start(),
                     '맞춤법 — 낱자모 뒤에 글자가 붙음, 문법이나 모양을 적은 것이면 그대로'))
+    out.extend(spacing_hits(text, taken))
     out.sort(key=lambda h: h[3])
     return out
 
@@ -3731,6 +3798,10 @@ def main():
               '\n   고치려면 python -m pip install kiwipiepy')
     # ⛔ 목록이 없으면 그 갈래를 **안 본 것**이다. 조용히 넘기면 「오류 0」이 통과인지
     #    안 본 것인지 갈리지 않는다 — 껐다는 사실을 적는 규칙과 같은 이유다.
+    if SPACING_SKIPPED:
+        tail += ' · 「하다」 띄어쓰기 안 봄'
+        print('\n형태소 분석기 없음 — 「관리 하고」, 「연동 되지」 같은 띄어쓰기는 안 봤습니다'
+              '\n   고치려면 python -m pip install kiwipiepy')
     if PERSONAL_SKIPPED:
         tail += ' · 개인 낱말 목록 안 봄'
         print('\n개인 낱말 목록이 있는데 형태소 분석기가 없어 대 보지 못했습니다'
