@@ -232,6 +232,10 @@ def parse_replies(replies: list[str], opinions: dict[str, str] | None = None,
     ⛔ 의견 칸이 비었는데 번호로도 답하지 않은 행이 남으면 ValueError — 그 행의 답을 지어 넣지 않는다.
     """
     item_re, grouped_re = (ITEM, GROUPED) if tuple(kinds) == ANSWER_KINDS else _answer_patterns(kinds)
+    # 묻는 것이 하나뿐인 표 — 번호 없는 「그대로」도 그 하나의 답이다(2026-11-03 실사용에서 거절했다)
+    whole = "\n".join(replies).strip().strip("「」").strip().rstrip(TAIL)
+    if opinions and len(opinions) == 1 and whole.startswith(tuple(kinds)) and not re.search(r"\d", whole):
+        return {next(iter(opinions)): whole}
     said: dict[str, str] = {}
     delegated = False
     for line in "\n".join(replies).splitlines():
