@@ -1287,7 +1287,7 @@ def lineage(key: str, lines: list[str], targets: list[int], base: list[str] | No
     if base:
         import difflib
         ops = difflib.SequenceMatcher(None, base, lines, autojunk=False).get_opcodes()
-    out = {}
+    found: dict[int, tuple] = {}
     for n in targets:
         text = lines[n - 1]
         # 글자가 절반 이상 같은 앞선 판 가운데 **가장 많이 판정된 것** — 가장 비슷한 것을 고르면
@@ -1304,7 +1304,7 @@ def lineage(key: str, lines: list[str], targets: list[int], base: list[str] | No
                        key=lambda b: coverage._similar(text, b), default=None)
             if cand is None or cand == text or coverage._similar(text, cand) < coverage.SUCCESSOR:
                 cand = None
-        pred = None
+        pred, chain = None, None
         if near:
             best, best_sim = max(near, key=lambda x: x[1])
             chain = best.get("root") or best["text"]
@@ -1313,10 +1313,43 @@ def lineage(key: str, lines: list[str], targets: list[int], base: list[str] | No
             # 기준 판에 그 계보 밖의 더 비슷한 줄이 있으면 앞선 판정은 다른 줄의 것이다
             if cand is not None and cand != chain and coverage._similar(text, cand) > best_sim:
                 pred = None
-        if pred is not None:
+        found[n] = (pred, chain if pred is not None else None, cand)
+    # ⛔ 한 계보(또는 기준 판 줄)를 여러 줄이 함께 잡으면 나눈 줄만 이어 받는다 · 그 줄이 지금 글에 그대로 남았으면
+    #    아무도 못 받는다(2026-11-03 git 밖 Marp 덱 — 표를 다시 짜자 새 행 넷이 같은 옛 행의 판정 횟수와 기준 판을
+    #    함께 물려받아 곧장 사람 확인에 올랐다 · `coverage.heirs`). 계보는 마지막 판 글과 대조한다 — 고치기 직전의
+    #    글이고, 줄마다 가장 비슷한 판으로 묶으면 같은 계보의 다른 판을 잡은 새 줄끼리 서로를 못 본다(기록 재생).
+    #    앞선 판정 계보를 먼저 가르고, 못 받은 줄은 기준 판 줄로 가른다.
+    latest = {}
+    for e in prev:
+        latest[e.get("root") or e["text"]] = e["text"]
+    where: dict[str, list[int]] = {}
+    for i, l in enumerate(lines, 1):
+        k = coverage.line_key(l)
+        if k:
+            where.setdefault(k, []).append(i)
+
+    def settle(parent_of) -> set[int]:
+        groups: dict[str, list[int]] = {}
+        for n in targets:
+            p = parent_of(n)
+            if p is not None:
+                groups.setdefault(p, []).append(n)
+        lost = set()
+        for p, ns in groups.items():
+            held = any(m not in ns for m in where.get(coverage.line_key(p) or "", []))
+            ns.sort(key=lambda n: -coverage._similar(lines[n - 1], p))
+            lost |= {n for n, ok in zip(ns, coverage.heirs(p, [lines[n - 1] for n in ns], held)) if not ok}
+        return lost
+
+    orphans = settle(lambda n: latest[found[n][1]] if found[n][1] is not None else None)
+    unrooted = settle(lambda n: found[n][2] if found[n][0] is None or n in orphans else None)
+    out = {}
+    for n in targets:
+        pred, _, cand = found[n]
+        if pred is not None and n not in orphans:
             info = {"round": int(pred.get("round") or 1) + 1, "root": pred.get("root") or pred["text"]}
         else:
-            info = {"round": 1, "root": cand}
+            info = {"round": 1, "root": None if n in unrooted else cand}
         gone = []
         for tag, i1, i2, j1, j2 in ops:
             if tag not in ("delete", "replace") or not (j1 - 1 <= n - 1 <= j2):

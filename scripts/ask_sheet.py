@@ -190,6 +190,13 @@ ITEM = re.compile(r"(?:^|,\s*|\s+)([Qq]?\d+)번?\s*[:.]?\s*(?=고침|그대로|�
 GROUPED = re.compile(r"(고침|그대로|보류)\s+((?:[Qq]?\d+번?[\s,]*)+)$")
 #: 답을 안 고른 번호를 알리는 줄 — 읽을 답이 없다
 NOT_YET = "아직 안 고름"
+#: 짧은 답 끝에 붙는 마침표 · 느낌표 — 「전부 의견대로.」를 이것 하나 때문에 거절했다(2026-11-03 실사용).
+#: 짧은 답의 꼴을 가를 때만 떼고, 번호 뒤 글로 적은 답은 원문 그대로 둔다
+TAIL = " \t.。!！"
+#: 번호로 시작하는 줄 — 「3. …」 · 「3) …」 · 「3: …」 · 「3번 …」. 뒤 글이 네 답 가운데 하나로 시작하지 않으면
+#: 그 번호의 글로 적은 답이다(2026-11-03 실사용 「3. … 완료.」를 거절해 세션이 「직접: …」로 바꿔 적었다).
+#: 구두점 뒤 빈칸을 요구한다 — 「3.5배 …」를 3번 답으로 읽지 않게
+NUMBERED = re.compile(r"(\d+)\s*(?:번\s*[:.)]?\s*|[:.)]\s+)(\S.*)$", re.S)
 
 
 def qid_of(token: str) -> str:
@@ -216,6 +223,9 @@ def parse_replies(replies: list[str], opinions: dict[str, str] | None = None,
     - `전부 의견대로` · `의견대로, 단 3 그대로, 7 직접: …` — 「제 의견」 칸을 답으로 쓰고 뒤에 적은 번호만 바꿈
     - `고침 2, 3` — 답 하나에 번호를 묶음
     - `3 그대로, 7 직접: …` — 번호와 답을 잇달아 적음
+    - `3. 시나리오를 돌려 확인함` — 번호 뒤 글이 네 답 가운데 하나로 시작하지 않으면 원문 그대로 그 번호의 답
+      (`kind_of` 가 「글」로 가름 · 같은 줄 뒤에 다른 번호의 답이 또 있으면 ValueError)
+    - 짧은 답 끝의 마침표 · 느낌표는 뗀다(「전부 의견대로.」)
 
     의견대로 채운 답에는 「(의견대로)」를 붙인다 — 답 기록에서 사용자가 적은 말과 세션 의견을 가른다.
     번호를 적은 답이 의견보다 앞선다 — 줄 순서와 상관없이(「3 그대로」 다음 줄에 「의견대로」여도 3은 그대로).
@@ -236,14 +246,22 @@ def parse_replies(replies: list[str], opinions: dict[str, str] | None = None,
         if rest.startswith(("전부 " + AS_OPINION, AS_OPINION)):
             delegated = True
             rest = re.sub(rf"^(전부\s+)?{AS_OPINION}\s*,?\s*(단\s*)?", "", rest)
-            if not rest:
+            if not rest.strip(TAIL):
                 continue
-        g = grouped_re.match(rest)
+        g = grouped_re.match(rest.rstrip(TAIL))
         if g:
             for token in re.findall(r"[Qq]?\d+", g.group(2)):
                 said[qid_of(token)] = g.group(1)
             continue
         found = list(item_re.finditer(rest))
+        numbered = NUMBERED.match(rest)
+        if numbered and (not found or found[0].start() > 0):
+            # 번호 뒤 글로 적은 답 — 원문 그대로 그 번호에 둔다(결정으로 바꾸지 않음 · `kind_of` 가 「글」로 가름).
+            # ⛔ 같은 줄 뒤에 「1 그대로」 같은 답이 또 있으면 글 안에서 잘라 읽지 않고 거절한다 — 짐작이 된다
+            if found:
+                raise ValueError(f"글로 적은 답 뒤에 다른 번호의 답이 있음 — 「{line[:40]}」 · 한 줄에 한 번호씩 적습니다")
+            said[qid_of(numbered.group(1))] = numbered.group(2).strip()
+            continue
         if not found or rest[:found[0].start()].strip(" ,"):
             raise ValueError(f"알아들을 수 없는 답 — 「{line[:40]}」 · 「3 그대로」나 「Q3 그대로」 꼴로 적습니다")
         for i, it in enumerate(found):

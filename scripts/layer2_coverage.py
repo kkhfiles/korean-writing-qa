@@ -547,14 +547,21 @@ def _plain(text: str) -> str:
 
 #: 링크 주소 — 줄이 비슷한지는 보이는 글로 가른다
 LINK_TARGET = re.compile(r"\]\([^)\s]*\)|https?://\S+")
+#: 마크다운 안에 쓴 HTML 태그와 주석 — 링크 주소와 같은 까닭으로 뺀다
+INLINE_TAG = re.compile(r"<!--.*?-->|</?[A-Za-z][^<>]*>", re.S)
 
 
 def _visible(text: str) -> str:
-    """링크 주소를 뺀 글. ⛔ 같은 출처 주소를 담은 서로 다른 줄이 주소 길이 때문에 글자 절반 이상이
+    """링크 주소와 HTML 태그를 뺀 글. ⛔ 같은 출처 주소를 담은 서로 다른 줄이 주소 길이 때문에 글자 절반 이상이
     같아져 한 계보로 묶였다 — 출처 소개 줄이 원문 목록 줄의 판정 횟수를 물려받아 상한에 일찍 닿고,
-    기준 판도 그 줄로 잡혔다(2026-10-14 lab-docs · 주소를 넣으면 0.57 · 빼면 0.21)."""
-    seen = LINK_TARGET.sub("", text)
-    return seen if seen.strip() else text
+    기준 판도 그 줄로 잡혔다(2026-10-14 lab-docs · 주소를 넣으면 0.57 · 빼면 0.21).
+    ⛔ 태그도 같다(2026-11-03 git 밖 Marp 덱) — 같은 표의 다른 행이 `<tr><td class=…>` 마크업 때문에 0.6~0.79 로
+    기준 0.5 를 넘어, 표를 다시 짜며 새로 쓴 행이 옛 행의 판정 횟수를 물려받아 곧장 「재판정 상한」으로 사람 확인에
+    올랐고 서로 다른 새 행 넷이 같은 옛 행을 기준 판으로 달았다. 보이는 글로는 0.22~0.38 이다.
+    HTML 파일은 `visible_text` 가 이미 태그를 뺀다 — 이것은 마크다운에 섞인 태그 몫이다. 태그를 뺀 자리의 빈칸과
+    들여쓰기는 하나로 줄인다 — 남기면 빈칸끼리 맞아 다시 유사도를 올린다."""
+    seen = re.sub(r"\s+", " ", INLINE_TAG.sub(" ", LINK_TARGET.sub("", text))).strip()
+    return seen if seen else text
 
 
 def _similar(a: str, b: str) -> float:
@@ -566,6 +573,38 @@ def _similar(a: str, b: str) -> float:
 def _ratio(a: str, b: str) -> float:
     import difflib
     return difflib.SequenceMatcher(None, _visible(a), _visible(b), autojunk=False).ratio()
+
+
+#: 한 부모를 둘째 이후로 잡은 줄을 나눈 줄로 보는 몫 — 제가 부모와 맞춘 글자 가운데 앞선 줄이 아직 안 맞춘 것의 비율.
+#: 나눈 줄은 부모의 서로 다른 부분을 나눠 가져 0.55~0.64, 그대로 옮긴 줄 옆에서 같은 말을 빌린 새 줄은 0 안팎이다
+#: (2026-11-03 시험 문장 · 기존 나눈 줄 시험 0.55). 둘 사이에 여유를 두어 0.4.
+SPLIT_FRESH = 0.4
+
+
+def heirs(parent: str, rivals: list[str], held: bool = False) -> list[bool]:
+    """한 부모 줄(`parent`)을 함께 잡은 줄들(`rivals` · 부모와 비슷한 순) 가운데 정말 이어 받는 줄.
+
+    첫 줄은 이어 받는다. 그 뒤 줄은 **나눈 줄일 때만** — 앞서 이어 받은 줄들이 안 맞춘 부모의 다른 부분을
+    맞춰야 한다(`SPLIT_FRESH`). 한 줄을 둘로 나누면 판정 횟수가 이어진다는 뜻은 지키고, 부모 하나를 서로 다른
+    새 줄 여럿이 나눠 갖지는 못하게 한다(2026-11-03 git 밖 Marp 덱 — 새 표 행 넷이 같은 옛 행을 기준 판으로
+    달았다). 글자는 한글 · 영문 · 숫자만 센다 — 빈칸과 문장부호는 어느 줄과도 맞는다.
+    `held` — 부모가 지금 글의 다른 줄에 그대로 남아 있음. 남은 줄이 자기 자신이므로 아무도 못 이어 받는다.
+    """
+    import difflib
+    if held:
+        return [False] * len(rivals)
+    p = _visible(parent)
+    taken: set[int] = set()
+    out = []
+    for r in rivals:
+        m = difflib.SequenceMatcher(None, p, _visible(r), autojunk=False)
+        mine = {i for b in m.get_matching_blocks() if b.size >= 2
+                for i in range(b.a, b.a + b.size) if p[i].isalnum()}
+        ok = bool(mine) and (not taken or len(mine - taken) >= SPLIT_FRESH * len(mine))
+        if ok:
+            taken |= mine
+        out.append(ok)
+    return out
 
 
 def successor(seen, old_key: str, lines: list[str], text: str) -> int | None:

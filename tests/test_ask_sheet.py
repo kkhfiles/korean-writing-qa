@@ -346,6 +346,37 @@ class ShortAnswerTests(_SheetBase):
     def test_old_reply_form_still_works(self) -> None:
         self.assertEqual({"Q1": "이건 그냥 놔두자"}, ask_sheet.parse_replies(["Q1 이건 그냥 놔두자"]))
 
+    def test_trailing_punctuation_is_tolerated(self) -> None:
+        """(2026-11-03 실사용) 「전부 의견대로.」를 끝의 마침표 하나 때문에 알아들을 수 없는 답으로 거절했다 —
+        마침표를 빼고 다시 넘겨야 받았다."""
+        want = ask_sheet.parse_replies(["전부 의견대로"], self.OPS)
+        for reply in ("전부 의견대로.", "전부 의견대로. ", "의견대로!", "전부 의견대로。"):
+            self.assertEqual(want, ask_sheet.parse_replies([reply], self.OPS), f"「{reply}」를 거절했습니다")
+        self.assertEqual({"Q1": "고침", "Q2": "고침"}, ask_sheet.parse_replies(["고침 1, 2."]))
+
+    def test_a_numbered_free_answer_is_kept_verbatim(self) -> None:
+        """(2026-11-03 실사용) 「3. … 완료.」처럼 번호 뒤에 글로 답하자 답 전체를 거절했고, 세션이 표에
+        「직접: …」로 바꿔 적어 넘겼다 — 사람 말을 세션이 고쳐 적은 것이다. 번호 뒤 글은 원문 그대로
+        「글로 적은 답」으로 남기고, 고칠지 둘지는 세션이 원문을 읽고 가른다."""
+        for reply in ("2. 시험 결과를 확인하고 끝냈습니다.", "2) 시험 결과를 확인하고 끝냈습니다.",
+                      "2번 시험 결과를 확인하고 끝냈습니다.", "2: 시험 결과를 확인하고 끝냈습니다."):
+            got = ask_sheet.parse_replies([reply])
+            self.assertEqual({"Q2": "시험 결과를 확인하고 끝냈습니다."}, got, f"「{reply}」")
+            self.assertEqual(ask_sheet.FREE, ask_sheet.kind_of(got["Q2"]), "글로 적은 답을 결정으로 바꿨습니다")
+
+    def test_a_numbered_free_answer_with_another_answer_on_the_line_is_refused(self) -> None:
+        """글 안에서 「1 그대로」를 잘라 결정으로 읽으면 사람 말을 짐작한 것이다 — 한 줄에 하나씩 다시 받는다."""
+        with self.assertRaises(ValueError):
+            ask_sheet.parse_replies(["2. 시험 결과를 확인했습니다, 1 그대로"])
+
+    def test_a_numbered_free_reply_is_surfaced_not_closed(self) -> None:
+        self.make_sheet()
+        rc, out = self.run_main(["--answers-from", str(self.sheet), "--reply", "2. 시험 결과를 확인하고 끝냈습니다."])
+        self.assertEqual(1, rc, out)
+        self.assertIn("글로 적은 답 1건", out)
+        self.assertIn("시험 결과를 확인하고 끝냈습니다.", out)
+        self.assertEqual([5, 7], self.open_lines(), "글로 적은 답으로 사람 확인을 닫았습니다")
+
     def test_as_opinion_on_a_blank_opinion_is_refused(self) -> None:
         self.make_sheet()
         self.set_opinions({"Q1": "그대로"})

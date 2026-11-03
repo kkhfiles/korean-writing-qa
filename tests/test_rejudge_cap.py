@@ -132,6 +132,117 @@ class LineageTests(_Base):
         self.assertEqual((1, None), (entry["round"], entry["root"]))
 
 
+#: 마크다운 안에 HTML 로 쓴 표 행 — 같은 표의 행끼리는 마크업이 같아 글자 유사도가 높게 나온다
+ROW = ('<tr><td class="item">{0}</td><td class="ours"><span class="mark">★</span> {1}</td>'
+       '<td class="other">{2}</td><td class="other">{3}</td></tr>')
+#: 같은 행을 거듭 고친 판 — 보이는 글이 0.95 넘게 같다
+ROW_VERSIONS = [ROW.format("사내 서버 운영", "작은 모델을 사내 서버에 설치해 운영", "지원", "미지원"),
+                ROW.format("사내 서버 운영", "작은 모델을 사내 서버에 설치해 직접 운영", "지원", "미지원"),
+                ROW.format("사내 서버 운영", "작은 모델을 사내 서버에 설치해 직접 운영하고 갱신", "지원", "미지원"),
+                ROW.format("사내 서버 운영", "작은 모델을 사내 서버에 설치해 직접 운영하고 매달 갱신", "지원", "미지원")]
+#: 표를 다시 짜며 새로 넣은 행 — 마크업을 넣으면 위 행과 0.8 안팎 · 보이는 글로는 0.37~0.43
+NEW_ROWS = [ROW.format("명세 문서 활용", "기능 명세를 읽어 시험 항목을 뽑음", "명세 형식 하나만", "없음"),
+            ROW.format("편집기 연동", "편집기 확장에서 바로 실행", "다음 판에 예정", "있음"),
+            ROW.format("변경 이력 활용", "커밋 기록으로 시험 범위를 고름", "없음", "없음")]
+TABLE_HEAD = ["# 비교", "", "<table>"]
+
+
+class RestructuredLineTests(_Base):
+    """(2026-11-03 실사용 · git 밖 Marp 덱) 슬라이드를 여덟에서 넷으로 줄이고 표 행을 다시 짜자, 새로 쓴 행이
+    곧장 「같은 줄을 4번째 판정 — 재판정 상한 3회를 넘음」으로 사람 확인에 올랐고, 서로 다른 새 행 넷이 모두 같은
+    옛 행을 「기준 판」으로 달고 나왔다. 하루에 7 · 7 · 6 · 1 · 2행을 물었고 대부분 「그대로」였다.
+
+    원인 둘 — ① 줄 유사도를 마크업까지 넣어 재서 같은 표의 다른 행이 0.6~0.79 로 기준 0.5 를 넘었다(보이는
+    글로는 0.22~0.38). ② 한 옛 줄을 여러 새 줄이 함께 부모로 잡았다 — 나눈 줄이 아니어도 막지 않았다.
+
+    **지키는 것** — 같은 줄을 거듭 고치면 여전히 상한에 닿고 기준 판을 받는다(아래 둘째 · 넷째 시험).
+    """
+
+    def judge_lines(self, lines: list[str], targets: list[int], base=None, reply=()) -> dict:
+        self.write(lines)
+        return judge.judge(self.doc, "opus", 10, FakeBackend(list(reply)).pair(), targets, base)
+
+    def test_new_rows_after_a_restructure_start_at_one(self) -> None:
+        for v in ROW_VERSIONS[:judge.REJUDGE_CAP]:
+            self.judge_lines(TABLE_HEAD + [v, "</table>"], [4])
+        # 옛 행을 지우고 새 행 셋을 넣음 — 같은 줄을 고친 것이 아니다
+        result = self.judge_lines(TABLE_HEAD + NEW_ROWS + ["</table>"], [4, 5, 6])
+        got = [(e["round"], e["root"]) for e in self.last_row()["targeted"]]
+        self.assertEqual([(1, None)] * 3, got, "새로 쓴 행이 마크업이 같은 옛 행의 판정 횟수와 기준 판을 물려받았습니다")
+        self.assertEqual([], [f for f in result["findings"] if f.get("category") == "재판정 상한"],
+                         "새로 쓴 행을 재판정 상한으로 사람 확인에 올렸습니다")
+
+    def test_the_same_row_revised_again_still_hits_the_cap(self) -> None:
+        for v in ROW_VERSIONS[:judge.REJUDGE_CAP]:
+            self.judge_lines(TABLE_HEAD + [v, "</table>"], [4])
+        result = self.judge_lines(TABLE_HEAD + [ROW_VERSIONS[judge.REJUDGE_CAP]] + NEW_ROWS + ["</table>"],
+                                  [4, 5, 6, 7])
+        rounds = {e["text"]: e["round"] for e in self.last_row()["targeted"]}
+        self.assertEqual(judge.REJUDGE_CAP + 1, rounds[ROW_VERSIONS[judge.REJUDGE_CAP]],
+                         "같은 행을 거듭 고쳤는데 판정 횟수를 이어 세지 않았습니다")
+        self.assertEqual([1, 1, 1], [rounds[r] for r in NEW_ROWS])
+        held = [f for f in result["findings"] if f.get("category") == "재판정 상한"]
+        self.assertEqual([4], [f["line"] for f in held])
+        self.assertIn(ROW_VERSIONS[0], held[0]["fix"], "사람이 대조할 기준 판이 첫 판이 아닙니다")
+
+    def test_a_line_still_in_the_document_is_nobodys_parent(self) -> None:
+        """앞서 판정한 줄이 지금 글에 그대로 남아 있으면 비슷한 새 줄은 그 줄을 고친 것이 아니다."""
+        kept = "작은 모델을 사내 서버에 설치해 운영하는 방식을 씁니다."
+        for v in ("작은 모델을 사내 서버에 설치해 운영합니다.", "작은 모델을 사내 서버에 설치해 운영하는 방식입니다.", kept):
+            self.judge_lines(["# 소개", "", v], [3])
+        self.judge_lines(["# 소개", "", kept, "", "작은 모델을 사내 서버에 두고 운영하는 까닭을 아래에 적습니다."], [5])
+        entry = self.last_row()["targeted"][0]
+        self.assertEqual((1, None), (entry["round"], entry["root"]),
+                         "지금 글에 그대로 남은 줄의 판정 횟수를 비슷한 새 줄이 물려받았습니다")
+
+    def test_two_lines_claiming_one_parent_share_it_only_when_split(self) -> None:
+        """그대로 옮긴 줄이 부모를 이어 받고, 같은 말을 일부 빌린 새 제목은 새 줄이다 — 나눈 줄과 달리 부모의
+        다른 부분을 나눠 갖지 않는다. 새 제목은 그 계보의 **옛 판**과 더 닮았다 — 줄마다 가장 비슷한 판으로 묶으면
+        두 줄이 서로 다른 무리가 되어 둘 다 이어 받았다(기록 재생 · 계보의 마지막 판과 대조하는 까닭)."""
+        versions = ["<div class=\"head\">② 사내 서버의 작은 모델로 큰 모델에 가까운 정확도</div>",
+                    "<div class=\"head\">② 사내 서버에서 돌리는 작은 모델로 큰 모델에 가까운 정확도</div>",
+                    "<div class=\"head\">② 사내 서버에서 돌리는 작은 모델이 큰 모델에 가까운 정확도를 냄</div>"]
+        moved = "<div class=\"head\">① 사내 서버에서 돌리는 작은 모델이 큰 모델에 가까운 정확도를 냄</div>"
+        title = "<h1>외부 서비스 없이 사내 서버의 작은 모델로 시험 생성</h1>"
+        self.assertGreaterEqual(coverage._similar(title, versions[0]), coverage.SUCCESSOR,
+                                "시험 전제 — 새 제목도 그 계보의 첫 판과 비슷해야 합니다")
+        for v in versions[:judge.REJUDGE_CAP]:
+            self.judge_lines(["# 소개", "", v], [3])
+        self.judge_lines(["# 소개", "", title, "", moved], [3, 5])
+        rounds = {e["text"]: e["round"] for e in self.last_row()["targeted"]}
+        self.assertEqual(judge.REJUDGE_CAP + 1, rounds[moved], "옮긴 줄이 판정 횟수를 이어 받지 못했습니다")
+        self.assertEqual(1, rounds[title], "같은 부모를 잡은 둘째 줄이 나눈 줄이 아닌데 판정 횟수를 물려받았습니다")
+
+    def test_base_pairing_skips_unrelated_rows(self) -> None:
+        """기준 판(git 갈라진 지점)에서도 같다 — 마크업이 같은 다른 행을 「원래 글」로 보이면 뜻 대조가 무의미하다."""
+        old = ROW_VERSIONS[0]
+        base = TABLE_HEAD + [old, "</table>"]
+        self.write(TABLE_HEAD + NEW_ROWS + ["</table>"])
+        fake = FakeBackend([])
+        judge.judge(self.doc, "opus", 10, fake.pair(), [4, 5, 6], base)
+        got = [(e["round"], e["root"]) for e in self.last_row()["targeted"]]
+        self.assertEqual([(1, None)] * 3, got, "새 행을 마크업이 같은 지운 행과 기준 판으로 짝지었습니다")
+        self.assertNotIn("기준 판: " + old, fake.calls[-1]["user"])
+
+    def test_base_pairing_skips_a_line_still_in_the_document(self) -> None:
+        base = TABLE_HEAD + [ROW_VERSIONS[0], "</table>"]
+        near = ROW.format("사내 서버 운영 비용", "작은 모델을 사내 서버에 설치해 운영하는 비용", "지원", "미지원")
+        self.assertGreaterEqual(coverage._similar(near, ROW_VERSIONS[0]), coverage.SUCCESSOR, "시험 전제")
+        self.write(TABLE_HEAD + [ROW_VERSIONS[0], near, "</table>"])
+        judge.judge(self.doc, "opus", 10, FakeBackend([]).pair(), [5], base)
+        self.assertEqual((1, None), (self.last_row()["targeted"][0]["round"], self.last_row()["targeted"][0]["root"]),
+                         "그대로 남은 기준 판 줄을 비슷한 새 줄의 원래 글로 보였습니다")
+
+    def test_an_edited_row_still_gets_its_base_row(self) -> None:
+        base = TABLE_HEAD + [ROW_VERSIONS[0], "</table>"]
+        self.write(TABLE_HEAD + [ROW_VERSIONS[1]] + NEW_ROWS + ["</table>"])
+        fake = FakeBackend([])
+        judge.judge(self.doc, "opus", 10, fake.pair(), [4, 5, 6, 7], base)
+        roots = {e["text"]: e["root"] for e in self.last_row()["targeted"]}
+        self.assertEqual(ROW_VERSIONS[0], roots[ROW_VERSIONS[1]], "고친 행이 기준 판 행을 잃었습니다")
+        self.assertIn("4행 기준 판: " + ROW_VERSIONS[0], fake.calls[-1]["user"])
+
+
 class CapTests(_Base):
 
     def run_rounds(self, upto: int) -> list[dict]:
