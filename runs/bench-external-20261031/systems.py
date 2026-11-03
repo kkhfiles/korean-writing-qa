@@ -222,7 +222,8 @@ def run_l2(lines: list[str], work: Path, model: str = "opus", front: list[str] =
                 n = f.get("line")
                 if isinstance(n, int):
                     res.findings.append({"line": n - len(front), "quote": str(f.get("phrase") or ""),
-                                         "fix": f.get("fix"), "kind": f"{kind} {f.get('category') or ''}".strip()})
+                                         "fix": f.get("fix"), "kind": f"{kind} {f.get('category') or ''}".strip(),
+                                         "check": f.get("check"), "why": f.get("why")})
     return res
 
 

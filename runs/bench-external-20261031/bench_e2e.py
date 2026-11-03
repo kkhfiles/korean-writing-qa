@@ -157,6 +157,100 @@ def revise_ours(text: str, work: Path, rounds: int = 2, mode: str = "ours") -> d
     return rec
 
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "scripts"))
+import layer2_coverage as coverage  # noqa: E402
+
+
+def for_author(f: dict, doc: str) -> bool:
+    """작성자만 답할 수 있는 지적 — 사실 확인이 걸렸거나 수정안이 원문에 없는 정보를 들여옴(검토 화면의 「작성자 확인」)."""
+    return coverage.needs_check(f) or bool(coverage.new_info(str(f.get("fix") or ""), doc))
+
+
+def revise_ours2(text: str, work: Path, rounds: int = 2) -> dict:
+    """지금 제품의 세션 흐름(2026-11-03) — 공개판 기본값으로 검사하고, 사람 확인과 작성자 확인(사실 확인, 새 정보)
+    지적은 고쳐 쓰기에 넘기지 않음. 고쳐 쓰는 모델에는 정보를 지어내지 말라는 지시를 붙임(스킬 「확인 못 한 사실을
+    짐작으로 고치지 않는다」)."""
+    os.environ["KOREAN_QA_PERSONAL_RULES"] = "off"
+    rec: dict = {"rounds": 0, "findings": [], "asks_left": [], "author_left": []}
+    cur = text
+    prompt = OURS_REVISE.replace("\n고친 문서 전체를", NOINVENT + "\n고친 문서 전체를", 1)
+    for k in range(rounds):
+        lines = cur.split("\n")
+        l1 = systems.run_l1(lines, work / f"r{k}-l1", front=[])
+        l2 = systems.run_l2(lines, work / f"r{k}-l2", front=[])
+        for r in (l1, l2):
+            rec["seconds"] = rec.get("seconds", 0) + r.seconds
+            rec["cost_usd"] = (rec.get("cost_usd") or 0) + (r.cost_usd or 0)
+            rec["in_tok"] = rec.get("in_tok", 0) + r.in_tok
+            rec["out_tok"] = rec.get("out_tok", 0) + r.out_tok
+            if r.error:
+                rec["error"] = r.error
+        asks = [f for f in l2.findings if f["kind"].startswith("사람 확인")]
+        author = [f for f in l2.findings if f not in asks and for_author(f, cur)]
+        found = [f for f in l1.findings if f["kind"].startswith("오류")] + \
+                [f for f in l2.findings if f not in asks and f not in author]
+        rec["findings"].append(len(found))
+        rec["asks_left"].append(len(asks))
+        rec["author_left"].append(len(author))
+        if not found:
+            break
+        user = cur + "\n\n## 검사기 지적\n" + finding_list(found, lines)
+        t = time.time()
+        r = systems.call_model("claude", "opus", prompt, user)
+        log_cost(rec, r, time.time() - t, prompt, user)
+        cur = strip_fence(r["text"])
+        rec["rounds"] = k + 1
+    rec["text"] = cur
+    return rec
+
+
+def revise_apply(text: str, work: Path) -> dict:
+    """검토 화면의 「바로 반영」만 — 모델이 다시 쓰지 않고, 판정기 수정안 가운데 글자 그대로 넣을 수 있는 것만 바꿈
+    (`review_screen.literal`, 그 줄에 한 번만 나오는 표현, 작성자 확인이 아닌 것)."""
+    import review_screen  # noqa: PLC0415
+    os.environ["KOREAN_QA_PERSONAL_RULES"] = "off"
+    lines = text.split("\n")
+    l2 = systems.run_l2(lines, work / "r0-l2", front=[])
+    rec = {"seconds": l2.seconds, "cost_usd": l2.cost_usd, "in_tok": l2.in_tok, "out_tok": l2.out_tok,
+           "applied": 0, "skipped": 0}
+    if l2.error:
+        rec["error"] = l2.error
+    for f in l2.findings:
+        n, phrase, fix = f["line"], f["quote"], str(f.get("fix") or "")
+        ok = (not f["kind"].startswith("사람 확인") and not for_author(f, text) and review_screen.literal(fix)
+              and phrase and 0 < n <= len(lines) and lines[n - 1].count(phrase) == 1)
+        if ok:
+            lines[n - 1] = lines[n - 1].replace(phrase, fix, 1)
+            rec["applied"] += 1
+        else:
+            rec["skipped"] += 1
+    rec["text"] = "\n".join(lines)
+    return rec
+
+
+def revise_apply_guarded(text: str, log: Path) -> dict:
+    """「바로 반영」에 수정안 가리개(`fix_guard.py`)를 더함 — 앞 변형이 남긴 판정 기록을 다시 써서 모델을
+    부르지 않음(같은 지적에 가리개만 더한 효과를 봄). 넣을 때 뒤 조사를 받침에 맞춤."""
+    import fix_guard  # noqa: PLC0415
+    import review_screen  # noqa: PLC0415
+    rows = [json.loads(l) for l in log.open(encoding="utf-8") if l.strip()]
+    lines = text.split("\n")
+    rec = {"applied": 0, "skipped": 0, "guarded": 0, "seconds": 0, "cost_usd": 0}
+    for f in rows[-1].get("fixes") or []:
+        n, phrase, fix = f["line"], str(f.get("phrase") or ""), str(f.get("fix") or "")
+        if for_author(f, text) or not review_screen.literal(fix) or not phrase \
+                or not 0 < n <= len(lines) or lines[n - 1].count(phrase) != 1:
+            rec["skipped"] += 1
+            continue
+        if fix_guard.reasons(phrase, fix, lines[n - 1], text):
+            rec["guarded"] += 1
+            continue
+        lines[n - 1] = fix_guard.fit_particle(lines[n - 1], phrase, fix)
+        rec["applied"] += 1
+    rec["text"] = "\n".join(lines)
+    return rec
+
+
 def revise(names: list[str]) -> None:
     for name in names:
         for i, d in enumerate(load_drafts()):
@@ -168,6 +262,22 @@ def revise(names: list[str]) -> None:
                 if name in ("ours", "ours-noinvent", "l1only"):
                     work = OUT / (f"work/{i:02d}" if name == "ours" else f"work-{name}/{i:02d}")
                     rec = revise_ours(d["text"], work, mode=name)
+                elif name == "ours2":
+                    rec = revise_ours2(d["text"], OUT / f"work-{name}/{i:02d}")
+                elif name == "ours2-apply":
+                    rec = revise_apply(d["text"], OUT / f"work-{name}/{i:02d}")
+                elif name == "ours3-apply":
+                    rec = revise_apply_guarded(d["text"], OUT / f"work-ours2-apply/{i:02d}/r0-l2/judge.jsonl")
+                elif name == "plain-claude-apply3":
+                    rec = revise_apply_guarded(revised("plain-claude", i, load_drafts()),
+                                               OUT / f"work-plain-claude-apply/{i:02d}/r0-l2/judge.jsonl")
+                elif name in ("plain-claude-ours2", "plain-claude-apply"):
+                    # Claude 단순 요청으로 고친 글 위에 검사기를 얹음 — 검사기가 단순 요청에 더하는 몫을 잼(2026-11-03)
+                    base = revised("plain-claude", i, load_drafts())
+                    if base is None:
+                        raise RuntimeError("plain-claude 결과 없음")
+                    run = revise_ours2 if name == "plain-claude-ours2" else revise_apply
+                    rec = run(base, OUT / f"work-{name}/{i:02d}")
                 else:
                     vendor, model, system = REWRITERS[name]
                     system = system or (systems.imnotai_system().split("사용자가 줄 번호")[0]
@@ -246,7 +356,8 @@ def score(bases: tuple[str, ...] = ("ours",)) -> dict:
     table: dict = {"판정": {}, "고쳐 쓰기 비용": {}}
     for base in bases:
         score_base(base, ds, table)
-    for name in ["ours", "ours-noinvent", "l1only"] + RIVALS[1:]:
+    for name in ["ours", "ours-noinvent", "l1only", "ours2", "ours2-apply", "plain-claude-ours2",
+                 "plain-claude-apply", "ours3-apply", "plain-claude-apply3"] + RIVALS[1:]:
         c = collections.Counter()
         for i, d in enumerate(ds):
             f = OUT / f"revised/{name}/{i:02d}.json"
