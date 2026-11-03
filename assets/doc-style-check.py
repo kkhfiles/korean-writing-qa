@@ -1476,6 +1476,10 @@ def spacing_hits(text, taken=()):
         before, c = m.group(1), m.group(2)
         if _jong(c) != 8 or (not before and c in SU_NOUN_HEAD) or m.start(2) in taken:
             continue
+        if c == '일':   # 「근무일수 없음」(날수)은 정상 — 「줄일수 있다」와 글자로 못 가름(2026-11-03 검토)
+            out.append(('warn', c + '수', c + ' 수', m.start(2),
+                        '띄어쓰기 의심 — 「근무일수」처럼 날수면 정상, 「줄일 수 있다」면 띄어 씀'))
+            continue
         out.append(('err', c + '수', c + ' 수', m.start(2),
                     '띄어쓰기 — 의존 명사 「수」는 앞말과 띄어 씀'))
     if not _SPACED_HA.search(text):

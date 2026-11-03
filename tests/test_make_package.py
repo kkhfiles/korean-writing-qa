@@ -49,6 +49,16 @@ class MakePackageTests(unittest.TestCase):
                         if owner:
                             self.assertIsNone(owner.search(line), line)
 
+    def test_owner_name_is_caught_before_a_korean_particle(self) -> None:
+        """「\\b」는 한글도 낱말 글자로 봐 「<계정>이 만든」을 놓쳤다(2026-11-03 검토)."""
+        from unittest import mock
+        done = subprocess.CompletedProcess([], 0, stdout="https://github.com/someone/repo.git\n")
+        with mock.patch.object(make_package.subprocess, "run", return_value=done):
+            owner = make_package.owner_pattern()
+        for line in ("개발자 someone이 만든", "someone의 저장소", "(someone)"):
+            self.assertIsNotNone(owner.search(line), line)
+        self.assertIsNone(owner.search("someones 와 nosomeone"))
+
     def test_install_guide_passes_the_checker(self) -> None:
         done = subprocess.run([sys.executable, "-X", "utf8", str(ROOT / "assets" / "doc-style-check.py"),
                                "--no-rules", str(ROOT / "scripts" / "package_agents.md")],

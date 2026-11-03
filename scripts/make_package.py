@@ -68,7 +68,8 @@ def owner_pattern() -> re.Pattern | None:
     url = subprocess.run(["git", "-C", str(REPO), "remote", "get-url", "origin"],
                          capture_output=True, text=True).stdout.strip()
     m = re.search(r"github\.com[:/]([A-Za-z0-9-]+)/", url)
-    return re.compile(rf"\b{re.escape(m.group(1))}\b", re.I) if m else None
+    # 「\b」는 한글도 낱말 글자로 봐서 「<계정>이」를 놓친다(2026-11-03 검토) — 영문과 숫자 기준 경계를 직접 씀
+    return re.compile(rf"(?<![A-Za-z0-9-]){re.escape(m.group(1))}(?![A-Za-z0-9-])", re.I) if m else None
 
 
 def anonymize(dest: Path) -> list[str]:
@@ -159,6 +160,8 @@ def main() -> int:
         rc = safety(dest)
         hits = []
         owner = owner_pattern()
+        if owner is None:   # 못 읽었다고 계정 검사를 건너뛰면 침묵이 합격이 된다
+            hits.append("(원격 주소에서 계정 이름을 못 읽어 계정 표기를 확인하지 못함)")
         for f in sorted(dest.rglob("*")):
             if f.is_file():
                 try:

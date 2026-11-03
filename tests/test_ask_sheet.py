@@ -364,6 +364,11 @@ class ShortAnswerTests(_SheetBase):
             self.assertEqual({"Q2": "시험 결과를 확인하고 끝냈습니다."}, got, f"「{reply}」")
             self.assertEqual(ask_sheet.FREE, ask_sheet.kind_of(got["Q2"]), "글로 적은 답을 결정으로 바꿨습니다")
 
+    def test_ordinal_is_not_read_as_a_numbered_answer(self) -> None:
+        """「3번째 …」를 3번의 글로 적은 답(「째 …」)으로 남기던 것(2026-11-03 검토) — 알아들을 수 없는 답으로 거절한다."""
+        with self.assertRaises(ValueError):
+            ask_sheet.parse_replies(["3번째 항목은 나중에 볼게요"])
+
     def test_a_numbered_free_answer_with_another_answer_on_the_line_is_refused(self) -> None:
         """글 안에서 「1 그대로」를 잘라 결정으로 읽으면 사람 말을 짐작한 것이다 — 한 줄에 하나씩 다시 받는다."""
         with self.assertRaises(ValueError):
