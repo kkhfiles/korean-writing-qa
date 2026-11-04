@@ -96,6 +96,22 @@ class TruncationTests(Base):
         seen = coverage.judged(coverage.doc_key(self.doc()), judge.LOG)
         self.assertEqual(len({coverage.line_key(l) for l in LINES}), len(seen))
 
+    def test_a_cut_answer_with_some_rows_read_is_still_split(self) -> None:
+        """끊긴 답에서 앞 행만 읽혀도 잘린 것 — 나머지가 조용히 빠지면 안 된다."""
+        class Partial(Backend):
+            def call(self, **kw):
+                self.calls.append(kw)
+                if len(self.calls) == 1:
+                    row = [{"line": 3, "phrase": "알 수", "category": "c", "fix": "파악할 수"}]
+                    return {"text": json.dumps(row, ensure_ascii=False), "model": "claude-opus-5-5",
+                            "usage": {"input_tokens": 2, "output_tokens": 16000}, "cost_usd": 0.4}
+                return {"text": "[]", "model": "claude-opus-5-5",
+                        "usage": {"input_tokens": 2, "output_tokens": 200}, "cost_usd": 0.05}
+        b = Partial()
+        rc, out = self.run_main([str(self.doc())], b)
+        self.assertEqual(0, rc, out)
+        self.assertEqual(3, len(b.calls), "앞 행만 읽힌 잘린 답을 정상으로 받았습니다")
+
     def test_a_short_cut_answer_fails_loudly(self) -> None:
         b = Backend(cut=1)
         rc, out = self.run_main([str(self.doc(LINES[:5]))], b)
@@ -116,6 +132,14 @@ class LevelTests(Base):
         self.assertEqual(judge.LEVELS["balanced"]["first"], (first["model"], first.get("effort")))
         self.assertEqual(judge.LEVELS["balanced"]["rejudge"], (b.calls[-1]["model"], b.calls[-1].get("effort")))
         self.assertNotIn(judge.THINKING_ENV, os.environ, "단계가 넣은 사고 깊이가 다음 호출로 새어 나갑니다")
+
+    def test_a_new_document_called_with_since_gets_the_first_pass_model(self) -> None:
+        """가지에서 새로 만든 문서는 처음부터 --since 로 불린다 — 대상이 있어도 첫 판정이다."""
+        b = Backend()
+        rc, out = self.run_main([str(self.doc(LINES[:5])), "--level", "balanced", "--since"], b)
+        self.assertEqual(0, rc, out)
+        self.assertEqual(judge.LEVELS["balanced"]["first"], (b.calls[-1]["model"], b.calls[-1].get("effort")),
+                         "처음 판정하는 문서를 재판정 모델로 불렀습니다")
 
     def test_an_explicit_model_wins_over_the_level(self) -> None:
         b = Backend()

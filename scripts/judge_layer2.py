@@ -412,10 +412,14 @@ TRUNCATED_OUTPUT = 15_900
 SPLIT_MIN_LINES = 20
 
 
-def truncated(r: dict, items: list) -> bool:
-    """답이 출력 한도에서 끊겼나 — 멈춘 까닭이 한도이거나, 한도 가까이 쓰고도 지적을 못 읽었으면."""
+def truncated(r: dict) -> bool:
+    """답이 출력 한도에서 끊겼나 — 멈춘 까닭이 한도이거나, 출력이 한도 가까이 찼으면.
+
+    지적을 몇 건 읽었어도 잘린 것으로 본다 — 끊긴 답에서 앞 행만 읽혀 나머지가 조용히 빠질 수 있다.
+    한도가 없는 경로에서 정상으로 길게 나온 답도 나눠 다시 부르게 되지만, 그 값은 호출이 늘 뿐 빠지는 것은 없다.
+    """
     out = int((r.get("usage") or {}).get("output_tokens") or 0)
-    return r.get("stop_reason") == "max_tokens" or (out >= TRUNCATED_OUTPUT and not items)
+    return r.get("stop_reason") == "max_tokens" or out >= TRUNCATED_OUTPUT
 
 
 def split_piece(piece: dict) -> list[dict]:
@@ -1768,7 +1772,7 @@ def judge(path: Path, model: str, timeout: float, backend, targets: list[int] | 
         save_system(key, system, rules_sha, made, started)
         # 잘린 답 — 지적을 받지 않고 묶음을 나눠 다시 부른다. 못 나누면 실패로 알린다(조용히 넘기면 그 줄들이
         # 판정된 것으로 남는다 · 2026-11-04 측정 문서의 첫 180줄이 지적 0건으로 기록됨)
-        if truncated(r, items):
+        if truncated(r):
             # ok=False — 성공한 호출의 「본 줄」만 판정된 것으로 센다(`coverage.judged`). 비용은 그대로 남긴다
             row.update(ok=False, truncated=True, error="출력 한도에 닿아 답이 잘림")
             halves = split_piece(piece)
@@ -2216,7 +2220,10 @@ def main(argv=None, backend=None) -> int:
                 return 6
         use_model = model
         if by_level:
-            use_model, thinking = lv["first" if targets is None else "rejudge"]
+            # 첫 판정인지는 「이 문서를 판정한 적이 있나」로 가른다 — 가지에서 새로 만든 문서는 처음부터
+            # --since origin/main 으로 불려 대상이 있어도 첫 판정이다(재판정 모델은 첫 판정 기준을 못 넘었다)
+            first = targets is None or not coverage.judged(key, LOG)
+            use_model, thinking = lv["first" if first else "rejudge"]
             if thinking:
                 os.environ[THINKING_ENV] = thinking
         try:
