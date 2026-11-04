@@ -11,6 +11,13 @@
 # 노션, 아티팩트, 슬라이드로 내보내는 순간의 검사는 이 값과 무관하게 돈다. 빼면 예전처럼 전부 검사한다.
 # check_scope = "shared"
 
+# 2층 판정의 검사 단계(선택) — 비우면 max. 판정 명령의 --level 과 환경 변수 KOREAN_QA_LEVEL 이 이 값보다 앞선다.
+#   max(최대)      첫 판정과 재판정 모두 Opus medium · 비용 한도 없음
+#   balanced(가성비) 첫 판정 Opus low · 재판정 Sonnet medium · 지적을 모아서 재판정 · 문서 한 건 1,000원 한도
+#   min(최소)      첫 판정과 재판정 모두 Sonnet medium · 모아서 재판정 · 500원 한도 · 일반 결함 회수가 낮음
+# 근거 측정은 runs/judge-effort-levels-20261104
+# check_level = "balanced"
+
 [[repo]]
 origin = "github.com/<소유자>/<저장소>"     # 원격 origin 주소 · https 와 ssh 를 같게 본다
 require = ["judgment", "lint"]   # lint — 이번 브랜치에서 새로 쓰거나 고친 줄의 1층 오류도 막음(빌드가 문체를 안 보는 저장소)

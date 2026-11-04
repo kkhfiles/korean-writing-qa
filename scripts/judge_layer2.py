@@ -98,6 +98,24 @@ read_doc = coverage.read_doc
 #: 한 번에 넘기는 줄 수 — 탐침에서 문서가 길어지면 회수가 흔들렸다(17 → 29건).
 #: 넘으면 제목 경계에서 나눈다.
 CHUNK_LINES = 180
+THINKING_ENV = "KOREAN_QA_JUDGE_THINKING"   # low · medium · high — 비우면 모델 기본값
+#: 검사 단계(2026-11-04 사용자 「최소비용 검사 - 최적 검사(가성비) - 최대 검사」) — 첫 판정과 재판정의
+#: (모델, 사고 깊이), 다른 줄 지적을 남긴 채 부르는 재판정을 막을지, 문서 한 건의 비용 한도(원).
+#: 근거 측정은 runs/judge-effort-levels-20261104 — 사고 깊이 high 는 세 모델 모두 medium 보다 낫지 않았다
+LEVEL_ENV = "KOREAN_QA_LEVEL"
+LEVELS = {
+    # 최대는 사고 깊이를 넘기지 않는다 — Opus 5.5 기본값(medium)으로 예전 판정기와 같은 호출
+    "max": {"first": ("opus", None), "rejudge": ("opus", None), "batch": False, "budget_won": None},
+    "balanced": {"first": ("opus", "low"), "rejudge": ("sonnet", "medium"), "batch": True, "budget_won": 1000},
+    "min": {"first": ("sonnet", "medium"), "rejudge": ("sonnet", "medium"), "batch": True, "budget_won": 500},
+}
+LEVEL_ALIASES = {"최대": "max", "가성비": "balanced", "최소": "min"}
+DEFAULT_LEVEL = "max"
+WON_PER_USD = 1400
+#: 같은 문서의 판정 사이가 이만큼 넘게 비면 다른 작업으로 보고 비용을 새로 센다
+WORK_GAP_S = 3 * 3600
+#: 판정 기록 한 줄에 함께 남길 것 — main 이 검사 단계와 한도 넘김 승인을 넣는다
+RUN_NOTES: dict = {}
 DEFAULT_MODEL = "opus"      # 점검표에서 Sonnet 은 일상 동사 묶음 4/7 · Opus 6/7
 #: Codex 쪽 기본 — 2026-10-02 대장 탐침 · 점검표를 Opus 와 나란히 잰 값(`docs/calibration-20260929.md`)
 #: astra-high 와 회수 · 헛짚음이 같고 5시간 한도는 4분의 1(탐침 1회 1~2% · astra 6~7%)
@@ -386,6 +404,35 @@ def support_lines(lines: list[str], want: list[int], keep: set[int]) -> list[int
             if s >= SUPPORT_MIN:
                 best[i] = max(best.get(i, 0.0), s)
     return sorted(sorted(best, key=lambda i: -best[i])[:SUPPORT_MAX])
+
+
+#: 출력이 이만큼 넘으면 잘린 것으로 본다 — 호출 경로의 한도(크레딧 경로 16,000)에 닿으면 답이 끊긴다
+TRUNCATED_OUTPUT = 15_900
+#: 이보다 짧은 묶음은 더 나누지 않고 실패로 알린다
+SPLIT_MIN_LINES = 20
+
+
+def truncated(r: dict, items: list) -> bool:
+    """답이 출력 한도에서 끊겼나 — 멈춘 까닭이 한도이거나, 한도 가까이 쓰고도 지적을 못 읽었으면."""
+    out = int((r.get("usage") or {}).get("output_tokens") or 0)
+    return r.get("stop_reason") == "max_tokens" or (out >= TRUNCATED_OUTPUT and not items)
+
+
+def split_piece(piece: dict) -> list[dict]:
+    """잘린 묶음을 앞뒤 반으로 — 줄 번호와 대상 줄은 그대로 이어 간다. 너무 짧으면 빈 목록."""
+    seen = piece["seen"]
+    first = int(str(piece["label"]).split("-")[0])
+    if len(seen) < SPLIT_MIN_LINES or piece.get("mode", "").startswith("window"):
+        return []
+    half = len(seen) // 2
+    out = []
+    for start, part in ((first, seen[:half]), (first + half, seen[half:])):
+        mine = [n for n in piece.get("mine") or [] if start <= n < start + len(part)]
+        if piece.get("mine") and not mine:
+            continue
+        out.append({"mine": mine, "document": numbered(part, start), "seen": part,
+                    "label": f"{start}-{start + len(part) - 1}", "mode": f"{piece.get('mode', 'chunk')}←잘림"})
+    return out
 
 
 def parts_for(lines: list[str], want: set[int] | None, mode: str, path: Path,
@@ -1666,6 +1713,7 @@ def judge(path: Path, model: str, timeout: float, backend, targets: list[int] | 
                "doc": str(path), "key": key,
                "sha256": hashlib.sha256("\n".join(piece["seen"]).encode("utf-8")).hexdigest()[:16],
                "lines": piece["label"], "model": model, "rules": rules_sha,
+               **RUN_NOTES,            # 검사 단계 · 비용 한도를 넘긴 승인(main 이 채움)
                "cache_ttl": ttl,       # 적용 전후 비용을 기록으로 가른다
                "format": probe.output_format(),   # 출력 형식을 기록으로 가른다(행 형식 기본 · 2026-10-20)
                "context": piece["mode"],
@@ -1690,9 +1738,13 @@ def judge(path: Path, model: str, timeout: float, backend, targets: list[int] | 
             # 게이트가 「지운 자리를 판정기가 봤나」를 이것으로 가른다
             row["deleted_seen"] = sorted({k for n in mine for k in info[n].get("deleted_keys") or [] if k})
             over = [n for n in mine if info[n]["round"] > REJUDGE_CAP]
+        # 사고 깊이 — 비우면 모델 기본값. 검사 단계 설정 측정(runs/judge-effort-levels-20261104)이 쓴다
+        thinking = os.environ.get(THINKING_ENV) or None
+        row["effort"] = thinking
         try:
             r = call_messages(model=model, system=system, user=user,
-                              max_tokens=12000, temperature=0, timeout=timeout)
+                              max_tokens=12000, temperature=0, timeout=timeout,
+                              **({"effort": thinking} if thinking else {}))
         except Exception as e:          # 실패도 기록한다 — 시간은 들었다
             row.update(ok=False, error=f"{type(e).__name__}: {e}"[:200],
                        seconds=round(time.time() - started, 1))
@@ -1714,6 +1766,18 @@ def judge(path: Path, model: str, timeout: float, backend, targets: list[int] | 
                    # 칸이 어긋난 행 — 늘면 행 형식을 `json` 으로 되돌린다(특히 Codex 백엔드는 안 쟀다)
                    malformed=probe.malformed(raw))
         save_system(key, system, rules_sha, made, started)
+        # 잘린 답 — 지적을 받지 않고 묶음을 나눠 다시 부른다. 못 나누면 실패로 알린다(조용히 넘기면 그 줄들이
+        # 판정된 것으로 남는다 · 2026-11-04 측정 문서의 첫 180줄이 지적 0건으로 기록됨)
+        if truncated(r, items):
+            # ok=False — 성공한 호출의 「본 줄」만 판정된 것으로 센다(`coverage.judged`). 비용은 그대로 남긴다
+            row.update(ok=False, truncated=True, error="출력 한도에 닿아 답이 잘림")
+            halves = split_piece(piece)
+            log_call(row)
+            calls.append(row)
+            if not halves:
+                raise RuntimeError(f"출력 한도에 닿아 {piece['label']}행 판정이 잘렸고 더 나눌 수 없습니다")
+            queue = halves + queue
+            continue
         asks, fixes = [], []
         hidden_before = hidden
         if want is not None:
@@ -1891,12 +1955,61 @@ def cost_report(by: str) -> None:
     print(f"  {'합계':<24}{tot[0]:>5}{tot[1]:>5}{tot[2] / 60:>9.1f}{tot[3]:>12,}{tot[4]:>11,}{tot[5]:>11.2f}")
 
 
+def personal_level() -> str | None:
+    """개인 설정 파일(발행 게이트가 읽는 개인 목록)의 `check_level` — 없거나 못 읽으면 None."""
+    p = Path(os.environ.get("KOREAN_QA_PUBLISH_REPOS")
+             or Path.home() / ".claude" / "data" / "catalog" / "local-publish-repos.toml")
+    if not p.is_file():
+        return None
+    try:
+        import tomllib
+        got = tomllib.loads(p.read_text(encoding="utf-8")).get("check_level")
+    except Exception:
+        return None
+    return str(got) if got else None
+
+
+def resolve_level(arg: str | None) -> str:
+    """명령 인자 → 환경 변수 → 개인 설정 → 기본값. 모르는 이름이면 ValueError."""
+    raw = arg or os.environ.get(LEVEL_ENV) or personal_level() or DEFAULT_LEVEL
+    name = LEVEL_ALIASES.get(raw, raw)
+    if name not in LEVELS:
+        raise ValueError(f"검사 단계 「{raw}」 를 모릅니다 — min(최소) · balanced(가성비) · max(최대)")
+    return name
+
+
+def work_spent(key: str, now: float | None = None) -> float:
+    """이 문서의 지금 작업 묶음에 쓴 판정 비용(달러) — 판정 사이가 `WORK_GAP_S` 넘게 비면 거기서 끊는다."""
+    now = now or time.time()
+    whens = []
+    if LOG.is_file():
+        for line in LOG.read_text(encoding="utf-8").splitlines():
+            try:
+                r = json.loads(line)
+            except ValueError:
+                continue
+            if r.get("key") == key and r.get("when"):
+                whens.append((float(r["when"]), float(r.get("cost_usd") or 0)))
+    spent, last = 0.0, now
+    for when, cost in sorted(whens, reverse=True):
+        if last - when > WORK_GAP_S:
+            break
+        spent, last = spent + cost, when
+    return spent
+
+
 def main(argv=None, backend=None) -> int:
     ap = argparse.ArgumentParser(description="2층 판정 호출 · 비용 기록")
     ap.add_argument("docs", nargs="*")
     ap.add_argument("--backend", choices=("auto", "claude", "codex"), default="auto",
                     help="auto 면 Claude → Codex 순서로 이 PC 에서 쓸 수 있는 쪽")
-    ap.add_argument("--model", help=f"기본 — Claude {DEFAULT_MODEL} · Codex {CODEX_MODEL}")
+    ap.add_argument("--model", help=f"기본 — Claude {DEFAULT_MODEL} · Codex {CODEX_MODEL} · 주면 검사 단계의 모델 선택을 덮음")
+    ap.add_argument("--level", help="검사 단계 — min(최소) · balanced(가성비) · max(최대). 비우면 환경 변수 "
+                                    f"{LEVEL_ENV}, 개인 설정 check_level, 기본값 {DEFAULT_LEVEL} 순")
+    ap.add_argument("--now", action="store_true",
+                    help="다른 줄에 처리 안 된 고칠 지적이 남아도 재판정 — 고치는 방향을 먼저 보는 중간 판정")
+    ap.add_argument("--over-budget", action="store_true",
+                    help="문서 비용 한도를 넘겨 판정 — --note 에 사용자 승인 원문 필수")
     ap.add_argument("--timeout", type=float, default=900)
     ap.add_argument("--json", help="지적을 JSON 으로도 씀")
     ap.add_argument("--since", metavar="REF", nargs="?", const="HEAD",
@@ -2036,6 +2149,21 @@ def main(argv=None, backend=None) -> int:
         return 1 if left and a.fixes else 0
     name = pick_backend(a.backend)
     model = a.model or (CODEX_MODEL if name == "codex" else DEFAULT_MODEL)
+    try:
+        level = resolve_level(a.level)
+    except ValueError as e:
+        print(f"⛔ {e}")
+        return 2
+    if a.over_budget and not a.note.strip():
+        print("⛔ --over-budget 은 --note 에 사용자 승인 원문이 있어야 합니다 — 한도를 넘긴 까닭이 기록에 남게")
+        return 2
+    lv = LEVELS[level]
+    # --model 이나 사고 깊이 환경 변수를 직접 주면(측정 도구) 단계의 모델 선택을 쓰지 않는다 · Codex 는 단계 밖
+    by_level = not a.model and name == "claude" and not os.environ.get(THINKING_ENV)
+    RUN_NOTES.clear()
+    RUN_NOTES["level"] = level
+    if a.over_budget:
+        RUN_NOTES["over_budget"] = a.note.strip()[:300]
     backend = backend or (load_backend(name) if name else None)
     if backend is None:
         print("⛔ 2층 판정 호출을 못 합니다 — llm_playbook 이 없거나 Claude Code · Codex 둘 다 "
@@ -2065,12 +2193,41 @@ def main(argv=None, backend=None) -> int:
                                                        coverage.deleted_seen(key, LOG)))
             if not in_git:
                 print(f"  {p.name} — git 밖 문서라 갈라진 지점이 없습니다 · 아직 판정 안 한 한글 줄을 모두 봅니다")
+        key = coverage.doc_key(p)
+        # 비용 한도 — 닿으면 판정하지 않고 「검사 미완료」로 남긴다(통과가 아니다 · 2026-11-04 astra 검토)
+        budget = lv["budget_won"]
+        if budget and not a.over_budget:
+            spent = work_spent(key) * WON_PER_USD
+            if spent >= budget:
+                print(f"⛔ {p.name} — 이 문서 작업에 판정 비용 {spent:,.0f}원을 써 「{level}」 단계 한도 {budget:,}원에 "
+                      "닿았습니다 · 검사 미완료")
+                print("   남은 줄은 판정하지 않았습니다(발행과 push 게이트가 계속 막습니다) — 사람이 확인하거나, "
+                      "사용자가 승인하면 --over-budget --note \"승인 원문\"")
+                return 5
+        # 모아서 판정 — 다른 줄에 처리 안 된 고칠 지적이 남았으면 재판정을 미룬다(사람 확인은 세지 않음)
+        if lv["batch"] and targets is not None and not a.now:
+            want = set(targets)
+            left = [n for n, _ in coverage.open_fixes(key, read_doc(p).splitlines(), LOG) if n not in want]
+            if left:
+                print(f"⛔ {p.name} — 다른 줄에 처리 안 된 고칠 지적 {len(left)}건(행 {', '.join(map(str, left[:8]))}"
+                      f"{' …' if len(left) > 8 else ''})이 남아 재판정을 미뤘습니다")
+                print("   지적을 모두 고치거나 --dismiss · --escalate 로 처리한 뒤 한 번에 다시 판정합니다 — "
+                      "고치는 방향을 먼저 볼 중간 판정이면 --now")
+                return 6
+        use_model = model
+        if by_level:
+            use_model, thinking = lv["first" if targets is None else "rejudge"]
+            if thinking:
+                os.environ[THINKING_ENV] = thinking
         try:
-            results.append(judge(p, model, a.timeout, backend, targets, base, anchors, base_t, a.context))
+            results.append(judge(p, use_model, a.timeout, backend, targets, base, anchors, base_t, a.context))
         except Exception as e:
             print(f"⛔ 호출 실패 — {p.name}: {type(e).__name__}: {e}"[:300])
             print("   검사되지 않았습니다 — 세션이 규칙을 직접 읽고 판정합니다.")
             return 4
+        finally:
+            if by_level:    # 한 프로세스에서 main 을 여러 번 부르는 측정 도구가 다음 호출을 직접 지정으로 오해하지 않게
+                os.environ.pop(THINKING_ENV, None)
         show(results[-1])
         if rerun:
             print(f"  ⚠️ {p.name} 은 앞서 판정한 문서라 이번에 문서 전체를 다시 판정했습니다 — 고친 줄만 다시 보려면 "
