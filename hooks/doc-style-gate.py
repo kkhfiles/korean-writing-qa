@@ -639,6 +639,60 @@ def publish_config(repo):
     return personal_publish(repo)
 
 
+#: 문서가 스스로 밝히는 읽는 사람 — 마크다운 머리말 `audience: share|me`, HTML `<meta name="audience" content="…">`
+AUDIENCE_MD = re.compile(r"^audience:\s*(share|me)\s*$", re.M | re.I)
+AUDIENCE_HTML = re.compile(r"<meta\s+name=[\"']audience[\"']\s+content=[\"'](share|me)[\"']", re.I)
+
+
+def check_scope():
+    """개인 목록의 `check_scope` — `"shared"` 면 공유·배포 문서만 쓰는 순간에 검사한다 · 없으면 None.
+
+    **개인 설정인 까닭** — 기본값을 바꾸면 이 훅을 설치한 다른 사람의 검사가 조용히 꺼진다. 작성자는
+    「나한테만 보여 주는 것은 검사하지 말고 배포나 공유 목적으로 작성할 때만」(2026-11-04)이라 이 PC 에서만 켠다.
+    """
+    if not PERSONAL_PUBLISH.is_file():
+        return None
+    try:
+        import tomllib
+        got = tomllib.loads(PERSONAL_PUBLISH.read_text(encoding="utf-8")).get("check_scope")
+    except Exception:                   # 못 읽으면 예전처럼 전부 검사 — 검사가 조용히 꺼지는 쪽보다 낫다
+        return None
+    return got if got == "shared" else None
+
+
+def audience(path):
+    """`share`(배포·공유) · `me`(작성자만 봄) · None(개인 설정이 없어 예전처럼 전부 검사).
+
+    가르는 순서 — ① 문서가 밝힌 값 ② `[publish]` 를 켠 저장소의 발행 대상(무늬가 있으면 무늬 안)
+    ③ `[deploy]` 를 둔 사이트 폴더 ④ 그 밖은 `me`. 노션·아티팩트·슬라이드로 내보내는 순간은
+    이 판정과 무관하게 발행 게이트가 본다(`mode == "always"`).
+    """
+    try:
+        head = Path(path).read_text(encoding="utf-8", errors="ignore")[:4000]
+    except OSError:
+        head = ""
+    m = AUDIENCE_MD.search(head) or AUDIENCE_HTML.search(head)
+    if m:
+        return m.group(1).lower()
+    if check_scope() != "shared":
+        return None
+    p = Path(path).resolve()
+    got = _git(p.parent, "rev-parse", "--show-toplevel")
+    if got.returncode == 0:
+        repo = Path(got.stdout.decode("utf-8", "replace").strip())
+        conf = publish_config(repo)
+        if isinstance(conf, dict):
+            try:
+                rel = p.relative_to(repo.resolve()).as_posix()
+            except ValueError:
+                rel = p.name
+            if not conf["targets"] or matches(rel, conf["targets"]):
+                return "share"
+    if isinstance(deploy_config(p.parent), tuple):
+        return "share"
+    return "me"
+
+
 def matches(rel, patterns):
     """뿌리 기준 경로가 무늬와 맞나 — 칸(`/`) 수까지 같아야 한다.
 
@@ -1809,6 +1863,11 @@ def _main(payload):
 
     files, errors_only, mode = targets(payload)
     korean_files = korean_targets(payload)
+    # 쓰는 순간의 검사는 공유·배포 문서만(개인 설정 `check_scope = "shared"` · 2026-11-04) — 발행 순간(always)은 그대로
+    if mode == "once":
+        files = [fp for fp in files if audience(fp) != "me"]
+    if (payload.get("hook_event_name") or "") == "PostToolUse":
+        korean_files = [fp for fp in korean_files if audience(fp) != "me"]
     if not files and not korean_files:
         return 0
 

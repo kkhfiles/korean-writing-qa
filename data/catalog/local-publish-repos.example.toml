@@ -6,6 +6,11 @@
 # 쓰는 법 — 이 파일을 local-publish-repos.toml 로 복사해 고친 뒤 `python install.py`
 #   (설치 폴더 ~/.claude/data/catalog/ 로 복사된다). 실제 목록은 gitignore 대상이다.
 
+# 쓰는 순간의 검사를 공유·배포 문서만으로 좁힐 때(선택) — 공유 문서는 아래 발행 대상, [deploy] 를 둔 사이트 폴더,
+# 머리말 `audience: share`(HTML 은 <meta name="audience" content="share">)인 문서. 그 밖은 쓸 때 검사하지 않는다.
+# 노션, 아티팩트, 슬라이드로 내보내는 순간의 검사는 이 값과 무관하게 돈다. 빼면 예전처럼 전부 검사한다.
+# check_scope = "shared"
+
 [[repo]]
 origin = "github.com/<소유자>/<저장소>"     # 원격 origin 주소 · https 와 ssh 를 같게 본다
 require = ["judgment", "lint"]   # lint — 이번 브랜치에서 새로 쓰거나 고친 줄의 1층 오류도 막음(빌드가 문체를 안 보는 저장소)
