@@ -179,6 +179,8 @@ def with_effort(backend, state: dict):
     def call_with(**kw):
         if state.get("effort"):
             kw["effort"] = state["effort"]
+        if state.get("model"):
+            kw["model"] = state["model"]
         return call(**kw)
     return call_with, parse
 
@@ -528,7 +530,8 @@ def reclosed(dismissals: Path) -> int:
 def run_session(folder: Path, flagged: list[dict], clean: list[dict], edits: list[dict], mode: str = "batch",
                 max_calls: int = 60, backend=None, echo=None, context: str = judge.DEFAULT_CONTEXT,
                 instructions: bool = False, reuse0: Path | None = None, traps: list[dict] = (),
-                effort: str | None = None) -> dict:
+                effort: str | None = None, model: str | None = None,
+                first_model: str | None = None, first_effort: str | None = None) -> dict:
     """세션처럼 처리하며 고리를 돈다 — 실사용 흐름 재생(외부 검토의 둘째 트랙). 「전부 적용」은 스트레스 시험이다.
 
     0회차를 처리한 뒤 사용자 지시 편집을 넣는다. `batch` 는 열린 지적을 다 처리하고 다시 판정하고, `one` 은 글을
@@ -560,7 +563,7 @@ def run_session(folder: Path, flagged: list[dict], clean: list[dict], edits: lis
     by_id = {m["id"]: n for n, m in meta.items()}
     trap_at = {by_id[t["target"]]: t for t in traps}
     effort_state: dict = {}
-    if effort:
+    if effort or model or first_model or first_effort:
         backend = with_effort(backend or judge.load_backend(judge.pick_backend("auto")), effort_state)
     started = rejudge_started = time.time()
     with isolated(folder), watch_limits(limits):
@@ -570,7 +573,8 @@ def run_session(folder: Path, flagged: list[dict], clean: list[dict], edits: lis
                 break
             out = folder / f"round{rnd}.json"
             argv = [str(doc), "--json", str(out)] + (["--since", "main", "--context", context] if rnd else [])
-            effort_state["effort"] = effort if rnd else None
+            effort_state["effort"] = effort if rnd else first_effort
+            effort_state["model"] = model if rnd else first_model
             if rnd == 0 and reuse0:
                 copy_round0(reuse0, folder, doc)
                 rc = 0
@@ -657,7 +661,8 @@ def run_session(folder: Path, flagged: list[dict], clean: list[dict], edits: lis
              "5시간 사용률 변화": round(five[-1] - five[0], 2) if len(five) > 1 else None,
              "7일 사용률": [week[0], week[-1]] if week else None,
              **stage_totals(rows), "재판정 걸린 시간": rejudge_elapsed,
-             "0회차 재사용": str(reuse0) if reuse0 else None, "재판정 사고 깊이": effort,
+             "0회차 재사용": str(reuse0) if reuse0 else None, "재판정 사고 깊이": effort, "재판정 모델": model, "첫 판정 모델": first_model,
+             "첫 판정 사고 깊이": first_effort,
              "함정": len(trap_at)}
     if trap_at:
         total["재판정 함정 회수"] = len(caught)
@@ -780,6 +785,10 @@ def main(argv=None) -> int:
     r.add_argument("--traps", action="store_true", help="session 에서 0회차 뒤 재판정 함정을 심음(3판)")
     r.add_argument("--rejudge-effort", choices=("low", "medium", "high"), default=None,
                    help="session 의 1회차부터 호출에만 주는 사고 깊이")
+    r.add_argument("--rejudge-model", default=None, help="session 의 1회차부터 호출에만 쓰는 모델(sonnet · haiku)")
+    r.add_argument("--first-model", default=None, help="session 의 0회차(첫 판정)에만 쓰는 모델")
+    r.add_argument("--first-effort", choices=("low", "medium", "high"), default=None,
+                   help="session 의 0회차(첫 판정)에만 주는 사고 깊이")
     c = sub.add_parser("compare", help="미리 적은 규칙으로 두 이름을 견줌")
     c.add_argument("base")
     c.add_argument("cand")
@@ -804,7 +813,8 @@ def main(argv=None) -> int:
             echo = lambda s: print(s, flush=True)  # noqa: E731
             got = (run_session(folder, flagged, clean, load_edits(), a.mode, a.max_calls, echo=echo, context=a.context,
                                instructions=a.instructions, reuse0=a.reuse0,
-                               traps=load_traps() if a.traps else (), effort=a.rejudge_effort)
+                               traps=load_traps() if a.traps else (), effort=a.rejudge_effort,
+                               model=a.rejudge_model, first_model=a.first_model, first_effort=a.first_effort)
                    if a.policy == "session"
                    else run_once(folder, flagged, clean, a.policy, a.rounds, echo=echo, context=a.context))
             print(json.dumps(got["total"], ensure_ascii=False), flush=True)

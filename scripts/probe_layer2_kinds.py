@@ -524,8 +524,10 @@ def chunks(document: str) -> list[tuple[int, int]]:
 
 
 def run_arm(arm: str, model: str, timeout: float, document: str,
-            items: list[dict], backend: str = "claude", rules: str | None = None) -> dict:
-    """`rules` 를 주면 그 규칙 글로 보낸다 — 규칙 글 비교(축약본 등)용. 인용 채점도 그 글로 한다."""
+            items: list[dict], backend: str = "claude", rules: str | None = None,
+            effort: str | None = None, max_tokens: int = 8000) -> dict:
+    """`rules` 를 주면 그 규칙 글로 보낸다 — 규칙 글 비교(축약본 등)용. 인용 채점도 그 글로 한다.
+    `effort` 는 사고 깊이 — 안 주면 모델 기본값(Opus 5.5 · Haiku 5.5 medium, Sonnet 5.5 high)."""
     call_messages, parse_json = load_client(backend)
     # 조립은 `rules_for` 한 곳에서만 한다. 두 곳이면 인용 채점이 보는 글과
     # 실제로 보낸 글이 어긋나고, 어긋나도 아무 데서도 안 걸린다.
@@ -539,17 +541,20 @@ def run_arm(arm: str, model: str, timeout: float, document: str,
     with tempfile.TemporaryDirectory() as d:
         (Path(d) / "doc.md").write_text(document, encoding="utf-8")
         note = rare_note(Path(d) / "doc.md")
-    findings, cost, usages, models = [], 0.0, [], set()
+    findings, cost, usages, models, cut = [], 0.0, [], set(), 0
     for a, b in chunks(document):
         part = "\n".join(f"{n:>3} | {line}" for n, line in enumerate(lines[a:b], a + 1))
         result = call_messages(
             model=model,
             system=system_prompt().format(rules=rules),
             user=USER.format(document=part) + note,
-            max_tokens=8000,
+            max_tokens=max_tokens,
             temperature=0,
             timeout=timeout,
+            **({"effort": effort} if effort else {}),
         )
+        # 잘린 묶음 — 사고가 출력 한도를 다 쓰면 답이 끊겨 지적이 통째로 빠진다(2026-11-04 Haiku high)
+        cut += result.get("stop_reason") == "max_tokens"
         findings += as_findings(parse_json(result.get("text") or "") or [])
         cost += result.get("cost_usd") or 0.0
         usages.append(result.get("usage"))
@@ -558,7 +563,7 @@ def run_arm(arm: str, model: str, timeout: float, document: str,
     out.update({"arm": arm, "model": ", ".join(sorted(m for m in models if m)),
                 "cost_usd": cost, "findings": findings, "calls": len(usages),
                 "rules_chars": len(rules), "carrier_sha": carrier_sha(),
-                "backend": backend, "usage": usages})
+                "backend": backend, "usage": usages, "truncated": cut, "max_tokens": max_tokens})
     return out
 
 

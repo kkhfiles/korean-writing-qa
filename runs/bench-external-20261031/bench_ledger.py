@@ -58,12 +58,15 @@ def row(name: str, rep: int, out: dict, sec: float) -> dict:
             "heldout_tight": sum(1 for r in out["rows"] if r["source"] == "예비" and r["tight"]),
             "heldout_total": sum(1 for r in out["rows"] if r["source"] == "예비"),
             "cited": out["인용"], "uncited": out["비인용"], "said": out["said"], "extra": len(out["extra"]),
-            "cost_usd": round(out["cost_usd"], 4), "sec": round(sec)}
+            "cost_usd": round(out["cost_usd"], 4), "sec": round(sec),
+            "calls": out.get("calls"), "truncated": out.get("truncated"), "max_tokens": out.get("max_tokens")}
 
 
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--reps", type=int, default=2)
+    ap.add_argument("--max-tokens", type=int, default=8000,
+                    help="2층 묶음마다 출력 한도 — 판정기 본체는 12000(8000 이 아니면 결과 파일 이름에 붙음)")
     ap.add_argument("--arms", default="l2,plain-claude",
                     help="l2-narrow 는 고친 말의 범위를 좁힌 판정기(2026-11-03 · probe_layer2_kinds.FIX_SCOPE_ENV)")
     a = ap.parse_args()
@@ -74,15 +77,21 @@ def main() -> int:
     rows = []
     for rep in range(a.reps):
         for name in a.arms.split(","):     # 번갈아 — 캐시와 시간대 차이를 섞음
-            f = OUT / f"{name}-{rep}.json"
+            tag = "" if a.max_tokens == 8000 else f"-mt{a.max_tokens}"
+            f = OUT / f"{name}{tag}-{rep}.json"
             if f.exists():
                 rows.append(json.loads(f.read_text(encoding="utf-8"))["row"])
                 continue
             t = time.time()
             # 11-03 부터 판정기 기본값이 좁힌 수정안 — `l2` 는 넣기 전 판정기로 다시 냄
-            os.environ["KOREAN_QA_FIX_SCOPE"] = "narrow" if name == "l2-narrow" else "wide"
+            # `l2-sonnet`, `l2-haiku` 는 좁힌 판정기를 더 싼 모델로(2026-11-04 검사 단계 설정 측정)
+            os.environ["KOREAN_QA_FIX_SCOPE"] = "wide" if name == "l2" else "narrow"
+            # `l2-<모델>-<사고 깊이>` 는 사고 깊이를 명시한 칸(예: l2-opus-low)
+            parts = name.split("-")
+            model = {"l2-sonnet": "sonnet", "l2-haiku": "haiku"}.get(name, parts[1] if len(parts) == 3 else "opus")
+            effort = parts[2] if len(parts) == 3 else None
             out = (plain_arm(probe, doc, items) if name == "plain-claude"
-                   else probe.run_arm("guided", "opus", 600.0, doc, items))
+                   else probe.run_arm("guided", model, 600.0, doc, items, effort=effort, max_tokens=a.max_tokens))
             r = row(name, rep, out, time.time() - t)
             f.write_text(json.dumps({"row": r, "rows": out["rows"], "findings": out["findings"]},
                                     ensure_ascii=False, indent=1, default=str), encoding="utf-8")

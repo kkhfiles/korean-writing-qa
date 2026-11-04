@@ -196,13 +196,15 @@ def run_l1(lines: list[str], work: Path, front: list[str] = FRONT) -> Result:
 
 
 def run_l2(lines: list[str], work: Path, model: str = "opus", front: list[str] = FRONT,
-           scope: str = "wide") -> Result:
+           scope: str = "wide", thinking: str | None = None, name: str | None = None) -> Result:
     """2층 판정기를 격리한 기록 폴더로 부른다 — 쌓인 사용자 답이 프롬프트에 섞이지 않게.
     scope 는 고친 말의 범위(wide = 10-31 측정 때 판정기, narrow = 11-03 부터 기본값)."""
-    res = Result("l2" if scope == "wide" else f"l2-{scope}", model=model)
+    res = Result(name or ("l2" if scope == "wide" else f"l2-{scope}"), model=model)
     p = write_doc(lines, work, front)
     env = dict(os.environ)
     env["KOREAN_QA_FIX_SCOPE"] = scope
+    if thinking:
+        env["KOREAN_QA_JUDGE_THINKING"] = thinking
     for k, f in (("KOREAN_QA_JUDGE_LOG", "judge.jsonl"), ("KOREAN_QA_ANSWER_LOG", "answers.jsonl"),
                  ("KOREAN_QA_DECISION_LOG", "decisions.jsonl"), ("KOREAN_QA_DISMISS_LOG", "dismissals.jsonl"),
                  ("KOREAN_QA_INSTRUCTION_LOG", "instructions.jsonl")):
@@ -216,6 +218,11 @@ def run_l2(lines: list[str], work: Path, model: str = "opus", front: list[str] =
         res.error = (out.stderr or out.stdout)[-400:]
         return res
     log = work / "judge.jsonl"
+    # 판정 기록이 없으면 실패 — 판정기가 예외로 끝나도 종료 코드 1이라 위 조건을 통과했다(2026-11-04 측정 도중
+    # 판정기 파일을 고쳐 D2 160건 중 105건이 지적 0건으로 조용히 기록됨)
+    if not log.exists() or not log.read_text(encoding="utf-8").strip():
+        res.error = ("판정 기록 없음 — " + (out.stderr or out.stdout))[-400:]
+        return res
     for row in (json.loads(l) for l in log.open(encoding="utf-8") if l.strip()) if log.exists() else []:
         res.cost_usd = (res.cost_usd or 0) + float(row.get("cost_usd") or 0)
         res.in_tok += sum(int(row.get(k) or 0) for k in ("input_tokens", "cache_write", "cache_read"))
@@ -325,6 +332,9 @@ def run(name: str, lines: list[str], work: Path) -> Result:
         return run_l2(lines, work)
     if name == "l2-narrow":
         return run_l2(lines, work, scope="narrow")
+    if name.count("-") == 2 and name.startswith("l2-"):     # l2-<모델>-<사고 깊이>(2026-11-04 검사 단계 설정)
+        _, m, t = name.split("-")
+        return run_l2(lines, work, model=m, scope="narrow", thinking=t, name=name)
     if name in MODEL_SYSTEMS:
         return run_model(name, lines)
     if name == "kiwi-space":
