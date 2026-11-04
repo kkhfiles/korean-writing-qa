@@ -109,7 +109,10 @@ class WorktreePathTests(unittest.TestCase):
                 [sys.executable, "-X", "utf8", str(GATE), "--probe"],
                 input=json.dumps(payload, ensure_ascii=False), capture_output=True,
                 text=True, encoding="utf-8", timeout=180,
-                env={**os.environ, "KOREAN_QA_CHECKER": str(repo_paths.CHECKER)})
+                # 개인 목록은 안 읽힌다 — 이 PC 의 `check_scope = "shared"`(2026-11-04)가 작업자만 보는 문서의
+                # 쓰는 순간 검사를 끄면 이 시험이 그 설정을 재게 된다. 보려는 것은 설정 없는 기본값이다
+                env={**os.environ, "KOREAN_QA_CHECKER": str(repo_paths.CHECKER),
+                     "KOREAN_QA_PUBLISH_REPOS": str(base / "no-personal-list.toml")})
             self.assertIn("반말 서술형", done.stdout + done.stderr,
                           "작업 트리의 쓰기에 훅이 아무 말도 안 합니다")
         finally:
