@@ -846,7 +846,9 @@ def morph():
             import kiwipiepy
             shared = getattr(kiwipiepy, '_korean_qa_shared', None)
             if shared is None:
-                shared = kiwipiepy.Kiwi()
+                # 다어절 사전(multi.dict)은 끈다 — 첫 분석까지 1.4초 중 0.7초가 이 사전 읽기였고,
+                # 저장소 문서와 비교 측정 문서 출력 4,800줄에서 판정이 하나도 안 바뀌었다(2026-11-04)
+                shared = kiwipiepy.Kiwi(load_multi_dict=False)
                 kiwipiepy._korean_qa_shared = shared
             _KIWI = shared
         except Exception:
@@ -919,6 +921,61 @@ def vague_hits(text):
         for t in k.tokenize(_plain(line)):
             if t.tag == 'NP' and t.form in VAGUE_SOFT:
                 out.append(_Hit(start + t.start, t.form))
+    return out
+
+
+#: 형태소 분석기가 없을 때 — 낱말 첫머리에서만 본다(「아이들」, 「어린이들」 속 「이들」을 안 잡게)
+VAGUE_HARD_RE = re.compile(r'(?<![가-힣])(' + '|'.join(VAGUE_HARD) + ')')
+VAGUE_HARD_WARN = {
+    '우리나라': '「우리나라」 — 국내 독자만 읽으면 그대로, 해외 독자가 읽으면 「한국」',
+    '우리+명사': '「우리」가 뒷말과 붙음 — 「우리은행」 같은 이름이면 그대로, 「우리팀」처럼 소속을 가리키면 이름으로',
+}
+
+
+def hard_vague_hits(text):
+    """모호한 지칭 — [(등급 'err'|'warn', 걸린 말, 시작, 주의 까닭)].
+
+    ⛔ 글자로 찾으면 낱말 속 글자까지 잡는다 — 「아이들」, 「어린이들」, 「젊은이들」의 「이들」과
+       「우리은행」의 「우리」가 오류로 나가 발행을 막았다(2026-11-04 재검토). 「모든 이들」의 「이」는
+       사람을 뜻하는 의존 명사(NNB)라 지시어가 아니다. 그래서 대명사(NP)만 본다.
+    ⚠️ 「우리나라」(한 낱말)와 「우리」가 뒷말과 붙은 꼴은 주의 — 이름이거나 국내 독자 글이면 정상이다.
+    """
+    k = morph()
+    out, at = [], 0
+    for line in text.split('\n'):
+        start, at = at, at + len(line) + 1
+        if not VAGUE_HARD_RE.search(line):
+            continue
+        if k is None or len(line) > 600:
+            if k is None:
+                global FELL_BACK
+                FELL_BACK = True
+            for m in VAGUE_HARD_RE.finditer(line):
+                if line.startswith('우리나라', m.start()):
+                    out.append(('warn', '우리나라', start + m.start(), VAGUE_HARD_WARN['우리나라']))
+                else:
+                    out.append(('err', m.group(1), start + m.start(), ''))
+            continue
+        # 「이쪽, 그쪽, 저쪽」은 글자로 본다 — 분석기가 문맥에 따라 「그/MM + 쪽/NNB」로 쪼개 놓쳤고
+        # (2026-11-04), 낱말 첫머리에서 찾으면 오탐이 0건이었다(위 VAGUE_HARD 주석의 실측)
+        out += [('err', m.group(1), start + m.start(), '')
+                for m in VAGUE_HARD_RE.finditer(line) if m.group(1).endswith('쪽')]
+        toks = k.tokenize(_plain(line))
+        for i, t in enumerate(toks):
+            nxt = toks[i + 1] if i + 1 < len(toks) else None
+            glued = nxt is not None and nxt.start == t.start + t.len
+            if t.tag == 'NNG' and t.form == '우리나라':
+                out.append(('warn', t.form, start + t.start, VAGUE_HARD_WARN['우리나라']))
+            elif t.tag != 'NP':
+                continue
+            elif t.form == '우리':
+                if glued and nxt.tag.startswith('NN'):
+                    word = line[t.start:nxt.start + nxt.len]
+                    out.append(('warn', word, start + t.start, VAGUE_HARD_WARN['우리+명사']))
+                else:
+                    out.append(('err', '우리', start + t.start, ''))
+            elif glued and (t.form, nxt.form) in (('이', '들'), ('저', '들'), ('얘', '네'), ('쟤', '네')):
+                out.append(('err', t.form + nxt.form, start + t.start, ''))
     return out
 
 
@@ -2097,11 +2154,14 @@ def scan_html(path, relaxed=False, form=None, rules=None):
 
     # 2. 지시어·평가 수식어 — 코드·인용 구간은 뺀다
     text = mask(strip(body))
-    for w in VAGUE_HARD:
-        for m in re.findall(r'[^·\n]{0,26}' + w + r'[^·\n]{0,20}', text):
-            if is_example(m):
-                continue
+    for level, w, at, why in hard_vague_hits(text):
+        m = re.search(r'[^·\n]{0,26}$', text[:at]).group(0) + re.match(r'[^·\n]{0,20}', text[at:]).group(0)
+        if is_example(m):
+            continue
+        if level == 'err':
             err.append(('모호한 지칭', f'「{w}」 … {m.strip()[:58]}'))
+        else:
+            warn.append(('지시어 확인', f'{why} … {m.strip()[:40]}'))
     for w in SELF_PRAISE:
         for m in re.findall(r'[^·\n]{0,20}' + w + r'[^·\n]{0,22}', text):
             warn.append(('평가 수식어', f'「{w}」 … {m.strip()[:56]} — 무엇을 하는지로 바꿀 것'))
@@ -3237,9 +3297,11 @@ def scan_md(path, relaxed=False, form=None, rules=None):
         if s.startswith('>') or is_example(s):
             continue
         m = mask(line)
-        for w in VAGUE_HARD:
-            if w in m:
+        for level, w, _, why in hard_vague_hits(m):
+            if level == 'err':
                 err.append((n, '모호한 지칭', f'「{w}」 — {excerpt(line, w, 52)}'))
+            else:
+                warn.append((n, '지시어 확인', f'{why} — {excerpt(line, w, 40)}'))
         # 지시어 — 2026-09-18 부터 마크다운에서도 본다(위 VAGUE_SOFT 주석에 까닭).
         # 발췌는 **짚은 자리 둘레**를 낸다 — 줄머리를 내면 어디를 고칠지가 안 보인다.
         for hit in vague_hits(m):

@@ -272,3 +272,10 @@
 {"case_id": "C-273", "expect": "finding", "form": "prose", "kind": "맞춤법", "source": "2026-11-02 맞춤법 갈래", "status": "pinned", "text": "자료는 내일 보낼께요.", "why": "받침 ㄹ 뒤 어미는 예사소리 ㄹ게"}
 {"case_id": "C-274", "expect": "clean", "form": "prose", "kind": "맞춤법", "source": "2026-11-02 맞춤법 갈래", "status": "pinned", "text": "지역활성화 투자펀드는 오는 31일부로 종료합니다.", "why": "낱말 안의 역활과 숫자 뒤 일부로는 맞춤법 오류가 아님"}
 {"case_id": "C-275", "expect": "clean", "form": "prose", "kind": "맞춤법", "source": "2026-11-02 맞춤법 갈래", "status": "pinned", "text": "제작년도는 2020년이고 불길이 타올라 오는 15일께 선생님들께 알립니다.", "why": "같은 글자가 맞는 말로 쓰임: 제작년도, 타올라, 15일께, 들께"}
+{"case_id": "C-276", "expect": "clean", "form": "prose", "kind": "모호한 지칭", "source": "2026-11-04-재검토", "status": "pinned", "text": "아이들과 어린이집 교사들이 함께 참여했습니다.", "why": "「아이들」 속 「이들」은 지시어가 아님 — 글자로 찾아 오류로 냈음"}
+{"case_id": "C-277", "expect": "clean", "form": "prose", "kind": "모호한 지칭", "source": "2026-11-04-재검토", "status": "pinned", "text": "젊은이들이 지역에 머물 수 있도록 지원합니다.", "why": "「젊은이들」은 한 낱말 — 지시어 아님"}
+{"case_id": "C-278", "expect": "clean", "form": "prose", "kind": "모호한 지칭", "source": "2026-11-04-재검토", "status": "pinned", "text": "모든 이들이 혜택을 받도록 기준을 정했습니다.", "why": "「모든 이들」의 「이」는 사람을 뜻하는 의존 명사 — 지시 대명사 아님"}
+{"case_id": "C-279", "expect": "finding", "form": "prose", "kind": "모호한 지칭", "source": "2026-11-04-재검토", "status": "pinned", "text": "이들은 지난달 계약을 해지했습니다.", "why": "지시 대명사 「이들」 — 누구인지 이름으로"}
+{"case_id": "C-280", "expect": "finding", "form": "prose", "kind": "모호한 지칭", "source": "2026-11-04-재검토", "status": "pinned", "text": "저쪽 팀이 배포를 맡습니다.", "why": "위치로만 부른 지시어 — 팀 이름으로"}
+{"case_id": "C-281", "expect": "finding", "form": "prose", "kind": "모호한 지칭", "source": "2026-11-04-재검토", "status": "pinned", "text": "우리 제품은 이 기능을 지원하지 않습니다.", "why": "공유 문서의 「우리」 — 소속에 따라 뜻이 갈림"}
+{"case_id": "C-282", "expect": "finding", "form": "prose", "kind": "모호한 지칭", "source": "2026-11-04-재검토", "status": "pinned", "text": "고친 문장을 다시 써 보고(「훑어보고 보냅니다」), 그쪽이 바로 읽히면 고칩니다.", "why": "분석기가 「그 + 쪽」으로 쪼개도 「그쪽」은 지시어 — 글자로 봄"}

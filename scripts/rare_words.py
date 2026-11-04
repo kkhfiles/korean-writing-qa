@@ -295,7 +295,7 @@ def main():
             "   (구조 검사기는 이것 없이도 돕니다 — 형태소 판정만 글자로 내려갑니다.)")
     # 검사기와 같은 한 벌을 쓴다 — 시험은 한 프로세스에서 여러 도구를 불러 따로 띄우면 약 490MB 씩 쌓인다(2026-10-06)
     import kiwipiepy
-    kiwi = getattr(kiwipiepy, "_korean_qa_shared", None) or Kiwi()
+    kiwi = getattr(kiwipiepy, "_korean_qa_shared", None) or Kiwi(load_multi_dict=False)  # 검사기와 같은 설정
     kiwipiepy._korean_qa_shared = kiwi
 
     for path in args.paths:

@@ -54,7 +54,8 @@ def load() -> list[dict]:
 def save(records: list[dict]) -> None:
     CASES.parent.mkdir(parents=True, exist_ok=True)
     body = "\n".join(json.dumps(r, ensure_ascii=False, sort_keys=True) for r in records)
-    CASES.write_text(body + "\n", encoding="utf-8")
+    # 줄 끝은 LF — 안 정하면 Windows 에서 파일 전체가 CRLF 로 바뀌어 LF 시험이 깨진다(2026-11-04)
+    CASES.write_text(body + "\n", encoding="utf-8", newline="\n")
 
 
 def scan(text: str, form: str = "structured") -> tuple[list[str], list[str]]:

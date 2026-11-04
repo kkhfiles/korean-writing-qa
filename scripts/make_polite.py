@@ -78,7 +78,7 @@ def kiwi():
         import kiwipiepy
         shared = getattr(kiwipiepy, "_korean_qa_shared", None)
         if shared is None:
-            shared = kiwipiepy.Kiwi()
+            shared = kiwipiepy.Kiwi(load_multi_dict=False)  # 검사기와 같은 설정
             kiwipiepy._korean_qa_shared = shared
         _kiwi = shared
     return _kiwi

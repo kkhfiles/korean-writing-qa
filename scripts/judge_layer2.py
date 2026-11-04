@@ -1020,7 +1020,7 @@ def _lemmas(text: str) -> list[str]:
         import kiwipiepy
         _kiwi = getattr(kiwipiepy, "_korean_qa_shared", None)
         if _kiwi is None:
-            _kiwi = kiwipiepy._korean_qa_shared = kiwipiepy.Kiwi()
+            _kiwi = kiwipiepy._korean_qa_shared = kiwipiepy.Kiwi(load_multi_dict=False)  # 검사기와 같은 설정
     return [f"{t.form}/{t.tag}" for t in _kiwi.tokenize(text) if t.tag in FIX_TAGS and len(t.form) > 1]
 
 
