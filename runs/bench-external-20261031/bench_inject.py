@@ -13,15 +13,17 @@ from __future__ import annotations
 
 import argparse
 import collections
+import concurrent.futures
 import difflib
 import json
 import random
 import re
+import statistics
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
-from common import DATA, boot, cached_run, finding_range, hangul, overlaps  # noqa: E402
+from common import DATA, boot, cached_run, finding_range, hangul, is_local, overlaps  # noqa: E402
 import systems  # noqa: E402
 
 SRC = DATA / "public/docs.jsonl"
@@ -147,13 +149,14 @@ def built() -> list[dict]:
     return [json.loads(p.read_text(encoding="utf-8")) for p in sorted((OUT / "docs").glob("*.json"))]
 
 
-def run(names: list[str]) -> None:
-    for name in names:
-        for d in built():
-            for kind in ("clean", "injected"):
-                r = cached_run(name, d[kind], OUT / f"runs/{d['id']}/{kind}")
-                print(name, kind, d["id"], f"{r['seconds']:.0f}초", len(r["findings"]), r.get("error", "")[:80],
-                      flush=True)
+def run(names: list[str], jobs: int = 1) -> None:
+    def one(name, d, kind):
+        r = cached_run(name, d[kind], OUT / f"runs/{d['id']}/{kind}")
+        print(name, kind, d["id"], f"{r['seconds']:.0f}초", len(r["findings"]), r.get("error", "")[:80],
+              flush=True)
+    tasks = [(name, d, kind) for name in names for d in built() for kind in ("clean", "injected")]
+    with concurrent.futures.ThreadPoolExecutor(jobs) as ex:
+        list(ex.map(lambda t: one(*t), tasks))
 
 
 def key_of(f: dict) -> tuple:
@@ -170,6 +173,8 @@ def score(names: list[str] | None = None) -> dict:
     for name in names:
         rec = collections.defaultdict(dict)
         rec_net = collections.defaultdict(dict)
+        rec_strict = collections.defaultdict(dict)
+        quote_lens = []
         noise, cost = {}, collections.Counter()
         for d in docs:
             base = OUT / f"runs/{d['id']}"
@@ -185,10 +190,13 @@ def score(names: list[str] | None = None) -> dict:
                 if name == "l1":            # 결정론 — 원문에도 있던 지적은 심은 결함을 잡은 것이 아님
                     fl = [f for f in fl if key_of(f) not in clean_keys[x["line"]]]
                     hit = bool(fl)
-                    net = hit
+                    net = strict = hit
                 else:
                     span = tuple(x["span"]) if x["span"] else (0, len(x["after"]))
-                    hit = any(r and overlaps(span, r) for r in (finding_range(f, x["after"]) for f in fl))
+                    ranges = [r for r in (finding_range(f, x["after"]) for f in fl) if r]
+                    hit = any(overlaps(span, r) for r in ranges)
+                    # 엄격 — 여유 없이 겹치고 문장 전체를 인용하지 않은 지적만(2026-11-03 README 의 기준)
+                    strict = any(overlaps(span, r, 0) and is_local(r, x["after"]) for r in ranges)
                     # 보정 — 원문의 같은 위치를 원문에서도 짚었으면 심은 결함을 잡은 것인지 못 가름
                     back = changed_span(x["after"], x["before"]) or (0, len(x["before"]))
                     was = any(r and overlaps(back, r) for r in
@@ -198,6 +206,9 @@ def score(names: list[str] | None = None) -> dict:
                 rec[x["family"]][d["id"]] = (a + hit, b + 1)
                 a, b = rec_net[x["family"]].get(d["id"], (0, 0))
                 rec_net[x["family"]][d["id"]] = (a + net, b + 1)
+                a, b = rec_strict[x["family"]].get(d["id"], (0, 0))
+                rec_strict[x["family"]][d["id"]] = (a + strict, b + 1)
+            quote_lens += [len(f.get("quote") or "") for f in ri["findings"] if f.get("quote")]
             chars = sum(hangul(x) for x in d["clean"])
             noise[d["id"]] = (len(rc["findings"]), chars / 1000)
             for r in (ri, rc):
@@ -220,10 +231,15 @@ def score(names: list[str] | None = None) -> dict:
             "보정 회수율": {fam: boot(v) for fam, v in sorted(rec_net.items())}
                       | {"F1~F4": boot(merged(["F1", "F2", "F3", "F4"], rec_net)),
                          "전체": boot(merged(list(rec_net), rec_net))},
+            "회수율(엄격)": {"F1~F4": boot(merged(["F1", "F2", "F3", "F4"], rec_strict)),
+                          "전체": boot(merged(list(rec_strict), rec_strict))},
+            "인용 길이": {"중앙값": statistics.median(quote_lens) if quote_lens else None,
+                      "40자 넘음": round(sum(q > 40 for q in quote_lens) / len(quote_lens), 3) if quote_lens else None},
             "원문 지적 밀도(1천 자당)": boot(noise),
             "비용": {k: round(v, 4) for k, v in cost.items()},
             "_per_doc": {fam: v for fam, v in rec.items()} | {"F1~F4": merged(["F1", "F2", "F3", "F4"]),
                                                               "F1~F4 보정": merged(["F1", "F2", "F3", "F4"], rec_net),
+                                                              "F1~F4 엄격": merged(["F1", "F2", "F3", "F4"], rec_strict),
                                                               "noise": noise},
         }
     return table
@@ -235,6 +251,7 @@ def main() -> int:
     sub.add_parser("build")
     r = sub.add_parser("run")
     r.add_argument("names", nargs="+")
+    r.add_argument("--jobs", type=int, default=1)
     s = sub.add_parser("score")
     s.add_argument("--json")
     a = ap.parse_args()
@@ -242,7 +259,7 @@ def main() -> int:
         build()
         return 0
     if a.cmd == "run":
-        run(a.names)
+        run(a.names, a.jobs)
         return 0
     t = score()
     for name, v in t.items():

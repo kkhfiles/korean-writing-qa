@@ -195,11 +195,14 @@ def run_l1(lines: list[str], work: Path, front: list[str] = FRONT) -> Result:
     return res
 
 
-def run_l2(lines: list[str], work: Path, model: str = "opus", front: list[str] = FRONT) -> Result:
-    """2층 판정기를 격리한 기록 폴더로 부른다 — 쌓인 사용자 답이 프롬프트에 섞이지 않게."""
-    res = Result("l2", model=model)
+def run_l2(lines: list[str], work: Path, model: str = "opus", front: list[str] = FRONT,
+           scope: str = "wide") -> Result:
+    """2층 판정기를 격리한 기록 폴더로 부른다 — 쌓인 사용자 답이 프롬프트에 섞이지 않게.
+    scope 는 고친 말의 범위(wide = 10-31 측정 때 판정기, narrow = 11-03 부터 기본값)."""
+    res = Result("l2" if scope == "wide" else f"l2-{scope}", model=model)
     p = write_doc(lines, work, front)
     env = dict(os.environ)
+    env["KOREAN_QA_FIX_SCOPE"] = scope
     for k, f in (("KOREAN_QA_JUDGE_LOG", "judge.jsonl"), ("KOREAN_QA_ANSWER_LOG", "answers.jsonl"),
                  ("KOREAN_QA_DECISION_LOG", "decisions.jsonl"), ("KOREAN_QA_DISMISS_LOG", "dismissals.jsonl"),
                  ("KOREAN_QA_INSTRUCTION_LOG", "instructions.jsonl")):
@@ -312,7 +315,7 @@ def diff_findings(before: list[str], after: list[str]) -> list[dict]:
 
 # hunspell-ko 는 뺐다(2026-10-31) — 순수 파이썬 구현(spylls)이 한국어 사전의 ICONV 를 못 읽어 「회의」도 철자 오류로
 # 내고, 네이티브 바인딩(cyhunspell · hunspell)은 이 PC 에 컴파일러가 없어 설치가 안 됨. 함수는 다시 잴 때를 위해 둠
-SYSTEMS = ["l1", "l2", "plain-claude", "plain-gpt", "plain-argon", "plain-sol", "plain-flash", "imnotai-claude", "kiwi-space", "kobart-gec"]
+SYSTEMS = ["l1", "l2", "l2-narrow", "plain-claude", "plain-gpt", "plain-argon", "plain-sol", "plain-flash", "imnotai-claude", "kiwi-space", "kobart-gec"]
 
 
 def run(name: str, lines: list[str], work: Path) -> Result:
@@ -320,6 +323,8 @@ def run(name: str, lines: list[str], work: Path) -> Result:
         return run_l1(lines, work)
     if name == "l2":
         return run_l2(lines, work)
+    if name == "l2-narrow":
+        return run_l2(lines, work, scope="narrow")
     if name in MODEL_SYSTEMS:
         return run_model(name, lines)
     if name == "kiwi-space":
