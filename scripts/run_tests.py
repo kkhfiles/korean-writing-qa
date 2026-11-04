@@ -14,6 +14,7 @@
 """
 from __future__ import annotations
 
+import os
 import re
 import subprocess
 import sys
@@ -49,6 +50,19 @@ def prune(folder: Path, keep: int) -> None:
             pass                        # 다른 실행이 열고 있는 로그 — 다음에 지운다
 
 
+def isolated_env(tmp: Path) -> dict[str, str]:
+    """이 PC 의 개인 설정이 시험에 새지 않게 — 개인 목록은 없는 파일로, 검사 단계 환경 변수는 비움.
+
+    2026-11-04 에 개인 목록의 `check_scope = "shared"` 가 쓰는 순간 검사를 끄면서 훅 시험이 이 PC 에서만
+    두 차례 깨졌다(설정 없는 기본값을 보려던 시험이 그 설정을 쟀다). 개인 목록을 쓰는 시험은 이 값을 스스로 덮는다.
+    """
+    env = dict(os.environ)
+    env["KOREAN_QA_PUBLISH_REPOS"] = str(tmp / "no-personal-list.toml")
+    for k in ("KOREAN_QA_LEVEL", "KOREAN_QA_JUDGE_THINKING"):
+        env.pop(k, None)
+    return env
+
+
 def main(argv: list[str] | None = None) -> int:
     argv = sys.argv[1:] if argv is None else argv
     LOG_DIR.mkdir(parents=True, exist_ok=True)
@@ -57,8 +71,8 @@ def main(argv: list[str] | None = None) -> int:
     cmd = [sys.executable, "-X", "utf8", "-m", "unittest"]
     cmd += argv if argv else ["discover", "-s", "tests"]
     print(f"로그 — {log.as_posix()}", flush=True)
-    with log.open("w", encoding="utf-8", errors="replace") as f:
-        done = subprocess.run(cmd, cwd=ROOT, stdout=f, stderr=subprocess.STDOUT)
+    with log.open("w", encoding="utf-8", errors="replace") as f, tempfile.TemporaryDirectory() as tmp:
+        done = subprocess.run(cmd, cwd=ROOT, stdout=f, stderr=subprocess.STDOUT, env=isolated_env(Path(tmp)))
     lines = summarize(log.read_text(encoding="utf-8", errors="replace"))
     if not lines:
         lines = ["⚠️ 합계 줄을 못 찾았습니다 — 시험을 모으다 멈췄을 수 있습니다. 로그를 엽니다."]

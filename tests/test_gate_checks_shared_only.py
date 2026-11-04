@@ -25,13 +25,18 @@ HOOK = repo_paths.hook("doc-style-gate.py")
 
 
 def load(publish_file):
+    # 앞 값을 되돌린다 — 지우면 시험 실행기가 막아 둔 개인 목록을 뒤 시험이 다시 읽는다(scripts/run_tests.py)
+    before = os.environ.get("KOREAN_QA_PUBLISH_REPOS")
     os.environ["KOREAN_QA_PUBLISH_REPOS"] = str(publish_file)
     try:
         spec = importlib.util.spec_from_file_location("gate_scope", HOOK)
         mod = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(mod)
     finally:
-        os.environ.pop("KOREAN_QA_PUBLISH_REPOS", None)
+        if before is None:
+            os.environ.pop("KOREAN_QA_PUBLISH_REPOS", None)
+        else:
+            os.environ["KOREAN_QA_PUBLISH_REPOS"] = before
     return mod
 
 
