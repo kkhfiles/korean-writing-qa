@@ -1485,6 +1485,41 @@ def revived(item: dict, info: dict) -> str | None:
     return None
 
 
+_GATE: list = []
+
+
+def internal_doc(path: Path) -> bool:
+    """작성자만 보는 저장소 내부 문서인가 — 판정하지 않을 문서.
+
+    ⛔ 2026-11-05 세션이 발행 대상이 아닌 내부 기록(decisions-pending, runs/ 측정 기록)을 손으로 판정하고 지적을
+       조금씩 고쳐 다시 판정하다 재판정 상한을 넘겨 사용자에게 사람 확인을 넘겼다. 사용자 「내가 직접 보거나
+       공유하거나 문서화하거나 발표용으로 만들거나 게시하는게 아닌 문서를 쓸데없이 검사 안하도록 뭔가 장치를」.
+       훅은 이미 그 문서를 작성자용(`me`)으로 갈랐는데 판정기는 그것을 안 봤다.
+    가르는 것은 발행 게이트 훅과 같은 판정이다(`hooks/doc-style-gate.py` 의 `audience`). 셋 다 맞을 때만 내부 문서다.
+    - 이 PC 개인 목록이 `check_scope = "shared"`(작성자가 고른 개인 설정 — 다른 설치본은 그대로)
+    - 문서가 `[publish]` 대상을 밝힌 저장소 안에 있고 그 대상이 아님
+    - 머리말 `audience: share`(HTML 은 meta)가 없음
+    저장소 밖 파일(아티팩트 원고 등)은 해당하지 않는다 — 발행 직전 검사가 판정을 요구한다. 못 가르면 판정한다.
+    """
+    try:
+        if not _GATE:
+            import importlib.util
+            spec = importlib.util.spec_from_file_location("korean_qa_gate", HERE.parent / "hooks" / "doc-style-gate.py")
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)
+            _GATE.append(module)
+        gate = _GATE[0]
+        if gate.check_scope() != "shared" or gate.audience(str(path)) != "me":
+            return False
+        top = gate._git(path.resolve().parent, "rev-parse", "--show-toplevel")
+        if top.returncode != 0:
+            return False
+        conf = gate.publish_config(Path(top.stdout.decode("utf-8", "replace").strip()))
+        return isinstance(conf, dict) and bool(conf.get("targets"))
+    except Exception:
+        return False
+
+
 def kept_stems(text: str) -> dict[str, str]:
     """어간 → 그 어간이 든 어절. 용언은 한 음절도, 명사와 부사는 두 음절부터(「빌드」의 「드」 같은 조각을 뺀다)."""
     _lemmas("")                         # 형태소 분석기를 검사기와 같은 한 벌로 띄운다
@@ -2120,6 +2155,8 @@ def main(argv=None, backend=None) -> int:
     ap.add_argument("--model", help=f"기본 — Claude {DEFAULT_MODEL} · Codex {CODEX_MODEL} · 주면 검사 단계의 모델 선택을 덮음")
     ap.add_argument("--level", help="검사 단계 — min(최소) · balanced(가성비) · max(최대). 비우면 환경 변수 "
                                     f"{LEVEL_ENV}, 개인 설정 check_level, 기본값 {DEFAULT_LEVEL} 순")
+    ap.add_argument("--internal", action="store_true",
+                    help="발행 대상이 아닌 저장소 내부 문서(작성자만 봄)도 판정 — 기본은 건너뜀(internal_doc)")
     ap.add_argument("--now", action="store_true",
                     help="다른 줄에 처리 안 된 고칠 지적이 남아도 재판정 — 고치는 방향을 먼저 보는 중간 판정")
     ap.add_argument("--over-budget", action="store_true",
@@ -2264,6 +2301,14 @@ def main(argv=None, backend=None) -> int:
                 return 2
         left = sum(show_open_fixes(Path(d)) for d in a.docs)
         return 1 if left and a.fixes else 0
+    # 작성자만 보는 저장소 내부 문서는 판정하지 않는다 — 꼭 판정하려면 --internal(`internal_doc`)
+    inside = [] if a.internal else [d for d in a.docs if internal_doc(Path(d))]
+    for d in inside:
+        print(f"⏭ {Path(d).name} — 발행 대상이 아닌 저장소 내부 문서(작성자만 봄)라 판정하지 않았습니다. "
+              "공유할 문서면 머리말에 audience: share 를 적고, 그래도 판정하려면 --internal")
+    a.docs = [d for d in a.docs if d not in inside]
+    if inside and not a.docs:
+        return 0
     name = pick_backend(a.backend)
     model = a.model or (CODEX_MODEL if name == "codex" else DEFAULT_MODEL)
     try:
