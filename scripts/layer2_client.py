@@ -150,6 +150,11 @@ def call_messages(*, model: str, system: str | None, user: str | list[str], max_
     keys = metered_keys()
     if keys and key_choice() is None:
         raise ApiKeyChoiceNeeded(", ".join(keys))
+    # 옛 claude-agent-sdk 는 사고 깊이 인자를 모른다 — 버리면 측정한 단계와 다르게 돌아서 분명히 멈춘다
+    from claude_agent_sdk import ClaudeAgentOptions
+    if effort and "effort" not in getattr(ClaudeAgentOptions, "__dataclass_fields__", {"effort": None}):
+        raise RuntimeError("설치된 claude-agent-sdk 가 사고 깊이(effort)를 지원하지 않습니다 — "
+                           "python -m pip install -U claude-agent-sdk 뒤 다시 판정하거나 --level max 로 판정")
     return asyncio.run(_call(model, system, user, timeout, effort))
 
 
