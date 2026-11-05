@@ -16,6 +16,7 @@ import tempfile
 import time
 import unittest
 from pathlib import Path
+from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 import judge_layer2 as judge  # noqa: E402
@@ -60,6 +61,13 @@ class Base(unittest.TestCase):
         self.env = {k: os.environ.pop(k) for k in (judge.LEVEL_ENV, judge.THINKING_ENV, "KOREAN_QA_PUBLISH_REPOS")
                     if k in os.environ}
         os.environ["KOREAN_QA_PUBLISH_REPOS"] = str(self.dir / "no-personal-list.toml")
+        # 가짜 백엔드가 Claude 자리에 선다 — 검사 단계는 Claude 에만 걸리는데, Claude 가 설치되지 않은
+        # 기계(CI)에서는 자동 선택이 None 이라 단계가 빠졌다(2026-11-05 CI 에서만 깨짐)
+        real = judge.pick_backend
+        patcher = mock.patch.object(judge, "pick_backend",
+                                    lambda which="auto": "claude" if which == "auto" else real(which))
+        patcher.start()
+        self.addCleanup(patcher.stop)
 
     def tearDown(self) -> None:
         judge.LOG = self.saved

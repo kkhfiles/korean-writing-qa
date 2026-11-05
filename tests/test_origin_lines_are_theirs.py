@@ -58,7 +58,10 @@ class _Base(unittest.TestCase):
                         KOREAN_QA_DISMISS_LOG=str(self.dir / "dismissals.jsonl"),
                         KOREAN_QA_COVERAGE=str(ROOT / "scripts" / "layer2_coverage.py"),
                         KOREAN_CHECK_RECORD=str(self.dir / "store.jsonl"),
-                        KOREAN_QA_PUBLISH_REPOS=str(self.dir / "no-list.toml"))
+                        KOREAN_QA_PUBLISH_REPOS=str(self.dir / "no-list.toml"),
+                        # 시료의 지적은 「반말 서술형」(개인 기준)이다 — 개인 항목 스위치가 없는 기계(CI)에서도
+                        # 같은 기준으로 보게 고정한다(2026-11-02 그 갈래를 개인 기준으로 좁힌 뒤 CI 에서만 깨졌다)
+                        KOREAN_QA_PERSONAL_RULES="on")
         self.saved_log = judge.LOG
         judge.LOG = self.log
 
