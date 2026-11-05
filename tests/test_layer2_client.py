@@ -92,5 +92,109 @@ class FallbackTests(unittest.TestCase):
         self.assertEqual([], seen["tools"])
 
 
+class Fake:
+    """claude_agent_sdk 흉내 — 옵션과 호출 순간의 환경 변수를 남긴다."""
+
+    def __init__(self, stop="end_turn"):
+        self.seen = {}
+        seen = self.seen
+
+        class Opts:
+            def __init__(self, **kw):
+                seen["opts"] = kw
+
+        class Result:
+            is_error, result, usage, total_cost_usd, stop_reason = False, "[]", {}, 0.0, stop
+
+        async def query(prompt, options):
+            import os
+            seen["key_at_call"] = os.environ.get("ANTHROPIC_API_KEY")
+            yield Result()
+        self.module = unittest.mock.MagicMock(ClaudeAgentOptions=Opts, query=query, ResultMessage=Result,
+                                              AssistantMessage=type("A", (), {}), TextBlock=type("T", (), {}))
+
+    def call(self, **kw):
+        with unittest.mock.patch.dict(sys.modules, {"claude_agent_sdk": self.module}):
+            return layer2_client.call_messages(model="opus", system="s", user="문서", **kw)
+
+
+class LevelAndKeyTests(unittest.TestCase):
+    """2026-11-04 — 공개판이 사고 깊이를 버려 검사 단계가 모델만 바꿨고, API 키 환경 변수가 있으면 묻지 않고
+    그 키로 과금될 수 있었다(사용자 결정 「물어보게」)."""
+
+    def setUp(self) -> None:
+        import tempfile
+        self.tmp = tempfile.TemporaryDirectory()
+        self.env = unittest.mock.patch.dict("os.environ", {
+            "KOREAN_QA_API_KEY_CHOICE_FILE": str(Path(self.tmp.name) / "choice.json")}, clear=False)
+        self.env.start()
+        import os
+        for k in ("ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN", layer2_client.CHOICE_ENV):
+            os.environ.pop(k, None)
+
+    def tearDown(self) -> None:
+        self.env.stop()
+        self.tmp.cleanup()
+
+    def test_effort_reaches_the_cli_and_stop_reason_comes_back(self) -> None:
+        f = Fake(stop="max_tokens")
+        r = f.call(effort="low")
+        self.assertEqual("low", f.seen["opts"].get("effort"), "사고 깊이를 CLI 에 넘기지 않았습니다")
+        self.assertEqual("max_tokens", r["stop_reason"], "잘림 신호를 돌려주지 않았습니다")
+        f.call()
+        self.assertNotIn("effort", f.seen["opts"], "단계가 사고 깊이를 안 줬는데 넘겼습니다")
+
+    def test_an_api_key_without_a_choice_is_not_used(self) -> None:
+        import os
+        os.environ["ANTHROPIC_API_KEY"] = "dummy-value"
+        with self.assertRaises(layer2_client.ApiKeyChoiceNeeded):
+            Fake().call()
+
+    def test_subscription_hides_the_key_only_during_the_call(self) -> None:
+        import os
+        os.environ["ANTHROPIC_API_KEY"] = "dummy-value"
+        layer2_client.save_choice("subscription")
+        f = Fake()
+        f.call()
+        self.assertIsNone(f.seen["key_at_call"], "구독을 골랐는데 키가 CLI 로 넘어갔습니다")
+        self.assertEqual("dummy-value", os.environ.get("ANTHROPIC_API_KEY"), "호출 뒤 키를 되돌리지 않았습니다")
+
+    def test_api_choice_keeps_the_key(self) -> None:
+        import os
+        os.environ["ANTHROPIC_API_KEY"] = "dummy-value"
+        layer2_client.save_choice("api")
+        f = Fake()
+        f.call()
+        self.assertEqual("dummy-value", f.seen["key_at_call"])
+
+    def test_the_judge_stops_and_asks_once(self) -> None:
+        import contextlib
+        import io
+        import os
+        import tempfile
+        os.environ["ANTHROPIC_API_KEY"] = "dummy-value"
+        doc = Path(self.tmp.name) / "d.md"
+        doc.write_text("원인을 알 수 없었습니다.\n", encoding="utf-8")
+        f = Fake()
+        saved = judge.LOG
+        judge.LOG = Path(tempfile.mkdtemp()) / "calls.jsonl"
+        try:
+            out = io.StringIO()
+            with contextlib.redirect_stdout(out), unittest.mock.patch.dict(sys.modules, {"claude_agent_sdk": f.module}):
+                rc = judge.main([str(doc)], backend=(layer2_client.call_messages, layer2_client.parse_json_from_text))
+            self.assertEqual(7, rc, out.getvalue())
+            self.assertIn("--api-key-use", out.getvalue())
+            with contextlib.redirect_stdout(io.StringIO()), \
+                    unittest.mock.patch.dict(sys.modules, {"claude_agent_sdk": f.module}):
+                rc = judge.main([str(doc), "--api-key-use", "subscription"],
+                                backend=(layer2_client.call_messages, layer2_client.parse_json_from_text))
+                self.assertEqual(0, rc)
+                rc = judge.main([str(doc), "--since"],
+                                backend=(layer2_client.call_messages, layer2_client.parse_json_from_text))
+            self.assertEqual(0, rc, "한 번 고른 뒤에도 다시 물었습니다")
+        finally:
+            judge.LOG = saved
+
+
 if __name__ == "__main__":
     unittest.main()

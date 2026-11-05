@@ -2014,6 +2014,9 @@ def main(argv=None, backend=None) -> int:
                     help="다른 줄에 처리 안 된 고칠 지적이 남아도 재판정 — 고치는 방향을 먼저 보는 중간 판정")
     ap.add_argument("--over-budget", action="store_true",
                     help="문서 비용 한도를 넘겨 판정 — --note 에 사용자 승인 원문 필수")
+    ap.add_argument("--api-key-use", choices=("subscription", "api"),
+                    help="공개판에서 API 키 환경 변수가 있을 때 사용자가 고른 것을 남김 — subscription(판정 호출에서 "
+                         "키를 숨겨 구독으로) · api(키로 과금). 한 번 남기면 다시 묻지 않음")
     ap.add_argument("--timeout", type=float, default=900)
     ap.add_argument("--json", help="지적을 JSON 으로도 씀")
     ap.add_argument("--since", metavar="REF", nargs="?", const="HEAD",
@@ -2161,6 +2164,9 @@ def main(argv=None, backend=None) -> int:
     if a.over_budget and not a.note.strip():
         print("⛔ --over-budget 은 --note 에 사용자 승인 원문이 있어야 합니다 — 한도를 넘긴 까닭이 기록에 남게")
         return 2
+    if a.api_key_use:
+        import layer2_client
+        print(f"  API 키가 있을 때의 선택을 남김 — {a.api_key_use} · {layer2_client.save_choice(a.api_key_use)}")
     lv = LEVELS[level]
     # --model 이나 사고 깊이 환경 변수를 직접 주면(측정 도구) 단계의 모델 선택을 쓰지 않는다 · Codex 는 단계 밖
     by_level = not a.model and name == "claude" and not os.environ.get(THINKING_ENV)
@@ -2173,6 +2179,18 @@ def main(argv=None, backend=None) -> int:
         print("⛔ 2층 판정 호출을 못 합니다 — llm_playbook 이 없거나 Claude Code · Codex 둘 다 "
               "설치·로그인이 안 돼 있습니다. 판단 규칙과 9단계를 세션이 직접 읽고 판정합니다.")
         return 3
+    # 공개판 호출부 + API 키 환경 변수 — Claude Code 가 구독 대신 그 키로 과금하므로 사용자에게 먼저 묻는다
+    # (llm_playbook 이 있는 PC 는 그쪽이 키가 있으면 호출을 거절해 여기 오지 않는다 · 2026-11-04 사용자 결정)
+    if getattr(backend[0], "__module__", "") == "layer2_client":
+        import layer2_client
+        keys = layer2_client.metered_keys()
+        if keys and layer2_client.key_choice() is None:
+            print(f"⛔ 환경 변수 {', '.join(keys)} 가 있어 판정 호출이 구독이 아니라 그 API 키로 과금될 수 있습니다 — "
+                  "판정하지 않았습니다")
+            print("   사용자에게 묻고 답대로 한 번만 남깁니다(다음부터 묻지 않음):")
+            print("     구독으로 — 판정 호출에서만 키를 숨김: --api-key-use subscription")
+            print("     API 키로 과금 — --api-key-use api")
+            return 7
     results = []
     for d in a.docs:
         p = Path(d)

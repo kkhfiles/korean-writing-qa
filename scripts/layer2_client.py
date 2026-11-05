@@ -20,10 +20,51 @@ import os
 import re
 import shutil
 import tempfile
+from pathlib import Path
 from typing import Any
 
 #: 이보다 긴 시스템 프롬프트는 파일로 넘긴다 — llm_playbook 과 같은 값
 SYSTEM_PROMPT_INLINE_MAX = 8000
+#: 이 환경 변수가 있으면 Claude Code 가 구독 대신 그 키로 과금한다 — llm_playbook 은 이때 호출을 거절한다
+METERED_ENV = ("ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN")
+#: 과금 키가 있을 때 사용자가 고른 것 — subscription(판정 호출에서만 키를 숨겨 구독으로) · api(키로 과금)
+CHOICE_ENV = "KOREAN_QA_API_KEY_USE"
+CHOICES = ("subscription", "api")
+
+
+def choice_file() -> Path:
+    return Path(os.environ.get("KOREAN_QA_API_KEY_CHOICE_FILE")
+                or Path.home() / ".claude" / "state" / "korean-qa-api-key-choice.json")
+
+
+def metered_keys() -> list[str]:
+    """환경에 있는 과금 키 이름 — 값은 보지 않는다."""
+    return sorted(k for k in os.environ if k.upper() in METERED_ENV and os.environ.get(k))
+
+
+def key_choice() -> str | None:
+    """과금 키가 있을 때의 선택 — 환경 변수가 기록보다 앞선다. 고른 적이 없으면 None."""
+    got = os.environ.get(CHOICE_ENV)
+    if not got and choice_file().is_file():
+        try:
+            got = json.loads(choice_file().read_text(encoding="utf-8")).get("use")
+        except (OSError, ValueError):
+            got = None
+    return got if got in CHOICES else None
+
+
+def save_choice(use: str) -> Path:
+    """사용자가 고른 것을 남긴다 — 다음부터 묻지 않는다."""
+    if use not in CHOICES:
+        raise ValueError(f"「{use}」 — subscription 또는 api")
+    f = choice_file()
+    f.parent.mkdir(parents=True, exist_ok=True)
+    f.write_text(json.dumps({"use": use}, ensure_ascii=False), encoding="utf-8")
+    return f
+
+
+class ApiKeyChoiceNeeded(RuntimeError):
+    """과금 키가 있는데 사용자가 아직 고르지 않음 — 판정기가 세션에 묻게 한다."""
 _FENCE = re.compile(r"```(?:json)?\s*(.*?)```", re.S)
 
 
@@ -49,7 +90,8 @@ def _prompt(user: str | list[str]):
     return gen()
 
 
-async def _call(model: str, system: str | None, user: str | list[str], timeout: float) -> dict[str, Any]:
+async def _call(model: str, system: str | None, user: str | list[str], timeout: float,
+                effort: str | None = None) -> dict[str, Any]:
     from claude_agent_sdk import (AssistantMessage, ClaudeAgentOptions, ResultMessage,
                                   TextBlock, query)
     system_file = None
@@ -63,7 +105,7 @@ async def _call(model: str, system: str | None, user: str | list[str], timeout: 
     opts = ClaudeAgentOptions(model=model, system_prompt=system_prompt, permission_mode="dontAsk",
                               tools=[], allowed_tools=[], max_turns=1, setting_sources=[],
                               extra_args={"strict-mcp-config": None, "no-session-persistence": None},
-                              **({"cli_path": cli} if cli else {}))
+                              **({"cli_path": cli} if cli else {}), **({"effort": effort} if effort else {}))
     chunks: list[str] = []
     result = None
 
@@ -74,11 +116,15 @@ async def _call(model: str, system: str | None, user: str | list[str], timeout: 
                 chunks.extend(b.text for b in message.content if isinstance(b, TextBlock))
             elif isinstance(message, ResultMessage):
                 result = message
+    keys = metered_keys()
+    # 구독을 고른 사람 — CLI 가 뜨는 동안만 키를 이 프로세스 환경에서 뺀다(자식 프로세스가 물려받지 않게)
+    hidden = {k: os.environ.pop(k) for k in keys} if keys and key_choice() == "subscription" else {}
     try:
         await asyncio.wait_for(run(), timeout=timeout)
     except asyncio.TimeoutError as e:
         raise TimeoutError(f"claude-agent-sdk {timeout:.0f}초 안에 답 없음") from e
     finally:
+        os.environ.update(hidden)
         if system_file:
             try:
                 os.remove(system_file)
@@ -90,15 +136,21 @@ async def _call(model: str, system: str | None, user: str | list[str], timeout: 
         raise RuntimeError(f"Claude 호출 실패: {(result.result or '')[:200]}")
     usage = result.usage or {}
     return {"text": "".join(chunks) or (result.result or ""), "model": model,
-            "cost_usd": result.total_cost_usd,
+            "cost_usd": result.total_cost_usd, "stop_reason": getattr(result, "stop_reason", None),
             "usage": {k: int(usage.get(k) or 0) for k in ("input_tokens", "output_tokens",
                                                           "cache_creation_input_tokens", "cache_read_input_tokens")}}
 
 
 def call_messages(*, model: str, system: str | None, user: str | list[str], max_tokens: int = 4096,
-                  timeout: float = 300.0, **_) -> dict[str, Any]:
-    """한 턴 호출 — {"text", "model", "cost_usd", "usage"}. `max_tokens` 는 CLI 가 정해 받기만 한다."""
-    return asyncio.run(_call(model, system, user, timeout))
+                  timeout: float = 300.0, effort: str | None = None, **_) -> dict[str, Any]:
+    """한 턴 호출 — {"text", "model", "cost_usd", "stop_reason", "usage"}. `max_tokens` 는 CLI 가 정해 받기만 한다.
+
+    `effort` 는 사고 깊이 — 검사 단계가 넘긴다(2026-11-04 전에는 받기만 하고 버려 공개판에서 단계가 모델만 바꿨다).
+    """
+    keys = metered_keys()
+    if keys and key_choice() is None:
+        raise ApiKeyChoiceNeeded(", ".join(keys))
+    return asyncio.run(_call(model, system, user, timeout, effort))
 
 
 def parse_json_from_text(text: str):
