@@ -78,6 +78,9 @@ import layer2_coverage as coverage  # noqa: E402
 
 CHECKER = ROOT / "assets" / "doc-style-check.py"
 OUT = Path.home() / ".claude" / "state" / "korean-bench"
+#: 판정기 검사 단계를 max 로 고정한다 — 모델과 사고 깊이는 이 도구가 정하고, 비용 한도와 재판정 미룸은 측정할 대상이
+#: 아니다. 안 넘기면 이 PC 개인 목록의 단계를 따라, 가성비 단계의 1,000원 한도가 0회차에서 측정을 멈췄다(2026-11-05)
+PINNED_LEVEL = ("--level", "max")
 TOTAL = re.compile(r"합계 — 오류 (\d+) · 주의 (\d+)")
 #: 검사기 출력의 지적 줄 — 「   ❌ [갈래] 12행  …」 · 「   ⚠️ [갈래] 12행  …」
 CHECKER_HIT = re.compile(r"^\s*(?:❌|⚠️)\s*\[[^\]]+\]\s*(\d+)행")
@@ -330,7 +333,7 @@ def run_once(folder: Path, flagged: list[dict], clean: list[dict], policy: str =
     with isolated(folder), watch_limits(limits):
         for rnd in range(rounds + 1):
             out = folder / f"round{rnd}.json"
-            argv = [str(doc), "--json", str(out)] + (["--since", "main", "--context", context] if rnd else [])
+            argv = [str(doc), "--json", str(out), *PINNED_LEVEL] + (["--since", "main", "--context", context] if rnd else [])
             with contextlib.redirect_stdout(said):
                 rc = judge.main(argv, backend=backend)
             if rc != 0 or not out.is_file():
@@ -572,7 +575,7 @@ def run_session(folder: Path, flagged: list[dict], clean: list[dict], edits: lis
                 state = "호출 상한"
                 break
             out = folder / f"round{rnd}.json"
-            argv = [str(doc), "--json", str(out)] + (["--since", "main", "--context", context] if rnd else [])
+            argv = [str(doc), "--json", str(out), *PINNED_LEVEL] + (["--since", "main", "--context", context] if rnd else [])
             effort_state["effort"] = effort if rnd else first_effort
             effort_state["model"] = model if rnd else first_model
             if rnd == 0 and reuse0:

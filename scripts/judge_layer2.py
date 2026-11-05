@@ -417,9 +417,14 @@ def truncated(r: dict) -> bool:
 
     지적을 몇 건 읽었어도 잘린 것으로 본다 — 끊긴 답에서 앞 행만 읽혀 나머지가 조용히 빠질 수 있다.
     한도가 없는 경로에서 정상으로 길게 나온 답도 나눠 다시 부르게 되지만, 그 값은 호출이 늘 뿐 빠지는 것은 없다.
+    **구독 경로라고 밝힌 답은 멈춘 까닭만 본다** — 출력 길이 기준은 크레딧 경로의 16,000 한도에 맞춘 것이다. 구독
+    경로에서는 같은 묶음이 17,000~22,000토큰으로 끝까지 나오고(멈춘 까닭 end_turn) 그것을 잘림으로 보아 나눠 다시
+    부르느라 측정 한 회에 0.4~0.6달러(환산)를 더 썼다(2026-11-05).
     """
     out = int((r.get("usage") or {}).get("output_tokens") or 0)
-    return r.get("stop_reason") == "max_tokens" or out >= TRUNCATED_OUTPUT
+    if r.get("stop_reason") == "max_tokens":
+        return True
+    return r.get("billing") != "subscription" and out >= TRUNCATED_OUTPUT
 
 
 def split_piece(piece: dict) -> list[dict]:
@@ -1164,8 +1169,12 @@ def via_review(which: str, client):
     call, parse = client
 
     def call_review(*, model, system, user, max_tokens=4096, timeout=300.0, **kw):
+        # 사다리는 멈춘 까닭과 과금 경로를 돌려주지 않는다 — 잘림 판정(`truncated`)이 그 둘을 봐야 해서 따로 들고 나온다
+        raw: dict = {}
+
         def adapter(_alias, system_, user_, timeout_, _effort, max_tokens_, **_):
             r = call(model=model, system=system_, user=user_, max_tokens=max_tokens_, timeout=timeout_, **kw)
+            raw.update({k: r[k] for k in ("stop_reason", "billing") if r.get(k)})
             return r.get("text") or "", r.get("model") or model, {"cost_usd": r.get("cost_usd"),
                                                                     "usage": r.get("usage")}
         # 등급은 칸을 고르는 데만 쓴다 — 실제 모델은 위 `model` 이고 칸 별칭은 안 쓴다. 다만 칸의 별칭으로 사용량
@@ -1182,7 +1191,7 @@ def via_review(which: str, client):
             why = why or "; ".join(str(a.get("why")) for a in r.get("attempts") or [])
             raise RuntimeError(f"{which} {r.get('outcome')}{when} — {why}"[:300])
         return {"text": r["text"], "model": r.get("model") or model,
-                "cost_usd": r.get("cost_usd") if which == "claude" else None, "usage": r.get("usage")}
+                "cost_usd": r.get("cost_usd") if which == "claude" else None, "usage": r.get("usage"), **raw}
     return call_review, parse
 
 
@@ -1430,12 +1439,19 @@ def root_findings(key: str, info: dict[int, dict], before: float | None = None, 
        (2026-10-19 재생 · 사용자가 짚은 헛짚음 다섯 중 대부분이 「자동 수리」 · 「원문을 그대로 훑어」로 되돌림).
        사용자 지시를 알려 주자 지시 안 수정을 짚은 줄이 6→0 이 된 것과 같은 원리다(외부 검토 Argon · 10-20).
     `before` 가 있으면 그 시각 앞의 판정만 본다(재생이 그때 입력을 되살릴 때). `log` 는 판정 기록(기본 `LOG`).
+    근처에서 지운 줄의 고칠 지적은 `info[n]["gone_found"]` 에 따로 붙인다 — 줄을 크게 고치면 기준 판과 이어지지
+    않고 옛 줄이 지운 줄로 잡힌다. 재판정 입력에는 안 싣고 고친 줄에 남은 표현을 대조하는 데만 쓴다(`kept_flagged`).
     """
     by_key: dict[str, list[int]] = {}
+    gone_key: dict[str, list[int]] = {}
     for n, v in info.items():
         if v.get("root") and not v.get("anchor"):
             by_key.setdefault(coverage.line_key(v["root"]), []).append(n)
-    if not by_key:
+        if not v.get("anchor"):
+            for k in v.get("deleted_keys") or []:
+                if k:
+                    gone_key.setdefault(k, []).append(n)
+    if not by_key and not gone_key:
         return
     found: dict[str, list[dict]] = {}
     for row in coverage._rows(key, log or LOG, None, fresh=False):
@@ -1444,13 +1460,19 @@ def root_findings(key: str, info: dict[int, dict], before: float | None = None, 
         for fx in row.get("fixes") or []:
             k = fx.get("line_key")
             phrase = str(fx.get("phrase") or "").strip()
-            if k in by_key and phrase and phrase not in {f["phrase"] for f in found.get(k, [])}:
+            if (k in by_key or k in gone_key) and phrase \
+                    and phrase not in {f["phrase"] for f in found.get(k, [])}:
                 found.setdefault(k, []).append({"phrase": phrase, "fix": fx.get("fix") or "",
-                                                "category": fx.get("category") or ""})
+                                                "category": fx.get("category") or "", "line_key": k,
+                                                "text": fx.get("text") or ""})
     for k, ns in by_key.items():
         for n in ns:
             if found.get(k):
                 info[n]["root_found"] = found[k][:ROOT_FINDINGS_PER_LINE]
+    for k, ns in gone_key.items():
+        for n in ns:
+            if found.get(k):
+                info[n].setdefault("gone_found", []).extend(found[k][:ROOT_FINDINGS_PER_LINE])
 
 
 def revived(item: dict, info: dict) -> str | None:
@@ -1461,6 +1483,91 @@ def revived(item: dict, info: dict) -> str | None:
         if len(p) >= 2 and p in fix and p not in str(item.get("phrase") or ""):
             return p
     return None
+
+
+def kept_stems(text: str) -> dict[str, str]:
+    """어간 → 그 어간이 든 어절. 용언은 한 음절도, 명사와 부사는 두 음절부터(「빌드」의 「드」 같은 조각을 뺀다)."""
+    _lemmas("")                         # 형태소 분석기를 검사기와 같은 한 벌로 띄운다
+    out: dict[str, str] = {}
+    for t in _kiwi.tokenize(text):
+        if t.tag in FIX_TAGS and (t.tag in ("VV", "VA") or len(t.form) > 1):
+            a = text.rfind(" ", 0, t.start) + 1
+            b = text.find(" ", t.start + t.len)
+            out.setdefault(f"{t.form}/{t.tag}", text[a:b if b >= 0 else len(text)])
+    return out
+
+
+def kept_flagged(lines: list[str], mine, info: dict, items, closed: list[dict],
+                 freq: dict | None = None) -> list[dict]:
+    """고친 줄에 기준 판에서 고치라고 한 표현이 그대로 있는데 이번 판정이 안 짚었으면 그 지적을 붙인다.
+
+    ⛔ 판정 모델만 믿으면 놓친다 — 가성비 단계(재판정 Sonnet)가 짚힌 표현을 고친 줄에 다시 넣은 함정 둘
+       (「공수 넣기」, 「훑어」와 「펜스」)을 세 번 중 두 번 놓쳤다(runs/judge-effort-levels-20261104).
+       줄을 크게 고치면 발행 게이트도 다른 줄로 보아(`coverage.open_fixes` 의 글자 절반 기준) 놓친다.
+       줄 이력은 판정기가 이미 알므로 글자로 대조한다. 모델을 부르지 않는다.
+    두 가지를 본다.
+    - **짚은 표현이 글자 그대로 남음** — 수정안이 그 표현을 품은 지적(「고르게」→「고르게 배치」처럼 덧붙이기만
+      한 것)은 표현이 남는 것이 맞아 뺀다. 이 PC 실사용 재판정 2,899줄에서 14줄이 해당했다(2026-11-05).
+    - **수정안이 뺀 드문 어간이 남음**(`freq` 가 있을 때) — 「훑어 펜스를 안 본」을 「훑어서 펜스를 보지 않은」으로
+      바꿔 넣으면 글자로는 안 맞는다. 사람 업무 글에서 드문 어간(`RARE_FLOOR` 이하)만 본다 — 흔한 어간까지 보면
+      실사용 2,899줄에서 103줄이 걸렸고 대부분 상관없는 줄이었다. 드문 어간만 보면 7줄이었다.
+    받지 않음으로 닫은 표현(`closed` 의 같은 줄 이력)은 일부러 남긴 것이라 붙이지 않는다.
+    """
+    flagged = []
+    for it in items:
+        if isinstance(it, dict):
+            p = str(it.get("phrase") or "")
+            flagged.append((relocate(lines, it.get("line"), p), coverage._plain(p)))
+    out = []
+    for n in mine:
+        v = info.get(n) or {}
+        earlier = (v.get("root_found") or []) + (v.get("gone_found") or [])
+        if v.get("anchor") or not earlier:
+            continue
+        line, seen = lines[n - 1], set()
+        here = kept_stems(line) if freq is not None else {}
+
+        def taken(word: str, f: dict) -> bool:
+            """모델이 이미 짚었거나 받지 않음으로 닫은 표현인가."""
+            w = coverage._plain(word)
+            if w in seen or any(m == n and q and (w in q or q in w) for m, q in flagged):
+                return True
+            fp = coverage._plain(f["phrase"])
+            return any(coverage._plain(str(r.get("phrase") or "")) == fp
+                       and (r.get("line_key") == f.get("line_key")
+                            or coverage._similar(str(r.get("text") or ""), line) >= coverage.SUCCESSOR)
+                       for r in closed)
+
+        for f in earlier:
+            p, fix = coverage._plain(f["phrase"]), str(f.get("fix") or "")
+            if len(p) >= 2 and p in coverage._plain(line) and p not in coverage._plain(fix):
+                if not taken(f["phrase"], f):
+                    seen.add(p)
+                    out.append(_kept_item(n, f["phrase"], f, f["phrase"]))
+                continue
+            if not here:
+                continue
+            # 꼴로 견준다 — 같은 「민감」을 한 문장에서는 XR, 다른 문장에서는 NNG 로 나눠, 수정안에 그대로 있는 말을
+            # 뺀 말로 보고 짚었다(2026-11-05 측정 v8 · 「가장 민감한 글에 듭니다」→「가장 민감한 문서에 속합니다」)
+            gone = {s.split("/")[0] for s in kept_stems(f["phrase"])} - {s.split("/")[0] for s in kept_stems(fix)}
+            # 원래 줄의 짚지 않은 부분에 이미 있던 어절은 뺀다 — 굵은 라벨 「헛짚음」이 「짚음」을 고치라는 지적에
+            # 걸렸다(2026-11-05 측정 기록 README 89행)
+            rest = coverage._plain(str(f.get("text") or "").replace(f["phrase"], " ", 1))
+            for stem in sorted(s for s in here if s.split("/")[0] in gone):
+                if coverage._plain(here[stem]) in rest:
+                    continue
+                if freq.get(stem, 0) <= RARE_FLOOR and not taken(here[stem], f):
+                    seen.add(coverage._plain(here[stem]))
+                    out.append(_kept_item(n, here[stem], f, stem.split("/")[0]))
+    return out
+
+
+def _kept_item(n: int, phrase: str, f: dict, what: str) -> dict:
+    """`kept_flagged` 가 붙이는 고칠 지적 — 앞선 지적의 수정안을 그대로 보여 준다."""
+    return {"line": n, "phrase": phrase, "fix": f.get("fix") or "", "decide": "fix", "kept": True,
+            "category": f.get("category") or "고친 줄에 남은 표현",
+            "why": f"앞선 판정이 「{f['phrase']}」을(를) 고치라고 했는데 고친 줄에 「{what}」이(가) 남음"
+                   "(이번 판정이 짚지 않아 줄 이력으로 붙임)"}
 
 
 def closed_on(key: str, lines: list[str], mine: list[int]) -> list[tuple[int, dict]]:
@@ -1700,6 +1807,9 @@ def judge(path: Path, model: str, timeout: float, backend, targets: list[int] | 
     held_done: set[int] = set()
     queue = parts_for(lines, want, context, path)
     closed_all, decided_all, instructed_all, evidenced_all = [], [], [], []
+    # 받지 않음으로 닫은 기록 — 고친 줄에 남은 표현을 줄 이력으로 붙일 때 일부러 남긴 것을 거른다(`kept_flagged`)
+    closed_rows = list(coverage._rows(key, coverage.DISMISSALS, None, fresh=False)) if want is not None else []
+    freq = load_freq()
     if want is not None:
         plain = [n for n in sorted(want) if not info[n].get("anchor")]
         closed_all, decided_all = closed_on(key, lines, plain), decided_on(key, lines, plain)
@@ -1789,6 +1899,7 @@ def judge(path: Path, model: str, timeout: float, backend, targets: list[int] | 
             fresh_held = [n for n in over if info[n]["round"] == REJUDGE_CAP + 1 and n not in held_done]
             held_done.update(fresh_held)
             items = list(items) + [held_ask(n, lines[n - 1], info[n]) for n in fresh_held]
+            items += kept_flagged(lines, mine, info, items, closed_rows, freq)
         for it in items:
             if isinstance(it, dict):
                 it["line"] = relocate(lines, it.get("line"), str(it.get("phrase") or ""))
@@ -1848,7 +1959,6 @@ def judge(path: Path, model: str, timeout: float, backend, targets: list[int] | 
             queue += [dict(p, mode=f"chunk←{CONTEXT_SHORT}") for p in parts_for(lines, short, "chunk", path)]
         log_call(row)
         calls.append(row)
-    freq = load_freq()
     doc_lemmas = set(_lemmas(text)) if freq is not None else set()
     for it in found:
         # 상한을 넘은 줄의 사람 확인은 수정안이 아니라 기준 판을 보여 준다 — 점검할 고친 말이 없다

@@ -73,6 +73,14 @@ class JudgeReviewLadderTests(unittest.TestCase):
                                        "timeout": 900, "temperature": 0}])
         self.assertEqual(self.oks, ["claude"])
 
+    def test_멈춘_까닭과_과금_경로를_잘림_판정에_넘긴다(self):
+        # 사다리는 둘을 버린다 — 안 넘기면 구독 경로의 끝까지 나온 긴 답도 잘림으로 보아 나눠 다시 부른다(2026-11-05)
+        fake = FakeClient({"text": "[]", "model": "claude-opus-x", "cost_usd": 0.5, "usage": {"output_tokens": 21000},
+                           "stop_reason": "end_turn", "billing": "subscription"})
+        r = self.wrap("claude", fake)(model="opus", system="규칙", user="문서", max_tokens=12000, timeout=900)
+        self.assertEqual(("end_turn", "subscription"), (r.get("stop_reason"), r.get("billing")))
+        self.assertFalse(judge.truncated(r))
+
     def test_막힌_엔진은_부르지_않고_limited_로_바로_실패(self):
         self.blocked["claude"] = {"kind": "usage", "until": 1_900_000_000}
         fake = FakeClient({"text": "[]"})

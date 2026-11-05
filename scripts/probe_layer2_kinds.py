@@ -78,6 +78,7 @@
 from __future__ import annotations
 
 import argparse
+import functools
 import hashlib
 import json
 import os
@@ -145,6 +146,8 @@ JSON 배열 하나만 낸다. 다른 말은 붙이지 않는다.
 #   걸린 시간 284~323초 → 248~279초 · 출력 토큰 중앙값 −17% · 정확도 가드 같음 · 지적 468건 중 칸 어긋남 0
 #   (2026-10-19 측정 문서 · 한꺼번에 처리). 판단 기준은 그대로 둔다.
 #   **Codex 백엔드에서는 아직 안 쟀다** — 칸이 밀린 행을 `malformed` 로 세어 기록에 남기고, 늘면 `json` 으로 되돌린다.
+#: Claude 호출의 과금 경로 — 이 저장소는 API 크레딧을 쓰지 않는다(`load_client`)
+BILLING = "subscription"
 FORMAT_ENV = "KOREAN_QA_JUDGE_FORMAT"
 COMPACT_FIELDS = ("line", "phrase", "category", "fix", "decide", "check", "why")
 _FORMAT_JSON = """[{{"line": 줄번호, "phrase": "고칠 표현 원문 그대로", "category": "규칙 이름",
@@ -283,11 +286,15 @@ def load_client(backend: str = "claude"):
     3,300자 판정을 한 번 부르자 전역 지시 파일 · 시작 훅 · 스킬 목록이 함께
     실려 입력이 21만 7천 토큰이었고 5시간 한도의 10%가 나갔다(2026-10-02).
     판정은 파일을 읽을 일이 없어 하네스가 할 몫이 없다.
+
+    **Claude 는 늘 구독으로 부른다**(`billing="subscription"`) — `llm_playbook` 기본값은 API 크레딧
+    먼저인데, 이 저장소의 판정과 측정은 크레딧을 쓰지 않는다(2026-11-05 사용자 「여기선 api 쓰지 말고
+    구독 쓰고」 · 그 전 측정 약 38달러가 크레딧에서 나갔다).
     """
     from llm_playbook.backends.claude_sdk import (
         call_messages, parse_json_from_text)
     if backend == "claude":
-        return call_messages, parse_json_from_text
+        return functools.partial(call_messages, billing=BILLING), parse_json_from_text
     from llm_playbook.backends import codex_http
 
     def call_codex(*, model, system, user, timeout, **_):

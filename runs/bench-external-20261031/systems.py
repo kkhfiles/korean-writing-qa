@@ -110,7 +110,8 @@ def codex_guard() -> None:
 def call_model(vendor: str, model: str, system: str, user: str, timeout: float = 900) -> dict:
     if vendor == "claude":
         from llm_playbook.backends.claude_sdk import call_messages
-        r = call_messages(model=model, system=system, user=user, max_tokens=16000, timeout=timeout)
+        r = call_messages(model=model, system=system, user=user, max_tokens=16000, timeout=timeout,
+                          billing="subscription")   # 이 저장소는 API 크레딧을 쓰지 않음(2026-11-05)
         return {"text": r.get("text") or "", "model": r.get("model") or model,
                 "cost_usd": r.get("cost_usd"), "usage": r.get("usage")}
     if vendor == "codex":

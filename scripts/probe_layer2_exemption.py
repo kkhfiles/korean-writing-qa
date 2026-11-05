@@ -90,6 +90,7 @@ def main() -> None:
         max_tokens=3000,
         temperature=0,
         timeout=args.timeout,
+        billing=kinds.BILLING,
     )
 
     findings = kinds.as_findings(parse_json(result.get("text") or "") or [])

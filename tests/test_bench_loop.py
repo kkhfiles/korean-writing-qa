@@ -315,6 +315,22 @@ class SessionTests(_Base):
         self.assertNotIn("effort", fake.calls[0], "0회차에도 사고 깊이를 줬습니다")
         self.assertEqual(fake.calls[1].get("effort"), "low")
 
+    def test_the_personal_check_level_does_not_reach_the_bench(self) -> None:
+        # 이 PC 개인 목록이 가성비 단계면 1,000원 한도와 재판정 미룸이 측정을 멈췄다(2026-11-05) — 측정은 max 로 고정
+        saved = os.environ.get(judge.LEVEL_ENV)
+        os.environ[judge.LEVEL_ENV] = "min"
+        try:
+            fake = Scripted([ROUND0, [], []])
+            r = bench.run_session(self.dir / "run", FLAGGED, CLEAN, EDITS, "batch", max_calls=20, backend=fake.pair())
+        finally:
+            if saved is None:
+                os.environ.pop(judge.LEVEL_ENV, None)
+            else:
+                os.environ[judge.LEVEL_ENV] = saved
+        rows = [json.loads(l) for l in (self.dir / "run" / "judge.jsonl").read_text(encoding="utf-8").splitlines()]
+        self.assertEqual({"max"}, {row.get("level") for row in rows})
+        self.assertGreater(len(fake.calls), 1, "가성비와 최소 단계의 재판정 미룸이 측정을 멈췄습니다")
+
     def test_reclosing_the_same_finding_is_counted(self) -> None:
         log = self.dir / "d.jsonl"
         rows = [{"phrase": "p", "reason": "확인함", "line_key": k} for k in ("a", "b", "b", "c")]

@@ -112,6 +112,20 @@ class TruncationTests(Base):
         self.assertEqual(0, rc, out)
         self.assertEqual(3, len(b.calls), "앞 행만 읽힌 잘린 답을 정상으로 받았습니다")
 
+    def test_a_long_finished_answer_on_the_subscription_is_not_split(self) -> None:
+        """구독 경로는 출력 한도가 16,000 이 아니다 — 끝까지 나온 긴 답을 잘림으로 보면 나눠 다시 부르는 비용만 든다."""
+        class LongSub(Backend):
+            def call(self, **kw):
+                self.calls.append(kw)
+                return {"text": "[]", "model": "claude-opus-5-5", "stop_reason": "end_turn", "billing": "subscription",
+                        "usage": {"input_tokens": 2, "output_tokens": 21000}, "cost_usd": 0.4}
+        b = LongSub()
+        rc, out = self.run_main([str(self.doc())], b)
+        self.assertEqual(0, rc, out)
+        self.assertEqual(1, len(b.calls), "구독 경로의 끝까지 나온 답을 잘림으로 보았습니다")
+        self.assertTrue(judge.truncated({"stop_reason": "max_tokens", "billing": "subscription"}),
+                        "멈춘 까닭이 한도면 구독 경로도 잘림입니다")
+
     def test_a_short_cut_answer_fails_loudly(self) -> None:
         b = Backend(cut=1)
         rc, out = self.run_main([str(self.doc(LINES[:5]))], b)
