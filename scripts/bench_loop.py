@@ -80,7 +80,8 @@ CHECKER = ROOT / "assets" / "doc-style-check.py"
 OUT = Path.home() / ".claude" / "state" / "korean-bench"
 #: 판정기 검사 단계를 max 로 고정한다 — 모델과 사고 깊이는 이 도구가 정하고, 비용 한도와 재판정 미룸은 측정할 대상이
 #: 아니다. 안 넘기면 이 PC 개인 목록의 단계를 따라, 가성비 단계의 1,000원 한도가 0회차에서 측정을 멈췄다(2026-11-05)
-PINNED_LEVEL = ("--level", "max")
+#: 최대 단계에도 한도가 생겨(구독 4,500원) 한도 넘김을 함께 넘긴다 — 판정 기록에 측정이라는 까닭이 남는다
+PINNED_LEVEL = ("--level", "max", "--over-budget", "--note", "측정 도구(bench_loop) — 비용 한도는 측정 대상이 아님")
 TOTAL = re.compile(r"합계 — 오류 (\d+) · 주의 (\d+)")
 #: 검사기 출력의 지적 줄 — 「   ❌ [갈래] 12행  …」 · 「   ⚠️ [갈래] 12행  …」
 CHECKER_HIT = re.compile(r"^\s*(?:❌|⚠️)\s*\[[^\]]+\]\s*(\d+)행")

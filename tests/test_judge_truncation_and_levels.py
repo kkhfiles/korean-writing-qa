@@ -184,19 +184,50 @@ class LevelTests(Base):
 
     def test_the_budget_stops_and_needs_an_approval_to_go_on(self) -> None:
         p = self.doc(LINES[:5])
+        # 구독 호출 한도(가성비 1,800원)를 넘는 2,100원
         spent = {"at": "x", "when": time.time() - 60, "key": coverage.doc_key(p), "ok": True,
-                 "cost_usd": 1.0, "seen": []}
+                 "cost_usd": 1.5, "seen": [], "five_hour": 0.73}
         judge.LOG.write_text(json.dumps(spent) + "\n", encoding="utf-8")
         b = Backend()
         rc, out = self.run_main([str(p), "--level", "balanced"], b)
         self.assertEqual(5, rc, out)
         self.assertIn("검사 미완료", out)
+        self.assertIn("구독 사용량", out)
+        self.assertIn("5시간 사용률 73%", out)
         self.assertEqual([], b.calls)
         rc, _ = self.run_main([str(p), "--level", "balanced", "--over-budget"], b)
         self.assertEqual(2, rc, "승인 원문 없이 한도를 넘겼습니다")
         rc, _ = self.run_main([str(p), "--level", "balanced", "--over-budget", "--note", "사용자 「이번만 넘겨」"], b)
         self.assertEqual(0, rc)
         self.assertEqual("사용자 「이번만 넘겨」", self.rows()[-1].get("over_budget"))
+
+    def test_the_limit_follows_the_billing(self) -> None:
+        """구독 호출이 기본이라 한도가 크레딧 호출보다 넉넉하고, 크레딧 호출은 돈 기준(가성비 1,000원) 그대로."""
+        p = self.doc(LINES[:5])
+        spent = {"at": "x", "when": time.time() - 60, "key": coverage.doc_key(p), "ok": True,
+                 "cost_usd": 1.0, "seen": []}                   # 1,400원
+        judge.LOG.write_text(json.dumps(spent) + "\n", encoding="utf-8")
+        rc, out = self.run_main([str(p), "--level", "balanced"], Backend())
+        self.assertEqual(0, rc, out)
+        self.assertEqual("subscription", self.rows()[-1].get("billing"), "판정 기록에 과금 방식이 남아야 합니다")
+        real = judge.billing_of
+        judge.billing_of = lambda name, backend: "api"
+        try:
+            b = Backend()
+            rc, out = self.run_main([str(p), "--level", "balanced", "--now"], b)
+        finally:
+            judge.billing_of = real
+        self.assertEqual(5, rc, out)
+        self.assertIn("API 크레딧에서 나감", out)
+        self.assertEqual([], b.calls)
+
+    def test_the_max_level_now_has_a_runaway_guard(self) -> None:
+        p = self.doc(LINES[:5])
+        spent = {"at": "x", "when": time.time() - 60, "key": coverage.doc_key(p), "ok": True,
+                 "cost_usd": 3.5, "seen": []}                   # 4,900원
+        judge.LOG.write_text(json.dumps(spent) + "\n", encoding="utf-8")
+        rc, out = self.run_main([str(p), "--level", "max"], Backend())
+        self.assertEqual(5, rc, out)
 
     def test_old_work_does_not_count_toward_the_budget(self) -> None:
         p = self.doc(LINES[:5])

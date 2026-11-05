@@ -179,7 +179,8 @@ err  = []                                 # 주의에서 오류로 올린다
 - **의존성 둘** — `python -m pip install -r requirements.txt` · YAML 검사와 형태소 판정에 씀
 - **2층 판정기의 모델 호출 방식** — `requirements.txt` 의 `claude-agent-sdk` 가 이 PC 에 설치된 Claude Code(`claude` 명령)를 호출함. Claude Code 가 없으면 판정기는 종료 코드 3으로 끝나고, 세션이 판정 원칙을 직접 읽고 판정함. Codex 만 사용하는 PC 도 아직 이 경우에 해당함
 - **2층 판정의 검사 단계** — 기본값은 「최대」 단계(첫 판정과 재판정 모두 Opus). 판정 명령의 `--level` 이나 개인 목록(`data/catalog/local-publish-repos.toml`, 본보기는 같은 폴더의 `.example.toml`)의 `check_level` 로 「가성비」 단계와 「최소」 단계 중 하나를 선택함([측정 기록](runs/judge-effort-levels-20261104/README.md))
-  - **가성비 단계의 구성** — 첫 판정에 Opus(low), 재판정에 Sonnet(medium)을 쓰고 문서 한 건당 비용 한도는 1,000원
+  - **가성비 단계의 구성** — 첫 판정에 Opus(low), 재판정에 Sonnet(medium)을 씀
+  - **단계별 비용 한도** — 문서 한 건의 판정 비용이 한도에 도달하면 판정을 멈추고 「검사 미완료」로 남김. Claude Code 로그인으로 호출할 때의 한도는 API 단가 환산으로 「최대」 단계 4,500원, 「가성비」 단계 1,800원, 「최소」 단계 900원이고, API 키로 과금할 때는 각각 2,500원, 1,000원, 500원
   - **가성비 단계의 비용** — 시험 문서 한 편을 처음부터 끝까지 판정하는 데 든 실행 비용의 중앙값이 「최대」 단계 비용의 38%
 - **API 키 환경 변수가 있을 때** — `ANTHROPIC_API_KEY` 가 있으면 판정 호출 요금이 구독 대신 그 키로 청구됨
   - **판정기의 동작** — 판정 전에 멈추고(종료 코드 7) 구독과 API 키 중 하나를 고르도록 요청

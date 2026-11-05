@@ -75,7 +75,9 @@ from __future__ import annotations
 
 import argparse
 import collections
+import contextlib
 import hashlib
+import importlib
 import json
 import math
 import os
@@ -100,14 +102,22 @@ read_doc = coverage.read_doc
 CHUNK_LINES = 180
 THINKING_ENV = "KOREAN_QA_JUDGE_THINKING"   # low · medium · high — 비우면 모델 기본값
 #: 검사 단계(2026-11-04 사용자 「최소비용 검사 - 최적 검사(가성비) - 최대 검사」) — 첫 판정과 재판정의
-#: (모델, 사고 깊이), 다른 줄 지적을 남긴 채 부르는 재판정을 막을지, 문서 한 건의 비용 한도(원).
+#: (모델, 사고 깊이), 다른 줄 지적을 남긴 채 부르는 재판정을 막을지, 문서 한 건의 비용 한도(API 단가 환산 원).
 #: 근거 측정은 runs/judge-effort-levels-20261104 — 사고 깊이 high 는 세 모델 모두 medium 보다 낫지 않았다
+#: **한도는 과금 방식별** (2026-11-05 사용자 「대부분은 크레딧을 사용하지 않을 것이다」) — 공개판은 Claude Code 로그인
+#: (구독)으로 부르고 이 PC 도 구독만 쓴다. 구독 호출은 같은 판정에 출력 토큰을 약 2.5배 써 환산 비용이 크레딧
+#: 호출의 약 1.8배였다(가성비 흐름 시험). 그래서 구독 한도는 크레딧 한도 × 1.8 로 멈추는 지점을 맞추고, 각 단계의
+#: 정상 비용(90번째 백분위수)의 약 2배에서 헛도는 반복을 막는다. 크레딧 호출은 실제 돈이라 「문서 한 편 1,000원」을
+#: 그대로 지킨다. 최대 단계는 1.8 배율을 가정한 추정이라 실사용 기록이 쌓이면 단계별로 다시 정한다
 LEVEL_ENV = "KOREAN_QA_LEVEL"
 LEVELS = {
     # 최대는 사고 깊이를 넘기지 않는다 — Opus 5.5 기본값(medium)으로 예전 판정기와 같은 호출
-    "max": {"first": ("opus", None), "rejudge": ("opus", None), "batch": False, "budget_won": None},
-    "balanced": {"first": ("opus", "low"), "rejudge": ("sonnet", "medium"), "batch": True, "budget_won": 1000},
-    "min": {"first": ("sonnet", "medium"), "rejudge": ("sonnet", "medium"), "batch": True, "budget_won": 500},
+    "max": {"first": ("opus", None), "rejudge": ("opus", None), "batch": False,
+            "budget_won": {"subscription": 4500, "api": 2500}},
+    "balanced": {"first": ("opus", "low"), "rejudge": ("sonnet", "medium"), "batch": True,
+                 "budget_won": {"subscription": 1800, "api": 1000}},
+    "min": {"first": ("sonnet", "medium"), "rejudge": ("sonnet", "medium"), "batch": True,
+            "budget_won": {"subscription": 900, "api": 500}},
 }
 LEVEL_ALIASES = {"최대": "max", "가성비": "balanced", "최소": "min"}
 DEFAULT_LEVEL = "max"
@@ -1891,9 +1901,10 @@ def judge(path: Path, model: str, timeout: float, backend, targets: list[int] | 
         thinking = os.environ.get(THINKING_ENV) or None
         row["effort"] = thinking
         try:
-            r = call_messages(model=model, system=system, user=user,
-                              max_tokens=12000, temperature=0, timeout=timeout,
-                              **({"effort": thinking} if thinking else {}))
+            with watch_usage():
+                r = call_messages(model=model, system=system, user=user,
+                                  max_tokens=12000, temperature=0, timeout=timeout,
+                                  **({"effort": thinking} if thinking else {}))
         except Exception as e:          # 실패도 기록한다 — 시간은 들었다
             row.update(ok=False, error=f"{type(e).__name__}: {e}"[:200],
                        seconds=round(time.time() - started, 1))
@@ -1912,6 +1923,9 @@ def judge(path: Path, model: str, timeout: float, backend, targets: list[int] | 
                    cache_read=usage.get("cache_read_input_tokens", 0),
                    output_tokens=usage.get("output_tokens", 0),
                    cost_usd=r.get("cost_usd"), findings=len(items),
+                   # 과금 방식과 구독 사용률 — 단계별 한도를 실사용 기록으로 다시 정할 때 쓴다(2026-11-05)
+                   billing=r.get("billing") or RUN_NOTES.get("billing"),
+                   **({"five_hour": _USAGE[-1].get("five_hour")} if _USAGE else {}),
                    # 칸이 어긋난 행 — 늘면 행 형식을 `json` 으로 되돌린다(특히 Codex 백엔드는 안 쟀다)
                    malformed=probe.malformed(raw))
         save_system(key, system, rules_sha, made, started)
@@ -2125,6 +2139,70 @@ def resolve_level(arg: str | None) -> str:
     if name not in LEVELS:
         raise ValueError(f"검사 단계 「{raw}」 를 모릅니다 — min(최소) · balanced(가성비) · max(최대)")
     return name
+
+
+def billing_of(name: str | None, backend) -> str | None:
+    """이 판정이 나가는 과금 방식 — `subscription` · `api` · None(Codex: 금액을 안 줘 한도 밖)."""
+    if name == "codex":
+        return None
+    if getattr(backend[0], "__module__", "") == "layer2_client":
+        import layer2_client
+        return "api" if layer2_client.metered_keys() and layer2_client.key_choice() == "api" else "subscription"
+    return probe.BILLING
+
+
+#: SDK 가 호출마다 주는 구독 사용률(5시간 · 7일) — `watch_usage` 가 모은다
+_USAGE: list[dict] = []
+
+
+@contextlib.contextmanager
+def watch_usage():
+    """판정 호출 동안 SDK 의 질의 함수를 감싸 구독 사용률을 `_USAGE` 에 모은다 — 판정 기록과 한도 안내에 쓴다.
+
+    두 호출 길(이 PC 의 `llm_playbook` 과 공개판의 `layer2_client`)이 모두 SDK 의 `query` 를 쓴다. 측정 도구의
+    `bench_loop.watch_limits` 와 같은 방식이다. 못 감싸면 아무것도 안 모은다(판정은 그대로).
+    """
+    patched = []
+
+    def spy_of(real):
+        async def spy(*a, **kw):
+            async for m in real(*a, **kw):
+                info = getattr(m, "rate_limit_info", None)
+                raw = getattr(info, "raw", None) if info is not None else None
+                if isinstance(raw, dict):
+                    wins = raw.get("unifiedWindows") or {}
+                    _USAGE.append({k: v.get("utilization") for k, v in wins.items() if isinstance(v, dict)})
+                yield m
+        return spy
+
+    for name in ("llm_playbook.backends.claude_sdk", "claude_agent_sdk"):
+        try:
+            mod = importlib.import_module(name)
+        except Exception:
+            continue
+        real = getattr(mod, "query", None)
+        if real is not None:
+            mod.query = spy_of(real)
+            patched.append((mod, real))
+    try:
+        yield
+    finally:
+        for mod, real in reversed(patched):
+            mod.query = real
+
+
+def last_five_hour(key: str) -> float | None:
+    """이 문서의 판정 기록에 남은 마지막 5시간 사용률 — 없으면 None."""
+    got = None
+    if LOG.is_file():
+        for line in LOG.read_text(encoding="utf-8").splitlines():
+            try:
+                r = json.loads(line)
+            except ValueError:
+                continue
+            if r.get("key") == key and r.get("five_hour") is not None:
+                got = r["five_hour"]
+    return got
 
 
 def work_spent(key: str, now: float | None = None) -> float:
@@ -2346,6 +2424,8 @@ def main(argv=None, backend=None) -> int:
             print("     구독으로 — 판정 호출에서만 키를 숨김: --api-key-use subscription")
             print("     API 키로 과금 — --api-key-use api")
             return 7
+    billing = billing_of(name, backend)
+    RUN_NOTES["billing"] = billing
     results = []
     for d in a.docs:
         p = Path(d)
@@ -2372,12 +2452,18 @@ def main(argv=None, backend=None) -> int:
                 print(f"  {p.name} — git 밖 문서라 갈라진 지점이 없습니다 · 아직 판정 안 한 한글 줄을 모두 봅니다")
         key = coverage.doc_key(p)
         # 비용 한도 — 닿으면 판정하지 않고 「검사 미완료」로 남긴다(통과가 아니다 · 2026-11-04 astra 검토)
-        budget = lv["budget_won"]
+        budget = (lv["budget_won"] or {}).get(billing) if billing else None
         if budget and not a.over_budget:
             spent = work_spent(key) * WON_PER_USD
             if spent >= budget:
-                print(f"⛔ {p.name} — 이 문서 작업에 판정 비용 {spent:,.0f}원을 써 「{level}」 단계 한도 {budget:,}원에 "
-                      "닿았습니다 · 검사 미완료")
+                if billing == "api":
+                    print(f"⛔ {p.name} — 이 문서 작업에 판정 비용 {spent:,.0f}원(API 크레딧에서 나감)을 써 「{level}」 "
+                          f"단계 한도 {budget:,}원에 닿았습니다 · 검사 미완료")
+                else:
+                    five = last_five_hour(key)
+                    usage = f" · 5시간 사용률 {five:.0%}" if isinstance(five, (int, float)) else ""
+                    print(f"⛔ {p.name} — 이 문서 작업의 구독 사용량이 「{level}」 단계 한도를 넘었습니다"
+                          f"(API 단가 환산 {spent:,.0f}원 · 한도 {budget:,}원{usage}) · 검사 미완료")
                 print("   남은 줄은 판정하지 않았습니다(발행과 push 게이트가 계속 막습니다) — 사람이 확인하거나, "
                       "사용자가 승인하면 --over-budget --note \"승인 원문\"")
                 return 5
