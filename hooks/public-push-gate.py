@@ -108,7 +108,9 @@ def mask_heredoc(command: str) -> str:
         if head.count('"') % 2 or head.count("'") % 2:   # 따옴표 안의 `<<` — 히어독이 아니다
             pos = m.end()
             continue
-        end = re.compile(rf"^{'[ \t]*' if m.group(1) else ''}{re.escape(m.group(3))}[ \t]*$", re.M).search(out, nl + 1)
+        # ⛔ f-문자열 식 안에 역슬래시를 두지 않는다 — Python 3.11(CI)이 문법 오류로 거부했다(2026-11-06)
+        lead = r"[ \t]*" if m.group(1) else ""
+        end = re.compile("^" + lead + re.escape(m.group(3)) + r"[ \t]*$", re.M).search(out, nl + 1)
         stop = end.start() if end else len(out)
         if not (SHELL_HEAD.search(head) or SHELL_PIPE.search(out[m.end():nl])):
             out = out[:nl + 1] + re.sub(r"[^\n]", "x", out[nl + 1:stop]) + out[stop:]
