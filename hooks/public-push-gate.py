@@ -52,6 +52,7 @@ from pathlib import Path
 try:
     sys.stderr.reconfigure(encoding="utf-8")
     sys.stdout.reconfigure(encoding="utf-8")      # deny JSON 의 한글 — 콘솔 로케일(CP949)로 나가면 깨진다
+    sys.stdin.reconfigure(encoding="utf-8")       # 받는 명령의 한글 — cp949 로 읽으면 서로게이트가 된다
 except (AttributeError, ValueError):
     pass
 
@@ -85,10 +86,40 @@ HERE = Path(__file__).resolve().parent
 ESCAPE = "KOREAN_PUSH_FORCE"
 
 
+#: 히어독 여는 표시 — `<<EOF` · `<<'EOF'` · `<<-EOF`. `<<<`(한 줄 문자열)는 아니다.
+HEREDOC = re.compile(r"(?<!<)<<(?!<)(-?)\s*(['\"]?)([A-Za-z_][\w-]*)\2")
+#: 히어독을 셸에 먹이는 꼴 — 그 본문은 명령이라 가리지 않는다(`bash <<EOF` · `cat <<EOF | sh`)
+SHELL_HEAD = re.compile(r"(?:^|[\s;&|(])(?:bash|sh|zsh|pwsh|powershell)(?:\.exe)?(?:\s+-\S+)*\s*$", re.I)
+SHELL_PIPE = re.compile(r"\|\s*(?:bash|sh|zsh|pwsh|powershell)(?:\.exe)?\b", re.I)
+
+
+def mask_heredoc(command: str) -> str:
+    """히어독 본문을 같은 길이의 `x` 로 가린다(줄바꿈은 둠) — 커밋 메시지 본문을 명령으로 읽지 않게.
+
+    2026-11-06 에 메시지 한 줄 「이 저장소에서 git push 를 실행하면」을 push 로 읽고 「실행하면」을
+    가지 이름으로 풀려다 커밋을 막았다. 셸에 먹이는 히어독은 본문이 명령이라 그대로 둔다.
+    """
+    out, pos = command, 0
+    while (m := HEREDOC.search(out, pos)) is not None:
+        nl = out.find("\n", m.end())
+        if nl < 0:
+            break
+        head = out[out.rfind("\n", 0, m.start()) + 1:m.start()]
+        if head.count('"') % 2 or head.count("'") % 2:   # 따옴표 안의 `<<` — 히어독이 아니다
+            pos = m.end()
+            continue
+        end = re.compile(rf"^{'[ \t]*' if m.group(1) else ''}{re.escape(m.group(3))}[ \t]*$", re.M).search(out, nl + 1)
+        stop = end.start() if end else len(out)
+        if not (SHELL_HEAD.search(head) or SHELL_PIPE.search(out[m.end():nl])):
+            out = out[:nl + 1] + re.sub(r"[^\n]", "x", out[nl + 1:stop]) + out[stop:]
+        pos = end.end() if end else len(out)
+    return out
+
+
 def mask_quoted(command: str) -> str:
-    """따옴표 안을 같은 길이의 `x` 로 가린다 — 정규식이 그 안을 못 보게."""
+    """따옴표 안과 히어독 본문을 같은 길이의 `x` 로 가린다 — 정규식이 그 안을 못 보게."""
     return QUOTED.sub(lambda m: m.group()[0] + "x" * (len(m.group()) - 2) + m.group()[-1],
-                      command)
+                      mask_heredoc(command))
 
 
 def _wrapped(command: str) -> tuple[int, str] | None:

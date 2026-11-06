@@ -75,6 +75,16 @@ def wait(sha: str) -> int:
     return 1
 
 
+def _push_target(command: str):
+    import importlib.util
+    from pathlib import Path
+    spec = importlib.util.spec_from_file_location(
+        "public_push_gate", Path(__file__).resolve().parents[1] / "hooks" / "public-push-gate.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod.push_target(command)
+
+
 def hook() -> int:
     """push 를 실행한 직후 세션에 대기 명령을 알린다 — 훅은 오래 기다릴 수 없어 대기는 세션이 백그라운드로 한다."""
     try:
@@ -82,8 +92,9 @@ def hook() -> int:
     except ValueError:
         return 0
     command = (event.get("tool_input") or {}).get("command") or ""
-    # 한 줄 안에서만 — 줄을 넘기면 커밋 메시지(히어독) 첫머리의 「push」까지 push 로 읽는다
-    if not re.search(r"\bgit\b[^|;&\n]*\bpush\b", command):
+    # push 판별의 정본(`hooks/public-push-gate.py`)을 쓴다 — 따옴표 안과 커밋 메시지 본문을 안 본다.
+    # 손으로 짠 정규식은 `grep "git.*push"` 와 메시지 첫머리의 「push」에도 알렸다(2026-11-06)
+    if _push_target(command) is None:
         return 0
     note = ("이 저장소에 push 했으면 GitHub 전체 시험 결과를 확인한다 — "
             "`python -X utf8 scripts/wait_ci.py` 를 백그라운드로 실행하고, 끝나면 결과(실패면 시험 이름)를 사용자에게 보고")

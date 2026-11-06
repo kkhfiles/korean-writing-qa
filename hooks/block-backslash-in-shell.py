@@ -39,6 +39,7 @@ import sys
 
 try:
     sys.stderr.reconfigure(encoding="utf-8")
+    sys.stdin.reconfigure(encoding="utf-8")   # `-X utf8` 없이 불리면 cp949 로 읽어 한글 명령이 깨졌다
 except (AttributeError, ValueError):
     pass
 

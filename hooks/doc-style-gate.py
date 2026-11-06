@@ -30,6 +30,8 @@ from pathlib import Path
 try:
     sys.stdout.reconfigure(encoding="utf-8")
     sys.stderr.reconfigure(encoding="utf-8")
+    # 받는 쪽도 — `-X utf8` 없이 불리면 cp949 로 읽어 한글 명령이 서로게이트가 됐다(2026-11-06)
+    sys.stdin.reconfigure(encoding="utf-8")
 except (AttributeError, OSError):
     pass
 

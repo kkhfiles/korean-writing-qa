@@ -137,6 +137,26 @@ class PublicPushGateTests(unittest.TestCase):
             with self.subTest(cmd):
                 self.assertEqual(("", ""), target(cmd))
 
+    def test_heredoc_body_is_not_a_push(self) -> None:
+        """커밋 메시지(히어독) 본문의 `git push` 는 푸시가 아니다.
+
+        2026-11-06 에 메시지 한 줄 「이 저장소에서 git push 를 실행하면」을 push 로 읽고 「실행하면」을
+        가지 이름으로 풀려다 커밋을 막았다. 셸에 먹이는 히어독은 그 안이 명령이라 그대로 본다.
+        """
+        hook = load_hook()
+        msg = "git commit -q -F - <<'EOF'\n제목\n\n- 이 저장소에서 git push 를 실행하면 알림\nEOF\ngit log -1"
+        self.assertIsNone(hook.push_target(msg))
+        self.assertEqual([], hook.push_sources(msg))
+        self.assertIsNone(hook.push_target("cat > note.md <<EOF\ngit push origin main\nEOF"))
+        self.assertIsNone(hook.push_target("python - <<'PY'\nprint(\"it's git push\")\nPY"))
+        # 히어독이 끝난 뒤의 push · 셸에 먹이는 히어독 안의 push 는 push 다
+        self.assertEqual(["HEAD"], hook.push_sources(msg.replace("git log -1", "git push")))
+        for cmd in ("bash <<'EOF'\ngit push origin topic\nEOF", "cat <<EOF | sh\ngit push origin topic\nEOF"):
+            with self.subTest(cmd):
+                self.assertEqual(["topic"], hook.push_sources(cmd))
+        self.assertEqual(("", ""), hook.push_target("cat <<<\"word\"\ngit push"), "<<< 를 히어독으로 읽었습니다")
+        self.assertEqual(("", ""), hook.push_target('echo "a <<EOF"\ngit push'), "따옴표 안의 << 를 히어독으로 읽었습니다")
+
     def test_c_path_is_the_repo_to_check(self) -> None:
         """`git -C <경로> push` 는 그 경로의 저장소를 본다 — cwd 가 아니다.
 

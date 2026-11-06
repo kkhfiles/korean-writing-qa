@@ -65,6 +65,7 @@ class HookTests(unittest.TestCase):
     def test_other_commands_stay_silent(self) -> None:
         self.assertEqual("", self.hook("git status"))
         self.assertEqual("", self.hook("git log --oneline | grep push"))
+        self.assertEqual("", self.hook('grep -n "def .*push\\|git.*push" hooks/x.py'), "검색 무늬를 push 로 읽었습니다")
         self.assertEqual("", self.hook("git commit -q -F - <<'EOF'\npush 뒤 시험 결과까지 확인\nEOF"),
                          "커밋 메시지의 push 를 push 명령으로 읽었습니다")
 
