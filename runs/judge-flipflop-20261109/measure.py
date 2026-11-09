@@ -124,7 +124,7 @@ def main():
         result["되돌아간 줄 비율"] = round(revert_lines / lineages, 3)
     if rejudge_fixes:
         result["다시 판정된 줄의 지적 중 수정안을 다시 고친 비율"] = round(self_contra / rejudge_fixes, 3)
-    (HERE / "result.json").write_text(json.dumps(result, ensure_ascii=False, indent=1), encoding="utf-8")
+    (HERE / "result.json").write_text(json.dumps(result, ensure_ascii=False, indent=1), encoding="utf-8", newline="\n")
     print(json.dumps(result, ensure_ascii=False, indent=1))
 
 

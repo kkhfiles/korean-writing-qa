@@ -87,7 +87,7 @@ def main():
                   "반씩 나눈 AUC": [round(x, 3) for x in halves], "후보": cand}
     result = {"이름": "연구 지표로 업무 문서의 AI 글 가르기", "사전 기록": "plan.md",
               "문서": {k: len(v) for k, v in corp.items()}, "지표": out}
-    (HERE / "result.json").write_text(json.dumps(result, ensure_ascii=False, indent=1), encoding="utf-8")
+    (HERE / "result.json").write_text(json.dumps(result, ensure_ascii=False, indent=1), encoding="utf-8", newline="\n")
     print(json.dumps(result, ensure_ascii=False, indent=1))
 
 
