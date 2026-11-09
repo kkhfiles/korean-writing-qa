@@ -448,8 +448,11 @@ def apply_fix(line: str, phrase: str, fix: str) -> str:
 
 
 def process(doc: Path, meta: dict[int, dict], mode: str, counts: dict,
-            history: dict[int, set] | None = None) -> int:
+            history: dict[int, set] | None = None, apply_checked: bool = False) -> int:
     """열린 지적을 세션처럼 처리한다 — 글을 바꾼 수. `one` 이면 글을 하나 바꾸면 멈춘다(작은 재판정 재현).
+
+    `apply_checked` — 사실 확인 지적의 수정안도 넣는다(작성자가 사실을 확인해 줬다고 보는 흐름). 기본은 넣지 않고
+    닫는다 — 옛 측정과 견줄 수 있게(2026-11-09 운반 문서에서 짚은 59건 중 49건이 이 까닭으로 반영되지 않음).
 
     - 사람 확인: 답 열쇠(고침)로 답한다. 수정안을 글자로 넣을 수 있으면 넣고 그 글을 확정(다시 판정 안 함),
       못 넣으면 「그대로」로 답한다. 줄 하나에 답 하나 — 사람 확인 표가 줄 단위다
@@ -499,7 +502,7 @@ def process(doc: Path, meta: dict[int, dict], mode: str, counts: dict,
             counts["되살림 닫기"] += 1
             judge._close_fix(doc, lines, n, item, {"reason": "대상아님",
                                                    "note": f"재현 일감 — 지적됐던 「{item['revives']}」을 되살리는 수정안"})
-        elif coverage.needs_check(item):
+        elif coverage.needs_check(item) and not apply_checked:
             counts["사실 확인 닫기"] += 1
             judge._close_fix(doc, lines, n, item, {"reason": "확인함", "note": "재현 일감 — 자료로 확인했다고 본다"})
         elif phrase and fix and not fix.startswith("(") and "\n" not in fix and phrase in lines[n - 1]:
