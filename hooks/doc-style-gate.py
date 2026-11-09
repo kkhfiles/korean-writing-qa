@@ -25,6 +25,7 @@ import re
 import subprocess
 import sys
 import time
+from html import unescape as html_unescape
 from pathlib import Path
 
 try:
@@ -1326,6 +1327,11 @@ def _same_line(line):
     return re.sub(r"\s+", " ", line).strip()
 
 
+_TAGS = re.compile(r"<[^>]+>")
+#: 줄 번호 없는 지적(HTML 값 슬롯 「❌ [갈래] <td> 문장 — 안내」)에서 문장만 — 갈래 괄호가 여럿이면 마지막 뒤
+FINDING_TEXT = re.compile(r"\]\s*(?:\d+행\s*)?(?:<\w+>\s*)?(?!\[)(.+?)(?:\s+—\s.*)?$")
+
+
 def origin_lines(path):
     """문서가 선언한 원본과 그 원본의 줄(공백을 맞춘 글자) — (원본 경로 | None, 줄 집합 | None).
 
@@ -1393,11 +1399,20 @@ def drop_theirs(path, hits):
         mine = Path(path).read_text(encoding="utf-8", errors="replace").splitlines()
     except OSError:
         return hits, ""
+    # (2026-11-09) HTML 문서의 지적은 줄 번호 없이 문장만 싣는다(「<td> 문장」) — 줄 번호로만 대조하던 때는 원본을
+    #  선언해도 한 건도 빠지지 않아 남이 쓴 줄이 발행을 막았다(AI 초안 전후 비교 페이지). 문장을 원본의 보이는 글과 견준다
+    visible = {_same_line(_TAGS.sub("", t).replace("**", "").replace("`", "")) for t in theirs} | theirs
     kept, dropped = [], 0
     for h in hits:
         m = FINDING_ROW.search(h)
         n = int(m.group(1)) if m else 0
-        if 0 < n <= len(mine) and _same_line(mine[n - 1]) in theirs:
+        if 0 < n <= len(mine) and (_same_line(mine[n - 1]) in theirs or _same_line(_TAGS.sub("", mine[n - 1])) in visible):
+            dropped += 1
+            continue
+        q = FINDING_TEXT.search(h) if not n else None
+        # 검사기는 HTML 문자 기호를 그대로 찍는다(「&#x27;」) — 원본의 글자와 견주려면 되돌린다
+        text = _same_line(html_unescape(q.group(1))).rstrip("…").strip() if q else ""
+        if len(text) >= 6 and any(text in t for t in visible):
             dropped += 1
             continue
         kept.append(h)

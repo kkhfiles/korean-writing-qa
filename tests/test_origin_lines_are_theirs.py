@@ -134,6 +134,21 @@ class GateTests(_Base):
         self.assertIn("늦어질 수 있다", out, "사용자가 고친 줄의 지적이 사라졌습니다")
         self.assertIn("원본(original.md)과 같은 줄의 지적 1건은 뺐다", out)
 
+    def test_html_findings_without_line_numbers_are_matched_by_text(self) -> None:
+        """(2026-11-09 AI 초안 전후 비교 페이지) HTML 값 슬롯 지적은 줄 번호 없이 「<li> 문장」으로 나와, 원본을
+        선언해도 남이 쓴 줄의 지적이 한 건도 빠지지 않고 발행을 막았다. 검사기가 찍는 문자 기호(「&#x27;」)도
+        원본의 글자와 맞아야 한다."""
+        (self.dir / "page-origin.txt").write_text("**일정** 11월 말까지 '1차' 적용한다.\n", encoding="utf-8")
+        page = self.dir / "page.html"
+        page.write_text('<meta name="audience" content="share">\n<meta name="origin" content="page-origin.txt">\n'
+                        "<title>검증 계획</title>\n<p><b>하반기 검증 계획</b> — 담당과 일정</p>\n<ul>\n"
+                        "<li>11월 말까지 &#x27;1차&#x27; 적용한다.</li>\n<li>위험: 시험 환경 확보가 늦어질 수 있다.</li>\n</ul>\n",
+                        encoding="utf-8")
+        self.doc = page
+        _, out = self.written()
+        self.assertNotIn("적용한다", out, "원본(남의 줄)의 HTML 지적을 냈습니다")
+        self.assertIn("늦어질 수 있다", out, "사용자가 쓴 줄의 HTML 지적이 사라졌습니다")
+
     def test_publish_asks_to_judge_only_the_changed_line(self) -> None:
         rc, out = self.published()
         self.assertEqual(2, rc, out)
