@@ -1783,10 +1783,42 @@ def before_after(mine: list[int], info: dict[int, dict], closed: list[tuple[int,
     return "\n".join(out)
 
 
-def held_ask(n: int, line: str, info: dict) -> dict:
+#: 사람 확인 표에 싣는 판정 이력 — 최근 것부터 이만큼. 표 한 칸이라 길면 못 읽는다
+HISTORY_STEPS = 6
+
+
+def line_history(key: str, root: str | None, log: Path | None = None) -> list[str]:
+    """기준 판부터 지금까지 그 줄에 낸 고칠 지적 — 「[갈래] 「짚은 표현」 → 「제안」(반영 여부)」 목록.
+
+    (2026-11-09 사용자 「무슨 소린지 모르겠다. 뭐라고 써있었는데 어떻게 고쳤는데 왜 해결이 안되어 나에게 보고한
+    것인지」) 상한 항목의 「고친 이유」에 판정 횟수만 적혀 있어 무엇을 정해야 하는지 알 수 없었다. 같은 줄을
+    판정기가 앞서 제안한 문구를 다시 짚은 것(자기 모순)이나 세션이 제안과 다르게 고친 것이 이력에서 보인다.
+    """
+    if not root:
+        return []
+    rows = sorted((r for r in coverage._rows(key, log or LOG, None, fresh=False) if r.get("ok")),
+                  key=lambda r: float(r.get("when") or 0))
+    texts = {root}
+    for r in rows:
+        texts |= {e["text"] for e in r.get("targeted") or [] if (e.get("root") or e.get("text")) == root}
+    steps, seen = [], set()
+    for r in rows:
+        for fx in r.get("fixes") or []:
+            text, phrase, fix = fx.get("text"), str(fx.get("phrase") or ""), str(fx.get("fix") or "")
+            if text not in texts or (text, phrase) in seen:
+                continue
+            seen.add((text, phrase))
+            done = "반영" if fix and any(fix in t for t in texts if t != text) else "제안과 다르게 고침"
+            steps.append(f"[{fx.get('category') or '지적'}] 「{phrase}」 → 「{fix}」({done})")
+    return steps[-HISTORY_STEPS:]
+
+
+def held_ask(n: int, line: str, info: dict, history: list[str] | None = None) -> dict:
     """상한을 넘은 줄을 사람 확인으로 — 짚은 표현은 줄 전체(그 줄이 그대로인 동안 열림)."""
-    why = (f"같은 줄을 {info['round']}번째 판정 — 자동 수정 · 재판정 상한 {REJUDGE_CAP}회를 넘음 · "
-           "기준 판과 대조해 뜻이 맞는지 사람이 확인")
+    why = (f"같은 줄을 {info['round']}번째 판정해 자동 수정을 멈춤(상한 {REJUDGE_CAP}회) · "
+           "「그대로」는 지금 문장으로 확정, 「고침」은 기준 판으로 되돌림")
+    if history:
+        why += " · 판정 이력: " + " / ".join(history)
     return {"line": n, "phrase": line.strip(), "category": "재판정 상한",
             # 표의 「고침」은 판정기 제안대로라는 뜻이라, 제안 칸을 「되돌림」으로 적어 뜻을 분명히 한다
             "fix": f"기준 판으로 되돌림 — {info['root']}" if info.get("root") else "(새로 쓴 줄 · 기준 판 없음)",
@@ -1947,7 +1979,8 @@ def judge(path: Path, model: str, timeout: float, backend, targets: list[int] | 
             # 상한을 처음 넘은 줄은 지적이 없어도 사람에게 — 아직 못 찾은 결함도 그 줄에 있을 수 있다
             fresh_held = [n for n in over if info[n]["round"] == REJUDGE_CAP + 1 and n not in held_done]
             held_done.update(fresh_held)
-            items = list(items) + [held_ask(n, lines[n - 1], info[n]) for n in fresh_held]
+            items = list(items) + [held_ask(n, lines[n - 1], info[n], line_history(key, info[n].get("root")))
+                                   for n in fresh_held]
             items += kept_flagged(lines, mine, info, items, closed_rows, freq)
         for it in items:
             if isinstance(it, dict):

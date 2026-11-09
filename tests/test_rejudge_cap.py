@@ -270,6 +270,22 @@ class CapTests(_Base):
         asks = coverage.open_asks(coverage.doc_key(self.doc), lines, judge.LOG)
         self.assertEqual({5}, {n for n, _ in asks})
 
+    def test_the_held_line_carries_its_history(self) -> None:
+        """(2026-11-09 사용자 「무슨 소린지 모르겠다. 뭐라고 써있었는데 어떻게 고쳤는데 왜 해결이 안되어 나에게
+        보고한 것인지」) 「고친 이유」에 판정 횟수만 있어 무엇을 정할지 몰랐다 — 앞선 지적과 반영 여부, 고르는 뜻을 싣는다."""
+        results = self.run_rounds(judge.REJUDGE_CAP + 1)
+        why = [f for f in results[-1]["findings"] if f.get("category") == "재판정 상한"][0]["why"]
+        self.assertIn("판정 이력", why)
+        self.assertIn("「가까운」 → 「가까운한」(제안과 다르게 고침)", why, "앞선 지적과 반영 여부가 없습니다")
+        self.assertIn("「그대로」는 지금 문장으로 확정", why, "사람이 무엇을 고르는지 적지 않았습니다")
+
+    def test_history_marks_an_applied_suggestion(self) -> None:
+        self.rejudge(BASE[:4] + [VERSIONS[0]], [5])
+        applied = VERSIONS[0].replace("가까운", "가까운한")
+        self.rejudge(BASE[:4] + [applied], [5])
+        steps = judge.line_history(coverage.doc_key(self.doc), BASE[4])
+        self.assertIn("「가까운」 → 「가까운한」(반영)", steps[0])
+
     def test_the_line_is_held_only_once(self) -> None:
         results = self.run_rounds(judge.REJUDGE_CAP + 2)
         self.assertEqual([], [f for f in results[-1]["findings"] if f.get("category") == "재판정 상한"],
