@@ -220,11 +220,94 @@ def checker(text: str, work: Path, since: bool) -> tuple[str, dict]:
     return doc.read_text(encoding="utf-8"), cost
 
 
+L1_SYSTEM = ("당신은 한국어 업무 문서 편집자입니다. 사용자가 줄 번호를 붙인 문서와 문서 검사기가 짚은 줄 목록을 줍니다. "
+             "짚은 줄만 검사기 안내대로 고치고, 짚지 않은 줄은 글자 하나 바꾸지 않습니다. 사실, 숫자, 이름, 일정은 바꾸지 "
+             "않습니다. 줄 번호를 뺀 문서 전체(맨 앞 머리말 포함)만 출력하고 설명은 붙이지 않습니다.")
+
+
+def form_of(name: str) -> str:
+    """문서 형식 — 실사용에서는 사용자가 고른다(finalize 스킬 8단계). 공지는 공지형, 주간보고는 구조형."""
+    return "notice" if name.endswith("notice") else "structured"
+
+
+def l1_errors(doc: Path) -> list[tuple[str, str]]:
+    err, _, _ = chk.scan_md(str(doc))
+    return err
+
+
+def checker2(text: str, work: Path, form: str | None) -> tuple[str, dict]:
+    """실사용 흐름 — 2층 판정과 수정안 반영(사실 확인은 작성자가 확인해 줬다고 봄)을 끝까지 돈 뒤, 1층 오류 줄을 고치고
+    (세션이 하는 일을 Opus 한 번으로) 고친 줄을 다시 판정한다. 1층 오류가 없거나 더 바뀌지 않을 때까지 최대 3회."""
+    work.mkdir(parents=True, exist_ok=True)
+    doc = work / "doc.md"
+    front = f"---\nform: {form}\n---\n" if form and not text.startswith("---\n") else ""
+    doc.write_text(front + text, encoding="utf-8")
+
+    def git(*args: str) -> None:
+        subprocess.run(["git", "-c", "user.name=bench", "-c", "user.email=bench@localhost", "-C", str(work), *args],
+                       capture_output=True, check=True)
+    git("init", "-q", "-b", "main")
+    git("add", "doc.md")
+    git("commit", "-q", "-m", "base")
+    git("switch", "-q", "-c", "work")
+    counts = {k: 0 for k in ("사람 답", "사실 확인 닫기", "지시반영 닫기", "지시 밖 짚음 처리", "적용",
+                             "적용 못함 닫기", "되돌림 닫기", "되살림 닫기")}
+    history, calls, said, rounds, state, held, rnd = {}, [], io.StringIO(), 0, "완료", 0, 0
+    l1 = {"처음": len(l1_errors(doc)), "고침 호출": 0, "고침 비용": 0.0, "고침 초": 0}
+    with bench_loop.isolated(work):
+        for outer in range(3):
+            while rnd < 20 and len(calls) < MAX_CALLS:
+                # 1층 고침이 줄을 앞 판으로 되돌리면 그때의 지적이 다시 열리고, 판정기는 열린 지적이 남으면 재판정을
+                # 미룬다(종료 코드 6 · Gemini 공지에서 실측) — 세션처럼 먼저 처리하고 부른다
+                if rnd:
+                    bench_loop.process(doc, {}, "batch", counts, history, apply_checked=True)
+                out = work / f"round{rnd}.json"
+                argv = [str(doc), "--json", str(out), *LEVEL] + (["--since", "main"] if rnd else [])
+                with contextlib.redirect_stdout(said):
+                    rc = judge.main(argv)
+                rnd += 1
+                if rc not in (0, 1) or not out.is_file():
+                    state = f"실패 rc={rc}"
+                    break
+                res = json.loads(out.read_text(encoding="utf-8"))[0]
+                calls += res["calls"]
+                held += sum(1 for f in res["findings"] if f.get("held"))
+                rounds += 1 if res["calls"] else 0
+                if not bench_loop.process(doc, {}, "batch", counts, history, apply_checked=True):
+                    break
+            errs = l1_errors(doc)
+            if not errs or state != "완료":
+                break
+            lines = doc.read_text(encoding="utf-8").splitlines()
+            listing = "\n".join(f"- {msg}  [{kind}]" for kind, msg in errs)
+            numbered = "\n".join(f"{i}\t{l}" for i, l in enumerate(lines, 1))
+            new, c = opus(L1_SYSTEM, f"## 검사기가 짚은 줄\n\n{listing}\n\n## 문서\n\n{numbered}")
+            l1["고침 호출"] += 1
+            l1["고침 비용"] = round(l1["고침 비용"] + (c.get("cost_usd") or 0), 4)
+            l1["고침 초"] += c.get("sec") or 0
+            if front and not new.startswith("---\n"):
+                new = front + new
+            if new.strip() == "\n".join(lines).strip():
+                break
+            doc.write_text(new.rstrip() + "\n", encoding="utf-8")
+    l1["끝"] = len(l1_errors(doc))
+    (work / "judge-output.txt").write_text(said.getvalue(), encoding="utf-8")
+    final = doc.read_text(encoding="utf-8")
+    if front and final.startswith(front):
+        final = final[len(front):]
+    cost = {"calls": len(calls) + l1["고침 호출"], "rounds": rounds,
+            "sec": round(sum(c.get("seconds") or 0 for c in calls)) + l1["고침 초"],
+            "cost_usd": round(sum(c.get("cost_usd") or 0 for c in calls) + l1["고침 비용"], 4), "held": held,
+            "applied": counts["적용"], "answered": counts["사람 답"], "state": state, "1층": l1}
+    return final, cost
+
+
 FLOWS = {
     "plain": flow_plain, "rules": flow_rules, "imnotai": flow_imnotai, "rules_loop": flow_rules_loop,
     "checker": lambda t, w: checker(t, w, True), "checker_full": lambda t, w: checker(t, w, False),
+    "checker2": None,      # 문서 형식을 이름으로 정해야 해서 flows 에서 부른다
 }
-CARRIER_FLOWS = ("plain", "rules", "imnotai", "checker")
+CARRIER_FLOWS = ("plain", "rules", "imnotai", "checker", "checker2")
 
 
 def flows(work: Path, only: list[str] | None, docs: list[str] | None) -> None:
@@ -245,7 +328,10 @@ def flows(work: Path, only: list[str] | None, docs: list[str] | None) -> None:
             # 판정기 흐름은 머리말(form: prose)까지 넘긴다 — 운반 문서가 1층에서 조용하도록 만든 표시
             src = text if fl.startswith("checker") else body
             try:
-                after, cost = FLOWS[fl](src, d / "work")
+                if fl == "checker2":
+                    after, cost = checker2(src, d / "work", None if name == "carrier" else form_of(name))
+                else:
+                    after, cost = FLOWS[fl](src, d / "work")
             except Exception as e:  # 한 흐름이 실패해도 나머지는 돈다 — 실패는 기록에 남긴다
                 (d / "error.txt").write_text(f"{type(e).__name__}: {e}", encoding="utf-8")
                 print(f"  실패 {type(e).__name__}: {e}"[:300], flush=True)
@@ -466,11 +552,28 @@ def pairs(work: Path) -> list[dict]:
     return picked
 
 
+def pair_key(it: dict) -> tuple:
+    return it["doc"], it["before"], it["old"], it["after"], it["new"]
+
+
+def carried_answers(work: Path, items: list[dict]) -> dict:
+    """앞서 답한 표현과 글자가 같은 표현의 답 — 다시 묻지 않는다(2026-11-09 Gemini 문서를 깨끗하게 다시 만든 뒤)."""
+    kf, af = work / "sheet2-key.v1.json", work / "sheet2-answers.v1.json"
+    if not (kf.exists() and af.exists()):
+        return {}
+    k, a = json.loads(kf.read_text(encoding="utf-8")), json.loads(af.read_text(encoding="utf-8"))
+    old = {pair_key(it): a[f"p{i}"] for i, it in enumerate(k) if a.get(f"p{i}")}
+    return {f"p{i}": old[pair_key(it)] for i, it in enumerate(items) if pair_key(it) in old}
+
+
 def pair_sheet(work: Path, port: int) -> None:
     items = pairs(work)
+    carried = carried_answers(work, items)
     (work / "sheet2-key.json").write_text(json.dumps(items, ensure_ascii=False, indent=1), encoding="utf-8")
     rows = []
     for k, it in enumerate(items):
+        if f"p{k}" in carried:
+            continue
         ctx = lambda mid, tag: (f'{esc(it["before"])} <{tag}>{esc(mid) or "(지움)"}</{tag}> {esc(it["after"])}')
         radios = "".join(f'<label><input type="radio" name="p{k}" value="{v}">{v}</label>'
                          for v in ("나아짐", "비슷함", "나빠짐"))
@@ -488,10 +591,11 @@ button{{font:inherit;font-size:16px;padding:10px 24px;margin:20px 0}}
 <p class="lead">다섯 가지 고치는 방식이 원문을 바꾼 표현을 같은 규칙으로 네 갈래(낱말 바꿈, 풀어 씀, 줄임, 문장 고쳐 씀)로 나누고, 방식마다 갈래별 두 건씩만 뽑았습니다. 기호와 서식만 다른 것은 뺐고, 어느 방식이 고쳤는지는 숨겼습니다. 앞뒤 어절 하나씩을 함께 보입니다. 원문 표현(빨강)보다 고친 표현(초록)이 「AI 투가 없고 업무 문서로 자연스러우며 뜻이 같은가」 기준으로 나아졌는지 골라 주세요. 다 고른 뒤 맨 아래 「제출」을 누르면 됩니다.</p>
 <form method="post"><table><tr><th>#</th><th>원문</th><th>고친 표현</th><th>판정</th></tr>{"".join(rows)}</table>
 <button type="submit">제출</button></form></body></html>"""
-    serve(work, page, port, "sheet2-answers.json")
+    print(f"앞서 답한 표현 {len(carried)}건은 답을 그대로 씀 · 새로 물을 표현 {len(items) - len(carried)}건", flush=True)
+    serve(work, page, port, "sheet2-answers.json", carried)
 
 
-def serve(work: Path, page: str, port: int, out_name: str) -> None:
+def serve(work: Path, page: str, port: int, out_name: str, carried: dict | None = None) -> None:
     done = {}
 
     class H(http.server.BaseHTTPRequestHandler):
@@ -507,7 +611,7 @@ def serve(work: Path, page: str, port: int, out_name: str) -> None:
         def do_POST(self):
             from urllib.parse import parse_qs
             body = self.rfile.read(int(self.headers.get("Content-Length") or 0)).decode("utf-8")
-            form = {k: v[0] for k, v in parse_qs(body, keep_blank_values=True).items()}
+            form = {**(carried or {}), **{k: v[0] for k, v in parse_qs(body, keep_blank_values=True).items()}}
             (work / out_name).write_text(json.dumps(form, ensure_ascii=False, indent=1), encoding="utf-8")
             done["ok"] = True
             self.send_response(200)
@@ -662,7 +766,7 @@ def main() -> int:
         pair_sheet(work, int(opt("--port")[0]) if opt("--port") else 18932)
     elif cmd == "score":
         r = score(work)
-        (HERE / "result.json").write_text(json.dumps(r, ensure_ascii=False, indent=1), encoding="utf-8")
+        (HERE / "result.json").write_text(json.dumps(r, ensure_ascii=False, indent=1), encoding="utf-8", newline="\n")
         print(json.dumps(r, ensure_ascii=False, indent=1))
     return 0
 

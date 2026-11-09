@@ -1,0 +1,73 @@
+<meta name="audience" content="share">
+<meta name="form" content="structured">
+<meta name="origin" content="origin.txt">
+<title>AI 초안 전후 비교</title>
+<style>
+:root{color-scheme:light;--kr:Pretendard,"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",system-ui,sans-serif;
+--bg:#f6f5f1;--paper:#fffefb;--ink:#1f2328;--muted:#6b6f76;--line:#e3e0d8;--accent:#2f5d8a;
+--ins:#d9f0d3;--ins-ink:#1f5c25;--del:#f8dcd6;--del-ink:#8a2f22}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--kr);line-height:1.7;word-break:keep-all}
+main{max-width:1160px;margin:0 auto;padding:28px 16px 64px}
+h1{font-size:30px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px}
+.lead{margin:0 0 18px;max-width:72ch;color:var(--ink)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 18px;list-style:none;padding:0;margin:0 0 22px;font-size:14px;color:var(--muted)}
+ins{background:var(--ins);color:var(--ins-ink);text-decoration:none;border-radius:2px}
+del{background:var(--del);color:var(--del-ink);border-radius:2px}
+[role=tablist]{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+[role=tab]{font:inherit;font-size:15px;border:1px solid var(--line);background:var(--paper);color:var(--ink);
+border-radius:8px;padding:8px 14px;cursor:pointer;text-align:left;min-height:44px}
+[role=tab] span{display:block;font-size:12px;color:var(--muted)}
+[role=tab][aria-selected=true]{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+[role=tab]:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.facts{display:flex;flex-wrap:wrap;gap:6px 26px;margin:0 0 14px;font-size:14px}
+.facts div{display:flex;gap:8px}
+.facts dt{color:var(--muted)}
+.facts dd{margin:0;font-variant-numeric:tabular-nums}
+.scroll{overflow-x:auto;background:var(--paper);border:1px solid var(--line);border-radius:10px}
+table.pair{border-collapse:collapse;width:100%;min-width:680px;table-layout:fixed}
+.pair th{text-align:left;font-size:14px;color:var(--muted);font-weight:600;padding:10px 14px;border-bottom:1px solid var(--line)}
+.pair td{vertical-align:top;padding:6px 14px;width:50%;border-bottom:1px solid #f0eee8}
+.pair td+td,.pair th+th{border-left:1px solid var(--line)}
+.ln{white-space:pre-wrap;font-size:15px}
+.ln.h{font-weight:700;margin-top:4px}
+.ln.none{color:var(--muted);font-style:italic}
+tr.same .ln{color:#5f646b}
+tr.diff td{background:#fffdf6}
+details{margin-top:14px}
+summary{cursor:pointer;color:var(--accent)}
+.why{font-size:14px;color:var(--ink);margin:8px 0 0;padding-left:20px}
+.cond{margin-top:40px;padding-top:16px;border-top:1px solid var(--line);font-size:14px;color:var(--muted)}
+.cond h2{font-size:16px;color:var(--ink);margin:0 0 8px}
+.cond dl{display:grid;grid-template-columns:max-content 1fr;gap:4px 16px;margin:0}
+.cond dd{margin:0}
+@media (max-width:640px){h1{font-size:24px}.cond dl{grid-template-columns:1fr}.cond dd{margin-bottom:6px}}
+</style>
+<main>
+<h1>AI 초안 전후 비교</h1>
+<p class="lead"><b>AI가 쓴 업무 문서 여섯 편과 검사기로 고친 글</b> — 원문과 고친 글을 줄마다 나란히 표시(성능 수치는 <a href="https://claude.ai/artifact/8efh9fFyYu1paKYtmCJhe5">비교 페이지</a>에 정리)</p>
+<ul class="legend">
+<li><ins>초록</ins> — 고친 글에 새로 들어간 글자</li>
+<li><del>빨강</del> — 원문에서 빠진 글자</li>
+<li>흐린 줄 — 바뀌지 않은 줄</li>
+</ul>
+<div role="tablist" aria-label="문서 선택">
+{{TABS}}
+</div>
+{{PANELS}}
+<section class="cond">
+<h2>측정 조건</h2>
+<dl>
+<dt>원문</dt><dd>가상 회사의 주간보고와 사내 공지를 모델마다 문체 지시 없이 요청해 받은 글 그대로</dd>
+<dt>고친 글</dt><dd>규칙 검사, AI 판정, 수정안 반영, 고친 줄 재판정을 사람의 개입 없이 실행한 결과 그대로</dd>
+<dt>수정안 반영</dt><dd>판정기 수정안 전부 반영, 사실 확인 표시가 붙은 수정안도 작성자가 확인했다고 보고 반영</dd>
+<dt>문서 형식</dt><dd>주간보고는 개조식, 사내 공지는 공지형으로 지정</dd>
+<dt>검사 설정</dt><dd>개발자 PC 설정(개인 규칙 포함)</dd>
+</dl>
+</section>
+</main>
+<script>
+const tabs=[...document.querySelectorAll('[role=tab]')],panels=[...document.querySelectorAll('.panel')];
+tabs.forEach(t=>t.addEventListener('click',()=>{tabs.forEach(x=>x.setAttribute('aria-selected',x===t));
+panels.forEach(p=>p.hidden=p.dataset.i!==t.dataset.i);}));
+</script>
