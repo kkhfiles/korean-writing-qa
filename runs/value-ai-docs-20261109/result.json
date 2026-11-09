@@ -1,0 +1,1207 @@
+{
+ "이름": "AI 투 교정의 품질과 반복 수정 효율",
+ "사전 기록": "plan.md",
+ "측정 1a — 152건 고침률": {
+  "plain": {
+   "고침(전체)": "108/152",
+   "고침(대장)": "86/127",
+   "고침(예비)": "22/25",
+   "심은 표현 없는 줄 변경": "32/43",
+   "환산 비용": 0.6932,
+   "호출": 6,
+   "초": 212
+  },
+  "rules": {
+   "고침(전체)": "139/152",
+   "고침(대장)": "115/127",
+   "고침(예비)": "24/25",
+   "심은 표현 없는 줄 변경": "22/43",
+   "환산 비용": 0.844,
+   "호출": 6,
+   "초": 275
+  },
+  "imnotai": {
+   "고침(전체)": "32/152",
+   "고침(대장)": "25/127",
+   "고침(예비)": "7/25",
+   "심은 표현 없는 줄 변경": "5/43",
+   "환산 비용": 2.6374,
+   "호출": 12,
+   "초": 602
+  },
+  "checker": {
+   "고침(전체)": "93/152",
+   "고침(대장)": "79/127",
+   "고침(예비)": "14/25",
+   "심은 표현 없는 줄 변경": "10/43",
+   "환산 비용": 0.8515,
+   "호출": 8,
+   "초": 296
+  }
+ },
+ "측정 1b — 자동 지표": {
+  "claude-notice": {
+   "원문 1층": [
+    13,
+    2
+   ],
+   "plain": {
+    "변경률": 0.025,
+    "1층(오류, 주의)": [
+     13,
+     2
+    ],
+    "뜻": {
+     "status": "preserved",
+     "protected_removed": 0,
+     "marker_drops": [
+      {
+       "marker": "행위 주체",
+       "before": 8,
+       "after": 7
+      }
+     ]
+    },
+    "새 꼴": {
+     "대구": 0,
+     "결국": 0,
+     "이유입니다": 0
+    }
+   },
+   "rules": {
+    "변경률": 0.002,
+    "1층(오류, 주의)": [
+     13,
+     2
+    ],
+    "뜻": {
+     "status": "preserved",
+     "protected_removed": 0,
+     "marker_drops": []
+    },
+    "새 꼴": {
+     "대구": 0,
+     "결국": 0,
+     "이유입니다": 0
+    }
+   },
+   "imnotai": {
+    "변경률": 0.001,
+    "1층(오류, 주의)": [
+     13,
+     2
+    ],
+    "뜻": {
+     "status": "preserved",
+     "protected_removed": 0,
+     "marker_drops": []
+    },
+    "새 꼴": {
+     "대구": 0,
+     "결국": 0,
+     "이유입니다": 0
+    }
+   },
+   "rules_loop": {
+    "변경률": 0.0,
+    "1층(오류, 주의)": [
+     13,
+     2
+    ],
+    "뜻": {
+     "status": "preserved",
+     "protected_removed": 0,
+     "marker_drops": []
+    },
+    "새 꼴": {
+     "대구": 0,
+     "결국": 0,
+     "이유입니다": 0
+    }
+   },
+   "checker": {
+    "변경률": 0.0,
+    "1층(오류, 주의)": [
+     13,
+     2
+    ],
+    "뜻": {
+     "status": "preserved",
+     "protected_removed": 0,
+     "marker_drops": []
+    },
+    "새 꼴": {
+     "대구": 0,
+     "결국": 0,
+     "이유입니다": 0
+    }
+   },
+   "checker_full": {
+    "변경률": 0.0,
+    "1층(오류, 주의)": [
+     13,
+     2
+    ],
+    "뜻": {
+     "status": "preserved",
+     "protected_removed": 0,
+     "marker_drops": []
+    },
+    "새 꼴": {
+     "대구": 0,
+     "결국": 0,
+     "이유입니다": 0
+    }
+   }
+  },
+  "claude-weekly": {
+   "원문 1층": [
+    6,
+    1
+   ],
+   "plain": {
+    "변경률": 0.008,
+    "1층(오류, 주의)": [
+     6,
+     1
+    ],
+    "뜻": {
+     "status": "preserved",
+     "protected_removed": 0,
+     "marker_drops": []
+    },
+    "새 꼴": {
+     "대구": 0,
+     "결국": 0,
+     "이유입니다": 0
+    }
+   },
+   "rules": {
+    "변경률": 0.006,
+    "1층(오류, 주의)": [
+     6,
+     1
+    ],
+    "뜻": {
+     "status": "preserved",
+     "protected_removed": 0,
+     "marker_drops": []
+    },
+    "새 꼴": {
+     "대구": 0,
+     "결국": 0,
+     "이유입니다": 0
+    }
+   },
+   "imnotai": {
+    "변경률": 0.001,
+    "1층(오류, 주의)": [
+     6,
+     1
+    ],
+    "뜻": {
+     "status": "preserved",
+     "protected_removed": 0,
+     "marker_drops": []
+    },
+    "새 꼴": {
+     "대구": 0,
+     "결국": 0,
+     "이유입니다": 0
+    }
+   },
+   "rules_loop": {
+    "변경률": 0.007,
+    "1층(오류, 주의)": [
+     6,
+     1
+    ],
+    "뜻": {
+     "status": "preserved",
+     "protected_removed": 0,
+     "marker_drops": [
+      {
+       "marker": "행위 주체",
+       "before": 5,
+       "after": 4
+      }
+     ]
+    },
+    "새 꼴": {
+     "대구": 0,
+     "결국": 0,
+     "이유입니다": 0
+    }
+   },
+   "checker": {
+    "변경률": 0.0,
+    "1층(오류, 주의)": [
+     6,
+     1
+    ],
+    "뜻": {
+     "status": "preserved",
+     "protected_removed": 0,
+     "marker_drops": []
+    },
+    "새 꼴": {
+     "대구": 0,
+     "결국": 0,
+     "이유입니다": 0
+    }
+   },
+   "checker_full": {
+    "변경률": 0.0,
+    "1층(오류, 주의)": [
+     6,
+     1
+    ],
+    "뜻": {
+     "status": "preserved",
+     "protected_removed": 0,
+     "marker_drops": []
+    },
+    "새 꼴": {
+     "대구": 0,
+     "결국": 0,
+     "이유입니다": 0
+    }
+   }
+  },
+  "gemini-notice": {
+   "원문 1층": [
+    15,
+    2
+   ],
+   "plain": {
+    "변경률": 0.053,
+    "1층(오류, 주의)": [
+     15,
+     2
+    ],
+    "뜻": {
+     "status": "changed_protected_content",
+     "protected_removed": 1,
+     "marker_drops": [
+      {
+       "marker": "행위 주체",
+       "before": 7,
+       "after": 2
+      }
+     ]
+    },
+    "새 꼴": {
+     "대구": 0,
+     "결국": 0,
+     "이유입니다": 0
+    }
+   },
+   "rules": {
+    "변경률": 0.026,
+    "1층(오류, 주의)": [
+     15,
+     2
+    ],
+    "뜻": {
+     "status": "changed_protected_content",
+     "protected_removed": 1,
+     "marker_drops": [
+      {
+       "marker": "행위 주체",
+       "before": 7,
+       "after": 6
+      }
+     ]
+    },
+    "새 꼴": {
+     "대구": 0,
+     "결국": 0,
+     "이유입니다": 0
+    }
+   },
+   "imnotai": {
+    "변경률": 0.027,
+    "1층(오류, 주의)": [
+     15,
+     2
+    ],
+    "뜻": {
+     "status": "removed_content",
+     "protected_removed": 2,
+     "marker_drops": [
+      {
+       "marker": "행위 주체",
+       "before": 7,
+       "after": 6
+      }
+     ]
+    },
+    "새 꼴": {
+     "대구": 0,
+     "결국": 0,
+     "이유입니다": 0
+    }
+   },
+   "rules_loop": {
+    "변경률": 0.092,
+    "1층(오류, 주의)": [
+     15,
+     2
+    ],
+    "뜻": {
+     "status": "changed_protected_content",
+     "protected_removed": 2,
+     "marker_drops": [
+      {
+       "marker": "행위 주체",
+       "before": 7,
+       "after": 5
+      }
+     ]
+    },
+    "새 꼴": {
+     "대구": 0,
+     "결국": 0,
+     "이유입니다": 0
+    }
+   },
+   "checker": {
+    "변경률": 0.026,
+    "1층(오류, 주의)": [
+     15,
+     2
+    ],
+    "뜻": {
+     "status": "changed_protected_content",
+     "protected_removed": 0,
+     "marker_drops": []
+    },
+    "새 꼴": {
+     "대구": 0,
+     "결국": 0,
+     "이유입니다": 0
+    }
+   },
+   "checker_full": {
+    "변경률": 0.04,
+    "1층(오류, 주의)": [
+     15,
+     2
+    ],
+    "뜻": {
+     "status": "changed_protected_content",
+     "protected_removed": 1,
+     "marker_drops": [
+      {
+       "marker": "행위 주체",
+       "before": 7,
+       "after": 6
+      }
+     ]
+    },
+    "새 꼴": {
+     "대구": 0,
+     "결국": 0,
+     "이유입니다": 0
+    }
+   }
+  },
+  "gemini-weekly": {
+   "원문 1층": [
+    13,
+    3
+   ],
+   "plain": {
+    "변경률": 0.05,
+    "1층(오류, 주의)": [
+     13,
+     3
+    ],
+    "뜻": {
+     "status": "preserved",
+     "protected_removed": 0,
+     "marker_drops": []
+    },
+    "새 꼴": {
+     "대구": 0,
+     "결국": 0,
+     "이유입니다": 0
+    }
+   },
+   "rules": {
+    "변경률": 0.071,
+    "1층(오류, 주의)": [
+     13,
+     3
+    ],
+    "뜻": {
+     "status": "preserved",
+     "protected_removed": 0,
+     "marker_drops": [
+      {
+       "marker": "행위 주체",
+       "before": 7,
+       "after": 6
+      }
+     ]
+    },
+    "새 꼴": {
+     "대구": 0,
+     "결국": 0,
+     "이유입니다": 0
+    }
+   },
+   "imnotai": {
+    "변경률": 0.003,
+    "1층(오류, 주의)": [
+     13,
+     3
+    ],
+    "뜻": {
+     "status": "preserved",
+     "protected_removed": 0,
+     "marker_drops": []
+    },
+    "새 꼴": {
+     "대구": 0,
+     "결국": 0,
+     "이유입니다": 0
+    }
+   },
+   "rules_loop": {
+    "변경률": 0.061,
+    "1층(오류, 주의)": [
+     13,
+     3
+    ],
+    "뜻": {
+     "status": "preserved",
+     "protected_removed": 0,
+     "marker_drops": [
+      {
+       "marker": "행위 주체",
+       "before": 7,
+       "after": 6
+      }
+     ]
+    },
+    "새 꼴": {
+     "대구": 0,
+     "결국": 0,
+     "이유입니다": 0
+    }
+   },
+   "checker": {
+    "변경률": 0.015,
+    "1층(오류, 주의)": [
+     13,
+     3
+    ],
+    "뜻": {
+     "status": "preserved",
+     "protected_removed": 0,
+     "marker_drops": [
+      {
+       "marker": "행위 주체",
+       "before": 7,
+       "after": 6
+      }
+     ]
+    },
+    "새 꼴": {
+     "대구": 0,
+     "결국": 0,
+     "이유입니다": 0
+    }
+   },
+   "checker_full": {
+    "변경률": 0.051,
+    "1층(오류, 주의)": [
+     13,
+     3
+    ],
+    "뜻": {
+     "status": "preserved",
+     "protected_removed": 0,
+     "marker_drops": [
+      {
+       "marker": "행위 주체",
+       "before": 7,
+       "after": 6
+      }
+     ]
+    },
+    "새 꼴": {
+     "대구": 0,
+     "결국": 0,
+     "이유입니다": 0
+    }
+   }
+  },
+  "gpt-notice": {
+   "원문 1층": [
+    6,
+    3
+   ],
+   "plain": {
+    "변경률": 0.066,
+    "1층(오류, 주의)": [
+     6,
+     3
+    ],
+    "뜻": {
+     "status": "changed_protected_content",
+     "protected_removed": 0,
+     "marker_drops": []
+    },
+    "새 꼴": {
+     "대구": 0,
+     "결국": 0,
+     "이유입니다": 0
+    }
+   },
+   "rules": {
+    "변경률": 0.013,
+    "1층(오류, 주의)": [
+     6,
+     3
+    ],
+    "뜻": {
+     "status": "preserved",
+     "protected_removed": 0,
+     "marker_drops": []
+    },
+    "새 꼴": {
+     "대구": 0,
+     "결국": 0,
+     "이유입니다": 0
+    }
+   },
+   "imnotai": {
+    "변경률": 0.023,
+    "1층(오류, 주의)": [
+     6,
+     3
+    ],
+    "뜻": {
+     "status": "preserved",
+     "protected_removed": 0,
+     "marker_drops": []
+    },
+    "새 꼴": {
+     "대구": 0,
+     "결국": 0,
+     "이유입니다": 0
+    }
+   },
+   "rules_loop": {
+    "변경률": 0.047,
+    "1층(오류, 주의)": [
+     6,
+     3
+    ],
+    "뜻": {
+     "status": "changed_protected_content",
+     "protected_removed": 0,
+     "marker_drops": []
+    },
+    "새 꼴": {
+     "대구": 0,
+     "결국": 0,
+     "이유입니다": 0
+    }
+   },
+   "checker": {
+    "변경률": 0.027,
+    "1층(오류, 주의)": [
+     6,
+     3
+    ],
+    "뜻": {
+     "status": "preserved",
+     "protected_removed": 0,
+     "marker_drops": []
+    },
+    "새 꼴": {
+     "대구": 0,
+     "결국": 0,
+     "이유입니다": 0
+    }
+   },
+   "checker_full": {
+    "변경률": 0.045,
+    "1층(오류, 주의)": [
+     6,
+     3
+    ],
+    "뜻": {
+     "status": "changed_protected_content",
+     "protected_removed": 0,
+     "marker_drops": []
+    },
+    "새 꼴": {
+     "대구": 0,
+     "결국": 0,
+     "이유입니다": 0
+    }
+   }
+  },
+  "gpt-weekly": {
+   "원문 1층": [
+    17,
+    0
+   ],
+   "plain": {
+    "변경률": 0.059,
+    "1층(오류, 주의)": [
+     17,
+     0
+    ],
+    "뜻": {
+     "status": "preserved",
+     "protected_removed": 0,
+     "marker_drops": [
+      {
+       "marker": "완료·단정",
+       "before": 9,
+       "after": 7
+      },
+      {
+       "marker": "부정·범위",
+       "before": 7,
+       "after": 6
+      },
+      {
+       "marker": "추정·유보",
+       "before": 1,
+       "after": 0
+      }
+     ]
+    },
+    "새 꼴": {
+     "대구": 0,
+     "결국": 0,
+     "이유입니다": 0
+    }
+   },
+   "rules": {
+    "변경률": 0.004,
+    "1층(오류, 주의)": [
+     17,
+     0
+    ],
+    "뜻": {
+     "status": "preserved",
+     "protected_removed": 0,
+     "marker_drops": []
+    },
+    "새 꼴": {
+     "대구": 0,
+     "결국": 0,
+     "이유입니다": 0
+    }
+   },
+   "imnotai": {
+    "변경률": 0.007,
+    "1층(오류, 주의)": [
+     17,
+     0
+    ],
+    "뜻": {
+     "status": "preserved",
+     "protected_removed": 0,
+     "marker_drops": [
+      {
+       "marker": "추정·유보",
+       "before": 1,
+       "after": 0
+      }
+     ]
+    },
+    "새 꼴": {
+     "대구": 0,
+     "결국": 0,
+     "이유입니다": 0
+    }
+   },
+   "rules_loop": {
+    "변경률": 0.016,
+    "1층(오류, 주의)": [
+     17,
+     0
+    ],
+    "뜻": {
+     "status": "preserved",
+     "protected_removed": 0,
+     "marker_drops": [
+      {
+       "marker": "행위 주체",
+       "before": 13,
+       "after": 12
+      }
+     ]
+    },
+    "새 꼴": {
+     "대구": 0,
+     "결국": 0,
+     "이유입니다": 0
+    }
+   },
+   "checker": {
+    "변경률": 0.003,
+    "1층(오류, 주의)": [
+     17,
+     0
+    ],
+    "뜻": {
+     "status": "preserved",
+     "protected_removed": 0,
+     "marker_drops": []
+    },
+    "새 꼴": {
+     "대구": 0,
+     "결국": 0,
+     "이유입니다": 0
+    }
+   },
+   "checker_full": {
+    "변경률": 0.008,
+    "1층(오류, 주의)": [
+     17,
+     0
+    ],
+    "뜻": {
+     "status": "preserved",
+     "protected_removed": 0,
+     "marker_drops": [
+      {
+       "marker": "행위 주체",
+       "before": 13,
+       "after": 12
+      }
+     ]
+    },
+    "새 꼴": {
+     "대구": 0,
+     "결국": 0,
+     "이유입니다": 0
+    }
+   }
+  }
+ },
+ "측정 2 — 흐름별 비용": {
+  "plain": {
+   "claude-notice": {
+    "cost_usd": 0.0581,
+    "sec": 14,
+    "calls": 1
+   },
+   "claude-weekly": {
+    "cost_usd": 0.0519,
+    "sec": 15,
+    "calls": 1
+   },
+   "gemini-notice": {
+    "cost_usd": 0.0555,
+    "sec": 16,
+    "calls": 1
+   },
+   "gemini-weekly": {
+    "cost_usd": 0.0772,
+    "sec": 24,
+    "calls": 1
+   },
+   "gpt-notice": {
+    "cost_usd": 0.0622,
+    "sec": 18,
+    "calls": 1
+   },
+   "gpt-weekly": {
+    "cost_usd": 0.0608,
+    "sec": 17,
+    "calls": 1
+   }
+  },
+  "rules": {
+   "claude-notice": {
+    "cost_usd": 0.2965,
+    "sec": 18,
+    "calls": 1
+   },
+   "claude-weekly": {
+    "cost_usd": 0.0625,
+    "sec": 18,
+    "calls": 1
+   },
+   "gemini-notice": {
+    "cost_usd": 0.0891,
+    "sec": 28,
+    "calls": 1
+   },
+   "gemini-weekly": {
+    "cost_usd": 0.1111,
+    "sec": 35,
+    "calls": 1
+   },
+   "gpt-notice": {
+    "cost_usd": 0.0724,
+    "sec": 22,
+    "calls": 1
+   },
+   "gpt-weekly": {
+    "cost_usd": 0.0942,
+    "sec": 27,
+    "calls": 1
+   }
+  },
+  "imnotai": {
+   "claude-notice": {
+    "cost_usd": 0.3902,
+    "sec": 60,
+    "calls": 2
+   },
+   "claude-weekly": {
+    "cost_usd": 0.2391,
+    "sec": 52,
+    "calls": 2
+   },
+   "gemini-notice": {
+    "cost_usd": 0.3098,
+    "sec": 83,
+    "calls": 2
+   },
+   "gemini-weekly": {
+    "cost_usd": 0.2946,
+    "sec": 76,
+    "calls": 2
+   },
+   "gpt-notice": {
+    "cost_usd": 0.2941,
+    "sec": 76,
+    "calls": 2
+   },
+   "gpt-weekly": {
+    "cost_usd": 0.2723,
+    "sec": 64,
+    "calls": 2
+   }
+  },
+  "rules_loop": {
+   "claude-notice": {
+    "cost_usd": 0.0262,
+    "sec": 12,
+    "calls": 1,
+    "rounds": 1
+   },
+   "claude-weekly": {
+    "cost_usd": 0.096,
+    "sec": 32,
+    "calls": 2,
+    "rounds": 2
+   },
+   "gemini-notice": {
+    "cost_usd": 0.207,
+    "sec": 67,
+    "calls": 3,
+    "rounds": 3
+   },
+   "gemini-weekly": {
+    "cost_usd": 0.3635,
+    "sec": 118,
+    "calls": 4,
+    "rounds": 4
+   },
+   "gpt-notice": {
+    "cost_usd": 0.1756,
+    "sec": 56,
+    "calls": 3,
+    "rounds": 3
+   },
+   "gpt-weekly": {
+    "cost_usd": 0.3584,
+    "sec": 108,
+    "calls": 5,
+    "rounds": 5
+   }
+  },
+  "checker": {
+   "claude-notice": {
+    "calls": 1,
+    "rounds": 1,
+    "sec": 7,
+    "cost_usd": 0.1809,
+    "held": 0,
+    "applied": 0,
+    "answered": 0,
+    "state": "완료"
+   },
+   "claude-weekly": {
+    "calls": 1,
+    "rounds": 1,
+    "sec": 9,
+    "cost_usd": 0.0375,
+    "held": 0,
+    "applied": 0,
+    "answered": 0,
+    "state": "완료"
+   },
+   "gemini-notice": {
+    "calls": 5,
+    "rounds": 5,
+    "sec": 42,
+    "cost_usd": 0.2142,
+    "held": 1,
+    "applied": 12,
+    "answered": 1,
+    "state": "완료"
+   },
+   "gemini-weekly": {
+    "calls": 2,
+    "rounds": 2,
+    "sec": 20,
+    "cost_usd": 0.0838,
+    "held": 0,
+    "applied": 6,
+    "answered": 0,
+    "state": "완료"
+   },
+   "gpt-notice": {
+    "calls": 3,
+    "rounds": 3,
+    "sec": 30,
+    "cost_usd": 0.1019,
+    "held": 0,
+    "applied": 10,
+    "answered": 1,
+    "state": "완료"
+   },
+   "gpt-weekly": {
+    "calls": 2,
+    "rounds": 2,
+    "sec": 12,
+    "cost_usd": 0.0566,
+    "held": 0,
+    "applied": 1,
+    "answered": 0,
+    "state": "완료"
+   }
+  },
+  "checker_full": {
+   "claude-notice": {
+    "calls": 1,
+    "rounds": 1,
+    "sec": 10,
+    "cost_usd": 0.0201,
+    "held": 0,
+    "applied": 0,
+    "answered": 0,
+    "state": "완료"
+   },
+   "claude-weekly": {
+    "calls": 1,
+    "rounds": 1,
+    "sec": 5,
+    "cost_usd": 0.0126,
+    "held": 0,
+    "applied": 0,
+    "answered": 0,
+    "state": "완료"
+   },
+   "gemini-notice": {
+    "calls": 5,
+    "rounds": 5,
+    "sec": 38,
+    "cost_usd": 0.1699,
+    "held": 0,
+    "applied": 16,
+    "answered": 0,
+    "state": "완료"
+   },
+   "gemini-weekly": {
+    "calls": 7,
+    "rounds": 7,
+    "sec": 87,
+    "cost_usd": 0.3647,
+    "held": 0,
+    "applied": 25,
+    "answered": 1,
+    "state": "완료"
+   },
+   "gpt-notice": {
+    "calls": 8,
+    "rounds": 8,
+    "sec": 71,
+    "cost_usd": 0.4494,
+    "held": 0,
+    "applied": 19,
+    "answered": 5,
+    "state": "완료"
+   },
+   "gpt-weekly": {
+    "calls": 2,
+    "rounds": 2,
+    "sec": 15,
+    "cost_usd": 0.0592,
+    "held": 0,
+    "applied": 3,
+    "answered": 0,
+    "state": "완료"
+   }
+  }
+ },
+ "측정 1b — 표현 판정": {
+  "방식": "2026-11-09 사용자 「일관된 규칙으로 분류해서 그것만 고르게」 — 바뀐 표현을 기계 규칙으로 네 갈래로 나누고 흐름마다 갈래별 2건을 고정 씨앗으로 뽑아 「나아짐, 비슷함, 나빠짐」으로 판정. 사전 기록의 판 순위와 다른 방식이라 탐색적",
+  "표현": 30,
+  "답한 표현": 30,
+  "흐름별": {
+   "checker": {
+    "문장 고쳐 씀": {
+     "나아짐": 2,
+     "비슷함": 0,
+     "나빠짐": 0,
+     "나아짐−나빠짐 비율": 1.0
+    },
+    "전체": {
+     "나아짐": 7,
+     "비슷함": 0,
+     "나빠짐": 0,
+     "나아짐−나빠짐 비율": 1.0
+    },
+    "풀어 씀": {
+     "나아짐": 2,
+     "비슷함": 0,
+     "나빠짐": 0,
+     "나아짐−나빠짐 비율": 1.0
+    },
+    "낱말 바꿈": {
+     "나아짐": 2,
+     "비슷함": 0,
+     "나빠짐": 0,
+     "나아짐−나빠짐 비율": 1.0
+    },
+    "줄임": {
+     "나아짐": 1,
+     "비슷함": 0,
+     "나빠짐": 0,
+     "나아짐−나빠짐 비율": 1.0
+    }
+   },
+   "plain": {
+    "문장 고쳐 씀": {
+     "나아짐": 1,
+     "비슷함": 1,
+     "나빠짐": 0,
+     "나아짐−나빠짐 비율": 0.5
+    },
+    "전체": {
+     "나아짐": 5,
+     "비슷함": 2,
+     "나빠짐": 0,
+     "나아짐−나빠짐 비율": 0.71
+    },
+    "풀어 씀": {
+     "나아짐": 1,
+     "비슷함": 1,
+     "나빠짐": 0,
+     "나아짐−나빠짐 비율": 0.5
+    },
+    "낱말 바꿈": {
+     "나아짐": 3,
+     "비슷함": 0,
+     "나빠짐": 0,
+     "나아짐−나빠짐 비율": 1.0
+    }
+   },
+   "rules": {
+    "문장 고쳐 씀": {
+     "나아짐": 2,
+     "비슷함": 0,
+     "나빠짐": 0,
+     "나아짐−나빠짐 비율": 1.0
+    },
+    "전체": {
+     "나아짐": 8,
+     "비슷함": 2,
+     "나빠짐": 1,
+     "나아짐−나빠짐 비율": 0.64
+    },
+    "풀어 씀": {
+     "나아짐": 1,
+     "비슷함": 1,
+     "나빠짐": 0,
+     "나아짐−나빠짐 비율": 0.5
+    },
+    "낱말 바꿈": {
+     "나아짐": 5,
+     "비슷함": 0,
+     "나빠짐": 0,
+     "나아짐−나빠짐 비율": 1.0
+    },
+    "줄임": {
+     "나아짐": 0,
+     "비슷함": 1,
+     "나빠짐": 1,
+     "나아짐−나빠짐 비율": -0.5
+    }
+   },
+   "rules_loop": {
+    "문장 고쳐 씀": {
+     "나아짐": 3,
+     "비슷함": 1,
+     "나빠짐": 0,
+     "나아짐−나빠짐 비율": 0.75
+    },
+    "전체": {
+     "나아짐": 8,
+     "비슷함": 2,
+     "나빠짐": 1,
+     "나아짐−나빠짐 비율": 0.64
+    },
+    "줄임": {
+     "나아짐": 0,
+     "비슷함": 1,
+     "나빠짐": 1,
+     "나아짐−나빠짐 비율": -0.5
+    },
+    "낱말 바꿈": {
+     "나아짐": 3,
+     "비슷함": 0,
+     "나빠짐": 0,
+     "나아짐−나빠짐 비율": 1.0
+    },
+    "풀어 씀": {
+     "나아짐": 2,
+     "비슷함": 0,
+     "나빠짐": 0,
+     "나아짐−나빠짐 비율": 1.0
+    }
+   },
+   "imnotai": {
+    "낱말 바꿈": {
+     "나아짐": 1,
+     "비슷함": 0,
+     "나빠짐": 1,
+     "나아짐−나빠짐 비율": 0.0
+    },
+    "전체": {
+     "나아짐": 3,
+     "비슷함": 0,
+     "나빠짐": 2,
+     "나아짐−나빠짐 비율": 0.2
+    },
+    "풀어 씀": {
+     "나아짐": 1,
+     "비슷함": 0,
+     "나빠짐": 0,
+     "나아짐−나빠짐 비율": 1.0
+    },
+    "문장 고쳐 씀": {
+     "나아짐": 1,
+     "비슷함": 0,
+     "나빠짐": 1,
+     "나아짐−나빠짐 비율": 0.0
+    }
+   }
+  }
+ }
+}
