@@ -1,0 +1,88 @@
+<meta name="audience" content="share">
+<meta name="form" content="structured">
+<meta name="origin" content="origin.txt">
+<title>AI 말투 고치기 시연</title>
+<style>
+:root{color-scheme:light;--kr:Pretendard,"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",system-ui,sans-serif;
+--bg:#f6f5f1;--paper:#fffefb;--ink:#1f2328;--muted:#6b6f76;--line:#e3e0d8;--accent:#2f5d8a;
+--ins:#d9f0d3;--ins-ink:#1f5c25;--del:#f8dcd6;--del-ink:#8a2f22}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--kr);line-height:1.7;word-break:keep-all}
+main{max-width:1160px;margin:0 auto;padding:28px 16px 64px}
+h1{font-size:30px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px}
+h2{font-size:18px;font-weight:700;letter-spacing:-.01em;margin:30px 0 10px}
+.lead{margin:0 0 18px;max-width:72ch;color:var(--ink)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 18px;list-style:none;padding:0;margin:0 0 18px;font-size:14px;color:var(--muted)}
+ins{background:var(--ins);color:var(--ins-ink);text-decoration:none;border-radius:2px}
+del{background:var(--del);color:var(--del-ink);border-radius:2px}
+.facts{display:flex;flex-wrap:wrap;gap:6px 26px;margin:0 0 14px;font-size:14px}
+.facts div{display:flex;gap:8px}
+.facts dt{color:var(--muted)}
+.facts dd{margin:0;font-variant-numeric:tabular-nums}
+.scroll{overflow-x:auto;background:var(--paper);border:1px solid var(--line);border-radius:10px}
+table.pair{border-collapse:collapse;width:100%;min-width:680px;table-layout:fixed}
+.pair th{text-align:left;font-size:14px;color:var(--muted);font-weight:600;padding:10px 14px;border-bottom:1px solid var(--line)}
+.pair td{vertical-align:top;padding:6px 14px;width:50%;border-bottom:1px solid #f0eee8}
+.pair td+td,.pair th+th{border-left:1px solid var(--line)}
+.ln{white-space:pre-wrap;font-size:15px}
+.ln.h{font-weight:700;margin-top:4px}
+.ln.none{color:var(--muted);font-style:italic}
+tr.same .ln{color:#5f646b}
+tr.diff td{background:#fffdf6}
+table.list{border-collapse:collapse;width:100%;min-width:560px;font-size:14px}
+.list th{text-align:left;color:var(--muted);font-weight:600;padding:8px 12px;border-bottom:1px solid var(--line)}
+.list td{padding:6px 12px;border-bottom:1px solid #f0eee8;vertical-align:top}
+.list td:last-child{white-space:nowrap}
+details{margin-top:14px}
+summary{cursor:pointer;color:var(--accent);min-height:32px}
+.why{font-size:14px;color:var(--ink);margin:8px 0 0;padding-left:20px}
+.cond{margin-top:40px;padding-top:16px;border-top:1px solid var(--line);font-size:14px;color:var(--muted)}
+.cond h2{font-size:16px;color:var(--ink);margin:0 0 8px}
+.cond dl{display:grid;grid-template-columns:max-content 1fr;gap:4px 16px;margin:0}
+.cond dd{margin:0}
+@media (max-width:640px){h1{font-size:24px}.cond dl{grid-template-columns:1fr}.cond dd{margin-bottom:6px}}
+</style>
+<main>
+<h1>AI 말투 고치기 시연</h1>
+<p class="lead"><b>AI 말투를 일부러 모아 쓴 가상 주간보고와 검사기로 고친 글</b> — 원문과 고친 글을 줄마다 나란히 표시(성능 수치는 <a href="https://claude.ai/artifact/8efh9fFyYu1paKYtmCJhe5">비교 페이지</a>에 정리)</p>
+<ul class="legend">
+<li><ins>초록</ins> — 고친 글에 새로 들어간 글자</li>
+<li><del>빨강</del> — 원문에서 빠진 글자</li>
+<li>흐린 줄 — 바뀌지 않은 줄</li>
+</ul>
+<dl class="facts">
+<div><dt>일부러 넣은 말투</dt><dd>{{N_PLANTED}}개</dd></div>
+<div><dt>고친 글에서 없어진 말투</dt><dd>{{N_CHANGED}}개</dd></div>
+<div><dt>남은 말투</dt><dd>{{N_KEPT}}개</dd></div>
+<div><dt>비교표의 바뀐 행</dt><dd>{{BLOCKS}}행</dd></div>
+<div><dt>규칙 검사 오류</dt><dd>{{L1}}</dd></div>
+<div><dt>판정 호출</dt><dd>{{CALLS}}</dd></div>
+</dl>
+<div class="scroll"><table class="pair"><thead><tr><th>AI 말투를 모은 원문</th><th>검사기로 고친 글</th></tr></thead>
+<tbody>
+{{TABLE}}
+</tbody></table></div>
+<h2>고치며 생긴 문제</h2>
+<ul class="why">
+{{NOTES}}
+</ul>
+<h2>일부러 넣은 말투와 결과</h2>
+<div class="scroll"><table class="list"><thead><tr><th>말투 갈래</th><th>원문 구절</th><th>고친 글의 말투</th></tr></thead>
+<tbody>
+{{PLANTED}}
+</tbody></table></div>
+<details><summary>판정기가 짚은 표현</summary><ul class="why">
+{{WHY}}
+</ul></details>
+<section class="cond">
+<h2>시연 조건</h2>
+<dl>
+<dt>원문</dt><dd>검사기 규칙과 im-not-ai 분류표의 AI 말투를 보고 일부러 모아 지은 가상 보고서(측정용 표본이 아니라 시연용)</dd>
+<dt>고친 글</dt><dd>규칙 검사, AI 판정, 수정안 반영, 고친 줄 재판정을 사람의 개입 없이 실행한 결과 그대로</dd>
+<dt>수정안 반영</dt><dd>판정기 수정안 전부 반영, 사실 확인 표시가 붙은 수정안도 작성자가 확인했다고 보고 반영</dd>
+<dt>「남음」 판정</dt><dd>말투마다 정한 표지(예: 「시점입니다」는 「시점」)가 고친 글에 있는지 글자로 대조한 결과이고, 잘 고쳤는지는 위 비교표로 확인</dd>
+<dt>「고치며 생긴 문제」</dt><dd>세션이 고친 글을 읽고 찾은 것</dd>
+<dt>문서 형식</dt><dd>개조식으로 지정</dd>
+</dl>
+</section>
+</main>
