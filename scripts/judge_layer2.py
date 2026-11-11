@@ -76,6 +76,7 @@ from __future__ import annotations
 import argparse
 import collections
 import contextlib
+import difflib
 import hashlib
 import importlib
 import json
@@ -861,6 +862,72 @@ def evidence_problems(doc: Path, note: str, lines: list[str]) -> list[str]:
         elif not 0 < n <= before[-1][2]:
             out.append(f"「{m.group(0)}」 은 {before[-1][1]}({before[-1][2]}행)에 없는 줄입니다")
     return out
+
+
+def why_changed(path: Path, only: int | None = None) -> list[dict]:
+    """이 문서에 판정기가 낸 지적과 지금 글에서의 처리 — 모델을 부르지 않고 판정 기록만 읽는다.
+
+    (2026-11-11 사용자 「이유 표시하는건 기본으로 넣지 않아도 AI한테 요청하면 해줄텐데 구현으로 만들지 말고 명령으로
+    두는건 쉽지 않나?」) 「왜 고쳤나」를 물으면 세션이 이 명령으로 답한다. 판정 기록의 줄 번호는 그 회차 판의 번호라
+    지금 글과 안 맞는다 — 수정안이 글자로 든 줄(반영), 짚은 표현이 남은 줄(남음), 지적한 줄과 가장 닮은 줄(다르게
+    고침) 순으로 찾는다.
+    """
+    key = coverage.doc_key(path)
+    lines = read_doc(path).splitlines()
+    rows = sorted((r for r in coverage._rows(key, LOG, None, fresh=False) if r.get("ok")),
+                  key=lambda r: float(r.get("when") or 0))
+    dismissed = {}
+    for d in coverage._rows(key, coverage.DISMISSALS, None, fresh=False):
+        dismissed[str(d.get("phrase") or "")] = f"받지 않음({d.get('reason') or ''})"
+    out, seen = [], set()
+    for r in rows:
+        for kind in ("fixes", "asks"):
+            for f in r.get(kind) or []:
+                if f.get("category") == "재판정 상한":
+                    continue
+                phrase, fix = str(f.get("phrase") or ""), str(f.get("fix") or "")
+                mark = (f.get("category"), phrase, fix)
+                if mark in seen:
+                    continue
+                seen.add(mark)
+                plain_fix, plain_phrase = coverage._plain(fix), coverage._plain(phrase)
+                n, status = None, "지금 글에 없음"
+                if noop_fix(f) and any(plain_phrase in coverage._plain(l) for l in lines):
+                    n = next(i for i, l in enumerate(lines, 1) if plain_phrase in coverage._plain(l))
+                    status = "고칠 것 없음(수정안이 원문과 같음)"
+                elif literal_fix(fix) and any(plain_fix in coverage._plain(l) for l in lines):
+                    n = next(i for i, l in enumerate(lines, 1) if plain_fix in coverage._plain(l))
+                    status = "반영"
+                elif plain_phrase and any(plain_phrase in coverage._plain(l) for l in lines):
+                    n = next(i for i, l in enumerate(lines, 1) if plain_phrase in coverage._plain(l))
+                    status = dismissed.get(phrase) or ("사람 확인" if kind == "asks" else "안 고침")
+                else:
+                    text = str(f.get("text") or phrase)
+                    best = max(((difflib.SequenceMatcher(None, text, l).ratio(), i) for i, l in enumerate(lines, 1)
+                                if l.strip()), default=(0, None))
+                    if best[0] >= 0.5:
+                        n, status = best[1], "다르게 고침"
+                if only is not None and n != only:
+                    continue
+                out.append({"line": n, "status": status, "category": f.get("category"), "phrase": phrase,
+                            "fix": fix, "why": f.get("why") or "", "at": r.get("at")})
+    return sorted(out, key=lambda e: (e["line"] is None, e["line"] or 0))
+
+
+def show_why(path: Path, only: int | None = None) -> int:
+    got = why_changed(path, only)
+    where = f" {only}행" if only is not None else ""
+    if not got:
+        print(f"  {path.name}{where} — 판정 기록에 지적이 없습니다(판정 전이거나 지적 없이 통과)")
+        return 0
+    print(f"  {path.name}{where} — 판정기가 낸 지적 {len(got)}건(판정 기록 기준 · 모델 안 부름)")
+    for e in got:
+        at = f"{e['line']:>4}행" if e["line"] else "   — "
+        fix = f" → 「{e['fix']}」" if e["fix"] else " → 지움"
+        why = f" — {e['why']}" if e["why"] else ""
+        print(f"  {at}  [{e['category']}] 「{e['phrase']}」{fix} · {e['status']}{why}")
+    print("  1층 규칙 검사 지적은 기록하지 않음 — 고치기 전 판에 doc-style-check.py 를 다시 돌려 봄")
+    return 0
 
 
 def show_open_fixes(path: Path) -> int:
@@ -2339,6 +2406,9 @@ def main(argv=None, backend=None) -> int:
                     help="--answers-from 과 함께 · 대화로 받은 답을 사용자 원문 그대로 — 여러 번 줄 수 있음")
     ap.add_argument("--fixes", action="store_true",
                     help="모델을 부르지 않고 처리 안 된 고칠 지적만 보기")
+    ap.add_argument("--why", action="store_true",
+                    help="왜 고쳤나 — 판정 기록의 지적과 지금 글에서의 처리(반영 · 남음 · 다르게 고침)를 줄마다 보기")
+    ap.add_argument("--line", type=int, metavar="행", help="--why 와 함께 · 그 줄만")
     ap.add_argument("--dismiss", type=int, metavar="행",
                     help="고칠 지적 하나를 받지 않기로 적음 — --reason · --note 필수")
     ap.add_argument("--reason", choices=tuple(REASONS), help="--dismiss 의 사유")
@@ -2433,6 +2503,14 @@ def main(argv=None, backend=None) -> int:
                 print(f"  답 기록 — 「{head}」")
         left = sum(show_open_asks(Path(d)) for d in a.docs)
         return 1 if left and a.asks else 0
+    if a.why:
+        missing = [d for d in a.docs if not Path(d).is_file()]
+        if missing or not a.docs:
+            print(f"⛔ 파일 없음 — {missing[0] if missing else '문서를 줍니다'}")
+            return 2
+        for d in a.docs:
+            show_why(Path(d), a.line)
+        return 0
     if a.fixes or a.dismiss is not None or a.escalate is not None:
         missing = [d for d in a.docs if not Path(d).is_file()]
         if missing:

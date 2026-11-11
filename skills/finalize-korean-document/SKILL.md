@@ -140,7 +140,10 @@ python -X utf8 "$HOME/.claude/assets/korean_qa_run.py" judge_layer2 --answers-fr
 python -X utf8 "$HOME/.claude/assets/korean_qa_run.py" judge_layer2 --answers-from <그 표> --reply "의견대로, 단 3 그대로, 7 직접: …"
 python -X utf8 "$HOME/.claude/assets/korean_qa_run.py" judge_layer2 <수정문…> --asks
 python -X utf8 "$HOME/.claude/assets/korean_qa_run.py" judge_layer2 <수정문…> --fixes
+python -X utf8 "$HOME/.claude/assets/korean_qa_run.py" judge_layer2 <수정문> --why [--line <행>]
 ```
+
+   - **「왜 고쳤어?」를 물으면 `--why` 로 답한다** (2026-11-11 사용자 「이유 표시하는건 … AI한테 요청하면 해줄텐데 구현으로 만들지 말고 명령으로 두는건 쉽지 않나?」) — 판정 기록에서 지적마다 규칙 이름, 이유, 지금 글에서의 처리(반영, 남음, 다르게 고침, 받지 않음, 고칠 것 없음)를 줄마다 보인다. 모델을 부르지 않는다. 1층 규칙 검사 지적은 기록되지 않으므로 고치기 전 판에 검사기를 다시 돌려 보인다
 
    - **⛔ 묻지 않고 답을 적지 않는다** — 답 기록은 사용자가 정한 것을 옮겨 적는 곳이다. 세션이 판단해 적으면 사람에게 넘긴 뜻이 사라지고, 그 기록은 넘기기와 같아진다. 표의 「답」 칸도 같다 — 세션이 채운 표를 `--answers-from` 으로 읽히지 않는다. 사용자가 자리에 없으면 그 문서를 발행하지 않고 보고에 묻는 내용을 남긴다.
    - **목록이 비어도 9단계를 직접 읽는다** — 호출은 보조다.
