@@ -53,13 +53,70 @@ def fix(work: Path) -> None:
     print(json.dumps(cost, ensure_ascii=False))
 
 
+def row_notes(work: Path, src: str) -> list[tuple[str, str]]:
+    """고친 이유 — (그 지적이 달린 줄의 글, 표시할 한 줄). 2층은 판정 기록, 1층은 원문을 검사기에 다시 돌린 지적.
+
+    `--why` 같은 명령을 만들기 전에 화면에서 먼저 보이려는 것(사용자 2026-11-11 「비교 페이지에는 기능으로 만들기 전에
+    볼 수 있게」). 판정 기록의 줄 번호는 그 회차 판의 번호라 원문 행과 안 맞으므로 줄 글로 행을 찾는다."""
+    run = load("run", VALUE / "run.py")
+    out = []
+    log = work / "out" / "work" / "judge.jsonl"
+    for n, raw in enumerate(log.read_text(encoding="utf-8").splitlines()):
+        rec = json.loads(raw)
+        again = "고친 줄 재판정 · " if n else ""     # 첫 기록만 원문 전체 판정, 그 뒤는 고친 줄을 다시 판정한 회차
+        texts = {f.get("line_key"): f.get("text") for f in rec.get("fixes") or []}
+        for f in rec.get("fixes") or []:
+            fix = (f.get("fix") or "").replace("**", "").strip()
+            act = f"→ 「{fix}」" if fix and fix != "(문장 삭제)" else "지움"
+            why = f" — {f['why']}" if f.get("why") else ""
+            out.append((f.get("text") or f.get("phrase") or "",
+                        f"[{again}{f.get('category')}] 「{(f.get('phrase') or '').replace('**', '').strip()}」 {act}{why}"))
+        for f in rec.get("asks") or []:
+            out.append((texts.get(f.get("line_key")) or f.get("phrase") or "",
+                        f"[{again}{f.get('category')}] 「{(f.get('phrase') or '').strip()}」 사람 확인으로 넘김(이 시연은 답하지 않음)"
+                        + (f" — {f['why']}" if f.get("why") else "")))
+    tmp = work / "_src.md"
+    tmp.write_text("---\nform: structured\n---\n" + src, encoding="utf-8")
+    lines = src.splitlines()
+    for kind, msg in run.l1_errors(tmp):
+        m = re.match(r"(\d+)행\s+(.*)$", msg)
+        if m and 0 < int(m.group(1)) - 3 <= len(lines):
+            q = re.match(r"「[^」]+」", m.group(2))
+            out.append((lines[int(m.group(1)) - 4], f"[규칙 검사] {kind}" + (f" {q.group(0)}" if q else "")))
+    tmp.unlink()
+    return out
+
+
+def assign(notes: list[tuple[str, str]], blocks: list[tuple[list[str], list[str]]]) -> dict[int, list[str]]:
+    """지적마다 줄 글이 가장 닮은 바뀐 행 하나에 붙인다 — 닮은 정도 0.5 미만이면 버린다."""
+    import difflib
+    got: dict[int, list[str]] = {}
+    for text, note in notes:
+        t = text.replace("**", "").strip()
+        best, score = None, 0.0
+        for i, (left, right) in enumerate(blocks):
+            for line in left + right:
+                r = difflib.SequenceMatcher(None, t, line).ratio()
+                if r > score:
+                    best, score = i, r
+        if best is not None and score >= 0.5 and note not in got.get(best, []):
+            got.setdefault(best, []).append(note)
+    return got
+
+
 def page(work: Path) -> Path:
     show = load("showcase", VALUE / "showcase.py")
     items = planted(work)
     src = (work / "docs" / "report.md").read_text(encoding="utf-8")
     dst = (work / "out" / "result.md").read_text(encoding="utf-8")
     cost = json.loads((work / "out" / "cost.json").read_text(encoding="utf-8"))
-    table, changed = show.rows(src.splitlines(), dst.splitlines())
+    blocks: list[tuple[list[str], list[str]]] = []
+    show.rows(src.splitlines(), dst.splitlines(), lambda i, l, r: blocks.append((l, r)) or "")
+    placed = assign(row_notes(work, src), blocks)
+    table, changed = show.rows(src.splitlines(), dst.splitlines(), lambda i, l, r: (
+        '<ul class="rowwhy">' + "".join(f"<li>{html.escape(n)}</li>" for n in placed[i]) + "</ul>") if i in placed else "")
+    n_notes = sum(len(v) for v in placed.values())
+    notes_by_tools = [n for v in placed.values() for n in v]     # 판정기와 검사기가 쓴 글 — 원본으로 선언
     kept = [p for p, _, m in items if re.search(m, dst, re.M)]
     left = "\n".join(f"<tr><td>{html.escape(k)}</td><td>「{html.escape(p)}」</td>"
                      f"<td>{'남음' if p in kept else '없음'}</td></tr>" for p, k, _ in items)
@@ -73,12 +130,12 @@ def page(work: Path) -> Path:
     why = list(dict.fromkeys(why))
     why_html = "\n".join(f"<li>{html.escape(w)}</li>" for w in why) or "<li>판정기가 고칠 곳을 짚지 않음</li>"
     l1 = cost["1층"]
-    origin = show.origin_lines(src.splitlines(), dst.splitlines()) + why + [p for p, _, _ in items]
+    origin = show.origin_lines(src.splitlines(), dst.splitlines()) + why + [p for p, _, _ in items] + notes_by_tools
     outdir = work / "page"
     outdir.mkdir(exist_ok=True)
     (outdir / "origin.txt").write_text("\n".join(dict.fromkeys(origin)) + "\n", encoding="utf-8")
     fill = {
-        "{{TABLE}}": table, "{{PLANTED}}": left, "{{WHY}}": why_html, "{{NOTES}}": notes_html, "{{N_PLANTED}}": str(len(items)),
+        "{{TABLE}}": table, "{{N_NOTES}}": str(n_notes), "{{PLANTED}}": left, "{{WHY}}": why_html, "{{NOTES}}": notes_html, "{{N_PLANTED}}": str(len(items)),
         "{{N_CHANGED}}": str(len(items) - len(kept)), "{{N_KEPT}}": str(len(kept)), "{{BLOCKS}}": str(changed),
         "{{L1}}": f"{l1['처음']}건 → {l1['끝']}건", "{{CALLS}}": f"{cost['calls']}회, {cost['sec']}초",
     }

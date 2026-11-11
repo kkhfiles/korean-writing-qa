@@ -29,6 +29,11 @@ table.pair{border-collapse:collapse;width:100%;min-width:680px;table-layout:fixe
 .ln.none{color:var(--muted);font-style:italic}
 tr.same .ln{color:#5f646b}
 tr.diff td{background:#fffdf6}
+tr.diff:has(+ tr.why-row) td{border-bottom:0}
+tr.why-row td{background:#f3f1ea;padding:4px 14px 8px;border-bottom:1px solid #e9e6dd}
+.rowwhy{margin:0;padding-left:18px;font-size:13.5px;color:#44484e;line-height:1.6}
+body.hide-why tr.why-row{display:none}
+.toggle{display:inline-flex;align-items:center;gap:8px;font-size:14px;margin:0 0 10px;min-height:32px;cursor:pointer}
 table.list{border-collapse:collapse;width:100%;min-width:560px;font-size:14px}
 .list th{text-align:left;color:var(--muted);font-weight:600;padding:8px 12px;border-bottom:1px solid var(--line)}
 .list td{padding:6px 12px;border-bottom:1px solid #f0eee8;vertical-align:top}
@@ -49,6 +54,7 @@ summary{cursor:pointer;color:var(--accent);min-height:32px}
 <li><ins>초록</ins> — 고친 글에 새로 들어간 글자</li>
 <li><del>빨강</del> — 원문에서 빠진 글자</li>
 <li>흐린 줄 — 바뀌지 않은 줄</li>
+<li>회색 칸 — 그 행을 고친 이유(규칙 이름과 판정기 설명)</li>
 </ul>
 <dl class="facts">
 <div><dt>일부러 넣은 말투</dt><dd>{{N_PLANTED}}개</dd></div>
@@ -58,6 +64,7 @@ summary{cursor:pointer;color:var(--accent);min-height:32px}
 <div><dt>규칙 검사 오류</dt><dd>{{L1}}</dd></div>
 <div><dt>판정 호출</dt><dd>{{CALLS}}</dd></div>
 </dl>
+<label class="toggle"><input type="checkbox" id="show-why" checked> 고친 이유 표시({{N_NOTES}}건)</label>
 <div class="scroll"><table class="pair"><thead><tr><th>AI 말투를 모은 원문</th><th>검사기로 고친 글</th></tr></thead>
 <tbody>
 {{TABLE}}
@@ -82,7 +89,12 @@ summary{cursor:pointer;color:var(--accent);min-height:32px}
 <dt>수정안 반영</dt><dd>판정기 수정안 전부 반영, 사실 확인 표시가 붙은 수정안도 작성자가 확인했다고 보고 반영</dd>
 <dt>「남음」 판정</dt><dd>말투마다 정한 표지(예: 「시점입니다」는 「시점」)가 고친 글에 있는지 글자로 대조한 결과이고, 잘 고쳤는지는 위 비교표로 확인</dd>
 <dt>「고치며 생긴 문제」</dt><dd>세션이 고친 글을 읽고 찾은 것</dd>
+<dt>고친 이유</dt><dd>판정 기록과 원문 규칙 검사에서 지적을 뽑아, 지적이 달린 줄과 글이 가장 닮은 행에 붙인 미리 보기(기능으로 구현하기 전, 닮은 정도가 낮은 지적은 뺌)</dd>
+<dt>「고친 줄 재판정」</dt><dd>판정기가 고친 줄을 다시 판정하며 낸 지적이라, 원문이 아니라 중간 판을 고친 기록</dd>
 <dt>문서 형식</dt><dd>개조식으로 지정</dd>
 </dl>
 </section>
 </main>
+<script>
+document.getElementById('show-why').addEventListener('change',e=>document.body.classList.toggle('hide-why',!e.target.checked));
+</script>

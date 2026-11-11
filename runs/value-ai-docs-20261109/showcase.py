@@ -57,8 +57,10 @@ def marks(a: str, b: str, side: str) -> str:
     return "".join(out)
 
 
-def rows(src: list[str], dst: list[str]) -> tuple[str, int]:
-    """줄 짝을 표 행으로 — (HTML, 바뀐 줄 묶음 수)."""
+def rows(src: list[str], dst: list[str], annotate=None) -> tuple[str, int]:
+    """줄 짝을 표 행으로 — (HTML, 바뀐 줄 묶음 수).
+
+    `annotate(번호, 원문 줄들, 고친 줄들)` 가 HTML 을 돌려주면 바뀐 행 아래에 한 행으로 붙인다(고친 이유 · 시연 페이지)."""
     a = [shown(l) for l in src]
     b = [shown(l) for l in dst]
     a = [x for x in a if x[1] != "skip" and x[0].strip()]
@@ -78,6 +80,9 @@ def rows(src: list[str], dst: list[str]) -> tuple[str, int]:
         rc = "\n".join(f'<div class="ln {k}">{marks(old_all, t, "new")}</div>' for t, k in right)
         out.append(f'<tr class="diff"><td>\n{lc or "<div class=\'ln none\'>(없음)</div>"}\n</td>'
                    f'<td>\n{rc or "<div class=\'ln none\'>(지움)</div>"}\n</td></tr>')
+        note = annotate(changed - 1, [t for t, _ in left], [t for t, _ in right]) if annotate else ""
+        if note:
+            out.append(f'<tr class="why-row"><td colspan="2">\n{note}\n</td></tr>')
     return "\n".join(out), changed
 
 
