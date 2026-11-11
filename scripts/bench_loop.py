@@ -357,8 +357,8 @@ def run_once(folder: Path, flagged: list[dict], clean: list[dict], policy: str =
                     own += 1
                 if judge.is_ask(f) or (policy == "known" and kind != "짚음"):
                     continue
-                if not (isinstance(n, int) and 0 < n <= len(cur)) or not phrase or not fix \
-                        or fix.startswith("(") or "\n" in fix or phrase not in cur[n - 1]:
+                if not (isinstance(n, int) and 0 < n <= len(cur)) or not phrase \
+                        or not judge.literal_fix(fix) or phrase not in cur[n - 1]:
                     skipped += 1
                     continue
                 before = cur[n - 1]
@@ -505,7 +505,7 @@ def process(doc: Path, meta: dict[int, dict], mode: str, counts: dict,
         elif coverage.needs_check(item) and not apply_checked:
             counts["사실 확인 닫기"] += 1
             judge._close_fix(doc, lines, n, item, {"reason": "확인함", "note": "재현 일감 — 자료로 확인했다고 본다"})
-        elif phrase and fix and not fix.startswith("(") and "\n" not in fix and phrase in lines[n - 1]:
+        elif phrase and judge.literal_fix(fix) and phrase in lines[n - 1]:
             new = apply_fix(lines[n - 1], phrase, fix)
             past = history.setdefault(n, set())
             if new in past:

@@ -136,8 +136,12 @@ class LoopTests(_Base):
         fake = Scripted([ROUND0, ROUND1])
         self.run_loop(fake)
         self.assertNotIn("이번에는 아래 줄만 점검한다", fake.calls[0]["user"])
-        self.assertIn(f"이번에는 아래 줄만 점검한다 — 나머지 줄은 문맥으로만 읽고 지적하지 않는다.\n{F1}, {C1}",
+        # C1 의 수정안은 자리 표시(「○○」)라 글자 그대로 넣지 않는다 — 고친 줄은 F1 하나(2026-11-11 `literal_fix` ·
+        #  예전에는 자리 표시를 넣고 C1 까지 다시 판정했다)
+        self.assertIn(f"이번에는 아래 줄만 점검한다 — 나머지 줄은 문맥으로만 읽고 지적하지 않는다.\n{F1}\n",
                       fake.calls[1]["user"])
+        doc = (self.dir / "run" / "bench.md").read_text(encoding="utf-8").splitlines()
+        self.assertNotIn("○○", doc[C1 - 1], "자리 표시가 든 수정안을 문서에 넣었습니다")
 
     def test_asks_are_not_applied_and_known_leaves_clean_lines(self) -> None:
         self.run_loop(Scripted([ROUND0, []]), policy="known")

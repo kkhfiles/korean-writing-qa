@@ -643,6 +643,18 @@ def answered_origin(key: str, lines: list[str], n: int) -> str | None:
     return None
 
 
+#: 글자 그대로 넣을 수 없는 수정안 — 하위 항목 표시, 자리 표시, 작성자가 채울 괄호 지시.
+#   (2026-11-11 AI 말투 시연) 「바뀐 업무 방식(구체적으로 무엇이 바뀌었는지 기재)」와 「미완료 ↵ 시험 데이터 …」가
+#   「고침」 답과 재현 일감의 반영으로 문서에 글자 그대로 들어갔다. 세 곳이 따로 거르던 것을 `literal_fix` 하나로 모음.
+NOT_LITERAL = re.compile(r"↵|○○|[(\[][^()\[\]\n]*?(?:기재|기입|작성 필요|작성할 것|입력 필요|채울 것|채워 넣|적을 것|"
+                         r"넣을 것|확인 필요|확인 후 수정)[^()\[\]\n]*?[)\]]")
+
+
+def literal_fix(fix: str) -> bool:
+    """수정안을 짚은 표현 자리에 글자 그대로 넣을 수 있나 — 지움 표시(「(문장 삭제)」), 여러 줄, 지시와 자리 표시는 아님."""
+    return bool(fix) and not fix.startswith("(") and "\n" not in fix and not NOT_LITERAL.search(fix)
+
+
 def edited_by_answer(line: str, asks: list[dict]) -> str | None:
     """「고침」 답 — 물은 줄에 판정기 수정안을 그대로 넣은 글. 글자로 넣을 수 없는 수정안이 있으면 None."""
     out = line
@@ -650,7 +662,7 @@ def edited_by_answer(line: str, asks: list[dict]) -> str | None:
         if a.get("category") == "재판정 상한":
             continue                # 줄 전체를 짚은 것 — 같은 줄의 다른 지적에 대한 답이 곧 이 줄의 답이다
         phrase, fix = str(a.get("phrase") or ""), str(a.get("fix") or "")
-        if not phrase or not fix or fix.startswith("(") or "\n" in fix or "○○" in fix or phrase not in out:
+        if not phrase or not literal_fix(fix) or phrase not in out:
             return None
         out = out.replace(phrase, fix, 1)
     return out if out != line else None
@@ -1110,6 +1122,9 @@ def fix_notes(fix: str, phrase: str, doc_lemmas: set, freq: dict | None) -> list
             notes.append(f"고친 말에 지시어 「{m.group(0)}」 — 가리키는 것을 이름으로")
     if fix and phrase and PROSE_END.search(fix) and not PROSE_END.search(phrase):
         notes.append("원문은 개조식인데 고친 말은 서술형 — 값 칸이면 개조식 유지")
+    if fix and not fix.startswith("(") and NOT_LITERAL.search(fix):
+        notes.append("고친 말이 그대로 넣을 글이 아님(하위 항목 표시, 자리 표시, 작성자가 채울 지시) — "
+                     "「고침」으로 답해도 자동으로 안 넣음 · 직접 고침")
     return notes
 
 
