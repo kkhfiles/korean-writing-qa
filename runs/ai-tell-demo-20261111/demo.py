@@ -20,6 +20,8 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 VALUE = HERE.parent / "value-ai-docs-20261109"
+#: 고친 글과 판정 기록을 두는 작업 폴더 안 이름 — `--out <이름>` 으로 바꿈(앞선 실행을 남긴 채 다시 돌릴 때)
+OUT = sys.argv[sys.argv.index("--out") + 1] if "--out" in sys.argv else "out"
 
 
 def load(name: str, path: Path):
@@ -44,7 +46,7 @@ def planted(work: Path) -> list[tuple[str, str, str]]:
 def fix(work: Path) -> None:
     planted(work)
     run = load("run", VALUE / "run.py")
-    out = work / "out"
+    out = work / OUT
     out.mkdir(parents=True, exist_ok=True)
     src = (work / "docs" / "report.md").read_text(encoding="utf-8")
     after, cost = run.checker2(src, out / "work", "structured")
@@ -60,7 +62,7 @@ def row_notes(work: Path, src: str) -> list[tuple[str, str]]:
     볼 수 있게」). 판정 기록의 줄 번호는 그 회차 판의 번호라 원문 행과 안 맞으므로 줄 글로 행을 찾는다."""
     run = load("run", VALUE / "run.py")
     out = []
-    log = work / "out" / "work" / "judge.jsonl"
+    log = work / OUT / "work" / "judge.jsonl"
     for n, raw in enumerate(log.read_text(encoding="utf-8").splitlines()):
         rec = json.loads(raw)
         again = "고친 줄 재판정 · " if n else ""     # 첫 기록만 원문 전체 판정, 그 뒤는 고친 줄을 다시 판정한 회차
@@ -108,8 +110,8 @@ def page(work: Path) -> Path:
     show = load("showcase", VALUE / "showcase.py")
     items = planted(work)
     src = (work / "docs" / "report.md").read_text(encoding="utf-8")
-    dst = (work / "out" / "result.md").read_text(encoding="utf-8")
-    cost = json.loads((work / "out" / "cost.json").read_text(encoding="utf-8"))
+    dst = (work / OUT / "result.md").read_text(encoding="utf-8")
+    cost = json.loads((work / OUT / "cost.json").read_text(encoding="utf-8"))
     blocks: list[tuple[list[str], list[str]]] = []
     show.rows(src.splitlines(), dst.splitlines(), lambda i, l, r: blocks.append((l, r)) or "")
     placed = assign(row_notes(work, src), blocks)
@@ -123,7 +125,7 @@ def page(work: Path) -> Path:
     notes = json.loads((work / "docs" / "notes.json").read_text(encoding="utf-8"))
     notes_html = "\n".join(f"<li>{html.escape(n)}</li>" for n in notes)
     why = []
-    for f in sorted((work / "out" / "work").glob("round*.json"), key=lambda p: int(p.stem[5:])):
+    for f in sorted((work / OUT / "work").glob("round*.json"), key=lambda p: int(p.stem[5:])):
         for x in json.loads(f.read_text(encoding="utf-8"))[0]["findings"]:
             if x.get("decide") == "fix" and x.get("phrase") and x.get("fix"):
                 why.append(f"[{x.get('category')}] 「{x['phrase'].replace('**', '')}」 → 「{x['fix'].replace('**', '')}」")
@@ -140,6 +142,16 @@ def page(work: Path) -> Path:
         "{{L1}}": f"{l1['처음']}건 → {l1['끝']}건", "{{CALLS}}": f"{cost['calls']}회, {cost['sec']}초",
     }
     text = (HERE / "demo-template.html").read_text(encoding="utf-8")
+    # 실행 기록에서 채운 수(호출 수, 건수)가 든 줄도 원본으로 선언 — 다시 만들 때마다 수가 바뀌어 판정기가 같은 줄을
+    #  거듭 판정하다 재판정 상한으로 사람 확인을 올렸다(2026-11-11)
+    filled = []
+    for line in text.splitlines():
+        if "{{" in line and not any(k in line for k in ("{{TABLE}}", "{{PLANTED}}", "{{WHY}}", "{{NOTES}}")):
+            for k, v in fill.items():
+                line = line.replace(k, v)
+            filled.append(re.sub(r"<[^>]+>", "", line).strip())
+    with (outdir / "origin.txt").open("a", encoding="utf-8") as f:
+        f.write("\n".join(x for x in filled if x) + "\n")
     for k, v in fill.items():
         text = text.replace(k, v)
     dest = outdir / "ai-tell-demo.html"
