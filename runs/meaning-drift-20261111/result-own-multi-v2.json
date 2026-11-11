@@ -1,0 +1,220 @@
+{
+ "cases": 9,
+ "runs": 2,
+ "summary": {
+  "그대로": {
+   "뜻 바뀜으로 짚음": "0/6",
+   "어떤 지적이든": "0/6"
+  },
+  "추가": {
+   "뜻 바뀜으로 짚음": "6/6",
+   "어떤 지적이든": "6/6"
+  },
+  "주체": {
+   "뜻 바뀜으로 짚음": "2/2",
+   "어떤 지적이든": "2/2"
+  },
+  "범위": {
+   "뜻 바뀜으로 짚음": "2/2",
+   "어떤 지적이든": "2/2"
+  },
+  "확실성": {
+   "뜻 바뀜으로 짚음": "2/2",
+   "어떤 지적이든": "2/2"
+  }
+ },
+ "rows": [
+  {
+   "kind": "그대로",
+   "line": 9,
+   "drift_flagged": false,
+   "any_flagged": false,
+   "categories": [],
+   "why": []
+  },
+  {
+   "kind": "그대로",
+   "line": 10,
+   "drift_flagged": false,
+   "any_flagged": false,
+   "categories": [],
+   "why": []
+  },
+  {
+   "kind": "그대로",
+   "line": 11,
+   "drift_flagged": false,
+   "any_flagged": false,
+   "categories": [],
+   "why": []
+  },
+  {
+   "kind": "추가",
+   "line": 12,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "기준 판에는 「게시판에 남음」뿐이고 「자동으로」가 없었다. 공지하지 않아도 게시된다는 말도 게시가 곧 공지라서 앞뒤가 맞지 않는다."
+   ]
+  },
+  {
+   "kind": "추가",
+   "line": 13,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "기준 판에는 「그 결과는 위키에 정리됨」뿐이었다. 「전 팀에 공유함」은 원문에 없던 행위다."
+   ]
+  },
+  {
+   "kind": "추가",
+   "line": 14,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "기준 판에 없던 기한 「이번 분기 안에」가 생겼다. 2시간 이내는 목표인데 고친 글에서는 결과 약속처럼 읽힌다."
+   ]
+  },
+  {
+   "kind": "주체",
+   "line": 15,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "기준 판의 (QA팀)은 출처 표시였다. 「보고함」이라는 원문에 없는 행위를 더했고 비교 기준도 밝혀지지 않았다."
+   ]
+  },
+  {
+   "kind": "범위",
+   "line": 16,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "지운 줄에 있던 「시험 환경에서 측정한 결과」라는 측정 조건이 빠져 운영 환경 수치처럼 읽힌다."
+   ]
+  },
+  {
+   "kind": "확실성",
+   "line": 17,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "기준 판은 「가능성이 높은 것으로 추정」이었는데 단정으로 바뀌었다. 추가 확인 중이라는 뒷말과도 맞지 않는다."
+   ]
+  },
+  {
+   "kind": "그대로",
+   "line": 9,
+   "drift_flagged": false,
+   "any_flagged": false,
+   "categories": [],
+   "why": []
+  },
+  {
+   "kind": "그대로",
+   "line": 10,
+   "drift_flagged": false,
+   "any_flagged": false,
+   "categories": [],
+   "why": []
+  },
+  {
+   "kind": "그대로",
+   "line": 11,
+   "drift_flagged": false,
+   "any_flagged": false,
+   "categories": [],
+   "why": []
+  },
+  {
+   "kind": "추가",
+   "line": 12,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "기준 판은 「게시판에 남음」이라 자동이라는 말이 없었다. 원문에 없는 「자동으로」를 더해 사실이 늘었다."
+   ]
+  },
+  {
+   "kind": "추가",
+   "line": 13,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "기준 판은 「위키에 정리됨」까지만 말했다. 「전 팀에 공유함」은 원문에 없는 행위이고 범위도 넓다."
+   ]
+  },
+  {
+   "kind": "추가",
+   "line": 14,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "기준 판에 없던 기한 「이번 분기 안에」가 생겼다. 또 「목표로」가 빠져 2시간 이내라는 목표 수치가 달성할 결과처럼 읽힌다."
+   ]
+  },
+  {
+   "kind": "주체",
+   "line": 15,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "기준 판은 끝에 「(QA팀)」만 있어 적용 주체인지 출처인지 갈리지 않았다. 「보고함」은 원문에 없는 행위다."
+   ]
+  },
+  {
+   "kind": "범위",
+   "line": 16,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "지운 줄에 있던 「시험 환경에서 측정」이라는 조건과 「정도」라는 근사가 빠졌다. 실제 운영 환경 결과처럼 읽힌다."
+   ]
+  },
+  {
+   "kind": "확실성",
+   "line": 17,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "기준 판은 가능성이 높다고 추정한 단계였는데 원인이 확정된 것처럼 바뀌었다. 확정이면 추가 확인과 맞지 않는다."
+   ]
+  }
+ ]
+}

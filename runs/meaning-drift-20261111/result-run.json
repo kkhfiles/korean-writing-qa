@@ -1,0 +1,704 @@
+{
+ "cases": 30,
+ "runs": 2,
+ "summary": {
+  "그대로": {
+   "뜻 바뀜으로 짚음": "0/10",
+   "어떤 지적이든": "0/10"
+  },
+  "추가": {
+   "뜻 바뀜으로 짚음": "10/10",
+   "어떤 지적이든": "10/10"
+  },
+  "주체": {
+   "뜻 바뀜으로 짚음": "8/10",
+   "어떤 지적이든": "8/10"
+  },
+  "확실성": {
+   "뜻 바뀜으로 짚음": "10/10",
+   "어떤 지적이든": "10/10"
+  },
+  "범위": {
+   "뜻 바뀜으로 짚음": "10/10",
+   "어떤 지적이든": "10/10"
+  },
+  "수치부정": {
+   "뜻 바뀜으로 짚음": "10/10",
+   "어떤 지적이든": "10/10"
+  }
+ },
+ "rows": [
+  {
+   "kind": "그대로",
+   "line": 9,
+   "drift_flagged": false,
+   "any_flagged": false,
+   "categories": [],
+   "why": []
+  },
+  {
+   "kind": "그대로",
+   "line": 10,
+   "drift_flagged": false,
+   "any_flagged": false,
+   "categories": [],
+   "why": []
+  },
+  {
+   "kind": "그대로",
+   "line": 11,
+   "drift_flagged": false,
+   "any_flagged": false,
+   "categories": [],
+   "why": []
+  },
+  {
+   "kind": "그대로",
+   "line": 12,
+   "drift_flagged": false,
+   "any_flagged": false,
+   "categories": [],
+   "why": []
+  },
+  {
+   "kind": "그대로",
+   "line": 13,
+   "drift_flagged": false,
+   "any_flagged": false,
+   "categories": [],
+   "why": []
+  },
+  {
+   "kind": "추가",
+   "line": 14,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "기준 판에 없던 「실시간」이 들어감"
+   ]
+  },
+  {
+   "kind": "추가",
+   "line": 15,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "기준 판에 없던 배포 범위 「전 사업부」가 들어감"
+   ]
+  },
+  {
+   "kind": "추가",
+   "line": 16,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "기준 판에 없던 목적이 들어감"
+   ]
+  },
+  {
+   "kind": "추가",
+   "line": 17,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "기준 판에 없던 「모두 반영」 결과가 들어감"
+   ]
+  },
+  {
+   "kind": "추가",
+   "line": 18,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "기준 판에 없던 승인 결과가 들어감"
+   ]
+  },
+  {
+   "kind": "주체",
+   "line": 19,
+   "drift_flagged": false,
+   "any_flagged": false,
+   "categories": [],
+   "why": []
+  },
+  {
+   "kind": "주체",
+   "line": 20,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "출처였던 협력사가 행위 주체로 바뀜"
+   ]
+  },
+  {
+   "kind": "주체",
+   "line": 21,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "요청한 쪽이 바꾼 쪽으로 바뀜"
+   ]
+  },
+  {
+   "kind": "주체",
+   "line": 22,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "행위 주체가 빠짐"
+   ]
+  },
+  {
+   "kind": "주체",
+   "line": 23,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "지적한 주체가 빠지고 발견한 쪽이 바뀜"
+   ]
+  },
+  {
+   "kind": "확실성",
+   "line": 24,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "추정이 확정으로 바뀜"
+   ]
+  },
+  {
+   "kind": "확실성",
+   "line": 25,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "추정이 확정으로 바뀜"
+   ]
+  },
+  {
+   "kind": "확실성",
+   "line": 26,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "예상이 확정 계획으로 바뀜"
+   ]
+  },
+  {
+   "kind": "확실성",
+   "line": 27,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "확인된 사실이 추정으로 바뀜"
+   ]
+  },
+  {
+   "kind": "확실성",
+   "line": 28,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "가능성이 일어난 일로 바뀜"
+   ]
+  },
+  {
+   "kind": "범위",
+   "line": 29,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "측정 환경 범위가 빠짐"
+   ]
+  },
+  {
+   "kind": "범위",
+   "line": 30,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "범위 「일부」가 빠짐"
+   ]
+  },
+  {
+   "kind": "범위",
+   "line": 31,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "권한 조건이 빠져 모든 계정이 가능한 것으로 읽힘"
+   ]
+  },
+  {
+   "kind": "범위",
+   "line": 32,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "범위가 빠짐"
+   ]
+  },
+  {
+   "kind": "범위",
+   "line": 33,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "조건이 빠져 모든 분석이 4시간을 넘는 것으로 읽힘"
+   ]
+  },
+  {
+   "kind": "수치부정",
+   "line": 34,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "1건 미해결이 전부 해결로 바뀜"
+   ]
+  },
+  {
+   "kind": "수치부정",
+   "line": 35,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "통과 건수가 기준 판과 다름"
+   ]
+  },
+  {
+   "kind": "수치부정",
+   "line": 36,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "미이수자가 이수자로 바뀌어 대상이 뒤집힘"
+   ]
+  },
+  {
+   "kind": "수치부정",
+   "line": 37,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "주기가 기준 판과 다름"
+   ]
+  },
+  {
+   "kind": "수치부정",
+   "line": 38,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "부정이 빠져 뜻이 뒤집힘"
+   ]
+  },
+  {
+   "kind": "그대로",
+   "line": 9,
+   "drift_flagged": false,
+   "any_flagged": false,
+   "categories": [],
+   "why": []
+  },
+  {
+   "kind": "그대로",
+   "line": 10,
+   "drift_flagged": false,
+   "any_flagged": false,
+   "categories": [],
+   "why": []
+  },
+  {
+   "kind": "그대로",
+   "line": 11,
+   "drift_flagged": false,
+   "any_flagged": false,
+   "categories": [],
+   "why": []
+  },
+  {
+   "kind": "그대로",
+   "line": 12,
+   "drift_flagged": false,
+   "any_flagged": false,
+   "categories": [],
+   "why": []
+  },
+  {
+   "kind": "그대로",
+   "line": 13,
+   "drift_flagged": false,
+   "any_flagged": false,
+   "categories": [],
+   "why": []
+  },
+  {
+   "kind": "추가",
+   "line": 14,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "기준 판에는 「실시간」이 없었는데, 고친 글에서 새 사실로 들어갔습니다."
+   ]
+  },
+  {
+   "kind": "추가",
+   "line": 15,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "기준 판에 없던 배포 범위 「전 사업부」가 추가됐습니다."
+   ]
+  },
+  {
+   "kind": "추가",
+   "line": 16,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "기준 판에 없던 원인이 추가됐습니다."
+   ]
+  },
+  {
+   "kind": "추가",
+   "line": 17,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "기준 판은 수집까지만 적었습니다. 「모두 반영」은 없던 결과입니다."
+   ]
+  },
+  {
+   "kind": "추가",
+   "line": 18,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "기준 판에 없던 승인 결과가 추가됐습니다."
+   ]
+  },
+  {
+   "kind": "주체",
+   "line": 19,
+   "drift_flagged": false,
+   "any_flagged": false,
+   "categories": [],
+   "why": []
+  },
+  {
+   "kind": "주체",
+   "line": 20,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "출처였던 협력사 자료가 행위 주체로 바뀌었습니다."
+   ]
+  },
+  {
+   "kind": "주체",
+   "line": 21,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "요청한 쪽이 바꾼 주체로 바뀌었습니다."
+   ]
+  },
+  {
+   "kind": "주체",
+   "line": 22,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "기준 판에 있던 주체 「인프라팀」이 빠졌습니다."
+   ]
+  },
+  {
+   "kind": "주체",
+   "line": 23,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "외부 감사에서 지적받은 일이 우리 쪽이 발견한 일로 바뀌었습니다."
+   ]
+  },
+  {
+   "kind": "확실성",
+   "line": 24,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "기준 판의 추정이 단정으로 바뀌었습니다."
+   ]
+  },
+  {
+   "kind": "확실성",
+   "line": 25,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "기준 판의 추정이 단정으로 바뀌었습니다."
+   ]
+  },
+  {
+   "kind": "확실성",
+   "line": 26,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "기준 판의 예상이 확정된 계획으로 바뀌었습니다."
+   ]
+  },
+  {
+   "kind": "확실성",
+   "line": 27,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "기준 판에서 확인된 사실이 추정으로 약해졌습니다."
+   ]
+  },
+  {
+   "kind": "확실성",
+   "line": 28,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "기준 판의 가능성이 일어난 일로 바뀌었습니다."
+   ]
+  },
+  {
+   "kind": "범위",
+   "line": 29,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "기준 판에 있던 측정 범위 「시험 환경」이 빠졌습니다."
+   ]
+  },
+  {
+   "kind": "범위",
+   "line": 30,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "기준 판의 「일부」가 빠져 범위가 넓어졌습니다."
+   ]
+  },
+  {
+   "kind": "범위",
+   "line": 31,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "기준 판에 있던 권한 조건이 빠졌습니다."
+   ]
+  },
+  {
+   "kind": "범위",
+   "line": 32,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "기준 판에 있던 범위가 빠졌습니다."
+   ]
+  },
+  {
+   "kind": "범위",
+   "line": 33,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "기준 판에 있던 측정 조건이 빠졌습니다."
+   ]
+  },
+  {
+   "kind": "수치부정",
+   "line": 34,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "기준 판은 2건 해결, 1건 미해결이었습니다."
+   ]
+  },
+  {
+   "kind": "수치부정",
+   "line": 35,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "통과 건수가 기준 판과 다릅니다."
+   ]
+  },
+  {
+   "kind": "수치부정",
+   "line": 36,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "안내 대상이 반대로 바뀌었습니다."
+   ]
+  },
+  {
+   "kind": "수치부정",
+   "line": 37,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "회의 주기가 기준 판과 다릅니다."
+   ]
+  },
+  {
+   "kind": "수치부정",
+   "line": 38,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "기준 판의 부정이 긍정으로 뒤집혔습니다."
+   ]
+  }
+ ]
+}

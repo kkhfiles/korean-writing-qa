@@ -1,0 +1,704 @@
+{
+ "cases": 30,
+ "runs": 2,
+ "summary": {
+  "그대로": {
+   "뜻 바뀜으로 짚음": "0/10",
+   "어떤 지적이든": "0/10"
+  },
+  "추가": {
+   "뜻 바뀜으로 짚음": "10/10",
+   "어떤 지적이든": "10/10"
+  },
+  "주체": {
+   "뜻 바뀜으로 짚음": "8/10",
+   "어떤 지적이든": "8/10"
+  },
+  "확실성": {
+   "뜻 바뀜으로 짚음": "10/10",
+   "어떤 지적이든": "10/10"
+  },
+  "범위": {
+   "뜻 바뀜으로 짚음": "10/10",
+   "어떤 지적이든": "10/10"
+  },
+  "수치부정": {
+   "뜻 바뀜으로 짚음": "10/10",
+   "어떤 지적이든": "10/10"
+  }
+ },
+ "rows": [
+  {
+   "kind": "그대로",
+   "line": 9,
+   "drift_flagged": false,
+   "any_flagged": false,
+   "categories": [],
+   "why": []
+  },
+  {
+   "kind": "그대로",
+   "line": 10,
+   "drift_flagged": false,
+   "any_flagged": false,
+   "categories": [],
+   "why": []
+  },
+  {
+   "kind": "그대로",
+   "line": 11,
+   "drift_flagged": false,
+   "any_flagged": false,
+   "categories": [],
+   "why": []
+  },
+  {
+   "kind": "그대로",
+   "line": 12,
+   "drift_flagged": false,
+   "any_flagged": false,
+   "categories": [],
+   "why": []
+  },
+  {
+   "kind": "그대로",
+   "line": 13,
+   "drift_flagged": false,
+   "any_flagged": false,
+   "categories": [],
+   "why": []
+  },
+  {
+   "kind": "추가",
+   "line": 14,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "기준 판에 없던 「실시간」이 새로 들어갔다."
+   ]
+  },
+  {
+   "kind": "추가",
+   "line": 15,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "기준 판에 없던 배포 범위가 새로 들어갔다."
+   ]
+  },
+  {
+   "kind": "추가",
+   "line": 16,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "기준 판에 없던 목적이 새로 들어갔다."
+   ]
+  },
+  {
+   "kind": "추가",
+   "line": 17,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "기준 판에 없던 반영 결과가 새로 들어갔다."
+   ]
+  },
+  {
+   "kind": "추가",
+   "line": 18,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "기준 판에 없던 승인 결과가 새로 들어갔다."
+   ]
+  },
+  {
+   "kind": "주체",
+   "line": 19,
+   "drift_flagged": false,
+   "any_flagged": false,
+   "categories": [],
+   "why": []
+  },
+  {
+   "kind": "주체",
+   "line": 20,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "기준 판은 협력사 자료에 근거한 수치였고, 고친 글은 협력사가 직접 조치한 것으로 주체와 근거가 바뀌었다. · 수정안이 앞선 판정에서 고치라고 한 「협력사 자료에 따르면 응답 시간이 2초 이내임」을 되살림 — 빠진 "
+   ]
+  },
+  {
+   "kind": "주체",
+   "line": 21,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "기준 판은 고객사 요청에 따라 바꾼 것이고, 고친 글은 고객사가 직접 바꾼 것으로 주체가 바뀌었다. · 수정안이 앞선 판정에서 고치라고 한 「고객사 요청으로 화면 구성을 바꿈」을 되살림 — 빠진 뜻만 살리고 다른 말"
+   ]
+  },
+  {
+   "kind": "주체",
+   "line": 22,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "기준 판에 있던 주체(인프라팀)가 빠졌다. · 수정안이 앞선 판정에서 고치라고 한 「인프라팀이 서버 세 대를 증설함」을 되살림 — 빠진 뜻만 살리고 다른 말로 씀"
+   ]
+  },
+  {
+   "kind": "주체",
+   "line": 23,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "발견 주체가 외부 감사에서 보고자로 바뀌었다. · 수정안이 앞선 판정에서 고치라고 한 「외부 감사에서 접근 권한 문제 2건을 지적받음」을 되살림 — 빠진 뜻만 살리고 다른 말로 씀"
+   ]
+  },
+  {
+   "kind": "확실성",
+   "line": 24,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "기준 판의 추정이 단정으로 바뀌었다."
+   ]
+  },
+  {
+   "kind": "확실성",
+   "line": 25,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "기준 판의 추정이 단정으로 바뀌었다. · 수정안이 앞선 판정에서 고치라고 한 「원인은 캐시 설정으로 추정됨」을 되살림 — 빠진 뜻만 살리고 다른 말로 씀"
+   ]
+  },
+  {
+   "kind": "확실성",
+   "line": 26,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "기준 판의 예상이 확정된 계획이나 결과처럼 바뀌었다. · 수정안이 앞선 판정에서 고치라고 한 「다음 주 화요일까지 배포 가능할 것으로 예상함」을 되살림 — 빠진 뜻만 살리고 다른 말로 씀"
+   ]
+  },
+  {
+   "kind": "확실성",
+   "line": 27,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "기준 판의 확인된 사실이 추정으로 약해졌다."
+   ]
+  },
+  {
+   "kind": "확실성",
+   "line": 28,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "기준 판의 가능성이 확정된 사실로 바뀌었다. · 수정안이 앞선 판정에서 고치라고 한 「일정 지연 가능성이 있음」을 되살림 — 빠진 뜻만 살리고 다른 말로 씀"
+   ]
+  },
+  {
+   "kind": "범위",
+   "line": 29,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "측정 조건(시험 환경)이 빠져 운영 환경 결과처럼 읽힌다. · 수정안이 앞선 판정에서 고치라고 한 「시험 환경에서 응답 시간이 30% 줄어듦」을 되살림 — 빠진 뜻만 살리고 다른 말로 씀"
+   ]
+  },
+  {
+   "kind": "범위",
+   "line": 30,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "범위(일부)가 빠져 모든 사용자의 문제처럼 읽힌다."
+   ]
+  },
+  {
+   "kind": "범위",
+   "line": 31,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "권한 조건이 빠져 모든 계정이 바꿀 수 있는 것처럼 읽힌다. · 수정안이 앞선 판정에서 고치라고 한 「관리자 권한이 있는 계정만 설정을 바꿀 수 있음」을 되살림 — 빠진 뜻만 살리고 다른 말로 씀"
+   ]
+  },
+  {
+   "kind": "범위",
+   "line": 32,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "수정 범위(주요 화면 다섯 개)가 빠졌다. · 수정안이 앞선 판정에서 고치라고 한 「주요 화면 다섯 개의 문구를 고침」을 되살림 — 빠진 뜻만 살리고 다른 말로 씀"
+   ]
+  },
+  {
+   "kind": "범위",
+   "line": 33,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "측정 조건(저장소 규모)이 빠져 일반적인 분석 시간처럼 읽힌다. · 수정안이 앞선 판정에서 고치라고 한 「대용량 저장소(코드 120만 줄)에서 분석이 4시간을 넘음」을 되살림 — 빠진 뜻만 살리고 다른 말로 씀"
+   ]
+  },
+  {
+   "kind": "수치부정",
+   "line": 34,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "3건 모두 해결한 것처럼 바뀌었고, 미해결 1건이 빠졌다. · 수정안이 앞선 판정에서 고치라고 한 「빌드 오류 3건 중 2건 해결, 1건은 아직 고치지 못함」을 되살림 — 빠진 뜻만 살리고 다른 말로 씀"
+   ]
+  },
+  {
+   "kind": "수치부정",
+   "line": 35,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "기준 판의 수치가 달라졌다."
+   ]
+  },
+  {
+   "kind": "수치부정",
+   "line": 36,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "다시 안내할 대상이 반대로 바뀌었다."
+   ]
+  },
+  {
+   "kind": "수치부정",
+   "line": 37,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "기준 판의 주기가 달라졌다."
+   ]
+  },
+  {
+   "kind": "수치부정",
+   "line": 38,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "미승인이 승인 완료로 바뀌었다. · 수정안이 앞선 판정에서 고치라고 한 「예산 승인은 아직 받지 않음」을 되살림 — 빠진 뜻만 살리고 다른 말로 씀"
+   ]
+  },
+  {
+   "kind": "그대로",
+   "line": 9,
+   "drift_flagged": false,
+   "any_flagged": false,
+   "categories": [],
+   "why": []
+  },
+  {
+   "kind": "그대로",
+   "line": 10,
+   "drift_flagged": false,
+   "any_flagged": false,
+   "categories": [],
+   "why": []
+  },
+  {
+   "kind": "그대로",
+   "line": 11,
+   "drift_flagged": false,
+   "any_flagged": false,
+   "categories": [],
+   "why": []
+  },
+  {
+   "kind": "그대로",
+   "line": 12,
+   "drift_flagged": false,
+   "any_flagged": false,
+   "categories": [],
+   "why": []
+  },
+  {
+   "kind": "그대로",
+   "line": 13,
+   "drift_flagged": false,
+   "any_flagged": false,
+   "categories": [],
+   "why": []
+  },
+  {
+   "kind": "추가",
+   "line": 14,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "기준 판에 없던 「실시간」이 새로 들어갔고, 「따로 적지 않아도」라는 조건이 사라짐"
+   ]
+  },
+  {
+   "kind": "추가",
+   "line": 15,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "기준 판에 없던 배포 범위가 새로 들어감"
+   ]
+  },
+  {
+   "kind": "추가",
+   "line": 16,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "기준 판에 없던 원인이 새로 들어감"
+   ]
+  },
+  {
+   "kind": "추가",
+   "line": 17,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "기준 판에 없던 「모두 반영」이 새로 들어감"
+   ]
+  },
+  {
+   "kind": "추가",
+   "line": 18,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "기준 판에 없던 승인 결과가 새로 들어감"
+   ]
+  },
+  {
+   "kind": "주체",
+   "line": 19,
+   "drift_flagged": false,
+   "any_flagged": false,
+   "categories": [],
+   "why": []
+  },
+  {
+   "kind": "주체",
+   "line": 20,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "기준 판은 협력사 자료를 근거로 한 수치였는데 협력사가 조치한 일로 바뀜 · 수정안이 앞선 판정에서 고치라고 한 「협력사 자료에 따르면 응답 시간이 2초 이내임」을 되살림 — 빠진 뜻만 살리고 다른 말로 씀"
+   ]
+  },
+  {
+   "kind": "주체",
+   "line": 21,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "화면을 바꾼 주체가 고객사로 바뀜. 기준 판은 고객사 요청으로 바꾼 것 · 수정안이 앞선 판정에서 고치라고 한 「고객사 요청으로 화면 구성을 바꿈」을 되살림 — 빠진 뜻만 살리고 다른 말로 씀"
+   ]
+  },
+  {
+   "kind": "주체",
+   "line": 22,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "작업 주체가 빠짐 · 수정안이 앞선 판정에서 고치라고 한 「인프라팀이 서버 세 대를 증설함」을 되살림 — 빠진 뜻만 살리고 다른 말로 씀"
+   ]
+  },
+  {
+   "kind": "주체",
+   "line": 23,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "발견한 주체와 경로(외부 감사)가 빠짐 · 수정안이 앞선 판정에서 고치라고 한 「외부 감사에서 접근 권한 문제 2건을 지적받음」을 되살림 — 빠진 뜻만 살리고 다른 말로 씀"
+   ]
+  },
+  {
+   "kind": "확실성",
+   "line": 24,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "기준 판은 확실성이 낮은 서술인데 단정으로 바뀜 · 수정안이 앞선 판정에서 고치라고 한 「오탐률이 12%에서 7%로 줄어든 것으로 보임」을 되살림 — 빠진 뜻만 살리고 다른 말로 씀"
+   ]
+  },
+  {
+   "kind": "확실성",
+   "line": 25,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "추정이 단정으로 바뀜 · 수정안이 앞선 판정에서 고치라고 한 「원인은 캐시 설정으로 추정됨」을 되살림 — 빠진 뜻만 살리고 다른 말로 씀"
+   ]
+  },
+  {
+   "kind": "확실성",
+   "line": 26,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "예상이 확정된 계획이나 결과처럼 바뀜"
+   ]
+  },
+  {
+   "kind": "확실성",
+   "line": 27,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "기준 판은 재현을 확인한 것인데 추측으로 약해짐 · 수정안이 앞선 판정에서 고치라고 한 「메모리 누수가 재현됨」을 되살림 — 빠진 뜻만 살리고 다른 말로 씀"
+   ]
+  },
+  {
+   "kind": "확실성",
+   "line": 28,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "가능성이 이미 일어난 일로 바뀜 · 수정안이 앞선 판정에서 고치라고 한 「일정 지연 가능성이 있음」을 되살림 — 빠진 뜻만 살리고 다른 말로 씀"
+   ]
+  },
+  {
+   "kind": "범위",
+   "line": 29,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "측정 환경 조건이 빠짐 · 수정안이 앞선 판정에서 고치라고 한 「시험 환경에서 응답 시간이 30% 줄어듦」을 되살림 — 빠진 뜻만 살리고 다른 말로 씀"
+   ]
+  },
+  {
+   "kind": "범위",
+   "line": 30,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "「일부」가 빠져 범위가 넓어짐 · 수정안이 앞선 판정에서 고치라고 한 「일부 사용자에게서 로그인 오류가 발생함」을 되살림 — 빠진 뜻만 살리고 다른 말로 씀"
+   ]
+  },
+  {
+   "kind": "범위",
+   "line": 31,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "권한 조건과 한정이 빠짐 · 수정안이 앞선 판정에서 고치라고 한 「관리자 권한이 있는 계정만 설정을 바꿀 수 있음」을 되살림 — 빠진 뜻만 살리고 다른 말로 씀"
+   ]
+  },
+  {
+   "kind": "범위",
+   "line": 32,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "대상 범위와 수가 빠짐 · 수정안이 앞선 판정에서 고치라고 한 「주요 화면 다섯 개의 문구를 고침」을 되살림 — 빠진 뜻만 살리고 다른 말로 씀"
+   ]
+  },
+  {
+   "kind": "범위",
+   "line": 33,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "측정 대상과 규모가 빠짐 · 수정안이 앞선 판정에서 고치라고 한 「대용량 저장소(코드 120만 줄)에서 분석이 4시간을 넘음」을 되살림 — 빠진 뜻만 살리고 다른 말로 씀"
+   ]
+  },
+  {
+   "kind": "수치부정",
+   "line": 34,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "미해결 1건이 사라져 전부 해결한 것으로 읽힘 · 수정안이 앞선 판정에서 고치라고 한 「빌드 오류 3건 중 2건 해결, 1건은 아직 고치지 못함」을 되살림 — 빠진 뜻만 살리고 다른 말로 씀"
+   ]
+  },
+  {
+   "kind": "수치부정",
+   "line": 35,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "숫자 자리가 바뀜"
+   ]
+  },
+  {
+   "kind": "수치부정",
+   "line": 36,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "미이수자가 이수자로 바뀌어 안내 대상이 반대가 됨"
+   ]
+  },
+  {
+   "kind": "수치부정",
+   "line": 37,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "주기가 바뀜 · 수정안이 앞선 판정에서 고치라고 한 「회의는 격주 화요일에 열림」을 되살림 — 빠진 뜻만 살리고 다른 말로 씀"
+   ]
+  },
+  {
+   "kind": "수치부정",
+   "line": 38,
+   "drift_flagged": true,
+   "any_flagged": true,
+   "categories": [
+    "고치다 뜻이 바뀐 곳"
+   ],
+   "why": [
+    "미승인이 승인으로 반대 뜻이 됨 · 수정안이 앞선 판정에서 고치라고 한 「예산 승인은 아직 받지 않음」을 되살림 — 빠진 뜻만 살리고 다른 말로 씀"
+   ]
+  }
+ ]
+}
