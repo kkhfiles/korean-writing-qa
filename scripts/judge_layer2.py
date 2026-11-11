@@ -1343,7 +1343,18 @@ def open_for(path: Path, since: str) -> tuple[list[int], bool]:
 #: 올리고, 그 줄 자체도 기준 판과 함께 사람 확인에 올린다. 상한에 닿았다고 통과시키지 않는다 —
 #: README 고리 시험에서 5회차에야 원문의 실제 논리 결함을 짚었다(외부 검토 「상한 도달은 보류 ·
 #: 남은 지적만 넘기면 아직 못 찾은 결함은 아무에게도 안 간다」 · 2026-10-12).
+#: ⛔ 단 상한을 넘긴 판정이 그 줄에서 고칠 것을 못 찾았으면 사람에게 안 올리고 지금 문장으로 둔다 — 그 판정도
+#:   판정기가 줄을 다시 읽은 결과라, 처음 판정에서 지적이 없던 줄과 같게 다룬다. 수정안이 원문과 글자가 같은
+#:   지적(「7회, 112초」→「7회, 112초」)은 고칠 것이 아니다 — 확인할 사실이 있으면 세션이 자료로 닫는다.
+#:   (2026-11-11 사용자 「뭔소리야. 지금 표현이 나은데, 이걸 왜 애스컬레이션한거지?」 · 멘토링 문서에서 사람
+#:   확인 8줄이 전부 이 까닭이었고 마지막 판정에 새 고칠 지적이 없었음 · chungbuk 세션이 전달)
 REJUDGE_CAP = 3
+
+
+def noop_fix(item: dict) -> bool:
+    """수정안이 짚은 표현과 글자가 같은 지적 — 고칠 것이 없다(굵게와 빈칸 차이는 같다고 봄)."""
+    plain = lambda s: re.sub(r"\s+", "", coverage._plain(str(s or "")))  # noqa: E731
+    return bool(item.get("phrase")) and plain(item.get("fix")) == plain(item.get("phrase"))
 #: 프롬프트에 싣는 지운 줄 — 대상 줄마다 이만큼까지
 DELETED_PER_LINE = 3
 
@@ -1990,13 +2001,13 @@ def judge(path: Path, model: str, timeout: float, backend, targets: list[int] | 
             continue
         asks, fixes = [], []
         hidden_before = hidden
+        fresh_held, real_lines = [], set()
         if want is not None:
-            # 상한을 처음 넘은 줄은 지적이 없어도 사람에게 — 아직 못 찾은 결함도 그 줄에 있을 수 있다
+            # 상한을 처음 넘은 줄 — 이번 판정이 그 줄에서 고칠 것을 찾았을 때만 줄 자체도 사람에게(아래 고리 뒤).
+            # 못 찾았으면 지금 문장으로 둔다(REJUDGE_CAP 주석 · 2026-11-11 사용자 결정)
             fresh_held = [n for n in over if info[n]["round"] == REJUDGE_CAP + 1 and n not in held_done]
             held_done.update(fresh_held)
-            items = list(items) + [held_ask(n, lines[n - 1], info[n], line_history(key, info[n].get("root")))
-                                   for n in fresh_held]
-            items += kept_flagged(lines, mine, info, items, closed_rows, freq)
+            items = list(items) + kept_flagged(lines, mine, info, items, closed_rows, freq)
         for it in items:
             if isinstance(it, dict):
                 it["line"] = relocate(lines, it.get("line"), str(it.get("phrase") or ""))
@@ -2020,7 +2031,12 @@ def judge(path: Path, model: str, timeout: float, backend, targets: list[int] | 
                 if isinstance(n, int) and 0 < n <= len(lines) and not coverage.line_key(lines[n - 1]):
                     foreign += 1
                     continue
-                if want is not None and n in over and not is_ask(it):
+                if want is not None and n in over and noop_fix(it):
+                    # 고칠 것이 없는 지적 — 확인할 사실만 있으면 세션이 자료로 닫고(고칠 지적으로 둠), 없으면 버린다
+                    if not str(it.get("check") or "").strip():
+                        continue
+                    it["decide"] = "fix"
+                elif want is not None and n in over and not is_ask(it):
                     it["decide"] = "ask"
                     it["why"] = (f"{it.get('why') or ''} · 같은 줄을 {info[n]['round']}번째 판정 — "
                                  f"상한 {REJUDGE_CAP}회를 넘어 사람 확인으로 올림").lstrip(" ·")
@@ -2046,6 +2062,17 @@ def judge(path: Path, model: str, timeout: float, backend, targets: list[int] | 
                 else:
                     # 고친 줄을 이 줄의 자손으로 찾으려면 그때 글이 있어야 한다(저장소 밖 기록)
                     fixes.append(dict(rec, check=it.get("check") or "", text=lines[n - 1] if ok_line else ""))
+                if not noop_fix(it):
+                    real_lines.add(n)
+        # 상한을 처음 넘은 줄 가운데 이번 판정이 고칠 것을 찾은 줄만 줄 자체를 사람 확인에 올린다
+        for n in fresh_held:
+            if n not in real_lines:
+                continue
+            it = held_ask(n, lines[n - 1], info[n], line_history(key, info[n].get("root")))
+            found.append(it)
+            held += 1
+            asks.append({"line_key": coverage.line_key(lines[n - 1]), "line": n, "phrase": it["phrase"],
+                         "fix": it["fix"], "why": it["why"], "category": it["category"]})
         # 발행 직전 검사가 「사용자 답을 아직 못 받은 지적」 · 「처리 안 된 고칠 지적」을 이것으로 가른다
         row["asks"] = asks
         row["fixes"] = fixes

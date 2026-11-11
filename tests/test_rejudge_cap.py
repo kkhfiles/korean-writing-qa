@@ -3,7 +3,7 @@
 
 (2026-10-12 고리 재현 시험) README 를 수정안대로 고치고 고친 줄만 다시 판정하자 6회차까지 지적이
 0 이 안 됐고, 후반 지적은 긴 줄 셋에 몰렸다. 그중에는 5회차에야 짚은 원문의 실제 결함도 있었다 —
-그래서 상한에서 통과시키지 않고 사람에게 올린다. 수정안이 경위 문장을 다른 주장으로 바꾼 사례도
+그래서 상한에서 통과시키지 않고 사람에게 올린다(상한을 넘긴 판정이 고칠 것을 못 찾은 줄은 빼고 · 2026-11-11). 수정안이 경위 문장을 다른 주장으로 바꾼 사례도
 있었다 — 그래서 고친 줄을 기준 판과 함께 보낸다.
 
 **지키는 것**
@@ -175,8 +175,11 @@ class RestructuredLineTests(_Base):
     def test_the_same_row_revised_again_still_hits_the_cap(self) -> None:
         for v in ROW_VERSIONS[:judge.REJUDGE_CAP]:
             self.judge_lines(TABLE_HEAD + [v, "</table>"], [4])
+        # 상한을 넘긴 판정이 그 행에서 고칠 것을 찾아야 행째 사람에게 간다(2026-11-11) — 고칠 지적 하나를 준다
+        found = {"line": 4, "phrase": "매달 갱신", "category": "업무에서 쓰는 말로 쓰기", "fix": "매월 갱신",
+                 "why": "시험", "decide": "fix"}
         result = self.judge_lines(TABLE_HEAD + [ROW_VERSIONS[judge.REJUDGE_CAP]] + NEW_ROWS + ["</table>"],
-                                  [4, 5, 6, 7])
+                                  [4, 5, 6, 7], reply=[found])
         rounds = {e["text"]: e["round"] for e in self.last_row()["targeted"]}
         self.assertEqual(judge.REJUDGE_CAP + 1, rounds[ROW_VERSIONS[judge.REJUDGE_CAP]],
                          "같은 행을 거듭 고쳤는데 판정 횟수를 이어 세지 않았습니다")
@@ -291,12 +294,33 @@ class CapTests(_Base):
         self.assertEqual([], [f for f in results[-1]["findings"] if f.get("category") == "재판정 상한"],
                          "상한을 넘을 때마다 같은 줄을 또 올렸습니다")
 
-    def test_the_cap_holds_even_without_findings(self) -> None:
+    def over_the_cap(self, reply: list[dict]) -> dict:
         for v in VERSIONS[:judge.REJUDGE_CAP]:
             self.rejudge(BASE[:4] + [v], [5])
-        result, _ = self.rejudge(BASE[:4] + [VERSIONS[judge.REJUDGE_CAP]], [5], reply=[])
-        self.assertEqual(["재판정 상한"], [f["category"] for f in result["findings"]],
-                         "지적이 없다고 상한을 넘은 줄을 그냥 통과시켰습니다")
+        result, _ = self.rejudge(BASE[:4] + [VERSIONS[judge.REJUDGE_CAP]], [5], reply=reply)
+        return result
+
+    def test_a_clean_round_over_the_cap_keeps_the_line(self) -> None:
+        """(2026-11-11 사용자 「뭔소리야. 지금 표현이 나은데, 이걸 왜 애스컬레이션한거지?」) 상한을 넘긴 판정이
+        고칠 것을 못 찾았으면 지금 문장으로 둔다 — 2026-10-12 의 「지적이 없어도 줄째 올림」을 뒤집음."""
+        result = self.over_the_cap([])
+        self.assertEqual([], result["findings"], "고칠 것이 없는 줄을 사람 확인으로 올렸습니다")
+        lines = coverage.read_doc(self.doc).splitlines()
+        self.assertEqual([], coverage.open_asks(coverage.doc_key(self.doc), lines, judge.LOG))
+
+    def test_a_suggestion_equal_to_the_phrase_is_not_a_reason_to_ask(self) -> None:
+        """수정안이 원문과 글자가 같은 지적(비교 페이지 「7회, 112초」→「7회, 112초」)은 사람에게 안 올린다 —
+        확인할 사실이 있으면 고칠 지적으로 남아 세션이 자료로 닫고, 없으면 버린다."""
+        word = VERSIONS[judge.REJUDGE_CAP].split()[1]
+        same = {"line": 5, "phrase": word, "category": "고치다 뜻이 바뀐 곳", "fix": word, "why": "시험",
+                "decide": "fix", "check": "이 값이 맞는지"}
+        result = self.over_the_cap([same])
+        self.assertEqual(["fix"], [f["decide"] for f in result["findings"]], "사실 확인만 남은 지적을 사람에게 올렸습니다")
+        self.assertEqual(0, result["held"])
+        self.tearDown()
+        self.setUp()
+        result = self.over_the_cap([dict(same, check="")])
+        self.assertEqual([], result["findings"], "고칠 것도 확인할 것도 없는 지적을 남겼습니다")
 
     def test_a_full_judgment_does_not_count(self) -> None:
         self.write(BASE[:4] + [VERSIONS[0]])

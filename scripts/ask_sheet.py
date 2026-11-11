@@ -25,6 +25,7 @@
 
 from __future__ import annotations
 
+import difflib
 import json
 import re
 from datetime import datetime
@@ -39,7 +40,15 @@ LEGACY_WIDTH = 7
 #: 짧은 답의 머리 — 이 말로 시작하면 「제 의견」 칸을 답으로 쓴다
 AS_OPINION = "의견대로"
 #: 문장 칸에 줄을 통째로 넣으면 표가 읽히지 않는다 — 짚은 표현 앞뒤만 남긴다
-CONTEXT = 60
+CONTEXT = 25
+#: 칸 하나의 글자 상한 — 넘는 글은 줄여 보이고 전문은 표 아래 「자세히」에 둔다. 칸에 줄 전체 원문, 기준 판 줄 전체,
+#: 판정 이력이 다 들어가 사람이 읽을 수 없었다(2026-11-11 사용자 「사람 확인 표 이걸 내가 읽고 판단하라고 준건가?
+#: 텍스트가 이렇게 많은데? 더 좋은 방안을 만들어야할듯.」 · chungbuk 세션이 전달)
+CELL_MAX = 80
+#: 재판정 상한 행 — 짚은 표현이 줄 전체이고 수정안이 「기준 판으로 되돌림 — <기준 판 줄 전체>」다
+HELD = "재판정 상한"
+HELD_PREFIX = "기준 판으로 되돌림 — "
+HISTORY_MARK = " · 판정 이력: "
 KEEP, EDIT, HOLD, BLANK = "그대로", "고침", "보류", ""
 DIRECT = "직접"
 #: 첫 낱말이 넷 가운데 하나가 아닌 답 — 「이건 그냥 놔두자」는 유지이고 「빼는게 낫겠다」는 고침이다.
@@ -98,6 +107,83 @@ def excerpt(line: str, phrases: list[str]) -> str:
     return ("…" if a else "") + out + ("…" if b < len(line) else "")
 
 
+def clip(text: str, limit: int = CELL_MAX) -> str:
+    """칸 하나에 넣을 만큼 — 넘으면 자르고 「…」."""
+    text = re.sub(r"\s+", " ", str(text or "")).strip()
+    return text if len(text) <= limit else text[:limit - 1].rstrip() + "…"
+
+
+def word_changes(base: str, cur: str) -> list[tuple[str, str, str, str]]:
+    """기준 판과 지금 문장의 낱말 단위 차이 — (앞 낱말, 기준 판 쪽, 지금 쪽, 뒤 낱말). 바뀐 곳마다 하나."""
+    a, b = base.split(), cur.split()
+    out = []
+    for op, i1, i2, j1, j2 in difflib.SequenceMatcher(None, a, b, autojunk=False).get_opcodes():
+        if op != "equal":
+            out.append((b[j1 - 1] if j1 else "", " ".join(a[i1:i2]), " ".join(b[j1:j2]),
+                        b[j2] if j2 < len(b) else ""))
+    return out
+
+
+def _joined(parts: list[str], limit: int = CELL_MAX) -> str:
+    """조각을 「 / 」로 잇되 상한을 넘기 전에 멈춘다 — 굵게 표시가 중간에서 잘리지 않게 조각 단위로 자른다."""
+    out, size = [], 0
+    for p in parts:
+        if out and size + len(p) > limit:
+            return " / ".join(out) + " / …"
+        out.append(p)
+        size += len(p) + 3
+    return " / ".join(out)
+
+
+def held_cells(item: dict) -> tuple[str, str, str, list[str]]:
+    """재판정 상한 행 — (원문 칸, 고친 말 칸, 고친 이유 칸, 자세히 줄들). 바뀐 낱말만 칸에 넣는다.
+
+    예: 원문 칸 「일부만 처리하고 **끝나기도 함**」, 고친 말 칸 「기준 판으로 되돌림 — 「덜 끝남」」. 판정 이력과 두 판
+    전문은 표 아래 「자세히」로 옮긴다.
+    """
+    cur, fix = str(item.get("phrase") or ""), str(item.get("fix") or "")
+    base = fix[len(HELD_PREFIX):] if fix.startswith(HELD_PREFIX) else ""
+    why, _, history = str(item.get("why") or "").partition(HISTORY_MARK)
+    details = [f"지금 문장: 「{clip(cur, 400)}」"]
+    if base:
+        details.append(f"기준 판: 「{clip(base, 400)}」")
+    if history:
+        details.append(f"판정 이력: {history}")
+    if not base:
+        return cell(clip(cur)), cell(clip(fix)), cell(clip(why)), details
+    changes = word_changes(base, cur)
+    now = [" ".join(x for x in (cell(before), f"**{cell(new)}**" if new else "(지움)", cell(after)) if x)
+           for before, _, new, after in changes]
+    old = [f"「{cell(o)}」" if o else "(없음)" for _, o, _, _ in changes]
+    return (_joined(now) or cell(clip(cur)), HELD_PREFIX + (_joined(old, CELL_MAX - len(HELD_PREFIX)) or "(같음)"),
+            cell(clip(why)), details)
+
+
+def row_parts(line: str, items: list[dict]) -> tuple[str, str, str, str, list[str]]:
+    """(원문, 고친 말, 고친 이유, 제 의견, 자세히 줄들) — 칸마다 상한까지, 넘친 전문은 자세히로."""
+    held = [a for a in items if a.get("category") == HELD]
+    rest = [a for a in items if a.get("category") != HELD]
+    opinion = "<br>".join(dict.fromkeys(cell(a.get("opinion")) for a in items if a.get("opinion")))
+    details: list[str] = []
+    if held:
+        now, fix, why, details = held_cells(held[0])
+    else:
+        phrases = [str(a.get("phrase") or "").strip() for a in rest]
+        now = excerpt(line, phrases)
+        fix, why = "", ""
+    if rest:
+        f2, w2, _ = row_cells(rest)
+        fix = "<br>".join(x for x in (fix, f2) if x)
+        why = "<br>".join(x for x in (why, w2) if x)
+        for a in rest:
+            full_fix, full_why = str(a.get("fix") or ""), str(a.get("why") or "")
+            if len(full_fix) > CELL_MAX or len(full_why) > CELL_MAX:
+                details.append(f"「{clip(a.get('phrase'), 60)}」 — 고친 말 「{full_fix}」 · 이유 {full_why}")
+        if not held and len(re.sub(r"\s+", " ", line).strip()) > len(re.sub(r"\*\*|\\", "", now)) + 2:
+            details.insert(0, f"줄 전체: 「{clip(line, 400)}」")
+    return now, fix, why, opinion, details
+
+
 def group(lines: list[str], asks: list[tuple[int, dict]]) -> list[tuple[int, list[dict]]]:
     """(줄 번호, 그 줄의 지적들) — 줄 순서."""
     by: dict[int, list[dict]] = {}
@@ -115,9 +201,9 @@ def row_cells(items: list[dict]) -> tuple[str, str, str]:
     phrases = [str(a.get("phrase") or "").strip() for a in items]
     opinion = "<br>".join(dict.fromkeys(cell(a.get("opinion")) for a in items if a.get("opinion")))
     if len(items) == 1:
-        return cell(items[0].get("fix")), cell(items[0].get("why")), opinion
-    fix = "<br>".join(f"「{cell(p)}」 → {cell(a.get('fix'))}" for p, a in zip(phrases, items))
-    why = "<br>".join(f"「{cell(p)}」 {cell(a.get('why'))}" for p, a in zip(phrases, items))
+        return cell(clip(items[0].get("fix"))), cell(clip(items[0].get("why"))), opinion
+    fix = "<br>".join(f"「{cell(clip(p, 30))}」 → {cell(clip(a.get('fix'), 50))}" for p, a in zip(phrases, items))
+    why = "<br>".join(f"「{cell(clip(p, 30))}」 {cell(clip(a.get('why'), 50))}" for p, a in zip(phrases, items))
     return fix, why, opinion
 
 
@@ -141,15 +227,18 @@ def render(docs: list[tuple[Path, list[str], list[tuple[int, dict]]]],
         if not rows:
             continue
         body += ["", f"## {path.name}", ""] + table_head()
+        more: list[str] = []
         for n, items in rows:
             k += 1
             total_lines += 1
             total_asks += len(items)
-            fix, why, opinion = row_cells(items)
-            phrases = [str(a.get("phrase") or "").strip() for a in items]
-            body.append(f"| {k} | {excerpt(lines[n - 1], phrases)} | {fix} | {why} | {opinion} |  |")
+            shown, fix, why, opinion, details = row_parts(lines[n - 1], items)
+            body.append(f"| {k} | {shown} | {fix} | {why} | {opinion} |  |")
+            more += [f"- **{k}** — {d}" for d in details]
             keys[f"Q{k}"] = {"doc": path.resolve().as_posix(), "line": n,
                              "line_key": line_key(lines[n - 1])}
+        if more:
+            body += ["", "### 자세히 — 칸에 다 못 넣은 글과 판정 이력", ""] + more
     head = HEAD.format(at=now.strftime("%Y-%m-%d %H:%M"),
                        docs=" · ".join(p.name for p, _, a in docs if a) or "없음",
                        lines=total_lines, asks=total_asks)
@@ -177,9 +266,8 @@ def screen(docs: list[tuple[Path, list[str], list[tuple[int, dict]]]]) -> str:
         out += ["", f"**{path.name}**", ""] + table_head()
         for n, items in rows:
             k += 1
-            fix, why, opinion = row_cells(items)
-            phrases = [str(a.get("phrase") or "").strip() for a in items]
-            out.append(f"| {k} | {excerpt(lines[n - 1], phrases)} | {fix} | {why} | {opinion} |  |")
+            now, fix, why, opinion, _ = row_parts(lines[n - 1], items)
+            out.append(f"| {k} | {now} | {fix} | {why} | {opinion} |  |")
     return "\n".join(out)
 
 
