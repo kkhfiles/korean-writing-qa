@@ -1383,6 +1383,17 @@ def lint_gaps(repo, rel, blob, base_raw):
             f"확인 — python -X utf8 {CHECKER.as_posix()} {(repo / rel).as_posix()}"]
 
 
+def _contexts(hit):
+    """줄 번호 없는 지적에서 문맥만 뗀다 — 「「표현」 … 문맥」 꼴과 「「표현」 — 안내 · 문맥」 꼴."""
+    out = []
+    if " … " in hit:
+        out.append(hit.rsplit(" … ", 1)[1].split(" — ", 1)[0])
+    tail = hit.split(" — ", 1)[1] if " — " in hit else ""
+    if " · " in tail:
+        out.append(tail.rsplit(" · ", 1)[1])
+    return [_same_line(html_unescape(c)).rstrip("…").strip() for c in out]
+
+
 def drop_theirs(path, hits):
     """원본을 선언한 문서에서 원본과 글자가 같은 줄의 지적을 뺀다 — (남은 지적, 알림 줄 | "").
 
@@ -1402,6 +1413,13 @@ def drop_theirs(path, hits):
     # (2026-11-09) HTML 문서의 지적은 줄 번호 없이 문장만 싣는다(「<td> 문장」) — 줄 번호로만 대조하던 때는 원본을
     #  선언해도 한 건도 빠지지 않아 남이 쓴 줄이 발행을 막았다(AI 초안 전후 비교 페이지). 문장을 원본의 보이는 글과 견준다
     visible = {_same_line(_TAGS.sub("", t).replace("**", "").replace("`", "")) for t in theirs} | theirs
+    # (2026-11-11) 한 표 칸에 원본 줄이 이어 있으면 검사기가 찍는 문맥이 두 줄에 걸친다(「…구축되어졌습니다. - 결국 …」)
+    #  — 원본 줄을 차례대로 이은 글과도 견준다(AI 말투 시연 페이지에서 남이 쓴 줄의 오류 넷이 발행을 막음)
+    try:
+        joined = " ".join(_same_line(_TAGS.sub("", t).replace("**", "").replace("`", ""))
+                          for t in origin.read_text(encoding="utf-8", errors="replace").splitlines())
+    except OSError:
+        joined = ""
     kept, dropped = [], 0
     for h in hits:
         m = FINDING_ROW.search(h)
@@ -1413,6 +1431,9 @@ def drop_theirs(path, hits):
         # 검사기는 HTML 문자 기호를 그대로 찍는다(「&#x27;」) — 원본의 글자와 견주려면 되돌린다
         text = _same_line(html_unescape(q.group(1))).rstrip("…").strip() if q else ""
         if len(text) >= 6 and any(text in t for t in visible):
+            dropped += 1
+            continue
+        if not n and any(len(c) >= 10 and c in joined for c in [text] + _contexts(h)):
             dropped += 1
             continue
         kept.append(h)

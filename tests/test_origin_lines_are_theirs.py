@@ -149,6 +149,32 @@ class GateTests(_Base):
         self.assertNotIn("적용한다", out, "원본(남의 줄)의 HTML 지적을 냈습니다")
         self.assertIn("늦어질 수 있다", out, "사용자가 쓴 줄의 HTML 지적이 사라졌습니다")
 
+    def test_html_finding_whose_context_spans_two_original_lines_is_theirs(self) -> None:
+        """(2026-11-11 AI 말투 시연 페이지) 한 표 칸에 원본 줄 둘이 이어 있으면 검사기가 찍는 문맥이 두 줄에 걸쳐
+        (「…구축되어졌습니다. - 결국 …」) 어느 원본 줄에도 통째로 들지 않았고, 남이 쓴 줄의 오류가 발행을 막았다."""
+        (self.dir / "page-origin.txt").write_text("- 강력한 분석 엔진으로 결함을 찾습니다.\n"
+                                                  "- 회귀 시험 자동화 체계가 성공적으로 구축되어졌습니다.\n"
+                                                  "- 결국 이러한 노력은 고객 만족도 향상으로 이어질 것입니다.\n",
+                                                  encoding="utf-8")
+        page = self.dir / "page.html"
+        page.write_text('<meta name="audience" content="share">\n<meta name="origin" content="page-origin.txt">\n'
+                        "<title>전후 비교</title>\n<p><b>전후 비교</b> — 원문과 고친 글</p>\n<table><tbody>\n<tr><td>\n"
+                        '<div class="ln p">- 강력한 분석 엔진으로 결함을 찾습니다.</div>\n'
+                        '<div class="ln p">- 회귀 시험 자동화 체계가 성공적으로 구축되어졌습니다.</div>\n'
+                        '<div class="ln p">- 결국 이러한 노력은 고객 만족도 향상으로 이어질 것입니다.</div>\n'
+                        "</td></tr>\n</tbody></table>\n<ul>\n<li>위험: 시험 환경 확보가 늦어질 수 있다.</li>\n</ul>\n",
+                        encoding="utf-8")
+        # 발행 순간의 전체 검사(쓰는 순간에는 매체 무관 규칙만 내서 이 꼴이 안 나옴)
+        code = ("import importlib.util, sys\n"
+                f"s = importlib.util.spec_from_file_location('gate', {str(GATE)!r})\n"
+                "g = importlib.util.module_from_spec(s); s.loader.exec_module(g)\n"
+                "print(g.run_checker(sys.argv[1], False))\n")
+        out = subprocess.run([sys.executable, "-X", "utf8", "-c", code, str(page)], capture_output=True, text=True,
+                             encoding="utf-8", errors="replace", timeout=120, env=self.env).stdout
+        self.assertIn("늦어질 수 있다", out, "사용자가 쓴 줄의 HTML 지적이 사라졌습니다")
+        self.assertNotIn("되어졌」", out, "두 원본 줄에 걸친 문맥의 지적을 냈습니다")
+        self.assertNotIn("강력한」", out, "「표현」 … 문맥 — 안내」 꼴의 원본 줄 지적을 냈습니다")
+
     def test_publish_asks_to_judge_only_the_changed_line(self) -> None:
         rc, out = self.published()
         self.assertEqual(2, rc, out)
