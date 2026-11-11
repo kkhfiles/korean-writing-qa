@@ -43,15 +43,49 @@ class Scripted:
         return call, json.loads
 
 
-def one(work: Path, cases: list[dict], own: bool) -> dict:
-    """`own` — 고친 줄이 판정기 자신의 수정안이었다는 기록을 먼저 남김(재판정 프롬프트에 「고친 까닭」이 실림)."""
+def alone(cases: list[dict]) -> tuple[list[str], list[str], list[int]]:
+    """고친 줄만 모은 문서 — 기준 판, 고친 판, 고친 줄 번호."""
+    first = len(HEAD) + 1
+    return (HEAD + [c["before"] for c in cases], HEAD + [c["after"] for c in cases],
+            [first + i for i in range(len(cases))])
+
+
+def mixed(cases: list[dict], before_doc: Path, after_doc: Path) -> tuple[list[str], list[str], list[int]]:
+    """AI 말투 시연 문서(원문과 첫 판정으로 고친 판)의 하위 항목 사이사이에 고친 줄을 끼움 — 재판정이 다른 결함과
+    다른 고친 줄 수십 개를 한 번에 본다. 사례는 차례대로 하위 항목마다 돌아가며 나눠 종류가 한곳에 몰리지 않게 함."""
+    head = ["---", "form: structured", "---", ""]
+    old, new = before_doc.read_text(encoding="utf-8").splitlines(), after_doc.read_text(encoding="utf-8").splitlines()
+    slots = [i for i, s in enumerate(old) if s.startswith("  * ")]
+    if sum(s.startswith("  * ") for s in new) != len(slots):
+        raise SystemExit("두 판의 하위 항목 수가 다름")
+    groups = [cases[k::len(slots)] for k in range(len(slots))]
+
+    def build(lines: list[str], side: str) -> tuple[list[str], list[int]]:
+        out, marks, k = list(head), [], 0
+        for s in lines:
+            out.append(s)
+            if s.startswith("  * "):
+                for c in groups[k]:
+                    out.append("  * " + c[side][2:])
+                    marks.append((cases.index(c), len(out)))
+                k += 1
+        return out, [n for _, n in sorted(marks)]
+    base, _ = build(old, "before")
+    fixed, lines = build(new, "after")
+    return base, fixed, lines
+
+
+def one(work: Path, cases: list[dict], own: bool, layout=None) -> dict:
+    """`own` — 고친 줄이 판정기 자신의 수정안이었다는 기록을 먼저 남김(재판정 프롬프트에 「고친 까닭」이 실림).
+    `layout` — 문서 짜는 법(기본은 고친 줄만 모은 `alone`)."""
     work.mkdir(parents=True, exist_ok=True)
     doc = work / "doc.md"
+    base, fixed, where = (layout or alone)(cases)
 
     def git(*args: str) -> None:
         subprocess.run(["git", "-c", "user.name=bench", "-c", "user.email=bench@localhost", "-C", str(work), *args],
                        capture_output=True, check=True)
-    doc.write_text("\n".join(HEAD + [c["before"] for c in cases]) + "\n", encoding="utf-8")
+    doc.write_text("\n".join(base) + "\n", encoding="utf-8")
     git("init", "-q", "-b", "main")
     git("add", "doc.md")
     git("commit", "-q", "-m", "base")
@@ -60,20 +94,17 @@ def one(work: Path, cases: list[dict], own: bool) -> dict:
     said = io.StringIO()
     with bench_loop.isolated(work), contextlib.redirect_stdout(said):
         if own:
-            first = len(HEAD) + 1
-            prior = [{"line": first + i, "phrase": c["before"][2:], "category": "번역투 줄이기", "fix": c["after"][2:],
-                      "why": "", "decide": "fix"} for i, c in enumerate(cases)]
+            prior = [{"line": n, "phrase": c["before"][2:], "category": "번역투 줄이기", "fix": c["after"][2:],
+                      "why": "", "decide": "fix"} for n, c in zip(where, cases)]
             judge.judge(doc, "opus", 60, Scripted(prior).pair())
-        doc.write_text("\n".join(HEAD + [c["after"] for c in cases]) + "\n", encoding="utf-8")
+        doc.write_text("\n".join(fixed) + "\n", encoding="utf-8")
         rc = judge.main([str(doc), "--since", "main", "--json", str(out), "--backend", "claude"])
     (work / "judge-output.txt").write_text(said.getvalue(), encoding="utf-8")
     if not out.is_file():
         raise SystemExit(f"판정 실패 rc={rc} — {work / 'judge-output.txt'}")
     findings = json.loads(out.read_text(encoding="utf-8"))[0]["findings"]
-    first = len(HEAD) + 1
     rows = []
-    for i, c in enumerate(cases):
-        n = first + i
+    for n, c in zip(where, cases):
         mine = [f for f in findings if f.get("line") == n]
         drift = [f for f in mine if "뜻이 바뀐" in str(f.get("category") or "")]
         rows.append({"kind": c["kind"], "line": n, "drift_flagged": bool(drift), "any_flagged": bool(mine),
@@ -88,9 +119,14 @@ def main() -> int:
     own = "--own" in sys.argv          # 판정기 자신의 수정안으로 고친 줄 조건
     name = sys.argv[sys.argv.index("--cases") + 1] if "--cases" in sys.argv else "cases"   # cases-multi: 여러 곳을 함께 고친 줄
     cases = json.loads((HERE / f"{name}.json").read_text(encoding="utf-8"))
+    layout = None
+    if "--mixed" in sys.argv:          # --mixed <시연 원문> <첫 판정으로 고친 판>: 다른 결함과 섞어 한 번에 판정
+        at = sys.argv.index("--mixed")
+        before_doc, after_doc = Path(sys.argv[at + 1]), Path(sys.argv[at + 2])
+        layout = lambda cs: mixed(cs, before_doc, after_doc)  # noqa: E731
     tag = ("own" if own else "run") + ("" if name == "cases" else "-" + name.split("-", 1)[1]) + \
-        ("-" + sys.argv[sys.argv.index("--tag") + 1] if "--tag" in sys.argv else "")
-    runs = [one(work / f"{tag}{k}", cases, own) for k in range(1, times + 1)]
+        ("-mixed" if layout else "") + ("-" + sys.argv[sys.argv.index("--tag") + 1] if "--tag" in sys.argv else "")
+    runs = [one(work / f"{tag}{k}", cases, own, layout) for k in range(1, times + 1)]
     summary = {}
     for kind in dict.fromkeys(c["kind"] for c in cases):
         got = [r["drift_flagged"] for run in runs for r in run["rows"] if r["kind"] == kind]
