@@ -1524,6 +1524,46 @@ SU_NOUN_HEAD = set('실별홀말일술필철')
 _SPACED_HA = re.compile(r'[가-힣] (?:하|한|할|함|해|했|합|되|된|될|됨|돼|됐|됩)')
 #: 형태소 분석기가 없어 「하다」, 「되다」 띄어쓰기를 안 본 곳이 실제로 있었나
 SPACING_SKIPPED = False
+#: 관형형 어미에 붙여 쓴 의존 명사(「아실겁니다」, 「동작한게」, 「할줄」, 「열었을때」)와 붙여 쓴 「안」 + 용언(「안하겠습니다」).
+#: (2026-11-12 업무 소개 글 36편 읽기) 두 모델이 읽으며 찾은 띄어쓰기 놓침 16건 가운데 이 꼴이 대부분이었다.
+#: 「데」는 뺀다 — 형태소 분석기가 연결 어미 「-는데」(「좋은데 나가자」)도 의존 명사로 읽는다.
+_STUCK_DEP = re.compile(r'[가-힣](?:것|거|겁|게|걸|건|줄|때)|(?<![가-힣])안[하한할함해했합되된될됨돼됐됩]')
+STUCK_NNB = {'것', '거', '줄'}
+
+
+def stuck_dep_hits(line, k):
+    """(걸린 글자, 바른 꼴, 줄 안 시작, 등급, 근거) — 형태소로 붙여 쓴 의존 명사와 「안」 + 용언을 찾는다."""
+    toks = k.tokenize(line)
+    out = []
+    for i in range(1, len(toks)):
+        p, t = toks[i - 1], toks[i]
+        if t.start != p.start + p.len:
+            continue                    # 빈칸이 있다
+        if p.tag == 'ETM' and ((t.tag == 'NNB' and t.form in STUCK_NNB) or (t.tag == 'NNG' and t.form == '때')):
+            # 「갈걸」, 「할게요」는 어미 「-ㄹ걸」, 「-ㄹ게」 — 분석기가 「거」로 읽는다. 「할게 많다」는 놓친다
+            if p.form in ('ᆯ', '을') and line[t.start:t.start + 1] in ('걸', '게'):
+                continue
+            a = t.start
+            while a > 0 and re.match(r'[가-힣]', line[a - 1]):
+                a -= 1                  # 어절 첫머리부터 보인다(「아실겁니다」)
+            end = t.start + t.len
+            while end < len(line) and re.match(r'[가-힣]', line[end]):
+                end += 1
+            word = line[a:end]
+            cut = t.start - a
+            josa = '은' if _jong(t.form[-1]) else '는'
+            out.append((word, word[:cut] + ' ' + word[cut:], a, 'err',
+                        f'띄어쓰기 — 의존 명사 「{t.form}」{josa} 앞말과 띄어 씀'))
+        # 「안」 + 하다/되다만 — 「안내」, 「안정」을 「안」 + 「내다」로 읽는다(사람 글 201편에서 오탐 5건)
+        elif p.form == '안' and p.tag == 'MAG' and t.form in ('하', '되') and t.tag in ('VV', 'VA', 'VX') \
+                and line[p.start:p.start + 1] == '안':
+            end = t.start + t.len
+            while end < len(line) and re.match(r'[가-힣]', line[end]):
+                end += 1
+            word = line[p.start:end]
+            out.append((word, '안 ' + word[1:], p.start, 'warn',
+                        '띄어쓰기 의심 — 부정의 「안」은 띄어 씀(「안 하다」), 「안되다」(가엾다)처럼 한 낱말이면 그대로'))
+    return out
 
 
 def spacing_hits(text, taken=()):
@@ -1539,11 +1579,20 @@ def spacing_hits(text, taken=()):
             continue
         out.append(('err', c + '수', c + ' 수', m.start(2),
                     '띄어쓰기 — 의존 명사 「수」는 앞말과 띄어 씀'))
+    global SPACING_SKIPPED
+    if _STUCK_DEP.search(text):
+        k = morph()
+        if k is None:
+            SPACING_SKIPPED = True
+        else:
+            for base, line in _lines_with(text, _STUCK_DEP):
+                for word, right, at, level, why in stuck_dep_hits(line, k):
+                    if base + at not in taken:
+                        out.append((level, word, right, base + at, why))
     if not _SPACED_HA.search(text):
         return out
     k = morph()
     if k is None:
-        global SPACING_SKIPPED
         SPACING_SKIPPED = True
         return out
     for base, line in _lines_with(text, _SPACED_HA):
@@ -1646,9 +1695,25 @@ def spelling_hits(text):
             continue
         out.append(('warn', m.group(0), None, m.start(),
                     '맞춤법 — 낱자모 뒤에 글자가 붙음, 문법이나 모양을 적은 것이면 그대로'))
+    for m in INVISIBLE.finditer(text):
+        if m.start() == 0 and m.group(0) == '﻿':
+            continue                    # 파일 첫머리의 BOM
+        # 낱말이나 주소에 붙은 것은 오류(링크와 검색이 깨짐), 빈칸 사이에 혼자 있으면 주의(사람 글 201편에서 8건)
+        glued = m.start() > 0 and not text[m.start() - 1].isspace()
+        out.append(('err' if glued else 'warn', text[max(0, m.start() - 6):m.start()] + '⟨' + f'U+{ord(m.group(0)):04X}' + '⟩',
+                    None, m.start(), '보이지 않는 글자 — 폭 없는 글자가 들어 있음(주소에 붙으면 링크가 깨짐), 지움'))
+    for m in PUNCT_DOUBLE.finditer(text):
+        out.append(('warn', m.group(0), m.group(0)[-1], m.start(),
+                    '맞춤법 — 마침표 뒤에 느낌표나 물음표가 겹침, 하나만 씀'))
     out.extend(spacing_hits(text, taken))
     out.sort(key=lambda h: h[3])
     return out
+
+
+#: 폭 없는 글자 — 복사해 온 글에 섞여 주소를 깨뜨린다(2026-11-12 업무 소개 글의 링크 끝 U+FEFF)
+INVISIBLE = re.compile('[​‌‍⁠﻿]')
+#: 마침표 뒤에 겹친 느낌표나 물음표(「안녕하세요.!」) — 말줄임표 뒤(「...!」)는 정상
+PUNCT_DOUBLE = re.compile(r'(?<=[가-힣A-Za-z0-9])\.[!?]')
 
 
 def spelling_note(hit, near):
@@ -1769,7 +1834,8 @@ JOSA_SOFT = re.compile(r'[가-힣](?:만|까지|부터|로)$')
 LO_WORD = re.compile(r'(?:경로|도로|회로|진로|통로|대로|선로|항로|수로|미로|플로|'
                      r'별로|서로|따로|새로|바로|주로|실로|종로)$')
 # 라벨을 의문문으로 쓴 것 — 규칙 §2의 「라벨 = 독자가 품는 질문」을 의문형 **어미**로 오독한 형태
-QWORD = re.compile(r'(무엇|뭐|어디|언제|누가|누구|왜|어떻게|얼마|몇|어느)')
+#: 「어떤」 — 「어떤 업무에 쓰나」가 같은 글의 「무엇이 좋아졌나」만 잡히고 빠졌다(2026-11-12 업무 소개 글 읽기)
+QWORD = re.compile(r'(무엇|뭐|어디|언제|누가|누구|왜|어떻게|어떤|얼마|몇|어느)')
 QEND_HARD = re.compile(r'(?<!하)나$')                  # 「하나」는 수사라 제외
 QEND_SOFT = re.compile(r'(?:까|는가|은가|인가|을까)$')  # 「왜 X인가」는 제목으로 관용적
 # ★ 「하나」 종결은 위 제외로 통째로 빠져나갔다 — 「왜 정해야 하나」가 그 형태다(2026-09-07).
