@@ -52,6 +52,10 @@ ANONYMIZE = {
         (r'\n *<nav class="fnav">.*?</nav>', ""),
         (r'\n *<span>개발자 [^<]*</span>', ""),
     ],
+    # 작성자 사이트 이름 — 꾸러미에서는 일반 표현으로(2026-11-12 시험 빌드에서 막힘)
+    "skills/fix-korean-finding/SKILL.md": [
+        (r"dispatchflow\.cc 소개 페이지\(`/vermilion/` 등\)와 그 크롤러용 자료", "작성자의 소개 페이지와 그 크롤러용 자료"),
+    ],
     "docs/user-guide.md": [
         (r"\*\*이 꾸러미만으로는 발행을 막지 않음\*\* — 이 꾸러미는",
          "**손으로 복사한 설치는 발행을 막지 않음** — 위 세 단계는"),

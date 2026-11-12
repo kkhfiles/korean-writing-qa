@@ -254,7 +254,7 @@ python -X utf8 scripts/rule_sheet.py read <저장소 밖>/rules.md              
 - [ ] `README.md`·`docs/user-guide.md` 의 가짓수와 설명
 - [ ] 설정 거울(`claude-workflow`) 동기화
 
-⛔ **dispatchflow.cc 소개 페이지(`/vermilion/` 등)와 그 크롤러용 자료는 안 고친다**(2026-11-03 실장님 「홍보용 페이지 안 쓸 것」) —
+⛔ **dispatchflow.cc 소개 페이지(`/vermilion/` 등)와 그 크롤러용 자료는 안 고친다**(2026-11-03 사용자 결정 「홍보용 페이지 안 쓸 것」) —
 배포는 고정 사본이라 고쳐도 안 나간다. 사례집(`docs/showcase.html`)은 저장소 문서라 위 줄대로 맞춘다.
 
 **함정 셋.**
