@@ -66,6 +66,24 @@ class MakePackageTests(unittest.TestCase):
             self.assertIn(blob, (dest / "b.html").read_text(encoding="utf-8"))
             self.assertEqual((count, left), (2, []))
 
+    def test_context_terms_reach_paths_and_excerpt_hashes(self) -> None:
+        """시험 자료 폴더 이름과 원문 발췌 해시도 함께 바꾼다 — 안 그러면 꾸러미 안 시험이 깨진다."""
+        import hashlib
+        import json
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            dest, lst = Path(tmp) / "pkg", Path(tmp) / "list.txt"
+            (dest / "ZETA-data").mkdir(parents=True)
+            lst.write_text("ZETA => NOVA\n", encoding="utf-8")
+            (dest / "ZETA-data" / "x.txt").write_text("보기\n", encoding="utf-8")
+            row = {"source_excerpt": "ZETA 폴더", "source_line_hash": "0" * 64}
+            (dest / "c.jsonl").write_text(json.dumps(row, ensure_ascii=False) + "\n", encoding="utf-8")
+            count, left = make_package.replace_context(dest, make_package.context_terms(lst))
+            self.assertTrue((dest / "NOVA-data" / "x.txt").is_file())
+            got = json.loads((dest / "c.jsonl").read_text(encoding="utf-8"))
+            self.assertEqual(got["source_line_hash"], hashlib.sha256("NOVA 폴더".encode("utf-8")).hexdigest())
+            self.assertEqual((count, left), (2, []))
+
     def test_package_tool_is_left_out(self) -> None:
         """가리는 무늬가 적힌 도구 자신이 꾸러미에 실리면 그 무늬가 곧 작성자 단서다."""
         for path in ("scripts/make_package.py", "tests/test_make_package.py"):

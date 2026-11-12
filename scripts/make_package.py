@@ -17,7 +17,9 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import io
+import json
 import re
 import shutil
 import subprocess
@@ -99,28 +101,60 @@ def in_blob(text: str, start: int, end: int) -> bool:
     return b - a >= 40
 
 
+def swap(text: str, pairs: list[tuple[str, str]]) -> tuple[str, int]:
+    count = 0
+    for old, rep in pairs:
+        hits = [m for m in re.finditer(re.escape(old), text) if not in_blob(text, m.start(), m.end())]
+        for m in reversed(hits):
+            text = text[:m.start()] + rep + text[m.end():]
+        count += len(hits)
+    return text, count
+
+
+def rehash_excerpts(old: str, new: str) -> str:
+    """사례 줄이 원문 발췌의 해시를 들고 있으면 바꾼 발췌로 다시 잰다 — 안 그러면 스킬 자체 시험이 깨진다."""
+    lines = new.split("\n")
+    for i, (a, b) in enumerate(zip(old.split("\n"), lines)):
+        if a == b or "source_line_hash" not in b:
+            continue
+        try:
+            row = json.loads(b)
+        except ValueError:
+            continue
+        if isinstance(row, dict) and row.get("source_excerpt") and row.get("source_line_hash"):
+            fresh = hashlib.sha256(row["source_excerpt"].encode("utf-8")).hexdigest()
+            lines[i] = b.replace(row["source_line_hash"], fresh)
+    return "\n".join(lines)
+
+
 def replace_context(dest: Path, pairs: list[tuple[str, str]]) -> tuple[int, list[str]]:
-    """목록의 낱말을 바꾼다 — 바꾼 곳 수와, 바꾼 뒤에도 남은 곳(파일:줄 원래 말)을 돌려준다."""
+    """목록의 낱말을 내용과 경로에서 바꾼다 — 바꾼 곳 수와, 바꾼 뒤에도 남은 곳(파일:줄 원래 말)을 돌려준다."""
     count = 0
     for f in sorted(dest.rglob("*")):
         if not f.is_file():
             continue
+        rel, n = swap(f.relative_to(dest).as_posix(), pairs)
+        if n:   # 시험 자료 폴더 이름에도 들어 있다 — 내용만 바꾸면 그 폴더를 가리키는 코드와 어긋난다
+            count += n
+            target = dest / rel
+            target.parent.mkdir(parents=True, exist_ok=True)
+            f = f.rename(target)
         try:
             text = f.read_text(encoding="utf-8")
         except UnicodeDecodeError:
             continue
-        new = text
-        for old, rep in pairs:
-            hits = [m for m in re.finditer(re.escape(old), new) if not in_blob(new, m.start(), m.end())]
-            for m in reversed(hits):
-                new = new[:m.start()] + rep + new[m.end():]
-            count += len(hits)
-        if new != text:
+        new, n = swap(text, pairs)
+        count += n
+        if n:
+            if f.suffix == ".jsonl":
+                new = rehash_excerpts(text, new)
             f.write_text(new, encoding="utf-8", newline="")
     left = []
     for f in sorted(dest.rglob("*")):
         if not f.is_file():
             continue
+        rel = f.relative_to(dest).as_posix()
+        left += [f"{rel} (경로) {old}" for old, _ in pairs if old in rel]
         try:
             text = f.read_text(encoding="utf-8")
         except UnicodeDecodeError:
