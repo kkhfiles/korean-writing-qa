@@ -2,19 +2,17 @@
 form: structured
 ---
 
-# 시스템 구조와 역할 — 2026-09-03
+# 시스템 구조와 역할
 
 **한글 검사 시스템의 부품과 각 부품의 담당** — 실행 시점·되먹임까지 한 장 조망 · 지금 성적과 못 하는 것은 [현재 상태](status.md) · 시작 배경은 [인수인계 설계](archived/design-handoff.md)
 
-## 한눈에 — 층 셋과 그 사이
+## 한눈에 — 세 단계 검사와 그 사이
 
 | 층 | 실행체 | 검사 대상 | 못 잡을 때 |
 |---|---|---|---|
-| **1층 · 낱말** | `skills/finalize-korean-document/scripts/check.py` | 사용자가 확정한 표현 8건 · `경로` 비유 | 2층 담당 |
-| **1층 · 구조** | `assets/doc-style-check.py` | 개조식 서술·절단형·모호한 지칭·번역투·지어낸 명사구 | 2층 담당 |
-| **2층 · 판단** | 사람이나 모델이 `core-rules.md`를 읽음 | 1층이 못 잡는 원칙 일곱 | 되먹임에 기록 · 판정기가 문제인지 못 가르면 「사람 확인」으로 사용자에게 넘김(답 전 발행 보류) |
-
-**두 1층은 겹치지 않음** — 실측 380건에서 같은 줄을 둘 다 지적한 것이 5줄(2026-08-28 측정)
+| **1층(구조와 맞춤법)** | `assets/doc-style-check.py` | 개조식 서술, 절단형, 모호한 지칭, 번역투, 지어낸 명사구, 자주 틀리는 맞춤법과 띄어쓰기(`spelling-errors.tsv`) | 단어 점검 및 2층 담당 |
+| **단어 점검** | `scripts/rare_words.py` | 사람이 쓴 업무 한국어 4,790만 자 기준선 대비 드문 낱말 추출 | 판정하지 않고 후보만 2층에 전달 |
+| **2층 판단** | `scripts/judge_layer2.py` (AI 판정기 또는 사람) | `core-rules.md`, 사용자 확정 수정, 그 문서의 드문 낱말 목록, 개인 판정 기준(`local-layer2-rules.md`) | 되먹임에 기록. 판정기가 문제인지 못 가르면 「사람 확인」으로 사용자에게 넘김(답 전 발행 보류) |
 
 **분업 기준은 표면 모양** — 글자 대조로 갈리면 1층, 문맥을 읽어야 갈리면 2층. 그 경계는 취향이 아니라 실측으로 정해졌습니다([현재 상태](status.md)의 「결정 규칙으로 닫힌 경로 셋」).
 
@@ -22,16 +20,16 @@ form: structured
 
 ### 스킬 — 탐지 논리의 정본
 
-**위치** `~/.claude/skills/finalize-korean-document` · 297KB
+**정본 위치** 이 저장소의 `skills/finalize-korean-document` (설치기 `install.py` 가 `~/.claude/skills/` 와 `~/.agents/skills/` 로 설치·동기화)
 
 | 파일 | 역할 |
 |---|---|
-| `SKILL.md` | 열 단계 작업 순서 · 2층이 읽고 따르는 절차 |
+| `SKILL.md` | 작업 순서(2층이 읽고 따르는 절차) |
 | `references/core-rules.md` | 공통 원칙 11개 + 담당 표시(`[스킬]`·`[전역]`·`[사람]`) |
 | `references/document-types.md` | 문서 종류별 규칙 묶음과 형식 축(산문형·구조형) |
 | `references/confirmed-rules.jsonl` | 사용자가 확정한 교정 8건 · 1층이 글자로 찾는 것 |
-| `references/context-cases.jsonl` | 문맥 판정 시험 데이터 14건 |
-| `references/regression-cases.jsonl` | 회귀 시험 데이터 68건 |
+| `references/context-cases.jsonl` | 문맥 판정 시험 데이터 |
+| `references/regression-cases.jsonl` | 회귀 시험 데이터 |
 | `scripts/check.py` | 확정 표현·`경로` 비유 탐지 |
 | `scripts/check_meaning.py` | 고친 뒤 뜻이 빠졌는지 대조 |
 | `scripts/record_feedback.py` | 오탐·미탐을 후보로 기록 |
@@ -41,52 +39,41 @@ form: structured
 
 ### 전역 문서 검사기 — 구조와 낱말
 
-**위치** `~/.claude/assets/doc-style-check.py` · 70KB 안팎 · **바깥 의존성 0**(파이썬 기본 모듈만)
+**위치** `assets/doc-style-check.py` (설치 시 `~/.claude/assets/` 로 복사), 바깥 의존성 최소(파이썬 기본 모듈, 품사 판정 시 `kiwipiepy`)
 
-| 무게 | 갈래와 실측 건수 |
+| 무게 | 갈래 |
 |---|---|
-| **오류** · 발행을 막음 | 서술형 종결 1,324 · 스캔 가치 없는 라벨 208 · 모호한 지칭 68 · 제목·진입점 97 · 절단형 종결 43 |
-| **주의** · 참고 | 절단형 의심 130 · 해설을 인용 부호로 씀 49 · 반복 블록 라벨 불일치 45 · 형식 미표기 43 · 평가 수식어 25 · 번역투 12 · 지어낸 명사구 0 |
+| **오류**(발행을 막음) | 서술형 종결, 서술형 문단, 제목·진입점 위반, 모호한 지칭, 절단형 종결, 이중 피동, 맞춤법 오류, 새로 쓴 띄어 쓴 가운뎃점 |
+| **주의**(참고) | 절단형 의심, 해설을 인용 부호로 씀, 형식 미표기, 평가 수식어, 번역투 조사·그녀, 지어낸 명사구, 맞춤법 의심, 띄어쓰기 의심 |
 
-*마크다운·HTML 601건 기준 · 2026-09-03*
+**형식 축** — 산문 문서는 개조식 전제 검사를 끕니다. 마크다운 머리말 `form: prose`, 공지·안내 메일은 `form: notice`, HTML 은 `<meta name="form" content="prose|notice">`. **파일이 형식을 들고 있게 합니다**(플래그로만 두면 사람이 기억해야 합니다).
 
-**형식 축** — 산문 문서는 개조식 전제 검사를 끕니다. 마크다운 머리말 `form: prose` · HTML `<meta name="form" content="prose">` · **파일이 형식을 들고 있게 합니다**(플래그로만 두면 사람이 기억해야 합니다).
+**규칙 제어** — 폴더나 상위 디렉터리의 `korean-qa.toml` 로 특정 규칙을 끄거나(`off`), 등급을 조정(`warn`, `err`)할 수 있습니다.
 
-**자체 시험** `python ~/.claude/assets/doc-style-check-test.py`
+### 훅과 게이트 — 검사기를 부르는 시점
 
-### 훅 — 검사기를 부르는 두 시점
-
-**위치** `~/.claude/hooks/doc-style-gate.py`, 검사기 **둘 다** 호출
+**위치** `~/.claude/hooks/doc-style-gate.py` (설치기 `install.py --hooks` 가 등록), Codex 는 `codex-hook-adapter.py` 연동
 
 | 시점 | 걸리는 도구 | 내는 것 |
 |---|---|---|
 | `PostToolUse` | Edit · Write · MultiEdit | 오류만 · 같은 파일은 세션에 한 번 |
-| `PreToolUse` | Artifact · Bash · PowerShell | 오류와 주의 전부 |
+| `PreToolUse` | Artifact, Bash, PowerShell | 발행 직전 오류와 주의 전부 출력, 미해결 지적이 있으면 발행 보류 |
 
-**두 시점으로 나눈 까닭** — 발행 직전만 두면 다 써 놓은 뒤에 고치게 되고, 쓰기마다 전부 내면 초안까지 걸려 소음이 됩니다.
+**차단하지 않고 해제 방법을 둠** — 오탐으로 판단한 지적은 사유를 기록(`check_record.py`)하면 통과할 수 있으며, 내용 해시에 묶여 한 글자만 고쳐도 다시 검사합니다.
 
-**차단하지 않음** — 오탐 하나가 발행을 막으면 그다음부터 아무도 안 봅니다. `additionalContext`로 넘겨 그 자리에서 고치게 합니다.
+### 이 저장소 — 정본 관리와 측정 및 시험
 
-**검사에서 빼는 곳** — 스크래치패드 · 임시 디렉터리 · `~/.claude/` 자체 · `node_modules`
-
-**★ Codex 도 같은 훅을 씀**(2026-09-04) — `codex-hook-adapter.py` 가 Codex 도구 이름을 이 훅이 읽는 모양으로 옮기고 훅을 그대로 돌립니다. 검사 규칙은 훅 한 곳에만 있습니다.
-
-### 이 저장소 — 재는 곳이지 도는 곳이 아님
-
-**런타임에 안 낌** — 탐지 논리는 배포된 스킬이 정본이고 이 저장소의 스캐너가 그것을 불러다 씁니다. 스킬이 없으면 수집 단계에서 멈춥니다.
+**정본의 자리** — 모든 규칙·스킬·검사기·맞춤법 사전의 정본은 이 저장소에 있으며, 배포 스크립트(`install.py`, `bootstrap.py`)를 통해 로컬 환경으로 복사·설치됩니다.
 
 | 디렉터리 | 역할 |
 |---|---|
-| `scripts/` | 측정·진단 실행체 19개 |
-| `tests/` | 시험 파일 49개 · 배포본을 망가뜨리면 여기서 실패 |
-| `runs/` | 실행 기록 25건 · 입력·결과·판정 |
-| `data/annotations/` | 사람의 판정과 수정 전후 쌍 |
-| `data/regression/` | 시험 문장(검출할 문장, 정상 문장, 경계 사례) |
-| `data/catalog/` | 원문 위치·해시 목록 |
-| `data/feedback/` | 승격 대기 후보 |
-| `docs/` | 설계·결정·조사 |
-
-**사본을 안 두는 까닭** — 같은 정규식을 두 벌 두면 한쪽만 고쳐집니다. 실제로 갈라져서 스킬을 망가뜨려도 저장소 시험이 전부 통과한 적이 있습니다.
+| `skills/` | 스킬 정본(`finalize-korean-document`, `fix-korean-finding`) |
+| `assets/` | 전역 문서 검사기(`doc-style-check.py`) 정본 |
+| `scripts/` | 측정·진단·판정(`judge_layer2.py`, `rare_words.py`, `check_record.py` 등) 실행체 |
+| `tests/` | 전체 단위 및 통합 시험 |
+| `runs/` | 측정·실험·진단 실행 기록 |
+| `data/` | 기준 낱말표, 확정 규칙, 회귀 시험 자료, 개인 설정 예시 |
+| `docs/` | 구조·설계·현황 문서 |
 
 ## 글이 지나가는 길
 
@@ -94,18 +81,19 @@ form: structured
 |---|---|
 | 1 | 문서 종류와 독자를 정함 · `document-types.md` |
 | 2 | 편집 원본을 고름 · 변환 산출물(PDF·PPTX) 아님 |
-| 3 | 1층 둘을 돌림 · `check.py` + `doc-style-check.py` |
-| 4 | 고친 뒤 `check_meaning.py`로 뜻이 빠졌는지 대조 |
-| 5 | 다시 돌려 오류 0 확인 |
-| 6 | **2층이 읽음** · 검사기가 조용한 것은 그 규칙을 안 봤다는 뜻 |
-| 7 | 오탐은 `record_feedback.py`로 기록 |
+| 3 | 1층 검사를 실행(`assets/doc-style-check.py`) |
+| 4 | 고친 뒤 `check_meaning.py` 로 뜻이 빠졌는지 대조 |
+| 5 | 다시 돌려 1층 오류 0 확인 |
+| 6 | **단어 점검 및 2층 판정** — `scripts/rare_words.py` 의 드문 단어 목록과 함께 `scripts/judge_layer2.py` 가 판정 |
+| 7 | 지적 처리(수정하거나 사유를 적고 반영하지 않음, 필요 시 `--why` 로 이유 조회) |
+| 8 | 오탐이나 예외는 `check_record.py` 와 되먹임에 기록 |
 
 ## 되먹임 — 오탐이 규칙으로 돌아오는 길
 
 | 단계 | 실행체 | 남는 곳 |
 |---|---|---|
 | 오탐 판정 | `record_feedback.py --user-verdict false_positive` | `data/feedback/candidates.jsonl` |
-| 사람 확인 | 사용자가 카드형 판정표(`scripts/ask_sheet_html.py --serve`)에서 답함 | md 판정표의 「답」 칸 |
+| 사람 확인 | 사용자가 카드형 판정표(`scripts/ask_sheet_html.py --serve`) 또는 검토 화면(`scripts/review_screen.py`)에서 답함 | 판정표 또는 검토 화면 |
 | 규칙 반영 | `promote_feedback.py` 또는 `core-rules.md` 예외 | 스킬 |
 | **적용 확인** | `scripts/probe_layer2_exemption.py` | `runs/eval-007` |
 
@@ -120,12 +108,10 @@ form: structured
 | 변환 산출물 PDF · PPTX | 편집 원본을 검사 · 직접 만든 Word·PowerPoint는 표시 문구를 뽑아 검사 |
 | 작업 문서의 오류 0 강제 | 공유 자료만 대상 |
 
-## 밖에 줄 때 — 나눌 수 있는 세 단계
+## 설치와 배포
 
-| 단계 | 주는 것 | 받는 쪽 준비 |
+| 갈래 | 설치 대상 | 방법 |
 |---|---|---|
-| **1** | `doc-style-check.py` 파일 하나 | 파이썬만 · Claude Code 불필요 |
-| 2 | 스킬 폴더 전체 | Claude Code · `~/.claude/skills/`에 복사 |
-| 3 | 위 + 훅 + `settings.json` 항목 둘 | 설정 편집 |
-
-**1단계가 지적의 대부분을 냄** · 받는 사람이 읽을 것은 [사용 안내](user-guide.md) · 진행 상태는 [현재 상태](status.md)의 「부서원 공유」
+| **파일 하나** | `assets/doc-style-check.py` 파일 하나만 내려받아 명령줄로 검사 | 파이썬만 있으면 실행 가능 |
+| **스킬과 훅 자동 설치** | 형태소 모듈, 스킬, 훅, 시료 검사까지 한 번에 설치 | `python bootstrap.py` |
+| **수동 설치** | 스킬 및 훅을 원하는 환경(Claude Code, Codex)에 맞추어 설치 | `python install.py --hooks` (Codex 는 `--codex` 추가) |
