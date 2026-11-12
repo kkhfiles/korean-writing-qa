@@ -163,7 +163,7 @@ function spans(n) {
   return out.sort((a, b) => a.start - b.start);
 }
 function markHtml(it, text) {
-  const s = st(it), f = S.focus === it.id ? " focus" : "", dim = inScope(it) ? "" : " dim", sup = `<sup>${it.id}</sup>`;
+  const s = st(it), f = S.focus === it.id ? " focus" : "", dim = inScope(it) ? "" : " dim", sup = `<sup>${it.label || it.id}</sup>`;
   if (s === "keep") return `<span class="mark kept${f}${dim}" data-id="${it.id}" tabindex="0">${shown(text)}${sup}</span>`;
   let inner = shown(text);
   if (s === "accept") inner = `<ins>${shown(it.fix)}</ins>`;
@@ -190,7 +190,7 @@ function btn(it, v, label) {
   return `<button class="${v === "delegate" ? "cost" : ""}${st(it) === v ? " on" : ""}" data-act="${v}" data-id="${it.id}">${label}</button>`;
 }
 function ownBox(it) {
-  return (st(it) === "own" ? `<input type="text" data-own="${it.id}" value="${esc(S.own[it.id] ?? it.phrase)}" aria-label="${it.id}번 고친 표현">` : "") + ruleRow(it);
+  return (st(it) === "own" ? `<input type="text" data-own="${it.id}" value="${esc(S.own[it.id] ?? it.phrase)}" aria-label="${it.label || it.id}번 고친 표현">` : "") + ruleRow(it);
 }
 /* 규칙으로 남기기 — 글자로 넣을 수 있는 반영과 직접 고침만. 「그대로」는 표현 하나를 정상으로 열어 다른 문맥까지 통과시키므로 뺌 */
 const literal = s => !!s && !s.startsWith("(") && !s.includes("○○") && !s.includes("\n");
@@ -202,7 +202,7 @@ function ruleRow(it) {
 }
 function cardHtml(it) {
   const s = st(it), lv = it.level === "오류" ? "err" : it.level === "사람 확인" ? "info" : "free";
-  const top = `<div class="top"><span class="num">${it.id}</span><span>${it.line}행</span><span class="pill ${it.type}">${TYPES[it.type]}</span>
+  const top = `<div class="top"><span class="num">${it.label || it.id}</span><span>${it.line}행</span><span class="pill ${it.type}">${TYPES[it.type]}</span>
     <span>${esc(it.layer)} ${esc(it.cat)}</span><span class="pill ${lv}">${esc(it.level)}</span></div>`;
   const cls = `card${s !== "pending" ? " done" : ""}${S.focus === it.id ? " focus" : ""}`;
   const out = S.focus === it.id ? `<div class="note">제출하면: ${outcome(it)}</div>` : "";
@@ -253,7 +253,7 @@ function counts() {
 function summary() {
   const c = counts(), dl = D.items.filter(x => st(x) === "delegate");
   const out = [`검토 화면 — 반영 ${c.accept}, 직접 ${c.own}, 그대로 ${c.keep}, 남음 ${c.pending}, 맡김 ${c.delegate}`];
-  dl.forEach(x => out.push(`맡김 #${x.id} ${x.line}행 「${clip(x.phrase.replace(/\*\*/g, ""), 30)}」 — ${x.check || x.cat}`));
+  dl.forEach(x => out.push(`맡김 #${x.label || x.id} ${x.line}행 「${clip(x.phrase.replace(/\*\*/g, ""), 30)}」 — ${x.check || x.cat}`));
   return out.join("\n");
 }
 function renderDock() {

@@ -166,6 +166,47 @@ def line_key(line: str) -> str | None:
     return hashlib.sha256(re.sub(r"\s+", " ", line).strip().encode("utf-8")).hexdigest()[:12]
 
 
+#: 줄 앞의 서식 표시 — 제목, 인용, 목록, 번호
+FORM_MARK = re.compile(r"^\s*(?:#{1,6}\s+|>\s*|[-*+]\s+|\d+[.)]\s+)+")
+
+
+def form_key(line: str) -> str | None:
+    """서식만 다른 줄을 같게 보는 해시 — 줄 앞 목록, 번호, 제목, 인용 표시와 굵게, 기울임, 빈칸을 무시한다.
+
+    (2026-11-12 다른 세션 인계 B1, B2) 문단을 목록으로 바꾸거나 굵은 머리를 떼는 구조 개편만으로 줄 해시가 바뀌어,
+    판정기가 이미 본 줄을 다시 판정해 재판정 횟수가 쌓이고(사람 확인 13건, 3건, 2건, 1건) 닫은 지적이 다시 열렸다.
+    """
+    if not HANGUL.search(line):
+        return None
+    s = re.sub(r"[*_]", "", FORM_MARK.sub("", line))
+    return "f" + hashlib.sha256(re.sub(r"\s+", " ", s).strip().encode("utf-8")).hexdigest()[:12]
+
+
+def _bare(line: str) -> str:
+    return re.sub(r"\s+", "", re.sub(r"[*_]", "", FORM_MARK.sub("", line)))
+
+
+def words_kept(line: str, olds: list[str]) -> bool:
+    """이 줄의 글이 모두 앞선 줄들에 이미 있었나 — 나누거나 합치거나 옮기기만 한 줄(서식, 빈칸 무시).
+
+    (2026-11-12 다른 세션 인계 B2) 구조 개편에서 「판정할 새 줄」 335줄 가운데 94줄이 판정한 줄의 조각(31)이거나
+    판정한 문장을 다시 묶은 것(53)이었다. 이런 줄도 문맥이 바뀌어 다시 판정하지만 재판정 횟수는 늘리지 않는다.
+    """
+    me = _bare(line)
+    if len(me) < 6:
+        return False
+    blob = "\n".join(_bare(o) for o in olds)
+    if me in blob:
+        return True
+    parts = [_bare(p).rstrip(".。!?") for p in re.split(r"(?<=[.。!?])\s+|\s[—·]\s", re.sub(r"[*_]", "", FORM_MARK.sub("", line)))]
+    parts = [p for p in parts if len(p) >= 6]
+    return bool(parts) and all(p in blob for p in parts)
+
+
+def form_keys(lines: list[str]) -> list[str]:
+    return list(dict.fromkeys(k for k in map(form_key, lines) if k))
+
+
 def seen_keys(lines: list[str]) -> list[str]:
     """판정 기록에 남길 줄 해시 — 한 묶음에서 한글이 든 줄만, 겹치면 한 번."""
     return list(dict.fromkeys(k for k in map(line_key, lines) if k))
@@ -343,6 +384,15 @@ def judged(key: str, log: Path | None = None, now: float | None = None,
         if row.get("ok"):
             out.update(row.get("seen") or [])
     return out | approved(key, now=now)
+
+
+def judged_forms(key: str, log: Path | None = None, now: float | None = None, fresh: bool = True) -> set[str]:
+    """판정기가 이미 본 줄의 서식 무시 해시(`form_key`) — 2026-11-12 부터 판정 기록에 남김(다른 세션 인계 B2)."""
+    out: set[str] = set()
+    for row in _rows(key, log or LOG, now, fresh):
+        if row.get("ok"):
+            out.update(row.get("seen_form") or [])
+    return out
 
 
 def answered(key: str, answers: Path | None = None, now: float | None = None) -> set[str]:
@@ -635,9 +685,19 @@ def successor(seen, old_key: str, lines: list[str], text: str) -> int | None:
 
 
 def dismissed(key: str, dismissals: Path | None = None, now: float | None = None) -> set[tuple]:
-    """받지 않음 · 사람 확인으로 올림으로 닫은 고칠 지적 — (줄 해시, 표현)."""
-    return {(row.get("line_key"), row.get("phrase"))
-            for row in _rows(key, dismissals or DISMISSALS, now, fresh=False) if row.get("line_key")}
+    """받지 않음 · 사람 확인으로 올림으로 닫은 고칠 지적 — (줄 해시, 표현).
+
+    닫을 때 그 줄 글이 남아 있으면 서식만 다른 줄 해시(`form_key`)로도 닫는다 — 문단을 목록으로 바꾸거나 굵은
+    머리를 떼는 구조 개편만으로 닫은 지적이 다시 열려 같은 근거로 세 번 닫았다(다른 세션 인계 B1). 글이 바뀌면
+    여전히 다시 열린다(근거가 바뀌었을 수 있다).
+    """
+    out = set()
+    for row in _rows(key, dismissals or DISMISSALS, now, fresh=False):
+        if row.get("line_key"):
+            out.add((row.get("line_key"), row.get("phrase")))
+        if row.get("text") and form_key(str(row["text"])):
+            out.add((form_key(str(row["text"])), row.get("phrase")))
+    return out
 
 
 def open_fixes(key: str, lines: list[str], log: Path | None = None,
@@ -697,7 +757,8 @@ def open_fixes(key: str, lines: list[str], log: Path | None = None,
                 hint = fx.get("line") if isinstance(fx.get("line"), int) else 0
                 n = min(cands, key=lambda i: abs(i - hint))
             k = line_key(lines[n - 1])
-            if not k or (k, fx.get("phrase")) in done or (n, phrase) in seen:
+            if not k or (k, fx.get("phrase")) in done or (form_key(lines[n - 1]), fx.get("phrase")) in done \
+                    or (n, phrase) in seen:
                 continue
             seen.add((n, phrase))
             out.append((n, fx))
@@ -741,8 +802,14 @@ def open_deletions(lines: list[str], base: list[str] | None, seen: set[str]) -> 
             if not all(line_key(g) in seen for g in gone)]
 
 
-def open_lines(lines: list[str], base: list[str] | None, seen: set[str]) -> list[int]:
-    """판정이 필요한 줄 번호(1부터) — 한글이 들었고, 갈라진 지점에 없었고, 아직 안 본 줄."""
+def open_lines(lines: list[str], base: list[str] | None, seen: set[str],
+               forms: set[str] | None = None) -> list[int]:
+    """판정이 필요한 줄 번호(1부터) — 한글이 들었고, 갈라진 지점에 없었고, 아직 안 본 줄.
+
+    서식만 바꾼 줄(`form_key` 가 같음)은 갈라진 지점에 있던 줄이나 이미 본 줄(`forms` — `judged_forms`)과 같게
+    본다(다른 세션 인계 B2).
+    """
     old = {k for k in map(line_key, base or []) if k}
+    old_forms = set(form_keys(base or [])) | (forms or set())
     return [n for n, line in enumerate(lines, 1)
-            if (k := line_key(line)) and k not in old and k not in seen]
+            if (k := line_key(line)) and k not in old and k not in seen and form_key(line) not in old_forms]

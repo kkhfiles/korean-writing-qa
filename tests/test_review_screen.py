@@ -107,6 +107,21 @@ class CollectTests(unittest.TestCase):
         for x in data["items"]:
             self.assertEqual(coverage.line_key(data["lines"][x["line"] - 1]), x["line_key"])
 
+    def test_items_on_one_line_share_one_shown_number(self) -> None:
+        # (다른 세션 인계 B3) 한 줄의 지적이 번호를 따로 받으면 같은 대상이 두 번 나오는 것처럼 읽힘
+        data = screen.collect(self.doc)
+        by_line: dict[int, list[str]] = {}
+        for x in data["items"]:
+            by_line.setdefault(x["line"], []).append(x["label"])
+        heads = []
+        for labels in by_line.values():
+            heads.append(labels[0].split("-")[0])
+            if len(labels) > 1:
+                self.assertEqual([f"{heads[-1]}-{j}" for j in range(1, len(labels) + 1)], labels)
+            else:
+                self.assertNotIn("-", labels[0])
+        self.assertEqual([str(k) for k in range(1, len(heads) + 1)], heads, "줄마다 번호 하나씩 차례대로")
+
     def test_script_close_in_the_text_does_not_break_the_page(self) -> None:
         html = screen.render(screen.collect(self.doc))
         self.assertNotIn("</script><b>x</b>", html)

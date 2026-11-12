@@ -60,6 +60,9 @@ def isolated_env(tmp: Path) -> dict[str, str]:
     env["KOREAN_QA_PUBLISH_REPOS"] = str(tmp / "no-personal-list.toml")
     for k in ("KOREAN_QA_LEVEL", "KOREAN_QA_JUDGE_THINKING"):
         env.pop(k, None)
+    # 글 단위 일관성 질문은 명령줄 판정에 호출을 하나 더한다 — 판정 호출 수와 프롬프트를 세는 시험이 그것을 안
+    # 세도록 끈다. 그 질문 자체는 `test_consistency_pass` 가 켜고 본다(CI 시험 단계도 같은 값)
+    env["KOREAN_QA_CONSISTENCY"] = "off"
     return env
 
 

@@ -103,7 +103,7 @@ class Case:
         if since:
             lines = coverage.read_doc(self.doc).splitlines()
             key = coverage.doc_key(self.doc)
-            targets = coverage.open_lines(lines, base, coverage.judged(key, judge.LOG))
+            targets = coverage.open_lines(lines, base, coverage.judged(key, judge.LOG), coverage.judged_forms(key, judge.LOG))
             if deletions and base:
                 anchors = dict(coverage.open_deletions(lines, base, coverage.deleted_seen(key, judge.LOG)))
         return judge.judge(self.doc, "opus", 10, FakeBackend(reply or [], fail=fail).pair(),

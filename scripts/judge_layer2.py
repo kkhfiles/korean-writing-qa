@@ -656,6 +656,62 @@ def literal_fix(fix: str) -> bool:
     return bool(fix) and not fix.startswith("(") and "\n" not in fix and not NOT_LITERAL.search(fix)
 
 
+#: 수정안이 짚은 표현 밖의 글을 다시 담았다고 볼 겹침 길이(빈칸 뺀 글자 수)
+REPEAT_MIN = 10
+
+
+def repeats_rest(line: str, phrase: str, fix: str) -> str | None:
+    """수정안이 들여오는 글이 그 줄의 짚지 않은 부분에 이미 있으면 그 글 — 짚은 표현만 바꾸면 같은 말이 두 번 들어간다.
+
+    (2026-11-12 다른 세션 인계 B4) 판정기가 첫 문장만 짚고 수정안에 뒷문장까지 다시 써서, 검토 화면 제출이 짚은 자리에
+    수정안을 넣자 「앞 절과 겹치는 항목은 그 절에서 다루고 이 절에는 둘만 적음」이 한 줄에 두 번 들어갔다.
+    """
+    if not phrase or not fix or phrase not in line:
+        return None
+    i = line.find(phrase)
+    rest = line[:i] + "\0" + line[i + len(phrase):]
+    bare = lambda s: re.sub(r"\s+", "", s)  # noqa: E731
+    added = "".join(fix[j1:j2] for op, _, _, j1, j2 in difflib.SequenceMatcher(None, phrase, fix, autojunk=False).get_opcodes()
+                    if op in ("insert", "replace"))
+    a, r = bare(added), bare(rest)
+    if len(a) < REPEAT_MIN:
+        return None
+    m = difflib.SequenceMatcher(None, a, r, autojunk=False).find_longest_match(0, len(a), 0, len(r))
+    return a[m.a:m.a + m.size] if m.size >= max(REPEAT_MIN, len(a) // 2) else None
+
+
+ANCHOR = re.compile(r"\]\(#([^)\s]+)\)")
+
+
+def heading_slug(title: str) -> str:
+    """md 제목의 문서 안 링크 이름 — GitHub 방식(소문자, 문장 부호 지움, 빈칸은 하이픈)."""
+    s = re.sub(r"[`*_~]", "", title.strip().lower())
+    return re.sub(r"[^\w\- ]", "", s).replace(" ", "-")
+
+
+def fit_anchors(fix: str, lines: list[str]) -> tuple[str, list[str]]:
+    """수정안의 문서 안 링크(`](#…)`)를 이 문서 제목에 맞춘다 — (고친 수정안, 알림).
+
+    (2026-11-12 다른 세션 인계 B5) 판정기가 「## 5. 남은 일과 다음 계획」에 `#남은-일과-다음-계획` 을 제안해 번호가
+    빠졌다. 그대로 넣으면 링크가 깨진다. 번호나 앞뒤만 다른 제목이 하나뿐이면 그 이름으로 바꾸고, 못 찾으면 알린다.
+    """
+    slugs = [heading_slug(l.lstrip("#")) for l in lines if re.match(r"#{1,6}\s", l)]
+    notes = []
+
+    def repl(m: re.Match) -> str:
+        want = m.group(1)
+        if want in slugs:
+            return m.group(0)
+        bare = lambda s: re.sub(r"^[\d\-]+-", "", s)  # noqa: E731 — 「5-」, 「2-1-」 같은 앞 번호
+        near = [s for s in slugs if bare(s) == bare(want)]
+        if len(near) == 1:
+            notes.append(f"문서 안 링크를 제목에 맞춤 — #{want} → #{near[0]}")
+            return m.group(0).replace(want, near[0])
+        notes.append(f"문서 안 링크 #{want} 와 같은 제목이 이 문서에 없음 — 링크가 깨짐 · 제목을 확인해 고침")
+        return m.group(0)
+    return ANCHOR.sub(repl, fix), notes
+
+
 def edited_by_answer(line: str, asks: list[dict]) -> str | None:
     """「고침」 답 — 물은 줄에 판정기 수정안을 그대로 넣은 글. 글자로 넣을 수 없는 수정안이 있으면 None."""
     out = line
@@ -663,7 +719,7 @@ def edited_by_answer(line: str, asks: list[dict]) -> str | None:
         if a.get("category") == "재판정 상한":
             continue                # 줄 전체를 짚은 것 — 같은 줄의 다른 지적에 대한 답이 곧 이 줄의 답이다
         phrase, fix = str(a.get("phrase") or ""), str(a.get("fix") or "")
-        if not phrase or not literal_fix(fix) or phrase not in out:
+        if not phrase or not literal_fix(fix) or phrase not in out or repeats_rest(out, phrase, fix):
             return None
         out = out.replace(phrase, fix, 1)
     return out if out != line else None
@@ -1169,9 +1225,13 @@ def _lemmas(text: str) -> list[str]:
     return [f"{t.form}/{t.tag}" for t in _kiwi.tokenize(text) if t.tag in FIX_TAGS and len(t.form) > 1]
 
 
-def fix_notes(fix: str, phrase: str, doc_lemmas: set, freq: dict | None) -> list[str]:
+def fix_notes(fix: str, phrase: str, doc_lemmas: set, freq: dict | None, line: str = "") -> list[str]:
     """수정안이 들여온 문제 — 사람이 볼 한 줄씩. 형태소 분석기가 없으면 드문 낱말은 건너뛴다."""
     notes = []
+    twice = repeats_rest(line, phrase, fix)
+    if twice:
+        notes.append(f"수정안이 이 줄의 짚지 않은 부분과 겹침(「{twice[:30]}」) — 짚은 표현만 바꾸면 같은 말이 두 번 "
+                     "들어감 · 「고침」으로 답해도 자동으로 안 넣음 · 줄 전체를 보고 직접 고침")
     if freq is not None and fix:
         rare = [w for w in dict.fromkeys(_lemmas(fix)) if freq.get(w, 0) <= RARE_FLOOR]
         # 원문에 있던 드문 낱말을 그대로 둔 것도 짚는다 — 「소급」은 원문 낱말이었는데 사용자가
@@ -1403,7 +1463,8 @@ def open_for(path: Path, since: str) -> tuple[list[int], bool]:
     lines = read_doc(path).splitlines()
     base = coverage.base_lines(path, since)
     seen = coverage.judged(coverage.doc_key(path), LOG)
-    return coverage.open_lines(lines, base, seen), base is not None
+    forms = coverage.judged_forms(coverage.doc_key(path), LOG)
+    return coverage.open_lines(lines, base, seen, forms), base is not None
 
 
 #: 같은 줄(계보)을 판정하는 상한 — 넘으면 그 줄의 지적을 고칠 지적으로 두지 않고 사람 확인으로
@@ -1510,7 +1571,10 @@ def lineage(key: str, lines: list[str], targets: list[int], base: list[str] | No
     for n in targets:
         pred, _, cand = found[n]
         if pred is not None and n not in orphans:
-            info = {"round": int(pred.get("round") or 1) + 1, "root": pred.get("root") or pred["text"]}
+            # 판정한 글을 나누거나 다시 묶기만 한 줄은 다시 판정하되 횟수는 늘리지 않는다(다른 세션 인계 B2 —
+            # 구조 개편 다섯 번에 사람 확인 13건, 3건, 2건, 1건). 글을 고친 줄은 그대로 센다
+            step = 0 if coverage.words_kept(lines[n - 1], [e["text"] for e in prev]) else 1
+            info = {"round": int(pred.get("round") or 1) + step, "root": pred.get("root") or pred["text"]}
         else:
             info = {"round": 1, "root": None if n in unrooted else cand}
         gone = []
@@ -1918,9 +1982,93 @@ def held_ask(n: int, line: str, info: dict, history: list[str] | None = None) ->
             "why": why, "decide": "ask", "held": True}
 
 
+#: 글 단위 일관성 질문 — 줄마다 내는 판정과 따로, 글 전체를 한 번 더 주고 「글 안 두 곳이 어긋나는 곳」만 묻는다.
+#: (2026-11-12 업무 소개 글 36편 시안 · `runs/consistency-20261112/README.md`) 다른 줄을 대조해야 보이는 정답 24건을
+#: 지금 판정기는 0건 짚었고 이 질문은 13건을 짚었다. 정답 밖 지적 표본 16건 중 약 11건이 실제 어긋남이었다.
+#: `KOREAN_QA_CONSISTENCY=off` 로 끈다(옛 측정을 다시 낼 때).
+CONSISTENCY_ENV = "KOREAN_QA_CONSISTENCY"
+CONSISTENCY_CATEGORY = "글 안 두 곳이 어긋남"
+CONSISTENCY_SYSTEM = """너는 업무 문서 편집자다. 받은 문서에서 **글 안의 두 곳이 서로 맞지 않는 곳**만 찾는다. 한 줄만 읽어서 보이는 문제(맞춤법, 띄어쓰기, 말투, 어색한 낱말)는 찾지 않는다.
+
+## 찾을 것
+1. 개수를 먼저 말하고(「세 가지」, 「두 단계」) 뒤에 나열한 항목 수가 다름
+2. 제목이나 굵은 머리, 라벨이 말하는 것과 그 아래 내용이 다름 — 아래에 그 내용이 없거나 다른 것만 있음
+3. 같은 대상을 곳에 따라 다른 이름, 다른 용어로 부름(도구 이름, 기능 이름) 또는 같은 용어가 곳에 따라 다른 뜻
+4. 같은 수치나 사실이 곳에 따라 다름, 또는 합쳐 보면 맞지 않음
+5. 한 곳의 단정(「~에만 저장」, 「설치 없이 바로」)이 다른 곳의 설명이나 예외와 어긋남
+6. 「아래」, 「위에서」, 「다음 프롬프트」처럼 가리킨 내용이 문서에 없음
+7. 소개에서 약속한 것(할 수 있다고 한 것, 따라 하면 된다고 한 것)을 본문의 안내가 채우지 못함
+
+## 빼는 것
+- 두 곳을 대조하지 않아도 보이는 문제
+- 문서에 없는 바깥 사실로만 갈리는 것
+- 작성자가 일부러 줄여 쓴 요약(뒤에 자세히 풀어 쓴 경우)
+- 그림이나 첨부처럼 글자로 안 보이는 것을 가리킨 말
+
+## 답 형식
+JSON 배열 하나만. 찾은 것이 없으면 []. 항목마다
+{"line": 고칠 줄 번호, "phrase": "그 줄에 글자 그대로 있는 짧은 인용", "other": 대조한 다른 줄 번호, "other_phrase": "그 줄의 짧은 인용",
+ "kind": "개수|제목과 내용|이름과 용어|수치와 사실|단정과 예외|가리킨 내용 없음|약속과 안내", "why": "무엇이 어떻게 안 맞는지 한두 문장", "fix": "고친 말(그 줄 phrase 자리에 넣을 말, 정할 수 없으면 빈 문자열)"}"""
+
+
+def consistency_pass(path: Path, lines: list[str], backend, model: str, timeout: float,
+                     want: set[int] | None, found: list[dict]) -> tuple[list[dict], dict]:
+    """글 단위 일관성 질문 — (새 지적, 판정 기록 한 줄). 재판정이면 고친 줄이 낀 어긋남만 남긴다.
+
+    지적은 고칠 지적으로 남기되 어느 쪽이 맞는지는 글쓴이가 아는 일이 많아 `check` 에 대조한 줄을 적는다(사실 확인
+    지적처럼 자료로 확인해 닫거나 사람 확인으로 올린다). 고친 말을 못 정했으면 사람 확인으로 낸다.
+    ⛔ 이 호출은 줄을 「판정함」으로 남기지 않는다(`seen` 비움) — 줄마다 내는 판정을 대신하지 않는다.
+    """
+    call_messages, parse_json = backend
+    started = time.time()
+    row = {"at": datetime.now().isoformat(timespec="seconds"), "when": started, "doc": str(path),
+           "key": coverage.doc_key(path), "model": model, "context": "consistency", "seen": [],
+           "lines": f"1-{len(lines)}"}
+    try:
+        r = call_messages(model=model, system=CONSISTENCY_SYSTEM, user="문서:\n\n" + numbered(lines, 1),
+                          max_tokens=12000, temperature=0, timeout=timeout)
+    except Exception as e:  # noqa: BLE001 — 줄마다 내는 판정은 이미 남았다. 실패를 기록하고 알린다
+        row.update(ok=False, error=f"{type(e).__name__}: {e}"[:200], seconds=round(time.time() - started, 1))
+        return [], row
+    text = r.get("text") or ""
+    m = re.search(r"\[.*\]", text, re.S)
+    try:
+        raw = json.loads(m.group(0), strict=False) if m else []   # 인용에 탭이 들어 있는 답(시안에서 두 편)
+    except ValueError:
+        raw = parse_json(text) or []
+    usage = r.get("usage") or {}
+    have = {(f.get("line"), f.get("phrase")) for f in found}
+    new, fixes, asks = [], [], []
+    for x in raw if isinstance(raw, list) else []:
+        n, phrase = x.get("line"), str(x.get("phrase") or "").strip()
+        other = x.get("other")
+        if not isinstance(n, int) or not 0 < n <= len(lines) or not phrase or phrase not in lines[n - 1]:
+            continue
+        if want is not None and n not in want and other not in want:
+            continue                    # 재판정 — 이번에 고친 줄이 끼지 않은 어긋남은 앞선 판정 몫
+        if (n, phrase) in have:
+            continue
+        have.add((n, phrase))
+        where = f"{other}행 「{str(x.get('other_phrase') or '')[:40]}」" if isinstance(other, int) else "다른 곳"
+        fix = str(x.get("fix") or "").strip()
+        it = {"line": n, "phrase": phrase, "category": CONSISTENCY_CATEGORY, "fix": fix,
+              "why": f"{str(x.get('why') or '').strip()} · 대조 {where}",
+              "check": f"두 곳 중 맞는 쪽 — {where}", "decide": "fix" if fix else "ask"}
+        new.append(it)
+        rec = {"line_key": coverage.line_key(lines[n - 1]), "line": n, "phrase": phrase, "fix": fix,
+               "why": it["why"], "category": CONSISTENCY_CATEGORY}
+        (fixes.append(dict(rec, check=it["check"], text=lines[n - 1])) if fix else asks.append(rec))
+    row.update(ok=True, model=r.get("model") or model, seconds=round(time.time() - started, 1),
+               input_tokens=usage.get("input_tokens", 0), cache_write=usage.get("cache_creation_input_tokens", 0),
+               cache_read=usage.get("cache_read_input_tokens", 0), output_tokens=usage.get("output_tokens", 0),
+               cost_usd=r.get("cost_usd"), findings=len(new), fixes=fixes, asks=asks,
+               billing=r.get("billing") or RUN_NOTES.get("billing"))
+    return new, row
+
+
 def judge(path: Path, model: str, timeout: float, backend, targets: list[int] | None = None,
           base: list[str] | None = None, anchors: dict[int, list[str]] | None = None,
-          base_time: float | None = None, context: str = DEFAULT_CONTEXT) -> dict:
+          base_time: float | None = None, context: str = DEFAULT_CONTEXT, consistency: bool = False) -> dict:
     """`targets` 가 있으면 그 줄이 든 묶음만 부르고 그 줄에 달린 지적만 낸다.
 
     ⛔ **지적을 거르는 까닭** — 판정기는 같은 글을 다시 판정해도 지적 수가 평균 16%
@@ -2002,7 +2150,9 @@ def judge(path: Path, model: str, timeout: float, backend, targets: list[int] | 
                "format": probe.output_format(),   # 출력 형식을 기록으로 가른다(행 형식 기본 · 2026-10-20)
                "context": piece["mode"],
                # 게이트가 「이번 가지의 새 줄을 판정기가 다 봤나」를 이것으로 가른다 — 창이면 보낸 줄만
-               "seen": coverage.seen_keys(piece["seen"])}
+               "seen": coverage.seen_keys(piece["seen"]),
+               # 서식만 바꾼 줄을 다시 판정하지 않으려고 — 구조 개편마다 재판정 횟수가 쌓였다(다른 세션 인계 B2)
+               "seen_form": coverage.form_keys(piece["seen"])}
         user = rejudge_user(piece, info, closed_all, decided_all, instructed_all, extra, evidenced_all) \
             if want is not None \
             else probe.USER.format(document=piece["document"]) + note
@@ -2117,6 +2267,9 @@ def judge(path: Path, model: str, timeout: float, backend, targets: list[int] | 
                     it["revives"] = back
                     it["why"] = (f"{it.get('why') or ''} · 수정안이 앞선 판정에서 고치라고 한 「{back}」을 "
                                  f"되살림 — 빠진 뜻만 살리고 다른 말로 씀").lstrip(" ·")
+                # 문서 안 링크는 판정 기록에 남기기 전에 제목에 맞춘다 — 검토 화면과 답 처리가 기록의 수정안을 넣는다
+                if path.suffix.lower() in (".md", ".markdown") and "](#" in str(it.get("fix") or ""):
+                    it["fix"], it["anchor_notes"] = fit_anchors(str(it["fix"]), lines)
                 found.append(it)
                 ok_line = isinstance(n, int) and 0 < n <= len(lines)
                 rec = {"line_key": coverage.line_key(lines[n - 1]) if ok_line else None,
@@ -2150,13 +2303,23 @@ def judge(path: Path, model: str, timeout: float, backend, targets: list[int] | 
             queue += [dict(p, mode=f"chunk←{CONTEXT_SHORT}") for p in parts_for(lines, short, "chunk", path)]
         log_call(row)
         calls.append(row)
+    # 글 단위 일관성 질문(3단계 · 2026-11-12) — 재판정이면 고친 줄이 있을 때만
+    if consistency and (want is None or edited):
+        more, crow = consistency_pass(path, lines, backend, model, timeout, want, found)
+        log_call(crow)
+        calls.append(crow)
+        found += more
+        if not crow.get("ok"):
+            print(f"  ⚠️ 글 단위 일관성 질문 실패 — {crow.get('error')} · 줄마다 낸 판정은 남음")
     doc_lemmas = set(_lemmas(text)) if freq is not None else set()
     for it in found:
         # 상한을 넘은 줄의 사람 확인은 수정안이 아니라 기준 판을 보여 준다 — 점검할 고친 말이 없다
         if it.get("category") == "재판정 상한":
             continue
-        it["fix_notes"] = fix_notes(str(it.get("fix") or ""), str(it.get("phrase") or ""),
-                                    doc_lemmas, freq)
+        n = it.get("line")
+        it["fix_notes"] = list(it.pop("anchor_notes", [])) + fix_notes(str(it.get("fix") or ""), str(it.get("phrase") or ""),
+                                                   doc_lemmas, freq,
+                                                   lines[n - 1] if isinstance(n, int) and 0 < n <= len(lines) else "")
     return {"doc": str(path), "findings": found, "calls": calls, "fix_checked": freq is not None,
             "targets": None if want is None else len(want), "hidden": hidden, "foreign": foreign,
             "held": held, "pending_fixes": pending}
@@ -2639,7 +2802,8 @@ def main(argv=None, backend=None) -> int:
             if thinking:
                 os.environ[THINKING_ENV] = thinking
         try:
-            results.append(judge(p, use_model, a.timeout, backend, targets, base, anchors, base_t, a.context))
+            results.append(judge(p, use_model, a.timeout, backend, targets, base, anchors, base_t, a.context,
+                                 consistency=os.environ.get(CONSISTENCY_ENV, "on") != "off"))
         except Exception as e:
             print(f"⛔ 호출 실패 — {p.name}: {type(e).__name__}: {e}"[:300])
             print("   검사되지 않았습니다 — 세션이 규칙을 직접 읽고 판정합니다.")

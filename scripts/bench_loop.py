@@ -358,7 +358,8 @@ def run_once(folder: Path, flagged: list[dict], clean: list[dict], policy: str =
                 if judge.is_ask(f) or (policy == "known" and kind != "짚음"):
                     continue
                 if not (isinstance(n, int) and 0 < n <= len(cur)) or not phrase \
-                        or not judge.literal_fix(fix) or phrase not in cur[n - 1]:
+                        or not judge.literal_fix(fix) or phrase not in cur[n - 1] \
+                        or judge.repeats_rest(cur[n - 1], phrase, fix):
                     skipped += 1
                     continue
                 before = cur[n - 1]
@@ -505,7 +506,8 @@ def process(doc: Path, meta: dict[int, dict], mode: str, counts: dict,
         elif coverage.needs_check(item) and not apply_checked:
             counts["사실 확인 닫기"] += 1
             judge._close_fix(doc, lines, n, item, {"reason": "확인함", "note": "재현 일감 — 자료로 확인했다고 본다"})
-        elif phrase and judge.literal_fix(fix) and phrase in lines[n - 1]:
+        elif phrase and judge.literal_fix(fix) and phrase in lines[n - 1] \
+                and not judge.repeats_rest(lines[n - 1], phrase, fix):
             new = apply_fix(lines[n - 1], phrase, fix)
             past = history.setdefault(n, set())
             if new in past:
@@ -626,7 +628,7 @@ def run_session(folder: Path, flagged: list[dict], clean: list[dict], edits: lis
             if not did:
                 now = doc.read_text(encoding="utf-8").splitlines()
                 key = coverage.doc_key(doc)
-                left = (coverage.open_lines(now, lines, coverage.judged(key, judge.LOG))
+                left = (coverage.open_lines(now, lines, coverage.judged(key, judge.LOG), coverage.judged_forms(key, judge.LOG))
                         or coverage.open_fixes(key, now, judge.LOG) or coverage.open_asks(key, now, judge.LOG))
                 state = "멈춤" if left else "완료"
                 break

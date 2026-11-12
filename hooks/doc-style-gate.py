@@ -399,7 +399,7 @@ def unjudged_block(payload, files):
             else:
                 # 판정을 한 번도 안 받은 문서 — 한글 줄 전부. git 문서는 전체 판정, git 밖은 --since HEAD
                 ref, base = (None if found_repo else "HEAD"), None
-            left = cov.open_lines(lines, base, seen)
+            left = cov.open_lines(lines, base, seen, cov.judged_forms(key, cov.LOG, fresh=False) if hasattr(cov, "judged_forms") else None)
             gone = (cov.open_deletions(lines, base, cov.deleted_seen(key, cov.LOG))
                     if base and hasattr(cov, "open_deletions") else [])
         except (OSError, ValueError, subprocess.SubprocessError):
@@ -829,7 +829,8 @@ def push_gaps(repo, conf, judge, commit="HEAD"):
                 continue                    # 새 줄도 지운 자리도 없다 — 이미 있던 줄뿐
             key = cov.key_in(repo, rel) if hasattr(cov, "key_in") else rel
             if judge is not None:
-                left = cov.open_lines(lines, base, cov.judged(key, cov.LOG))
+                left = cov.open_lines(lines, base, cov.judged(key, cov.LOG),
+                                      cov.judged_forms(key, cov.LOG) if hasattr(cov, "judged_forms") else None)
                 if left:
                     n = left[0]
                     gaps.append(f"판정기가 아직 안 본 새 줄 {len(left)}개 — "
@@ -1102,7 +1103,8 @@ def deploy_gaps(pages, judge):
                     gaps.append(f"처리 기록 없는 고칠 지적 {len(fixes)}개 — "
                                 f"{n}행 「{str(fx.get('phrase') or '')[:30]}」 · 고치거나 --dismiss · --escalate")
             if changed and judge is not None:
-                left = cov.open_lines(lines, [], cov.judged(key, cov.LOG, fresh=False))
+                left = cov.open_lines(lines, [], cov.judged(key, cov.LOG, fresh=False),
+                                      cov.judged_forms(key, cov.LOG, fresh=False) if hasattr(cov, "judged_forms") else None)
                 if left:
                     n = left[0]
                     gaps.append(f"판정기가 아직 안 본 한글 줄 {len(left)}개 — "

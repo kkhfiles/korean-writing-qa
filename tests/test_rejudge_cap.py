@@ -92,6 +92,16 @@ class LineageTests(_Base):
         rounds = [e["round"] for e in self.last_row()["targeted"]]
         self.assertEqual([4, 4], rounds, "줄을 나누자 판정 횟수가 처음부터 다시 셌습니다")
 
+    def test_splitting_without_new_words_does_not_count_up(self) -> None:
+        # (2026-11-12 다른 세션 인계 B2) 판정한 글을 나누거나 목록으로 바꾸기만 한 줄은 다시 판정하되 횟수는 그대로
+        two = "마감이 임박한 업무를 먼저 고릅니다. 고른 업무를 목록 맨 위에 둡니다."
+        self.rejudge(BASE[:4] + [two], [5])
+        self.assertEqual(1, self.last_row()["targeted"][0]["round"])
+        split = BASE[:4] + ["- 마감이 임박한 업무를 먼저 고릅니다.", "- 고른 업무를 목록 맨 위에 둡니다."]
+        self.rejudge(split, [5, 6])
+        self.assertEqual([1, 1], [e["round"] for e in self.last_row()["targeted"]],
+                         "글을 안 바꾸고 나눴는데 판정 횟수가 늘었습니다")
+
     def test_the_count_restarts_after_the_line_is_merged(self) -> None:
         """(2026-10-13 README 113행) 전날 4회차로 상한에 걸려 합쳐진 줄을 고치자 5회차로 세어 지적이
         곧장 사람 확인으로 갔다 — 갈라진 지점 커밋보다 앞선 판정은 이미 합쳐진 작업이다."""

@@ -95,6 +95,7 @@ def collect(path: Path) -> dict:
     key = coverage.doc_key(path)
     doc = "\n".join(lines)
     items = []
+    freq, doc_lemmas = None, set()       # 고칠 지적이 있을 때만 빈도표와 형태소 분석기를 띄운다
     for n, fx in coverage.open_fixes(key, lines):
         check = str(fx.get("check") or "")
         # 수정안이 문서에 없는 수나 이름을 들여오면 판정기가 「확인할 사실」을 비웠어도 작성자 확인으로 돌린다
@@ -105,10 +106,20 @@ def collect(path: Path) -> dict:
         new = [] if coverage.needs_check(fx) else coverage.new_info(str(fx.get("fix") or ""), doc)
         if new:
             check = f"수정안에 원문에 없는 정보가 있음: {', '.join(new)} — 맞는지 확인"
+        # 수정안을 그대로 넣으면 생기는 문제(다른 세션 인계 B4, B7) — 줄의 다른 부분과 겹쳐 같은 말이 두 번 들어감,
+        # 업무 글에 드문 낱말을 새로 들여옴. 판정기의 고친 말 점검(`fix_notes`)과 같은 것을 보고 미리 넣지 않는다
+        if freq is None:
+            freq = judge.load_freq() or {}
+            doc_lemmas = set(judge._lemmas(doc)) if freq else set()
+        bad = [x for x in judge.fix_notes(str(fx.get("fix") or ""), str(fx.get("phrase") or ""), doc_lemmas,
+                                          freq or None, lines[n - 1])
+               if x.startswith(("수정안이 이 줄", "고친 말에 드문 낱말"))]
+        if bad:
+            check = " · ".join(bad)
         items.append({"layer": "2층", "level": "고칠 지적", "line": n, "phrase": str(fx.get("phrase") or ""),
                       "fix": str(fx.get("fix") or ""), "cat": str(fx.get("category") or ""),
                       "check": check, "why": str(fx.get("why") or ""), "new_info": new,
-                      "type": "info" if coverage.needs_check(fx) or new else "replace"})
+                      "type": "info" if coverage.needs_check(fx) or new or bad else "replace"})
     for n, ask in coverage.open_asks(key, lines):
         items.append({"layer": "2층", "level": "사람 확인", "line": n, "phrase": str(ask.get("phrase") or ""),
                       "fix": str(ask.get("fix") or ""), "cat": str(ask.get("category") or "사람 확인"),
@@ -116,9 +127,16 @@ def collect(path: Path) -> dict:
                       "type": "info"})
     items += layer1(path, lines)
     items.sort(key=lambda x: (x["line"], {"replace": 0, "info": 1, "style": 2}[x["type"]]))
+    per_line = defaultdict(list)
     for i, x in enumerate(items, 1):
         x["id"] = i
         x["line_key"] = coverage.line_key(lines[x["line"] - 1]) or ""
+        per_line[x["line"]].append(x)
+    # 화면에 보이는 번호는 줄마다 하나 — 한 줄에 지적이 여럿이면 「3-1」, 「3-2」(다른 세션 인계 B3: 8줄에 지적 13건이
+    # 번호 13개로 보여 같은 대상이 두 번 나오는 것처럼 읽힘). 답을 다는 열쇠는 그대로 `id`
+    for k, (_, xs) in enumerate(sorted(per_line.items()), 1):
+        for j, x in enumerate(xs, 1):
+            x["label"] = str(k) if len(xs) == 1 else f"{k}-{j}"
     return {"title": path.name, "path": str(path.resolve()), "lines": lines, "items": items, "trust": load_trust()}
 
 
@@ -328,7 +346,7 @@ def submit(path: Path, data: dict, picks: list[dict], trust: dict | None = None)
             continue
         n = it["line"]
         if n > len(lines) or (coverage.line_key(lines[n - 1]) or "") != it["line_key"]:
-            refused.append(f"#{it['id']} {n}행 — 화면을 연 뒤 그 줄이 바뀌었습니다. 화면을 다시 엽니다")
+            refused.append(f"#{it.get('label', it['id'])} {n}행 — 화면을 연 뒤 그 줄이 바뀌었습니다. 화면을 다시 엽니다")
             continue
         by_line[n].append((it, dec, own))
         if p.get("rule") in ("mine", "team"):
@@ -351,7 +369,9 @@ def submit(path: Path, data: dict, picks: list[dict], trust: dict | None = None)
             if dec in ("accept", "own"):
                 new = it["fix"] if dec == "accept" else own
                 # 같은 줄에 그 표현이 둘 이상이면 판정기가 짚은 것이 어느 쪽인지 모르므로 세션에 넘긴다
-                ok = literal(new) and bool(it["phrase"]) and target.count(it["phrase"]) == 1
+                # 고른 글이 줄의 다른 부분을 다시 담으면 같은 말이 두 번 들어가므로 세션에 넘긴다(다른 세션 인계 B4)
+                ok = (literal(new) and bool(it["phrase"]) and target.count(it["phrase"]) == 1
+                      and not judge.repeats_rest(target, it["phrase"], new))
                 if literal(new) and rule_of.get(it["id"]) == "mine":
                     my_rules.append((it, new))
                 elif literal(new) and rule_of.get(it["id"]) == "team":
@@ -371,9 +391,9 @@ def submit(path: Path, data: dict, picks: list[dict], trust: dict | None = None)
                                      {"reason": "사용자답", "note": f"사용자 답({src} #{it['id']}): 그대로"})
                     closed += 1
             elif dec == "keep":
-                l1_kept.append(f"#{it['id']} {n}행 [{it['cat']}] {it['level']}")
+                l1_kept.append(f"#{it.get('label', it['id'])} {n}행 [{it['cat']}] {it['level']}")
             else:
-                delegated.append(f"#{it['id']} {n}행 「{it['phrase'][:30]}」 — {it['check'] or it['cat']}")
+                delegated.append(f"#{it.get('label', it['id'])} {n}행 「{it['phrase'][:30]}」 — {it['check'] or it['cat']}")
         asks = [x for x in data["items"] if x["line"] == n and x["level"] == "사람 확인"]
         kept = {it["id"] for it, dec, _ in picked if dec == "keep"}
         if asks and target == line and all(x["id"] in kept for x in asks):
