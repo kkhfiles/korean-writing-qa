@@ -81,6 +81,7 @@
   - **만드는 법** — push 한 커밋에서 `python -X utf8 scripts/make_package.py --out <저장소 밖 경로>.zip`. 연구 기록 제외, 설치 안내 교체, 익명 처리, 발행 검사를 스크립트가 하고, 하나라도 어긋나면 zip 을 만들지 않는다
   - **만든 뒤** — Python 이 없는 PC 에서 압축을 풀고 에이전트에게 「설치해 줘」로 설치 시험을 한 번 한다
   - **익명 처리 무늬가 빗나가면** — 사례집이나 사용 안내를 고친 탓이다. `scripts/make_package.py` 의 `ANONYMIZE` 를 고친다(`tests/test_make_package.py` 가 먼저 깨진다)
+  - **부서, 행사, 도구, 세션 이름** (2026-11-12 사용자 결정) — 저장소 밖 목록 `data/catalog/local-package-anonymize.txt` 의 「원래 말 => 바꿀 말」대로 꾸러미 안에서만 바꾼다. 저장소는 그대로 둔다. 압축을 풀어 새 단서가 보이면 그 목록에 더한다. 목록이 없으면 zip 을 만들지 않는다
 - **여럿이 쓰는 저장소에 이 검사기를 필수 조건으로 넣지 않는다** (2026-10-30 사용자 결정) — 빌드·CI 게이트, 그 저장소 `korean-qa.toml` 의 `[publish]` 모두. 저장소에 두면 그 저장소의 다른 작성자에게 한 사람의 기준을 거는 것이다. lab-docs(dynamic-docs) 빌드에서 이 까닭으로 검사기를 뺐다.
   - **자기 push 에만 걸려면** — 개인 목록 `data/catalog/local-publish-repos.toml` 에 원격 주소로 적고 `python install.py`(본보기는 `local-publish-repos.example.toml`)
   - **이 저장소 자신의 `[publish]` 는 그대로** — 검사기 저장소에 기여하는 사람은 그 기준을 받아들이고 들어온다

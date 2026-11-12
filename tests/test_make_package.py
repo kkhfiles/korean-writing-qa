@@ -49,6 +49,28 @@ class MakePackageTests(unittest.TestCase):
                         if owner:
                             self.assertIsNone(owner.search(line), line)
 
+    def test_context_terms_are_replaced_outside_font_blobs(self) -> None:
+        """부서와 도구 이름은 저장소 밖 목록대로 꾸러미에서만 바꾼다(2026-11-12 사용자 결정).
+        심은 서체의 base64 안에서 우연히 맞은 글자는 건드리지 않는다."""
+        import tempfile
+        blob = "QUJD" * 12 + "ZETA" + "QUJD" * 12
+        with tempfile.TemporaryDirectory() as tmp:
+            dest, lst = Path(tmp) / "pkg", Path(tmp) / "list.txt"
+            dest.mkdir()
+            lst.write_text("# 보기\nZETA => NOVA\nZETA 랩 => 사내\n", encoding="utf-8")
+            (dest / "a.md").write_text("ZETA 랩 세미나 · ZETA를 붙여\n", encoding="utf-8")
+            (dest / "b.html").write_text(f"<style>src:url(data:font/woff2;base64,{blob})</style>\n",
+                                         encoding="utf-8")
+            count, left = make_package.replace_context(dest, make_package.context_terms(lst))
+            self.assertEqual((dest / "a.md").read_text(encoding="utf-8"), "사내 세미나 · NOVA를 붙여\n")
+            self.assertIn(blob, (dest / "b.html").read_text(encoding="utf-8"))
+            self.assertEqual((count, left), (2, []))
+
+    def test_package_tool_is_left_out(self) -> None:
+        """가리는 무늬가 적힌 도구 자신이 꾸러미에 실리면 그 무늬가 곧 작성자 단서다."""
+        for path in ("scripts/make_package.py", "tests/test_make_package.py"):
+            self.assertFalse(make_package.wanted(path))
+
     def test_owner_name_is_caught_before_a_korean_particle(self) -> None:
         """「\\b」는 한글도 낱말 글자로 봐 「<계정>이 만든」을 놓쳤다(2026-11-03 검토)."""
         from unittest import mock

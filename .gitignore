@@ -28,3 +28,5 @@ data/catalog/local-layer2-rules.md
 data/catalog/local-install-personal.txt
 # 개인 push 판정 목록 — 사내 저장소 주소가 들어간다(hooks/doc-style-gate.py 의 PERSONAL_PUBLISH)
 data/catalog/local-publish-repos.toml
+# 응모 꾸러미에서 바꿀 작성자 맥락 낱말 — 목록이 곧 작성자의 부서와 도구 이름이다(make_package.py)
+data/catalog/local-package-anonymize.txt

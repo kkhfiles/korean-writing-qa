@@ -10,6 +10,8 @@
 - **나가기 전 검사** — `check_publish_safety.py` 로 사람 이름, 고객사, 사내 주소, 열쇠를 본다. 오류가 있으면 zip 을 안 만든다.
 - **익명 처리** — 저장소 주소를 빼고 설치 안내를 이 폴더 기준으로 바꾼다(`ANONYMIZE`). 무늬가 안 맞거나
   작성자를 드러낼 수 있는 표기가 남으면 zip 을 안 만든다
+- **작성자 맥락 낱말** — 부서, 행사, 도구, 세션 이름을 저장소 밖 목록(`CONTEXT_LIST`)대로 꾸러미 안에서만
+  일반 표현으로 바꾼다. 목록이 없거나 바꾼 뒤에도 원래 말이 남으면 zip 을 안 만든다
 """
 
 from __future__ import annotations
@@ -36,6 +38,8 @@ NAME = "korean-writing-qa"
 EXCLUDE = (
     "runs/", "docs/archived/", ".github/", "AGENTS.md", "CLAUDE.md", "korean-qa.toml", ".gitignore",
     "scripts/package_agents.md",
+    # 꾸러미를 만드는 도구 자신 — 받는 사람에게 쓸모가 없고 가리는 무늬가 적혀 있다
+    "scripts/make_package.py", "tests/test_make_package.py",
 )
 #: 남기는 문서 — 쓰는 사람이 보는 것만. 나머지 `docs/` 는 연구 기록이다
 KEEP_DOCS = {"docs/user-guide.md", "docs/showcase.html", "docs/architecture.md", "docs/highlights.md"}
@@ -65,6 +69,68 @@ ANONYMIZE = {
         (r"이 꾸러미만으로는 Codex 에서", "손으로 복사한 설치만으로는 Codex 에서"),
     ],
 }
+
+
+#: 작성자 맥락 낱말 목록 — 저장소 밖(gitignore). 목록이 곧 작성자의 부서와 도구 이름이라 코드에 적지 않는다
+CONTEXT_LIST = REPO / "data" / "catalog" / "local-package-anonymize.txt"
+_B64 = frozenset("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=")
+
+
+def context_terms(path: Path = CONTEXT_LIST) -> list[tuple[str, str]]:
+    """「원래 말 => 바꿀 말」 줄을 읽는다 — 긴 말부터 바꿔야 짧은 말이 긴 말을 먼저 깨지 않는다."""
+    pairs = []
+    for line in path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if line and not line.startswith("#") and "=>" in line:
+            old, new = (s.strip() for s in line.split("=>", 1))
+            pairs.append((old, new))
+    return sorted(pairs, key=lambda p: -len(p[0]))
+
+
+def in_blob(text: str, start: int, end: int) -> bool:
+    """서체를 심은 base64 덩이 안인가 — 그 안에서 우연히 맞은 글자를 바꾸면 서체가 깨진다."""
+    if not all(c in _B64 for c in text[start:end]):
+        return False
+    a, b = start, end
+    while a > 0 and text[a - 1] in _B64:
+        a -= 1
+    while b < len(text) and text[b] in _B64:
+        b += 1
+    return b - a >= 40
+
+
+def replace_context(dest: Path, pairs: list[tuple[str, str]]) -> tuple[int, list[str]]:
+    """목록의 낱말을 바꾼다 — 바꾼 곳 수와, 바꾼 뒤에도 남은 곳(파일:줄 원래 말)을 돌려준다."""
+    count = 0
+    for f in sorted(dest.rglob("*")):
+        if not f.is_file():
+            continue
+        try:
+            text = f.read_text(encoding="utf-8")
+        except UnicodeDecodeError:
+            continue
+        new = text
+        for old, rep in pairs:
+            hits = [m for m in re.finditer(re.escape(old), new) if not in_blob(new, m.start(), m.end())]
+            for m in reversed(hits):
+                new = new[:m.start()] + rep + new[m.end():]
+            count += len(hits)
+        if new != text:
+            f.write_text(new, encoding="utf-8", newline="")
+    left = []
+    for f in sorted(dest.rglob("*")):
+        if not f.is_file():
+            continue
+        try:
+            text = f.read_text(encoding="utf-8")
+        except UnicodeDecodeError:
+            continue
+        for old, _ in pairs:
+            for m in re.finditer(re.escape(old), text):
+                if not in_blob(text, m.start(), m.end()):
+                    line = text[:m.start()].count("\n") + 1
+                    left.append(f"{f.relative_to(dest).as_posix()}:{line} {old}")
+    return count, left
 
 
 def owner_pattern() -> re.Pattern | None:
@@ -161,8 +227,14 @@ def main() -> int:
         kept = export(args.rev, dest)
         print(f"담은 파일 {len(kept) + 2}개 (설치 안내 AGENTS.md, CLAUDE.md 포함)")
         missed = anonymize(dest)
-        rc = safety(dest)
         hits = []
+        if CONTEXT_LIST.is_file():
+            changed, left = replace_context(dest, context_terms())
+            print(f"작성자 맥락 낱말 {changed}곳을 바꿈")
+            hits += left
+        else:   # 목록이 없다고 건너뛰면 침묵이 합격이 된다
+            hits.append(f"(작성자 맥락 낱말 목록 {CONTEXT_LIST.name} 이 없어 바꾸지 못함)")
+        rc = safety(dest)
         owner = owner_pattern()
         if owner is None:   # 못 읽었다고 계정 검사를 건너뛰면 침묵이 합격이 된다
             hits.append("(원격 주소에서 계정 이름을 못 읽어 계정 표기를 확인하지 못함)")
