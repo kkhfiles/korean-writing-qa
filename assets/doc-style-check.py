@@ -1837,7 +1837,38 @@ LO_WORD = re.compile(r'(?:경로|도로|회로|진로|통로|대로|선로|항�
 #: 「어떤」 — 「어떤 업무에 쓰나」가 같은 글의 「무엇이 좋아졌나」만 잡히고 빠졌다(2026-11-12 업무 소개 글 읽기)
 QWORD = re.compile(r'(무엇|뭐|어디|언제|누가|누구|왜|어떻게|어떤|얼마|몇|어느)')
 QEND_HARD = re.compile(r'(?<!하)나$')                  # 「하나」는 수사라 제외
-QEND_SOFT = re.compile(r'(?:까|는가|은가|인가|을까)$')  # 「왜 X인가」는 제목으로 관용적
+QEND_SOFT = re.compile(r'(?:까|을까)$')
+#: 「~인가」, 「~는가」 꼴 — 의문사가 없어도, 물음표나 대시 부제가 붙어도 본다(2026-11-19 사용자 지적).
+#  예전에는 「왜 X인가」를 제목으로 관용적이라 보고 주의로만 냈는데, 사람 업무 문서 제목 4,835개에서
+#  이 꼴은 4개(모두 회의 메모)였고 AI 와 작성한 기획 문서는 10,319개 중 44개였다
+#  (`runs/question-heading-20261119`). 끝맺음은 형태소로 가른다 — 「단가」, 「전문가」, 「사업 인가」는 명사다.
+#  「~나요」, 「~ㄴ가요」는 자주 묻는 질문의 존댓말 제목이라 보지 않는다.
+Q_EF = {'ᆫ가', '는가', '은가', '던가'}
+Q_TAIL = re.compile(r'가\s*[?？]?\s*$')
+Q_FALLBACK = re.compile(r'[가-힣](?:인가|는가|은가|던가)\s*[?？]?\s*$')   # 형태소 분석기가 없을 때
+Q_SPLIT = re.compile(r'\s+[—–-]{1,2}\s+|:\s')
+Q_HEADING_FIX = '제목을 의문문으로 썼다 — 답을 명사구로(「왜 전환인가」→「전환 이유」, 「어떻게 적용하는가」→「적용 절차」)'
+
+
+def question_end(t):
+    """제목이나 라벨이 「~인가」, 「~는가」로 끝나면 'q', 물음표까지 붙었으면 'q?', 아니면 None.
+
+    대시나 쌍점 앞부분(「왜 전환인가 — 기존 방식의 한계」)과 전체를 함께 본다."""
+    t = t.strip()
+    for part in {Q_SPLIT.split(t, maxsplit=1)[0].strip(), t}:
+        if not part or not Q_TAIL.search(part):
+            continue
+        asked = part.rstrip().endswith(('?', '？'))
+        bare = part.rstrip(' ?？')
+        kiwi = morph()
+        if kiwi is None:
+            hit = bool(Q_FALLBACK.search(bare))
+        else:
+            toks = kiwi.tokenize(bare)
+            hit = bool(toks) and toks[-1].tag == 'EF' and toks[-1].form in Q_EF
+        if hit:
+            return 'q?' if asked else 'q'
+    return None
 # ★ 「하나」 종결은 위 제외로 통째로 빠져나갔다 — 「왜 정해야 하나」가 그 형태다(2026-09-07).
 # 수사(「선행 확인 하나」)와 의문 어미(「왜 정해야 하나」)를 가르는 것은 **앞의 의문사**다.
 # 관형사(어느·몇·얼마)는 뒤에 수사가 올 수 있고 서술어를 요구하지 않는다.
@@ -1857,6 +1888,11 @@ def fragment(t):
         return '라벨을 의문문으로 썼다 — 명사구로(「무엇을 보나」→「관측 대상」)', None
     if QWORD_STRONG.search(t) and QEND_HANA.search(t):
         return '라벨을 의문문으로 썼다 — 명사구로(「무엇을 보나」→「관측 대상」)', None
+    q = question_end(t)
+    if q == 'q':
+        return '라벨을 의문문으로 썼다 — 명사구로(「왜 전환하는가」→「전환 이유」)', None
+    if q == 'q?':
+        return None, '물음표로 끝난 질문 — 남에게 묻는 질문 목록이면 정상, 아니면 명사구로'
     if JOSA_SOFT.search(t) and not LO_WORD.search(t):
         return None, '조사 종결로 보인다 — 값이면 명사로 끝낼 것'
     if QWORD.search(t) and QEND_SOFT.search(t):
@@ -2461,6 +2497,9 @@ def scan_html(path, relaxed=False, form=None, rules=None):
         # 준다. 안 맞추면 같은 제목의 같은 판정이 두 경로에서 다른 문장으로 나와
         # 대조가 안 된다(실측 대조에서 어긋난 23건이 전부 이 표기 차이였다).
         shown = drop_tail(whole)
+        if question_end(shown):
+            err.append(('의문문 제목', f'{shown[:50]} — {Q_HEADING_FIX}'))
+            continue
         if META_HEADING.match(shown):
             warn.append(('스캔 가치 없는 라벨', f'제목 「{shown[:30]}」 — {META_HEADING_FIX}'))
         fe, fw = fragment(shown)
@@ -2841,7 +2880,7 @@ RULE_GROUPS = {
         '반복 문형',
     ]),
     '구조': ('찾아 읽기가 안 되는 갈래 — 문장은 멀쩡하다', [
-        '제목 서술형', '제목 명사형 위반', '제목 형태 확인',
+        '제목 서술형', '제목 명사형 위반', '제목 형태 확인', '의문문 제목',
         '진입점 없음', '진입점 서술형', '진입점 명사형 위반', '진입점 형태 확인',
         '스캔 가치 없는 라벨', '반복 블록 라벨 불일치', '해설을 인용 부호로 씀',
         '절 번호로 가리킴', '문장 끝 괄호 속 이름',
@@ -3540,6 +3579,9 @@ def scan_md(path, relaxed=False, form=None, rules=None):
         if not raw_title or all_quoted(raw_title):
             continue
         title = drop_tail(raw_title)
+        if question_end(title):
+            err.append((n, '의문문 제목', f'{title[:50]} — {Q_HEADING_FIX}'))
+            continue
         if META_HEADING.match(title):
             warn.append((n, '스캔 가치 없는 라벨', f'제목 「{title[:30]}」 — {META_HEADING_FIX}'))
         fe, fw = fragment(title)
