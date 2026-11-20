@@ -863,8 +863,8 @@ warn = ["절단형 종결"]</code>
   </article>
 
   <article class="rule reveal">
-    <div class="rule-head"><h4>형식 미표기</h4><span class="pill warn">주의</span>
-      <span class="count">규칙·기록 지적의 <b>5%</b></span></div>
+    <div class="rule-head"><h4>형식 미표기</h4><span class="pill cond">안내</span>
+      <span class="count">측정 당시 주의 등급이던 규칙·기록 지적의 <b>5%</b></span></div>
     <dl class="meta">
       <dt>무엇</dt><dd>흐르는 문장이 뼈대인 산문 문서인데 형식을 안 적어 개조식 검사가 잘못 걸림</dd>
       <dt>고치는 법</dt><dd>마크다운은 머리말에 「form: prose」 · HTML은 메타 태그 한 줄</dd>
@@ -1070,7 +1070,8 @@ warn = ["절단형 종결"]</code>
   <p class="note"><b>측정 기준</b> — 업무 보고서 2026-09-18 · 문서 636개 중 지적이 발생한 문서 347개 ·
      <b>전체 지적 2,486건</b>(오류 1,780 · 주의 706)이 분모입니다.
      규칙·기록 문서는 2026-09-08 측정이고 <b>당시 전체 지적 건수를 기록하지 않아</b> 분모를 적을 수 없습니다 —
-     두 열을 더하거나 비교하지 마십시오.</p>
+     두 열을 더하거나 비교하지 마십시오.
+     등급이 「안내」인 두 유형은 지금은 지적 대신 확인을 요청하는 한 줄로 출력되고, 비중은 주의 등급 지적이던 측정 당시의 값입니다.</p>
   <div class="scroll">
   <table>
     <thead><tr><th>유형</th><th>등급</th><th class="n">업무 보고서</th><th class="n">규칙·기록</th></tr></thead>
@@ -1080,7 +1081,7 @@ warn = ["절단형 종결"]</code>
       <tr><td><span class="dot w"></span>절단형 의심</td><td>주의</td><td class="n">6%</td><td class="n">4%</td></tr>
       <tr><td><span class="dot e"></span>서술형 문단 <span class="pill cond">개조식 전용</span></td><td>오류</td><td class="n">6%</td><td class="n">&lt;1%</td></tr>
       <tr><td><span class="dot w"></span>해설을 인용 부호로 씀</td><td>주의</td><td class="n">4%</td><td class="n">4%</td></tr>
-      <tr><td><span class="dot w"></span>형식 미표기</td><td>주의</td><td class="n">2%</td><td class="n">5%</td></tr>
+      <tr><td><span class="dot w"></span>형식 미표기</td><td>안내</td><td class="n">2%</td><td class="n">5%</td></tr>
       <tr><td><span class="dot w"></span>반복 블록 라벨 불일치</td><td>주의</td><td class="n">2%</td><td class="n">5%</td></tr>
       <tr><td><span class="dot e"></span>모호한 지칭</td><td>오류</td><td class="n">3%</td><td class="n">2%</td></tr>
       <tr><td><span class="dot e"></span>제목 서술형 <span class="pill cond">개조식 전용</span></td><td>오류</td><td class="n">1%</td><td class="n">3%</td></tr>
@@ -1112,7 +1113,7 @@ warn = ["절단형 종결"]</code>
       <tr><td><span class="dot w"></span>다른 낱말로 읽힘</td><td>주의</td><td class="n zero">측정 전</td><td class="n zero">측정 전</td></tr>
       <tr><td><span class="dot e"></span>절 번호로 가리킴</td><td>오류</td><td class="n zero">측정 전</td><td class="n zero">측정 전</td></tr>
       <tr><td><span class="dot w"></span>문장 끝 괄호 속 이름</td><td>주의</td><td class="n zero">측정 전</td><td class="n zero">측정 전</td></tr>
-      <tr><td><span class="dot w"></span>코드 블록 안 배포 문구</td><td>주의</td><td class="n">&lt;1%</td><td class="n zero">측정 전</td></tr>
+      <tr><td><span class="dot w"></span>코드 블록 안 배포 문구</td><td>안내</td><td class="n">&lt;1%</td><td class="n zero">측정 전</td></tr>
       <tr><td><span class="dot e"></span>반말 서술형</td><td>오류</td><td class="n zero">측정 전</td><td class="n zero">측정 전</td></tr>
       <tr><td><span class="dot w"></span>낯선 사내 용어</td><td>주의</td><td class="n zero">측정 전</td><td class="n zero">측정 전</td></tr>
       <tr><td><span class="dot e"></span>띄어 쓴 가운뎃점</td><td>오류</td><td class="n zero">측정 전</td><td class="n zero">측정 전</td></tr>
