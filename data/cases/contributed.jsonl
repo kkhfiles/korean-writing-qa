@@ -285,3 +285,12 @@
 {"case_id": "C-286", "expect": "finding", "form": "structured", "kind": "절단형 종결", "source": "2026-11-19 사용자 지적 갈래 · 지어낸 문장", "status": "pinned", "text": "점검 담당자를 지정했는가", "why": "「~는가」로 끝난 점검 라벨 — 물음표가 없으면 명사구로"}
 {"case_id": "C-287", "expect": "clean", "form": "structured", "kind": null, "source": "2026-11-19 오탐 방지 · 지어낸 문장", "status": "pinned", "text": "납품 단가와 전문가 인가 절차", "why": "「단가」, 「전문가」, 「인가」는 명사 — 의문 어미가 아님"}
 {"case_id": "C-288", "expect": "clean", "form": "prose", "kind": null, "source": "2026-11-19 오탐 방지 · 지어낸 문장", "status": "pinned", "text": "설치는 어떻게 하나요?", "why": "자주 묻는 질문의 존댓말 꼴은 의문문 라벨 규칙 밖"}
+{"case_id": "C-289", "expect": "finding", "form": "prose", "kind": "업무 글에 없는 말", "source": "사용자 지적 2026-11-20 「판이라는 말부터 빼자. 안쓰는 말임」(설명회 덱)", "status": "pinned", "text": "12월 판은 기존 Google Test를 수정하지 않고 CT 엔진으로 실행합니다.", "why": "날짜 뒤 판 — 버전"}
+{"case_id": "C-290", "expect": "finding", "form": "prose", "kind": "업무 글에 없는 말", "source": "사용자 지적 2026-11-20 「판이라는 말부터 빼자. 안쓰는 말임」(설명회 덱)", "status": "pinned", "text": "12월에 재설계한 판이 나옵니다.", "why": "「~한」 뒤 판 — 버전"}
+{"case_id": "C-291", "expect": "finding", "form": "prose", "kind": "업무 글에 없는 말", "source": "사용자 지적 2026-11-20 「판이라는 말부터 빼자. 안쓰는 말임」(설명회 덱)", "status": "pinned", "text": "CT 2026.12 판에서 지원합니다.", "why": "버전 번호 뒤 판"}
+{"case_id": "C-292", "expect": "finding", "form": "prose", "kind": "업무 글에 없는 말", "source": "사용자 지적 2026-11-20 「판이라는 말부터 빼자. 안쓰는 말임」(설명회 덱)", "status": "pinned", "text": "report-log 에 저장된 판이 있는지 확인합니다.", "why": "「~된」 뒤 판 — 버전"}
+{"case_id": "C-293", "expect": "clean", "form": "prose", "kind": "업무 글에 없는 말", "source": "사용자 지적 2026-11-20 「판이라는 말부터 빼자. 안쓰는 말임」(설명회 덱)", "status": "pinned", "text": "바둑 한 판을 두었습니다.", "why": "「한」이 수 관형사(앞이 빈칸)"}
+{"case_id": "C-294", "expect": "clean", "form": "prose", "kind": "업무 글에 없는 말", "source": "사용자 지적 2026-11-20 「판이라는 말부터 빼자. 안쓰는 말임」(설명회 덱)", "status": "pinned", "text": "12월 판매 실적을 집계합니다.", "why": "판매 — 판 뒤에 낱말이 이어짐"}
+{"case_id": "C-295", "expect": "clean", "form": "prose", "kind": "업무 글에 없는 말", "source": "사용자 지적 2026-11-20 「판이라는 말부터 빼자. 안쓰는 말임」(설명회 덱)", "status": "pinned", "text": "12월 판교 사옥에서 회의합니다.", "why": "지명 판교"}
+{"case_id": "C-296", "expect": "clean", "form": "prose", "kind": "업무 글에 없는 말", "source": "사용자 지적 2026-11-20 「판이라는 말부터 빼자. 안쓰는 말임」(설명회 덱)", "status": "pinned", "text": "확정된 판정 기준을 따릅니다.", "why": "판정 — 판 뒤에 낱말이 이어짐"}
+{"case_id": "C-297", "expect": "clean", "form": "prose", "kind": "업무 글에 없는 말", "source": "사용자 지적 2026-11-20 「판이라는 말부터 빼자. 안쓰는 말임」(설명회 덱)", "status": "pinned", "text": "체험판과 평가판을 나눠 배포합니다.", "why": "굳은 합성어"}
