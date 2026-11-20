@@ -12,10 +12,12 @@ from __future__ import annotations
 import importlib.machinery
 import importlib.util
 import io
+import os
 import sys
 import tempfile
 import types
 import unittest
+import unittest.mock
 from contextlib import redirect_stdout
 from pathlib import Path
 
@@ -37,11 +39,17 @@ def load_gate():
 class FakeLadder:
     """`llm_playbook` · `llm_playbook.ladder` 를 가짜로 — `ready` 에 든 백엔드만 쓸 수 있다."""
 
-    def __init__(self, ready):
+    def __init__(self, ready, agy=False):
         self.ready = set(ready)
         self.saved = {}
+        # 이 시험을 agy 세션에서 돌려도 결과가 같아야 한다 — 세션 표시 변수를 시험이 정한다
+        env = {k: v for k, v in os.environ.items() if not k.startswith("ANTIGRAVITY_") and k != "CLAUDECODE"}
+        if agy:
+            env["ANTIGRAVITY_AGENT"] = "1"
+        self.env = unittest.mock.patch.dict(os.environ, env, clear=True)
 
     def __enter__(self):
+        self.env.start()
         top = types.ModuleType("llm_playbook")
         top.__spec__ = importlib.machinery.ModuleSpec("llm_playbook", None)
         top.__path__ = []
@@ -55,6 +63,7 @@ class FakeLadder:
         return self
 
     def __exit__(self, *exc):
+        self.env.stop()
         for name, mod in self.saved.items():
             if mod is None:
                 sys.modules.pop(name, None)
@@ -78,6 +87,31 @@ class PickBackendTests(unittest.TestCase):
     def test_explicit_choice_wins(self) -> None:
         with FakeLadder({"claude"}):
             self.assertEqual("codex", judge.pick_backend("codex"))
+
+    def test_agy_session_picks_codex(self) -> None:
+        """agy 세션은 Codex 로 판정한다(2026-11-20 사용자 결정) — Claude 가 있어도."""
+        with FakeLadder({"claude", "codex"}, agy=True):
+            self.assertEqual("codex", judge.pick_backend("auto"))
+
+    def test_agy_session_does_not_switch_to_claude(self) -> None:
+        """Codex 를 못 부르면 Claude 로 넘기지 않는다 — 세션이 규칙을 직접 읽어 판정한다."""
+        with FakeLadder({"claude"}, agy=True):
+            self.assertIsNone(judge.pick_backend("auto"))
+
+    def test_agy_session_still_takes_an_explicit_choice(self) -> None:
+        with FakeLadder({"claude", "codex"}, agy=True):
+            self.assertEqual("claude", judge.pick_backend("claude"))
+
+    def test_claude_code_launched_from_agy_stays_claude(self) -> None:
+        """agy 터미널에서 띄운 Claude Code 는 Claude Code 세션이다 — `CLAUDECODE` 가 이긴다."""
+        with FakeLadder({"claude", "codex"}, agy=True):
+            os.environ["CLAUDECODE"] = "1"
+            self.assertEqual("claude", judge.pick_backend("auto"))
+
+    def test_agy_detection_reads_the_antigravity_prefix(self) -> None:
+        self.assertTrue(judge.in_agy_session({"ANTIGRAVITY_CONVERSATION_ID": "x"}))
+        self.assertFalse(judge.in_agy_session({"PATH": "x"}))
+        self.assertFalse(judge.in_agy_session({"ANTIGRAVITY_AGENT": "1", "CLAUDECODE": "1"}))
 
 
 class CodexDefaultModelTests(unittest.TestCase):
@@ -138,6 +172,13 @@ class GateAsksOnlyWhenAModelExistsTests(unittest.TestCase):
     def test_no_model_means_no_demand(self) -> None:
         with FakeLadder(set()):
             self.assertIsNone(self.gate.judge_command())
+
+    def test_agy_gate_needs_codex(self) -> None:
+        """agy 세션의 판정기는 Codex 만 부르니, Claude 만 있으면 게이트도 판정을 요구하지 않는다."""
+        with FakeLadder({"claude"}, agy=True):
+            self.assertIsNone(self.gate.judge_command())
+        with FakeLadder({"codex"}, agy=True):
+            self.assertIsNotNone(self.gate.judge_command())
 
     def test_codex_only_pc_is_asked(self) -> None:
         with FakeLadder({"codex"}):

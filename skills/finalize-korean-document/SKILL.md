@@ -90,12 +90,12 @@ python "$HOME/.claude/assets/doc-style-check.py" <수정문>
 
    **「별도 호출」은 현재 대화와 분리된 검사 요청을 뜻한다** — 같은 AI 서비스에서 검사할 수 있으며, 다른 서비스나 다른 모델을 사용해야 한다는 뜻이 아니다. **⛔ 세션이 다른 AI 서비스나 모델을 찾아 따로 호출하지 않는다.** 지정된 판정 스크립트를 사용한다.
 
-   **검사 백엔드를 지정하지 않았다면 현재 세션과 같은 서비스를 명시한다** — Codex 세션은 `--backend codex`, Claude Code 세션은 `--backend claude`를 사용한다. `auto`는 현재 세션을 식별하지 않고 설치된 Claude를 먼저 선택하므로, 같은 서비스를 유지하려는 호출에서는 생략하지 않는다. 사용자가 검사 백엔드를 지정했다면 그 지정을 따른다. 호출할 수 없으면 다른 서비스로 임의 전환하지 않고 아래 「종료 코드」 항목대로 직접 판정한다.
+   **검사 백엔드를 지정하지 않았다면 현재 세션과 같은 서비스를 명시한다** — Codex 세션은 `--backend codex`, Claude Code 세션은 `--backend claude`를 사용한다. Antigravity(agy) 세션도 `--backend codex`를 사용한다 `[2026-11-20 사용자 결정]` — agy 에는 판정기 백엔드가 없어 세션마다 사용자에게 물어야 했다. `auto`는 Codex 세션과 Claude Code 세션을 가르지 못하고 설치된 Claude를 먼저 선택하므로, 같은 서비스를 유지하려는 호출에서는 생략하지 않는다. agy 세션만은 `auto`도 셸의 `ANTIGRAVITY_*` 변수로 알아보고 Codex만 선택하며, Codex를 호출할 수 없으면 Claude로 넘기지 않는다. 사용자가 검사 백엔드를 지정했다면 그 지정을 따른다. 호출할 수 없으면 다른 서비스로 임의 전환하지 않고 아래 「종료 코드」 항목대로 직접 판정한다.
 
    **Codex 세션은 판정 명령만 샌드박스 밖 실행으로 승인을 요청한다** `[2026-10-20 사용자 결정]` — Codex 샌드박스(`network_access: false`)는 판정기의 모델 호출을 막는다. 10-14~10-20 Codex 세션의 판정이 매번 「모든 모델 시도 실패」로 끝났고, 같은 세션의 다른 HTTP 요청도 연결 거부였다. 네트워크를 전역으로 열지 않고, 판정 명령을 부를 때마다 샌드박스 밖 실행을 요청한다. 실패 글에 「네트워크 오류(Codex 샌드박스 안이면 밖에서 실행)」가 보이면 이 경우다.
 
 ```powershell
-# Codex
+# Codex와 Antigravity(agy)
 python -X utf8 "$HOME/.claude/assets/korean_qa_run.py" judge_layer2 <수정문> --backend codex
 # Claude Code
 python -X utf8 "$HOME/.claude/assets/korean_qa_run.py" judge_layer2 <수정문> --backend claude

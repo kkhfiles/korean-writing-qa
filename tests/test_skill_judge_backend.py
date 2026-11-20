@@ -26,7 +26,8 @@ class SkillJudgeBackendTests(unittest.TestCase):
     def test_documented_calls_keep_the_current_service(self):
         skill = (ROOT / "skills/finalize-korean-document/SKILL.md").read_text(encoding="utf-8")
         # 스킬은 저장소 도구를 입구(`korean_qa_run.py judge_layer2`)로 부른다 — 작성자 경로 대신(2026-10-30)
-        examples = dict(re.findall(r"^# (Codex|Claude Code)\n(python[^\n]+judge_layer2(?:\.py)? [^\n]+)", skill, re.M))
+        # agy 세션은 Codex 예시를 함께 쓴다(「# Codex와 Antigravity(agy)」 · 2026-11-20)
+        examples = dict(re.findall(r"^# (Codex|Claude Code)(?:와 Antigravity\(agy\))?\n(python[^\n]+judge_layer2(?:\.py)? [^\n]+)", skill, re.M))
         for session, expected in (("Codex", "codex"), ("Claude Code", "claude")):
             with self.subTest(session=session), tempfile.TemporaryDirectory() as folder:
                 self.assertIn(session, examples, "Each session needs an executable example with its own backend.")

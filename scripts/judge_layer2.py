@@ -1263,24 +1263,42 @@ def load_freq():
         return None
 
 
+def in_agy_session(env=None) -> bool:
+    """Antigravity(agy) 세션 안에서 불렸나 — agy 는 하위 셸에 `ANTIGRAVITY_*` 변수를 둔다(2026-11-20 실측).
+
+    Claude Code 가 둔 `CLAUDECODE` 가 있으면 agy 가 아니다 — agy 터미널에서 띄운 Claude Code 세션은
+    Claude Code 세션으로 본다.
+    """
+    env = os.environ if env is None else env
+    if env.get("CLAUDECODE"):
+        return False
+    return any(k.startswith("ANTIGRAVITY_") for k in env)
+
+
 def pick_backend(which: str = "auto") -> str | None:
     """부를 백엔드 이름 · `auto` 면 이 PC 에서 쓸 수 있는 쪽을 Claude → Codex 순서로.
 
     설치·로그인 여부는 `llm_playbook.ladder.available` 이 가른다(게이트도 같은 것을 본다).
     Codex 만 쓰는 PC 에서도 판정기가 돌아야 발행 게이트가 판정을 요구할 수 있다.
+    agy 세션은 Codex 만 부른다(2026-11-20 사용자 결정) — Codex 를 못 부르면 Claude 로 넘기지 않고
+    None(세션이 규칙을 직접 읽어 판정)이다. 다른 서비스로 임의로 넘기지 않는다는 스킬 규칙과 같다.
     """
     if which != "auto":
         return which
+    agy = in_agy_session()
     import importlib.util
     if importlib.util.find_spec("llm_playbook") is None:
         # 공개판을 받은 PC — 저장소 안의 최소 호출부(Claude 만)로 부를 수 있으면 Claude(`layer2_client`)
+        if agy:
+            return None
         import layer2_client
         return "claude" if layer2_client.available()[0] else None
     try:
         from llm_playbook.ladder import available
     except Exception:
-        return "claude"         # 사다리가 없는 옛 llm_playbook — 전처럼 Claude 를 부른다
-    return next((name for name in ("claude", "codex") if available(name)[0]), None)
+        return None if agy else "claude"    # 사다리가 없는 옛 llm_playbook — 전처럼 Claude 를 부른다
+    order = ("codex",) if agy else ("claude", "codex")
+    return next((name for name in order if available(name)[0]), None)
 
 
 def load_backend(which: str = "claude"):

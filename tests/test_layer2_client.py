@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import importlib.util
+import os
 import sys
 import unittest
 import unittest.mock
@@ -23,7 +24,18 @@ def no_playbook(name, *a, **k):
     return None if name.split(".")[0] == "llm_playbook" else _find(name, *a, **k)
 
 
+def plain_session():
+    """agy 세션에서 돌려도 같은 결과가 나오게 세션 표시 변수를 뺀다."""
+    env = {k: v for k, v in os.environ.items() if not k.startswith("ANTIGRAVITY_") and k != "CLAUDECODE"}
+    return unittest.mock.patch.dict(os.environ, env, clear=True)
+
+
 class FallbackTests(unittest.TestCase):
+
+    def setUp(self) -> None:
+        env = plain_session()
+        env.start()
+        self.addCleanup(env.stop)
 
     def test_without_playbook_the_judge_uses_the_bundled_client(self) -> None:
         def missing(_which):

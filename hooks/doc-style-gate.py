@@ -776,17 +776,21 @@ def judge_backend_ready():
     `llm_playbook` 은 전처럼 있다고 본다 — 판정기도 그때 Claude 를 부른다.
     """
     import importlib.util
+    # agy 세션의 판정기는 Codex 만 부른다(판정기 `in_agy_session` · 2026-11-20 사용자 결정)
+    agy = (not os.environ.get("CLAUDECODE")) and any(k.startswith("ANTIGRAVITY_") for k in os.environ)
     if importlib.util.find_spec("llm_playbook") is None:
         # 공개판을 받은 PC — 판정기는 저장소 안의 최소 호출부로 Claude 를 부른다(`scripts/layer2_client.py`
         # 의 `available` 과 같은 조건 · 2026-11-02). 그 조건이 아니면 판정기가 못 도니 판정을 요구하지 않는다
+        if agy:
+            return False
         import shutil
         return (importlib.util.find_spec("claude_agent_sdk") is not None
                 and bool(os.environ.get("CLAUDE_CLI_PATH") or shutil.which("claude")))
     try:
         from llm_playbook.ladder import available
     except Exception:
-        return True
-    return any(available(name)[0] for name in ("claude", "codex"))
+        return not agy
+    return any(available(name)[0] for name in (("codex",) if agy else ("claude", "codex")))
 
 
 def load_coverage():
