@@ -138,7 +138,7 @@ def main():
         (OUT / f"hits-{ {'사람': 'human', 'AI': 'ai'}.get(name, 'work')}.jsonl").write_text(
             "\n".join(json.dumps(h, ensure_ascii=False) for h in hits) + "\n", encoding="utf-8")
     (Path(__file__).parent / "result.json").write_text(
-        json.dumps(result, ensure_ascii=False, indent=1), encoding="utf-8")
+        json.dumps(result, ensure_ascii=False, indent=1), encoding="utf-8", newline="\n")
     print(json.dumps(result, ensure_ascii=False, indent=1))
 
 
