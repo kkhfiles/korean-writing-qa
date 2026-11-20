@@ -11,7 +11,7 @@
 # 노션, 아티팩트, 슬라이드로 내보내는 순간의 검사는 이 값과 무관하게 돈다. 빼면 예전처럼 전부 검사한다.
 # check_scope = "shared"
 
-# 2층 판정의 검사 단계(선택) — 비우면 max. 판정 명령의 --level 과 환경 변수 KOREAN_QA_LEVEL 이 이 값보다 앞선다.
+# 2층 판정의 검사 단계(선택) — 비우면 balanced(가성비). 판정 명령의 --level 과 환경 변수 KOREAN_QA_LEVEL 이 이 값보다 앞선다.
 #   max(최대)      첫 판정과 재판정 모두 Opus medium · 문서 한 건 한도 4,500원(API 키로 과금하면 2,500원)
 #   balanced(가성비) 첫 판정 Opus low · 재판정 Sonnet medium · 지적을 모아서 재판정 · 한도 1,800원(API 키 1,000원)
 #   min(최소)      첫 판정과 재판정 모두 Sonnet medium · 모아서 재판정 · 한도 900원(API 키 500원) · 일반 결함 회수가 낮음

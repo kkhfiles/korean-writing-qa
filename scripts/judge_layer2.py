@@ -121,7 +121,8 @@ LEVELS = {
             "budget_won": {"subscription": 900, "api": 500}},
 }
 LEVEL_ALIASES = {"최대": "max", "가성비": "balanced", "최소": "min"}
-DEFAULT_LEVEL = "max"
+#: 기본은 가성비(2026-11-20 사용자 결정) — 11-05 측정 기준을 넘었고, 이 PC 실사용 569회에서 호출 실패 0(`docs/decisions-pending.md` R)
+DEFAULT_LEVEL = "balanced"
 WON_PER_USD = 1400
 #: 같은 문서의 판정 사이가 이만큼 넘게 비면 다른 작업으로 보고 비용을 새로 센다
 WORK_GAP_S = 3 * 3600
