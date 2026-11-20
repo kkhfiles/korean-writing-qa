@@ -2441,18 +2441,35 @@ def cost_report(by: str) -> None:
     print(f"  {'합계':<24}{tot[0]:>5}{tot[1]:>5}{tot[2] / 60:>9.1f}{tot[3]:>12,}{tot[4]:>11,}{tot[5]:>11.2f}")
 
 
-def personal_level() -> str | None:
-    """개인 설정 파일(발행 게이트가 읽는 개인 목록)의 `check_level` — 없거나 못 읽으면 None."""
+def personal_setting(name: str):
+    """개인 설정 파일(발행 게이트가 읽는 개인 목록)의 값 하나 — 없거나 못 읽으면 None."""
     p = Path(os.environ.get("KOREAN_QA_PUBLISH_REPOS")
              or Path.home() / ".claude" / "data" / "catalog" / "local-publish-repos.toml")
     if not p.is_file():
         return None
     try:
         import tomllib
-        got = tomllib.loads(p.read_text(encoding="utf-8")).get("check_level")
+        return tomllib.loads(p.read_text(encoding="utf-8")).get(name)
     except Exception:
         return None
+
+
+def personal_level() -> str | None:
+    """개인 설정의 `check_level` — 없으면 None."""
+    got = personal_setting("check_level")
     return str(got) if got else None
+
+
+def budget_scale() -> float:
+    """개인 설정의 `budget_scale` — 문서 한 건 비용 한도에 곱하는 배율(2026-11-20 · 한 PC 에서만 한도를 넓힐 때).
+
+    없거나 숫자가 아니거나 0 이하면 1(공개판 한도 그대로)이다. 한도를 끄는 길은 두지 않는다 — 넘기려면 지금처럼
+    `--over-budget` 에 승인 원문을 적는다.
+    """
+    got = personal_setting("budget_scale")
+    if isinstance(got, bool) or not isinstance(got, (int, float)) or got <= 0:
+        return 1.0
+    return float(got)
 
 
 def resolve_level(arg: str | None) -> str:
@@ -2787,6 +2804,8 @@ def main(argv=None, backend=None) -> int:
         key = coverage.doc_key(p)
         # 비용 한도 — 닿으면 판정하지 않고 「검사 미완료」로 남긴다(통과가 아니다 · 2026-11-04 astra 검토)
         budget = (lv["budget_won"] or {}).get(billing) if billing else None
+        if budget:
+            budget = round(budget * budget_scale())
         if budget and not a.over_budget:
             spent = work_spent(key) * WON_PER_USD
             if spent >= budget:

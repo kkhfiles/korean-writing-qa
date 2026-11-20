@@ -19,6 +19,10 @@
 # 근거 측정은 runs/judge-effort-levels-20261104
 # check_level = "balanced"
 
+# 위 문서 한 건 비용 한도의 배율(선택) — 비우면 1. 2 면 이 PC 에서만 한도가 두 배다(가성비 구독 1,800원 → 3,600원).
+# 숫자가 아니거나 0 이하면 무시한다. 한도를 넘겨 계속 판정하려면 판정 명령에 --over-budget --note "승인 원문"
+# budget_scale = 2
+
 [[repo]]
 origin = "github.com/<소유자>/<저장소>"     # 원격 origin 주소 · https 와 ssh 를 같게 본다
 require = ["judgment", "lint"]   # lint — 이번 브랜치에서 새로 쓰거나 고친 줄의 1층 오류도 막음(빌드가 문체를 안 보는 저장소)

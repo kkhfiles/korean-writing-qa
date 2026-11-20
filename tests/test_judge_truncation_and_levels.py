@@ -209,6 +209,21 @@ class LevelTests(Base):
         self.assertEqual(0, rc)
         self.assertEqual("사용자 「이번만 넘겨」", self.rows()[-1].get("over_budget"))
 
+    def test_a_personal_scale_widens_the_budget(self) -> None:
+        p = self.doc(LINES[:5])
+        # 가성비 구독 한도 1,800원을 넘고 두 배(3,600원)에는 못 미치는 2,100원
+        spent = {"at": "x", "when": time.time() - 60, "key": coverage.doc_key(p), "ok": True,
+                 "cost_usd": 1.5, "seen": []}
+        judge.LOG.write_text(json.dumps(spent) + "\n", encoding="utf-8")
+        personal = self.dir / "no-personal-list.toml"
+        personal.write_text("budget_scale = 2\n", encoding="utf-8")
+        rc, out = self.run_main([str(p), "--level", "balanced"], Backend())
+        self.assertEqual(0, rc, out)
+        for bad in ("budget_scale = 0", "budget_scale = -1", 'budget_scale = "2"', "budget_scale = true"):
+            with self.subTest(bad=bad):
+                personal.write_text(bad + "\n", encoding="utf-8")
+                self.assertEqual(1.0, judge.budget_scale())
+
     def test_the_limit_follows_the_billing(self) -> None:
         """구독 호출이 기본이라 한도가 크레딧 호출보다 넉넉하고, 크레딧 호출은 돈 기준(가성비 1,000원) 그대로."""
         p = self.doc(LINES[:5])
