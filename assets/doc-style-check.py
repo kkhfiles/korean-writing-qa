@@ -2667,10 +2667,16 @@ DETECTED_PROSE_NOTE = ('형식을 안 적어 잠정으로 산문으로 보고 �
                        '산문이 맞으면 머리말에 `form: prose`, 개조식 문서면 `form: structured` 를 적는다.')
 ASK_FORM_NOTE = ('산문으로 보이는데 형식을 안 적었다 — 머리말에 `form: prose` 를 적으면 '
                  '개조식 검사를 빼고 본다. 개조식이 맞다면 `form: structured` 를 적는다.')
+# 공지형은 표와 목록 사이 문장 문단도 개조식으로 본다(2026-10-30 사용자 결정) — 고르는 사람이 그것을
+# 알고 고르도록 안내에 적는다(2026-11-23 사용자 결정, 문장 문단이 많은 안내 메일은 산문형이 맞다).
+NOTICE_BETWEEN_NOTE = ('표와 목록 사이 문장 문단은 개조식으로 보므로, 본문에 문장 문단이 많으면 '
+                       '`form: prose` 가 맞다.')
 DETECTED_NOTICE_NOTE = ('형식을 안 적어 잠정으로 공지로 보고 인사말과 맺음말 문단을 개조식 검사에서 뺐다 — '
-                        '공지가 맞으면 머리말에 `form: notice`, 개조식 문서면 `form: structured` 를 적는다.')
+                        '공지가 맞으면 머리말에 `form: notice`, 개조식 문서면 `form: structured` 를 적는다. '
+                        + NOTICE_BETWEEN_NOTE)
 ASK_NOTICE_NOTE = ('공지나 안내 메일로 보이는데 형식을 안 적었다 — 머리말에 `form: notice` 를 적으면 '
-                   '인사말과 맺음말 문단을 개조식 검사에서 빼고 본다. 개조식이 맞다면 `form: structured` 를 적는다.')
+                   '인사말과 맺음말 문단을 개조식 검사에서 빼고 본다. 개조식이 맞다면 `form: structured` 를 적는다. '
+                   + NOTICE_BETWEEN_NOTE)
 DETECTED_NOTES = {'prose': DETECTED_PROSE_NOTE, 'notice': DETECTED_NOTICE_NOTE}
 ASK_NOTES = {'prose': ASK_FORM_NOTE, 'notice': ASK_NOTICE_NOTE}
 

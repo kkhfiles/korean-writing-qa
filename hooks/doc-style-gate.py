@@ -1278,7 +1278,8 @@ def form_question(out):
     if not line:
         return None
     guess = "notice" if '"notice"' in line or "form: notice" in line else "prose"
-    what = ("공지(인사말과 맺음말 문단만 개조식 검사에서 뺌)" if guess == "notice"
+    what = ("공지(인사말과 맺음말 문단만 개조식 검사에서 빼고 표와 목록 사이 문장 문단은 개조식으로 봄, "
+            "본문에 문장 문단이 많으면 산문이 맞음)" if guess == "notice"
             else "산문(개조식 검사를 뺌)")
     return (f"형식 미정 — 검사기 제안은 {what}이다 · 사용자에게 산문, 공지, 개조식 중 무엇으로 "
             f"검사할지 묻고 답을 머리말 `form:`(HTML 은 `<meta name=\"form\">`)에 적는다 · "
