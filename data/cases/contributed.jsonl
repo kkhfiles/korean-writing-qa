@@ -294,3 +294,14 @@
 {"case_id": "C-295", "expect": "clean", "form": "prose", "kind": "업무 글에 없는 말", "source": "사용자 지적 2026-11-20 「판이라는 말부터 빼자. 안쓰는 말임」(설명회 덱)", "status": "pinned", "text": "12월 판교 사옥에서 회의합니다.", "why": "지명 판교"}
 {"case_id": "C-296", "expect": "clean", "form": "prose", "kind": "업무 글에 없는 말", "source": "사용자 지적 2026-11-20 「판이라는 말부터 빼자. 안쓰는 말임」(설명회 덱)", "status": "pinned", "text": "확정된 판정 기준을 따릅니다.", "why": "판정 — 판 뒤에 낱말이 이어짐"}
 {"case_id": "C-297", "expect": "clean", "form": "prose", "kind": "업무 글에 없는 말", "source": "사용자 지적 2026-11-20 「판이라는 말부터 빼자. 안쓰는 말임」(설명회 덱)", "status": "pinned", "text": "체험판과 평가판을 나눠 배포합니다.", "why": "굳은 합성어"}
+{"case_id": "C-298", "expect": "finding", "form": "prose", "kind": "업무 글에 없는 말", "source": "사용자 지적 2026-11-24 · 대장 F-225~F-227", "status": "pinned", "text": "직원 800명에게 물은 설문에서 절반이 그렇다고 답했습니다.", "why": "설문이 묻는 일이라 「물은」이 겹침"}
+{"case_id": "C-299", "expect": "finding", "form": "prose", "kind": "업무 글에 없는 말", "source": "사용자 지적 2026-11-24 · 대장 F-225~F-227", "status": "pinned", "text": "개발자들에게 물은 2025년 조사에는 다른 결과가 있습니다.", "why": "연도가 낀 꼴"}
+{"case_id": "C-300", "expect": "finding", "form": "prose", "kind": "업무 글에 없는 말", "source": "사용자 지적 2026-11-24 · 대장 F-225~F-227", "status": "pinned", "text": "근무 만족도를 물은 설문조사 결과가 나왔습니다.", "why": "「~을 물은」 꼴"}
+{"case_id": "C-301", "expect": "finding", "form": "prose", "kind": "업무 글에 없는 말", "source": "사용자 지적 2026-11-24 · 대장 F-225~F-227", "status": "pinned", "text": "제가 뒤처지고 있다는 느낌이었습니다.", "why": "자기 판단을 「~다는 느낌이었다」로 감쌈(주의)"}
+{"case_id": "C-302", "expect": "clean", "form": "prose", "kind": "업무 글에 없는 말", "source": "사용자 지적 2026-11-24 · 대장 F-225~F-227", "status": "pinned", "text": "이번에 물은 조사하지 않았습니다.", "why": "물 + 은 · 앞에 조사 없음"}
+{"case_id": "C-303", "expect": "clean", "form": "prose", "kind": "업무 글에 없는 말", "source": "사용자 지적 2026-11-24 · 대장 F-225~F-227", "status": "pinned", "text": "고객이 물은 질문에 답했습니다.", "why": "질문은 사람이 묻는 것이라 정당"}
+{"case_id": "C-304", "expect": "clean", "form": "prose", "kind": "업무 글에 없는 말", "source": "사용자 지적 2026-11-24 · 대장 F-225~F-227", "status": "pinned", "text": "고객에게 물은 뒤 답을 기다렸습니다.", "why": "동사 「묻다」 정상 쓰임"}
+{"case_id": "C-305", "expect": "clean", "form": "prose", "kind": "업무 글에 없는 말", "source": "사용자 지적 2026-11-24 · 대장 F-225~F-227", "status": "pinned", "text": "담당자에게 물은 조사관이 돌아갔습니다.", "why": "조사관은 다른 낱말"}
+{"case_id": "C-306", "expect": "clean", "form": "prose", "kind": "업무 글에 없는 말", "source": "사용자 지적 2026-11-24 · 대장 F-225~F-227", "status": "pinned", "text": "직원 800명을 대상으로 한 설문에서 절반이 그렇다고 답했습니다.", "why": "대체 표현"}
+{"case_id": "C-307", "expect": "clean", "form": "prose", "kind": "업무 글에 없는 말", "source": "사용자 지적 2026-11-24 · 대장 F-225~F-227", "status": "pinned", "text": "첫인상은 세련된 느낌이었습니다.", "why": "대상의 인상"}
+{"case_id": "C-308", "expect": "clean", "form": "prose", "kind": "업무 글에 없는 말", "source": "사용자 지적 2026-11-24 · 대장 F-225~F-227", "status": "pinned", "text": "뒤처지고 있다고 느꼈습니다.", "why": "대체 표현"}
