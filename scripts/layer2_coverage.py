@@ -456,6 +456,7 @@ def open_asks(key: str, lines: list[str], log: Path | None = None,
             where[k] = n
     done = answered(key, answers, now)
     told = decided(key)
+    kept = settled_sentences(key, answers=answers, fixes=False)
     out, seen = [], set()
     for ask in ask_rows(key, log, now):
         n = where.get(ask.get("line_key") or "")
@@ -474,6 +475,10 @@ def open_asks(key: str, lines: list[str], log: Path | None = None,
         if not k:
             continue            # 한글이 없는 줄 — 이 판정기의 몫이 아니고 답할 길도 없다
         if k in done or (n, ask.get("phrase")) in seen:
+            continue
+        # 사용자가 그대로 두라고 답한 표현 — 그 문장이 글자 그대로면 같은 줄의 다른 문장을 고쳐 다시 판정해도
+        # 다시 묻지 않는다(`sentence_of`)
+        if settled_elsewhere(kept, ask.get("phrase"), lines[n - 1], k):
             continue
         seen.add((n, ask.get("phrase")))
         out.append((n, ask))
@@ -595,6 +600,70 @@ def _plain(text: str) -> str:
     return re.sub(r"[*_`]", "", text)
 
 
+#: 문장 끝 — 마침표, 물음표, 느낌표 뒤의 빈칸
+SENTENCE_END = re.compile(r"(?<=[.!?。])\s+")
+
+
+def sentence_of(phrase, line: str | None) -> str | None:
+    """줄 안에서 짚은 표현이 든 문장(강조 표시를 뺀 글) — 표현이 없거나 문장 경계에 걸치면 None.
+
+    닫은 기록과 사용자 답을 줄 해시만이 아니라 이 문장에도 묶는다. 같은 줄의 다른 문장만 고쳐도 줄 해시가
+    바뀌어 닫은 지적이 다시 열렸고, 「그대로」라고 답한 표현을 판정기가 다시 짚어 또 물었다(2026-11-24 블로그
+    원고 인계 — 같은 근거로 세 번 다시 닫음). 표현이 든 문장이 한 글자라도 바뀌면 묶이지 않는다 — 근거가
+    바뀌었을 수 있다.
+    """
+    p = _plain(str(phrase or "")).strip()
+    if not p or not line:
+        return None
+    for s in SENTENCE_END.split(_plain(line).strip()):
+        if p in s:
+            return s.strip()
+    return None
+
+
+def _anchor(phrase, line: str | None) -> tuple[str, str] | None:
+    s = sentence_of(phrase, line)
+    return (_plain(str(phrase)).strip(), s) if s else None
+
+
+def settled_sentences(key: str, dismissals: Path | None = None, decisions: Path | None = None,
+                      answers: Path | None = None, fixes: bool = True) -> dict[tuple[str, str], set]:
+    """닫았거나 사용자가 답한 지적 — {(표현, 그 표현이 든 문장): 닫은 판의 줄 해시들}.
+
+    `fixes` 면 세션이 닫은 고칠 지적(받지 않음, 사람 확인으로 올림)도 넣는다. 사람 확인 쪽(`fixes=False`)은
+    사용자 답만 — 세션이 받지 않은 것으로 사람에게 물을 지적을 닫지 않는다. 사용자 답은 「그대로」와
+    `--answer` 기록만 센다 — 「고침」은 고칠 것이 남았다는 답이다.
+    """
+    out: dict[tuple[str, str], set] = {}
+
+    def add(phrase, text, line_key_) -> None:
+        a = _anchor(phrase, text)
+        if a:
+            out.setdefault(a, set()).add(line_key_)
+
+    if fixes:
+        for row in _rows(key, dismissals or DISMISSALS, None, fresh=False):
+            add(row.get("phrase"), row.get("text"), row.get("line_key"))
+    for row in _rows(key, decisions or DECISIONS, None, fresh=False):
+        if row.get("kind") == "그대로":
+            add(row.get("phrase"), row.get("text"), row.get("line_key"))
+    for row in _rows(key, answers or ANSWERS, None, fresh=False):
+        for pair in row.get("asks") or []:
+            if isinstance(pair, list) and len(pair) == 2:
+                add(pair[1], row.get("text"), row.get("line_key"))
+    return out
+
+
+def settled_elsewhere(kept: dict, phrase, line: str, own_key) -> bool:
+    """이 지적의 표현이 든 문장을 **지금 줄과 다른 판에서** 이미 닫았거나 사용자가 답했나 — `own_key` 는 지금 줄 해시.
+
+    같은 판(같은 줄 해시)의 닫음과 답은 줄 해시 대조(`dismissed`, `answered`)가 맡는다 — 여기서 같은 판까지 닫으면
+    표 답을 읽는 순서(답 기록을 먼저 남기고 `answer` 를 부름)에서 `answer` 가 받을 지적을 못 찾았다.
+    """
+    keys = kept.get(_anchor(phrase, line)) if kept else None
+    return bool(keys) and any(k != own_key for k in keys)
+
+
 #: 링크 주소 — 줄이 비슷한지는 보이는 글로 가른다
 LINK_TARGET = re.compile(r"\]\([^)\s]*\)|https?://\S+")
 #: 마크다운 안에 쓴 HTML 태그와 주석 — 링크 주소와 같은 까닭으로 뺀다
@@ -709,7 +778,8 @@ def open_fixes(key: str, lines: list[str], log: Path | None = None,
     있음. 줄이 그대로면 표현이 안 맞아도 연다 — 판정기가 강조 표시를 빼고 옮겨 적어 표현이 글자로
     안 맞는 일이 있는데, 그때 닫으면 아무도 안 고친 지적이 사라진다.
     **닫힘** — 표현이 사라짐(고침) · 받지 않음이나 사람 확인으로 올림 기록(줄 해시 + 표현).
-    받지 않음은 그 줄이 바뀌면 다시 열린다 — 근거가 바뀌었을 수 있다.
+    받지 않음은 짚은 표현이 든 문장이 바뀌면 다시 열린다 — 근거가 바뀌었을 수 있다. 같은 줄의 다른 문장만
+    바뀌었으면 닫힌 채로 둔다(`sentence_of`).
     **사실 확인 지적**(`needs_check`)은 고쳐도 안 닫힌다 — 고친 줄에 붙어 「확인함」이나 사람
     확인을 기다린다.
     ⛔ 기한이 없다 — 사람 확인과 같은 까닭이다.
@@ -725,6 +795,8 @@ def open_fixes(key: str, lines: list[str], log: Path | None = None,
             where[k] = n
     untouched = {k for k in map(line_key, base or []) if k}
     done = dismissed(key, dismissals, now)
+    # 닫은 표현이 든 문장이 그대로인 줄 — 같은 줄의 다른 문장만 고쳤으면 닫은 채로 둔다(`sentence_of`)
+    kept = settled_sentences(key, dismissals)
     # 「확인함」으로 닫은 적이 있는 사실 확인 표현 — 그 뒤 표현이 사라졌으면 다시 열지 않는다(2026-10-23).
     # 닫음 기록이 줄 해시에 묶여 있어, 갈래 수처럼 같은 줄의 숫자를 고칠 때마다 이미 확인한 옛 숫자
     # 지적(36가지, 37가지 …)까지 고친 줄에 다시 붙어 손으로 거듭 닫아야 했다. 새 숫자는 새 줄 판정이 따로 짚는다.
@@ -758,7 +830,7 @@ def open_fixes(key: str, lines: list[str], log: Path | None = None,
                 n = min(cands, key=lambda i: abs(i - hint))
             k = line_key(lines[n - 1])
             if not k or (k, fx.get("phrase")) in done or (form_key(lines[n - 1]), fx.get("phrase")) in done \
-                    or (n, phrase) in seen:
+                    or (n, phrase) in seen or settled_elsewhere(kept, phrase, lines[n - 1], k):
                 continue
             seen.add((n, phrase))
             out.append((n, fx))

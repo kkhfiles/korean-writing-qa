@@ -235,8 +235,11 @@ def render(docs: list[tuple[Path, list[str], list[tuple[int, dict]]]],
             shown, fix, why, opinion, details = row_parts(lines[n - 1], items)
             body.append(f"| {k} | {shown} | {fix} | {why} | {opinion} |  |")
             more += [f"- **{k}** — {d}" for d in details]
+            # 줄 글과 짚은 표현 — 표를 만든 뒤 같은 줄의 다른 문장이 바뀌어도 짚은 표현이 든 문장으로 줄을 찾아
+            # 답을 받는다(2026-11-24 블로그 원고 인계 — 무관한 문장을 고쳐 답을 통째로 거절함)
             keys[f"Q{k}"] = {"doc": path.resolve().as_posix(), "line": n,
-                             "line_key": line_key(lines[n - 1])}
+                             "line_key": line_key(lines[n - 1]), "text": lines[n - 1],
+                             "phrases": [str(it.get("phrase") or "") for it in items]}
         if more:
             body += ["", "### 자세히 — 칸에 다 못 넣은 글과 판정 이력", ""] + more
     head = HEAD.format(at=now.strftime("%Y-%m-%d %H:%M"),

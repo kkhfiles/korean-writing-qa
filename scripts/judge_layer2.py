@@ -591,6 +591,10 @@ def is_ask(item: dict) -> bool:
     return str(item.get("decide") or "").strip().lower() == "ask"
 
 
+class AlreadyClosed(ValueError):
+    """답할 지적이 이미 닫힌 줄 — 명령이 실패한 것이 아니라 할 일이 없는 것."""
+
+
 def answer(path: Path, line_nos: list[int], note: str) -> list[str]:
     """사용자가 사람 확인 지적에 답했다고 줄마다 적는다 — 적은 줄의 앞머리 목록.
 
@@ -612,15 +616,20 @@ def answer(path: Path, line_nos: list[int], note: str) -> list[str]:
         # 「직접」 답대로 고친 줄 — 물은 줄은 사라졌고 이 줄이 그 줄을 이어 받았다. 확정하면 다시 판정하지 않는다
         origin = answered_origin(key, lines, n)
         if n not in waiting and origin is None:
+            if coverage.line_key(lines[n - 1]) in coverage.answered(key):
+                # 이미 답대로 고쳐 확정됐거나 답을 적은 줄 — 오류가 아니다(2026-11-24 블로그 원고 인계)
+                raise AlreadyClosed(f"{n}행은 이미 닫혔습니다 — 사용자 답이 기록된 줄이라 더 적을 것이 없습니다")
             raise ValueError(f"{n}행에는 답을 기다리는 사람 확인 지적이 없습니다 — "
                              "--asks 로 줄 번호를 확인합니다")
         row = {"at": datetime.now().isoformat(timespec="seconds"), "when": time.time(),
                "doc": str(path), "key": key, "line": n,
                "line_key": coverage.line_key(lines[n - 1]), "note": note.strip(),
                # 이 답이 닫은 지적 — 앞 판에서 물어 이 줄로 따라온 지적은 줄 해시로는 못 잇는다
-               "asks": [[a.get("line_key"), a.get("phrase")] for m, a in pending if m == n]}
+               "asks": [[a.get("line_key"), a.get("phrase")] for m, a in pending if m == n],
+               # 답한 줄 글 — 같은 줄의 다른 문장을 고친 뒤에도 답한 표현이 든 문장으로 잇는다(`sentence_of`)
+               "text": lines[n - 1]}
         if origin is not None:
-            row.update(approved=True, origin=origin, text=lines[n - 1])
+            row.update(approved=True, origin=origin)
         rows.append(row)
     coverage.ANSWERS.parent.mkdir(parents=True, exist_ok=True)
     with coverage.ANSWERS.open("a", encoding="utf-8", newline="\n") as f:
@@ -1051,7 +1060,8 @@ def _close_fix(path: Path, lines: list[str], n: int, fx: dict, extra: dict) -> N
 def dismiss(path: Path, n: int, reason: str, note: str, phrase: str | None = None) -> str:
     """고칠 지적 하나를 받지 않기로 적는다 — 닫은 지적의 표현. 규칙에 안 맞으면 ValueError.
 
-    ⛔ 지적 하나에만 듣는다 — 갈래 전체나 앞으로 올 지적을 닫지 않는다. 그 줄이 바뀌면 다시 열린다.
+    ⛔ 지적 하나에만 듣는다 — 갈래 전체나 앞으로 올 지적을 닫지 않는다. 짚은 표현이 든 문장이 바뀌면 다시
+       열린다(같은 줄의 다른 문장만 바뀌면 닫힌 채로 둠, `layer2_coverage.sentence_of`).
     ⛔ 사실 확인이 걸린 지적은 「확인함」(자료를 적음)이나 사람 확인으로 올리는 것만 받는다 —
        「아마 맞음」으로 닫으면 확인 안 된 사실이 나간다.
     """
@@ -1111,6 +1121,23 @@ def write_sheet(paths: list[Path], out: Path) -> tuple[int, int, str]:
     return rows, asks, ask_sheet.screen(docs)
 
 
+def moved_line(lines: list[str], key: dict) -> int | None:
+    """표를 만든 뒤 바뀐 줄 — 짚은 표현마다 그 표현이 든 문장이 글자 그대로 남은 줄이 하나뿐이면 그 줄 번호.
+
+    표에 줄 글과 표현을 적기 전의 옛 표, 문장 경계에 걸친 표현, 같은 문장이 여러 줄에 있는 경우는 None —
+    전처럼 거절하고 다시 묻는다.
+    """
+    text, phrases = key.get("text"), [p for p in key.get("phrases") or [] if p]
+    if not text or not phrases:
+        return None
+    wanted = [coverage.sentence_of(p, text) for p in phrases]
+    if not all(wanted):
+        return None
+    hits = [i for i, l in enumerate(lines, 1)
+            if coverage.line_key(l) and all(s in coverage._plain(l) for s in wanted)]
+    return hits[0] if len(hits) == 1 else None
+
+
 def read_answers(sheet: Path, replies: list[str] | None = None) -> int:
     """사용자가 표에 적은 답을 읽는다 — `그대로`는 답 기록에 남기고, 고칠 것은 목록으로 돌려준다.
 
@@ -1119,7 +1146,8 @@ def read_answers(sheet: Path, replies: list[str] | None = None) -> int:
 
     ⛔ `고침`·`직접`은 답으로 적지 않는다 — 적으면 고치기 전에 지적이 닫혀 고치지 않은 글이
        발행·배포를 통과한다. 고치면 짚은 표현이 사라져 지적이 저절로 닫힌다.
-    ⛔ 표를 만든 뒤 바뀐 줄의 답은 받지 않는다 — 사용자가 본 문장과 지금 문장이 다르다.
+    ⛔ 표를 만든 뒤 짚은 표현이 든 문장이 바뀐 답은 받지 않는다 — 사용자가 본 문장과 지금 문장이 다르다.
+       같은 줄의 다른 문장만 바뀌었으면 받는다(`moved_line`).
     종료 코드 — 0 남은 사람 확인 없음 · 1 남음(고칠 것 · 보류 · 빈칸) · 2 표를 못 읽음
     """
     try:
@@ -1159,10 +1187,19 @@ def read_answers(sheet: Path, replies: list[str] | None = None) -> int:
         lines = read_doc(p).splitlines()
         # 표를 만든 뒤 위에 줄이 늘거나 줄었으면 같은 글의 줄을 찾아간다
         now = next((i for i, l in enumerate(lines, 1) if coverage.line_key(l) == key["line_key"]), None)
-        learned += record_decision(p, key["line_key"], raw, kind, src, lines[now - 1] if now else None)
+        moved = now is None and moved_line(lines, key)
+        if moved:
+            now = moved
+        learned += record_decision(p, key["line_key"], raw, kind, src,
+                                   key.get("text") if moved else (lines[now - 1] if now else None))
         if now is None:
-            refused.append(f"{qid} {p.name} {key['line']}행 — 표를 만든 뒤 그 줄이 바뀌었습니다 · "
-                           "표를 다시 만들어 다시 묻습니다")
+            refused.append(f"{qid} {p.name} {key['line']}행 — 표를 만든 뒤 그 줄이 바뀌었습니다(짚은 표현이 든 "
+                           "문장이 달라짐), 표를 다시 만들어 다시 묻습니다")
+            continue
+        if moved and kind == ask_sheet.KEEP:
+            # 짚은 표현이 든 문장은 그대로이고 같은 줄의 다른 문장만 바뀌었다 — 답 기록(위)이 그 문장에 묶여 닫는다.
+            # `answer` 는 부르지 않는다 — 바뀐 줄 전체를 답한 줄로 적으면 그 줄의 다른 지적까지 닫힌다
+            kept.append(qid)
             continue
         if kind in (ask_sheet.EDIT, ask_sheet.FREE):
             asks = [a for n, a in coverage.open_asks(coverage.doc_key(p), lines, LOG) if n == now]
@@ -2695,12 +2732,18 @@ def main(argv=None, backend=None) -> int:
                 return 2
             try:
                 done = answer(Path(a.docs[0]), a.answer, a.note)
+            except AlreadyClosed as e:
+                print(f"ℹ️ {e}")
+                done = None
             except ValueError as e:
                 print(f"⛔ {e}")
                 return 2
-            for head in done:
+            for head in done or []:
                 print(f"  답 기록 — 「{head}」")
         left = sum(show_open_asks(Path(d)) for d in a.docs)
+        if a.answer:
+            # 끝 줄만 보고도 결과를 알게 한다 — 남은 목록의 마지막 근거 문장이 끝 줄이 되면 성패를 못 갈랐다
+            print(f"결과 — {'답 기록함' if done else '이미 닫혀 적은 것 없음'}, 남은 사람 확인 {left}건")
         return 1 if left and a.asks else 0
     if a.why:
         missing = [d for d in a.docs if not Path(d).is_file()]
@@ -2730,6 +2773,11 @@ def main(argv=None, backend=None) -> int:
                 print(f"⛔ {e}")
                 return 2
         left = sum(show_open_fixes(Path(d)) for d in a.docs)
+        if a.dismiss is not None or a.escalate is not None:
+            # 끝 줄만 보고도 결과를 알게 한다 — 남은 지적 목록의 마지막 근거 문장이 끝 줄이 되어 성패를 못 갈랐다
+            # (2026-11-24 블로그 원고 인계)
+            what = f"받지 않음({a.reason})" if a.dismiss is not None else "사람 확인으로 올림"
+            print(f"결과 — 「{got}」 {what} 기록함, 남은 고칠 지적 {left}건")
         return 1 if left and a.fixes else 0
     # 작성자만 보는 저장소 내부 문서는 판정하지 않는다 — 꼭 판정하려면 --internal(`internal_doc`)
     inside = [] if a.internal else [d for d in a.docs if internal_doc(Path(d))]
