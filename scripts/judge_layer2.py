@@ -1623,13 +1623,17 @@ def lineage(key: str, lines: list[str], targets: list[int], base: list[str] | No
 
     orphans = settle(lambda n: latest[found[n][1]] if found[n][1] is not None else None)
     unrooted = settle(lambda n: found[n][2] if found[n][0] is None or n in orphans else None)
+    # 사용자 지시로 고친 줄(`--instructed`) — 상한은 자동 수정이 끝없이 도는 것을 막는 장치라 사람이 정한 수정은
+    # 세지 않는다(2026-11-24 블로그 원고 인계 — 지시로 여러 번 고친 한 줄이 5회째 판정에서 상한에 걸림)
+    told = {r.get("line_key") for r in coverage._rows(key, coverage.INSTRUCTIONS, None, fresh=False)}
     out = {}
     for n in targets:
         pred, _, cand = found[n]
         if pred is not None and n not in orphans:
             # 판정한 글을 나누거나 다시 묶기만 한 줄은 다시 판정하되 횟수는 늘리지 않는다(다른 세션 인계 B2 —
             # 구조 개편 다섯 번에 사람 확인 13건, 3건, 2건, 1건). 글을 고친 줄은 그대로 센다
-            step = 0 if coverage.words_kept(lines[n - 1], [e["text"] for e in prev]) else 1
+            step = 0 if (coverage.words_kept(lines[n - 1], [e["text"] for e in prev])
+                         or coverage.line_key(lines[n - 1]) in told) else 1
             info = {"round": int(pred.get("round") or 1) + step, "root": pred.get("root") or pred["text"]}
         else:
             info = {"round": 1, "root": None if n in unrooted else cand}

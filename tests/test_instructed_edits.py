@@ -80,6 +80,34 @@ class InstructTests(_Base):
         self.assertEqual(1, len(rows))
 
 
+class CapTests(_Base):
+    """(2026-11-24 블로그 원고 인계) 지시로 여러 번 고친 한 줄이 재판정 상한에 걸렸다 — 지시 수정은 세지 않는다."""
+
+    def last_round(self) -> int:
+        rows = [json.loads(l) for l in judge.LOG.read_text(encoding="utf-8").splitlines()]
+        return [e for r in rows for e in r.get("targeted") or []][-1]["round"]
+
+    def edit(self, text: str) -> None:
+        lines = list(EDITED)
+        lines[2] = text
+        self.doc.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+    def test_an_instructed_edit_does_not_count_toward_the_cap(self) -> None:
+        self.rejudge()
+        first = self.last_round()
+        self.edit("배포 일정은 이번 주 금요일 오전으로 정했습니다.")
+        judge.instruct(self.doc, 3, NOTE)
+        self.rejudge()
+        self.assertEqual(first, self.last_round(), "사용자 지시로 고친 줄을 재판정 횟수에 셌습니다")
+
+    def test_an_uninstructed_edit_still_counts(self) -> None:
+        self.rejudge()
+        first = self.last_round()
+        self.edit("배포 일정은 이번 주 금요일 오전으로 정했습니다.")
+        self.rejudge()
+        self.assertEqual(first + 1, self.last_round(), "지시 없이 고친 줄을 재판정 횟수에 안 셌습니다")
+
+
 class PromptTests(_Base):
 
     def test_the_instruction_reaches_the_rejudge(self) -> None:
