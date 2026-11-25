@@ -305,3 +305,20 @@
 {"case_id": "C-306", "expect": "clean", "form": "prose", "kind": "업무 글에 없는 말", "source": "사용자 지적 2026-11-24 · 대장 F-225~F-227", "status": "pinned", "text": "직원 800명을 대상으로 한 설문에서 절반이 그렇다고 답했습니다.", "why": "대체 표현"}
 {"case_id": "C-307", "expect": "clean", "form": "prose", "kind": "업무 글에 없는 말", "source": "사용자 지적 2026-11-24 · 대장 F-225~F-227", "status": "pinned", "text": "첫인상은 세련된 느낌이었습니다.", "why": "대상의 인상"}
 {"case_id": "C-308", "expect": "clean", "form": "prose", "kind": "업무 글에 없는 말", "source": "사용자 지적 2026-11-24 · 대장 F-225~F-227", "status": "pinned", "text": "뒤처지고 있다고 느꼈습니다.", "why": "대체 표현"}
+{"case_id": "C-309", "expect": "finding", "form": "prose", "kind": "업무 글에 없는 말", "source": "설명회 덱 지적 2026-11-25 · 대장 28회차", "status": "pinned", "text": "6월 판에서는 이 기능을 지원하지 않습니다.", "why": "판 뒤 조사에 보조사가 붙은 꼴"}
+{"case_id": "C-310", "expect": "finding", "form": "prose", "kind": "업무 글에 없는 말", "source": "설명회 덱 지적 2026-11-25 · 대장 28회차", "status": "pinned", "text": "12월 판에도 같은 기능이 있습니다.", "why": "판 뒤 조사에 보조사가 붙은 꼴"}
+{"case_id": "C-311", "expect": "clean", "form": "prose", "kind": "업무 글에 없는 말", "source": "설명회 덱 지적 2026-11-25 · 대장 28회차", "status": "pinned", "text": "12월 판매는 늘었습니다.", "why": "판매는 다른 낱말"}
+{"case_id": "C-312", "expect": "clean", "form": "prose", "kind": "업무 글에 없는 말", "source": "설명회 덱 지적 2026-11-25 · 대장 28회차", "status": "pinned", "text": "6월 판단은 미뤘습니다.", "why": "판단은 다른 낱말"}
+{"case_id": "C-313", "expect": "clean", "form": "prose", "kind": "업무 글에 없는 말", "source": "설명회 덱 지적 2026-11-25 · 대장 28회차", "status": "pinned", "text": "바둑 한 판에서는 집중이 필요합니다.", "why": "횟수를 세는 판"}
+{"case_id": "C-314", "expect": "finding", "form": "prose", "kind": "절단형 종결", "source": "설명회 덱 지적 2026-11-25 · 대장 28회차", "status": "pinned", "text": "달라지는 것은 언제 누가 호출하느냐", "why": "「~느냐」로 끝난 의문형 값"}
+{"case_id": "C-315", "expect": "clean", "form": "prose", "kind": "절단형 종결", "source": "설명회 덱 지적 2026-11-25 · 대장 28회차", "status": "pinned", "text": "호출 주체가 사람이냐 도구냐에 따라 다릅니다.", "why": "문장 중간의 「~냐」"}
+{"case_id": "C-316", "expect": "finding", "form": "prose", "kind": "업무 글에 없는 말", "source": "설명회 덱 지적 2026-11-25 · 대장 28회차", "status": "open", "text": "고객이 사내에 둘 수 있는 27B급 모델로 시험했습니다.", "why": "C1 장소에 모델을 두다 — 운영할 수 있는 · 판정표로 묻는 중"}
+{"case_id": "C-317", "expect": "finding", "form": "prose", "kind": "업무 글에 없는 말", "source": "설명회 덱 지적 2026-11-25 · 대장 28회차", "status": "open", "text": "사내 모델로 낸 수치입니다.", "why": "C2 도구로 수치를 내다 — 측정한 · 판정표로 묻는 중"}
+{"case_id": "C-318", "expect": "finding", "form": "prose", "kind": "업무 글에 없는 말", "source": "설명회 덱 지적 2026-11-25 · 대장 28회차", "status": "open", "text": "인증을 받아 온 엔진으로 실행합니다.", "why": "C3 인증을 받아 오다 — 인증받은 · 판정표로 묻는 중"}
+{"case_id": "C-319", "expect": "finding", "form": "prose", "kind": "업무 글에 없는 말", "source": "설명회 덱 지적 2026-11-25 · 대장 28회차", "status": "open", "text": "현장의 어려움을 세 갈래로 나눠 해결했습니다.", "why": "C4 세 갈래 — 세 가지 · 판정표로 묻는 중"}
+{"case_id": "C-320", "expect": "finding", "form": "prose", "kind": "업무 글에 없는 말", "source": "설명회 덱 지적 2026-11-25 · 대장 28회차", "status": "open", "text": "커버리지를 채우는 테스트를 작성합니다.", "why": "C5 커버리지를 채우다 — 확보 · 판정표로 묻는 중"}
+{"case_id": "C-321", "expect": "finding", "form": "prose", "kind": "업무 글에 없는 말", "source": "설명회 덱 지적 2026-11-25 · 대장 28회차", "status": "open", "text": "기존 코드를 이어 쓰지 않고 새로 개발했습니다.", "why": "C6 코드를 이어 쓰다 — 재사용 · 판정표로 묻는 중"}
+{"case_id": "C-322", "expect": "finding", "form": "prose", "kind": "업무 글에 없는 말", "source": "설명회 덱 지적 2026-11-25 · 대장 28회차", "status": "open", "text": "검증 절차를 묶은 워크플로를 함께 제공합니다.", "why": "C9 워크플로 — 단계별 절차 · 판정표로 묻는 중"}
+{"case_id": "C-323", "expect": "finding", "form": "prose", "kind": "업무 글에 없는 말", "source": "설명회 덱 지적 2026-11-25 · 대장 28회차", "status": "open", "text": "고객 사내 서버에서 운영하는 모델입니다.", "why": "C8 고객 사내 — 고객사 · 판정표로 묻는 중"}
+{"case_id": "C-324", "expect": "finding", "form": "prose", "kind": "업무 글에 없는 말", "source": "설명회 덱 지적 2026-11-25 · 대장 28회차", "status": "open", "text": "경쟁 도구들도 코딩 에이전트 연동을 잇달아 출시하고 있습니다.", "why": "C7 연동을 출시하다 — 연동 기능을 출시 · 판정표로 묻는 중"}
+{"case_id": "C-325", "expect": "finding", "form": "prose", "kind": "절단형 의심", "source": "설명회 덱 지적 2026-11-25 · 대장 28회차", "status": "open", "text": "같은 형식의 산출물 그대로", "why": "C10 부사로 끝난 값 · 판정표로 묻는 중"}
