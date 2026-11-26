@@ -334,6 +334,36 @@ STOCK += [
 ]
 
 
+#: **대구 「~한 것과 ~한 것」** — 관형형 + 「것」 둘을 대구로 이어 제목이나 라벨로 끝낸 명사구
+#   (「덜어낸 것과 남긴 것」, 「얻는 것과 잃는 것」, 「할 수 있는 것과 없는 것」). F-331(2026-11-26
+#   사용자 지적 — 「전형적인 AI 가 만든 티가 나는 문구」). 가리키는 대상의 이름이 빠지고 대비만 남는다.
+#   실측(`runs/paired-geot-heading-20261126`) — 사람 업무 문서 5,174편의 제목과 라벨에 0건.
+#   AI 와 작성한 기획 문서는 제목에 수십 건. 제목은 「대구 「것」 제목」(오류), 그 밖의 값은 주의.
+#   ⛔ 「것」 앞은 받침 ㄴ·ㄹ 음절만 본다 — 관형형 어미(ㄴ·은·는·던·ㄹ·을)가 모두 그렇다.
+#      「그것과 이것」(대명사)은 붙여 써서 안 걸린다.
+#   ⛔ 「하지 말 것」(명령형 개조식)은 뺀다 — 「처음에만 할 것, 이후에는 하지 말 것」은 지시 목록이다.
+#   ⛔ 「요청한 것과 같은 것」의 「과」는 비교라 뺀다(같은·다른·비슷한·유사한·동일한·똑같은).
+#   ⛔ 명사구로 끝날 때만 본다 — 「하는 것과 적는 것은 다르다」처럼 조사가 이어지는 본문 문장은
+#      2층 몫이다(F-022, `finalize-korean-document` 9단계).
+#   ⛔ 쉼표 뒤에서 끝난 것과 사이에 다른 항목이 낀 것은 안 본다 — 「고친 것, 결정이 필요한 것,
+#      그대로 둔 것으로 나눔」, 「막힌 것 · 늦어질 이유 · 기대는 것」은 문장 속 나열이다(실측에서 걸러 냄).
+_NL_JONG = '[' + ''.join(chr(0xAC00 + (cho * 21 + jung) * 28 + jong)
+                         for cho in range(19) for jung in range(21) for jong in (4, 8)) + ']'
+_GEOT = rf'(?!말\s것)[가-힣]*{_NL_JONG}\s것'
+PAIR_GEOT = re.compile(
+    rf'(?<![가-힣]){_GEOT}'
+    r'(?:(?:과|와)(?![가-힣])(?!\s?(?:같은|다른|비슷한|유사한|동일한|똑같은)\s)'
+    r'|\s?,|\s?/|\s?·|\s?vs\.?|\s대(?![가-힣]))\s?'
+    rf'(?:[^\n것|·/,]{{0,25}}?\s)?{_GEOT}(?![가-힣])'
+    r'(?=[^가-힣\n]*$|\s*[—–:|·)\]」』]|\s-\s)', re.M)
+PAIR_GEOT_FIX = ('관형형 「것」 둘을 대구로 이은 꼴은 AI 글 티가 남 — 가리키는 대상을 명사로'
+                 '(「덜어낸 것과 남긴 것」→「제외 기능과 유지 기능」, 「얻는 것과 잃는 것」→「효과와 비용」)')
+PAIR_GEOT_NAME = '대구 「~한 것과 ~한 것」'
+STOCK += [
+    (PAIR_GEOT_NAME, PAIR_GEOT, PAIR_GEOT_FIX + ' · 대상 목록의 머리로 쓴 것이면 정상'),
+]
+
+
 def stock_hits(text):
     """상투 문형을 찾는다 — (문형 이름, 고치는 법, 짚은 말)."""
     for name, pattern, fix in STOCK:
@@ -2307,9 +2337,16 @@ def scan_html(path, relaxed=False, form=None, rules=None):
     for hit in misread_hits(text):
         near = ' '.join(text[max(0, hit.start() - 20):hit.end() + 20].split())
         warn.append(('다른 낱말로 읽힘', f'「{hit.group(0)}」 — {MISREAD_FIX} · {near[:48]}'))
+    _head_lines = {' '.join(mask(strip(h)).split())
+                   for h in re.findall(r'<h[1-6][^>]*>(.*?)</h[1-6]>', body, re.S)}
     for name, fix, hit in stock_hits(text):
+        if name == PAIR_GEOT_NAME:
+            _ls = text.rfind('\n', 0, hit.start()) + 1
+            _le = text.find('\n', hit.end())
+            if ' '.join(text[_ls:_le if _le >= 0 else None].split()) in _head_lines:
+                continue        # 제목은 「대구 「것」 제목」(오류)이 본다
         word = hit.group(0).strip(' .!?')
-        near = ' '.join(text[max(0, hit.start() - 20):hit.end() + 20].split())
+        near =' '.join(text[max(0, hit.start() - 20):hit.end() + 20].split())
         warn.append(('상투 문형', f'{name} 「{word[:30]}」 — {fix} · {near[:48]}'))
     for ln in text.splitlines():
         e = ECHO_HEAD.search(ln)
@@ -2520,6 +2557,9 @@ def scan_html(path, relaxed=False, form=None, rules=None):
         shown = drop_tail(whole)
         if question_end(shown):
             err.append(('의문문 제목', f'{shown[:50]} — {Q_HEADING_FIX}'))
+            continue
+        if PAIR_GEOT.search(mask(shown)):
+            err.append(('대구 「것」 제목', f'{shown[:50]} — {PAIR_GEOT_FIX}'))
             continue
         if META_HEADING.match(shown):
             warn.append(('스캔 가치 없는 라벨', f'제목 「{shown[:30]}」 — {META_HEADING_FIX}'))
@@ -2907,7 +2947,7 @@ RULE_GROUPS = {
         '반복 문형',
     ]),
     '구조': ('찾아 읽기가 안 되는 갈래 — 문장은 멀쩡하다', [
-        '제목 서술형', '제목 명사형 위반', '제목 형태 확인', '의문문 제목',
+        '제목 서술형', '제목 명사형 위반', '제목 형태 확인', '의문문 제목', '대구 「것」 제목',
         '진입점 없음', '진입점 서술형', '진입점 명사형 위반', '진입점 형태 확인',
         '스캔 가치 없는 라벨', '반복 블록 라벨 불일치', '해설을 인용 부호로 씀',
         '절 번호로 가리킴', '문장 끝 괄호 속 이름',
@@ -3512,6 +3552,8 @@ def scan_md(path, relaxed=False, form=None, rules=None):
             warn.append((n, '다른 낱말로 읽힘',
                          f'「{hit.group(0)}」 — {MISREAD_FIX} · {excerpt(line, hit.group(0), 40)}'))
         for name, fix, hit in stock_hits(m):
+            if name == PAIR_GEOT_NAME and MD_HEADING.match(s):
+                continue        # 제목은 「대구 「것」 제목」(오류)이 본다
             word = hit.group(0).strip(' .!?')
             warn.append((n, '상투 문형',
                          f'{name} 「{word[:30]}」 — {fix} · {excerpt(line, word, 36)}'))
@@ -3608,6 +3650,9 @@ def scan_md(path, relaxed=False, form=None, rules=None):
         title = drop_tail(raw_title)
         if question_end(title):
             err.append((n, '의문문 제목', f'{title[:50]} — {Q_HEADING_FIX}'))
+            continue
+        if PAIR_GEOT.search(mask(title)):
+            err.append((n, '대구 「것」 제목', f'{title[:50]} — {PAIR_GEOT_FIX}'))
             continue
         if META_HEADING.match(title):
             warn.append((n, '스캔 가치 없는 라벨', f'제목 「{title[:30]}」 — {META_HEADING_FIX}'))
