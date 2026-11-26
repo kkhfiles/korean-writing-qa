@@ -342,6 +342,10 @@ STOCK += [
 #   ⛔ 「것」 앞은 받침 ㄴ·ㄹ 음절만 본다 — 관형형 어미(ㄴ·은·는·던·ㄹ·을)가 모두 그렇다.
 #      「그것과 이것」(대명사)은 붙여 써서 안 걸린다.
 #   ⛔ 「하지 말 것」(명령형 개조식)은 뺀다 — 「처음에만 할 것, 이후에는 하지 말 것」은 지시 목록이다.
+#      같은 지시 짝인 「해야 할 것과 하지 말아야 할 것」도 뺀다(2026-11-27 재검토 — 「할 것과 하지 말 것」은
+#      통과시키면서 이 꼴만 오류로 내던 어긋남).
+#   ⛔ 굵은 라벨(「**확인한 것과 남은 것** — …」)도 값과 같이 본다 — 닫는 「**」 뒤에 대시가 와도 명사구 끝으로
+#      친다(2026-11-27 재검토에서 놓친 꼴).
 #   ⛔ 「요청한 것과 같은 것」의 「과」는 비교라 뺀다(같은·다른·비슷한·유사한·동일한·똑같은).
 #   ⛔ 명사구로 끝날 때만 본다 — 「하는 것과 적는 것은 다르다」처럼 조사가 이어지는 본문 문장은
 #      2층 몫이다(F-022, `finalize-korean-document` 9단계).
@@ -351,11 +355,11 @@ _NL_JONG = '[' + ''.join(chr(0xAC00 + (cho * 21 + jung) * 28 + jong)
                          for cho in range(19) for jung in range(21) for jong in (4, 8)) + ']'
 _GEOT = rf'(?!말\s것)[가-힣]*{_NL_JONG}\s것'
 PAIR_GEOT = re.compile(
-    rf'(?<![가-힣]){_GEOT}'
+    rf'(?![^\n]*말아야\s할\s것)(?<![가-힣]){_GEOT}'
     r'(?:(?:과|와)(?![가-힣])(?!\s?(?:같은|다른|비슷한|유사한|동일한|똑같은)\s)'
     r'|\s?,|\s?/|\s?·|\s?vs\.?|\s대(?![가-힣]))\s?'
     rf'(?:[^\n것|·/,]{{0,25}}?\s)?{_GEOT}(?![가-힣])'
-    r'(?=[^가-힣\n]*$|\s*[—–:|·)\]」』]|\s-\s)', re.M)
+    r'(?=[^가-힣\n]*$|\s*\**\s*[—–:|·)\]」』]|\s-\s)', re.M)
 PAIR_GEOT_FIX = ('관형형 「것」 둘을 대구로 이은 꼴은 AI 글 티가 남 — 가리키는 대상을 명사로'
                  '(「덜어낸 것과 남긴 것」→「제외 기능과 유지 기능」, 「얻는 것과 잃는 것」→「효과와 비용」)')
 PAIR_GEOT_NAME = '대구 「~한 것과 ~한 것」'
@@ -2346,7 +2350,7 @@ def scan_html(path, relaxed=False, form=None, rules=None):
             if ' '.join(text[_ls:_le if _le >= 0 else None].split()) in _head_lines:
                 continue        # 제목은 「대구 「것」 제목」(오류)이 본다
         word = hit.group(0).strip(' .!?')
-        near =' '.join(text[max(0, hit.start() - 20):hit.end() + 20].split())
+        near = ' '.join(text[max(0, hit.start() - 20):hit.end() + 20].split())
         warn.append(('상투 문형', f'{name} 「{word[:30]}」 — {fix} · {near[:48]}'))
     for ln in text.splitlines():
         e = ECHO_HEAD.search(ln)

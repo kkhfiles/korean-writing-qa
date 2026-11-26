@@ -81,10 +81,12 @@ class PairedGeotHeadingTests(unittest.TestCase):
         self.assertEqual(paired_warnings(warnings), [])
 
     def test_paired_value_is_a_warning(self) -> None:
-        errors, warnings = scan("- **범위** — 바뀐 것과 바뀌지 않은 것\n- 확인한 것과 확인하지 못한 것\n",
+        errors, warnings = scan("- **범위** — 바뀐 것과 바뀌지 않은 것\n- 확인한 것과 확인하지 못한 것\n"
+                                "- **확인한 것과 남은 것** — 표로 정리\n",
                                 "structured")
         self.assertNotIn(TITLE, kinds(errors))
-        self.assertEqual(len(paired_warnings(warnings)), 2)
+        # 셋째 줄은 굵은 라벨 — 닫는 「**」 뒤 대시도 명사구 끝(2026-11-27 재검토에서 놓친 꼴)
+        self.assertEqual(len(paired_warnings(warnings)), 3)
         html = ('<html><head><meta name="form" content="prose"></head><body>'
                 '<h1>재설계 계획</h1><p>재설계 범위와 일정을 정리했습니다.</p>'
                 '<ul><li>확인한 것과 확인하지 못한 것</li></ul></body></html>')
@@ -92,7 +94,8 @@ class PairedGeotHeadingTests(unittest.TestCase):
         self.assertEqual(len(paired_warnings(warnings)), 1)
 
     def test_lookalikes_pass(self) -> None:
-        body = ("## 하지 말 것\n\n## 할 것과 하지 말 것\n\n## 측정한 것과 같은 값\n\n## 「덜어낸 것과 남긴 것」\n\n"
+        body = ("## 하지 말 것\n\n## 할 것과 하지 말 것\n\n## 해야 할 것과 하지 말아야 할 것\n\n"
+                "## 측정한 것과 같은 값\n\n## 「덜어낸 것과 남긴 것」\n\n"
                 "- 처음에만 할 것, 이후 빌드에서는 절대 하지 말 것\n"
                 "- 고객이 요청한 것과 같은 것\n"
                 "- 막힌 것 · 늦어질 이유 · 다른 묶음에 기대는 것\n"

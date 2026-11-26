@@ -333,3 +333,5 @@
 {"case_id": "C-334", "expect": "clean", "form": "prose", "kind": null, "source": "2026-11-26 오탐 방지 · 지어낸 문장", "status": "pinned", "text": "고친 것, 결정이 필요한 것, 그대로 둔 것으로 나눴습니다.", "why": "문장 속 셋 나열 — 쉼표 뒤에서 끝나지 않음"}
 {"case_id": "C-335", "expect": "clean", "form": "structured", "kind": null, "source": "2026-11-26 오탐 방지 · 지어낸 문장", "status": "pinned", "text": "막힌 것 · 늦어질 이유 · 다른 묶음에 기대는 것", "why": "사이에 「것」이 아닌 항목이 낀 나열 — 대구가 아님"}
 {"case_id": "C-336", "expect": "clean", "form": "structured", "kind": null, "source": "2026-11-26 오탐 방지 · 지어낸 문장", "status": "pinned", "text": "측정한 것과 같은 값", "why": "둘째 명사가 「것」이 아님"}
+{"case_id": "C-337", "expect": "finding", "form": "structured", "kind": "상투 문형", "source": "2026-11-27 재검토 · 지어낸 문장", "status": "pinned", "text": "- **확인한 것과 남은 것** — 표로 정리", "why": "굵은 라벨로 쓴 대구 「것」 — 닫는 「**」 뒤 대시도 명사구 끝"}
+{"case_id": "C-338", "expect": "clean", "form": "structured", "kind": null, "source": "2026-11-27 재검토 · 지어낸 문장", "status": "pinned", "text": "해야 할 것과 하지 말아야 할 것", "why": "「할 것과 하지 말 것」과 같은 지시 짝 — 명령형 제외와 맞춤"}
